@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, TextInput, Pressable, ScrollView, Modal, Share, Alert, StyleSheet, KeyboardAvoidingView, Platform,
-  ActivityIndicator,
+  ActivityIndicator, Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import {
+  useAudioRecorder, useAudioRecorderState, useAudioPlayer, useAudioPlayerStatus, RecordingPresets,
+  requestRecordingPermissionsAsync, setAudioModeAsync,
+} from 'expo-audio';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
@@ -10,7 +15,7 @@ import { colors, radius } from '../theme';
 import { Avatar, IconButton, Segmented, Card } from '../components/ui';
 import DateField from '../components/DateField';
 import { childAvatars, parentAvatars } from '../data/avatars';
-import { useStore } from '../store';
+import { useStore, Message } from '../store';
 import { useAuth } from '../lib/auth';
 import { formatTR } from '../dates';
 
@@ -166,12 +171,59 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
 
 /* ---------- Posta ---------- */
 
+const mmss = (ms: number) => {
+  const t = Math.max(0, Math.round(ms / 1000));
+  return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+};
+
 function Mail() {
-  const { children, messages, sendMessage } = useStore();
+  const { children, messages, sendMessage, sendPhoto, sendVoice } = useStore();
   const [to, setTo] = useState(children[0]?.id);
   const [text, setText] = useState('');
+  const [viewer, setViewer] = useState<string | null>(null);
+  const [recording, setRecording] = useState(false);
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recState = useAudioRecorderState(recorder, 250);
+  const listRef = useRef<ScrollView>(null);
   const thread = messages.filter((m) => m.childId === to);
   const target = children.find((c) => c.id === to);
+
+  useEffect(() => {
+    if (!to && children[0]) setTo(children[0].id);
+  }, [children, to]);
+
+  const pickPhoto = async () => {
+    if (!to) return;
+    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
+    if (r.canceled || !r.assets?.[0]) return;
+    sendPhoto(to, r.assets[0].uri, r.assets[0].mimeType);
+  };
+
+  const startRecording = async () => {
+    if (!to) return;
+    const perm = await requestRecordingPermissionsAsync();
+    if (!perm.granted) return Alert.alert('Mikrofon izni gerekli', 'Sesli mesaj için Ayarlar\'dan Fidan\'a mikrofon izni ver.');
+    try {
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await recorder.prepareToRecordAsync();
+      recorder.record();
+      setRecording(true);
+    } catch (e) {
+      Alert.alert('Kayıt başlatılamadı', (e as Error).message);
+    }
+  };
+
+  const stopRecording = async (send: boolean) => {
+    const duration = recorder.getStatus().durationMillis;
+    setRecording(false);
+    try {
+      await recorder.stop();
+    } finally {
+      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
+    }
+    const uri = recorder.uri;
+    if (send && to && uri && duration >= 700) sendVoice(to, uri, duration);
+  };
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -185,34 +237,106 @@ function Mail() {
           ))}
         </ScrollView>
 
-        <ScrollView style={{ flex: 1, backgroundColor: '#fff', borderRadius: radius.lg }} contentContainerStyle={{ padding: 14, gap: 8 }}>
-          {thread.map((m) => (
-            <View key={m.id} style={styles.bubble}>
-              <Text style={{ color: '#fff', fontSize: 15 }}>{m.text}</Text>
-              <Text style={{ color: '#AEB6D1', fontSize: 10, marginTop: 2 }}>
-                {new Date(m.at).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-              </Text>
-            </View>
-          ))}
+        <ScrollView
+          ref={listRef}
+          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+          style={{ flex: 1, backgroundColor: '#fff', borderRadius: radius.lg }}
+          contentContainerStyle={{ padding: 14, gap: 8 }}
+        >
+          {thread.map((m) => <Bubble key={m.id} m={m} onImage={setViewer} />)}
         </ScrollView>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <IconButton name="image-outline" label="Fotoğraf" onPress={soon} />
-          <IconButton name="mic-outline" label="Sesli mesaj" onPress={soon} />
-          <TextInput
-            value={text} onChangeText={setText} placeholder={`${target?.name ?? ''} için mesaj yaz`}
-            placeholderTextColor={colors.muted} style={[styles.input, { flex: 1, borderRadius: 24, height: 44, paddingVertical: 0 }]}
-          />
-          <Pressable
-            accessibilityLabel="Gönder"
-            onPress={() => { if (to && text.trim()) { sendMessage(to, text.trim()); setText(''); } }}
-            style={[styles.send, { backgroundColor: text.trim() ? colors.navy : '#A9AEBB' }]}
-          >
-            <Ionicons name="paper-plane-outline" size={18} color="#fff" />
-          </Pressable>
-        </View>
+        {recording ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <IconButton name="trash-outline" label="Kaydı sil" color={colors.danger} onPress={() => stopRecording(false)} />
+            <View style={[styles.input, styles.recPill]}>
+              <View style={styles.recDot} />
+              <Text style={{ fontSize: 15, color: colors.navy, fontVariant: ['tabular-nums'] }}>{mmss(recState.durationMillis)}</Text>
+            </View>
+            <Pressable accessibilityLabel="Sesli mesajı gönder" onPress={() => stopRecording(true)} style={[styles.send, { backgroundColor: colors.navy }]}>
+              <Ionicons name="paper-plane-outline" size={18} color="#fff" />
+            </Pressable>
+          </View>
+        ) : (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <IconButton name="image-outline" label="Fotoğraf" onPress={pickPhoto} />
+            <IconButton name="mic-outline" label="Sesli mesaj" onPress={startRecording} />
+            <TextInput
+              value={text} onChangeText={setText} placeholder={`${target?.name ?? ''} için mesaj yaz`}
+              placeholderTextColor={colors.muted} style={[styles.input, { flex: 1, borderRadius: 24, height: 44, paddingVertical: 0 }]}
+            />
+            <Pressable
+              accessibilityLabel="Gönder"
+              onPress={() => { if (to && text.trim()) { sendMessage(to, text.trim()); setText(''); } }}
+              style={[styles.send, { backgroundColor: text.trim() ? colors.navy : '#A9AEBB' }]}
+            >
+              <Ionicons name="paper-plane-outline" size={18} color="#fff" />
+            </Pressable>
+          </View>
+        )}
       </View>
+
+      <Modal visible={!!viewer} transparent animationType="fade" onRequestClose={() => setViewer(null)}>
+        <View style={styles.viewer}>
+          {viewer && <Image source={{ uri: viewer }} style={{ width: '100%', height: '80%' }} resizeMode="contain" />}
+          <IconButton name="close" label="Kapat" onPress={() => setViewer(null)} style={{ position: 'absolute', top: 56, right: 20 }} />
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
+  );
+}
+
+function Bubble({ m, onImage }: { m: Message; onImage: (uri: string) => void }) {
+  const mine = m.sender === 'parent';
+  const fg = mine ? '#fff' : colors.navy;
+  return (
+    <View style={[styles.bubble, !mine && styles.bubbleIn, m.kind === 'image' && { padding: 4 }]}>
+      {m.kind === 'image' ? (
+        <Pressable onPress={() => m.mediaUrl && onImage(m.mediaUrl)} accessibilityLabel="Fotoğrafı aç">
+          <Image source={m.mediaUrl ? { uri: m.mediaUrl } : undefined} style={styles.photo} resizeMode="cover" />
+        </Pressable>
+      ) : m.kind === 'audio' ? (
+        <Voice uri={m.mediaUrl} durationMs={m.durationMs} color={fg} />
+      ) : (
+        <Text style={{ color: fg, fontSize: 15 }}>{m.text}</Text>
+      )}
+      <Text style={{ color: mine ? '#AEB6D1' : colors.muted, fontSize: 10, marginTop: 2, marginHorizontal: m.kind === 'image' ? 8 : 0 }}>
+        {new Date(m.at).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+      </Text>
+    </View>
+  );
+}
+
+function Voice({ uri, durationMs, color }: { uri?: string; durationMs?: number; color: string }) {
+  const player = useAudioPlayer(uri ? { uri } : null);
+  const status = useAudioPlayerStatus(player);
+
+  useEffect(() => {
+    if (status.didJustFinish) {
+      player.pause();
+      player.seekTo(0);
+    }
+  }, [status.didJustFinish, player]);
+
+  const total = status.duration > 0 ? status.duration * 1000 : durationMs ?? 0;
+  const pos = status.currentTime * 1000;
+  const progress = total > 0 ? Math.min(1, pos / total) : 0;
+  const toggle = async () => {
+    if (status.playing) return player.pause();
+    await setAudioModeAsync({ playsInSilentMode: true });
+    player.play();
+  };
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: 180 }}>
+      <Pressable onPress={toggle} hitSlop={8} accessibilityLabel={status.playing ? 'Duraklat' : 'Oynat'}>
+        <Ionicons name={status.playing ? 'pause' : 'play'} size={20} color={color} />
+      </Pressable>
+      <View style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: color, opacity: 0.3 }}>
+        <View style={{ width: `${progress * 100}%`, height: 3, borderRadius: 2, backgroundColor: color }} />
+      </View>
+      <Text style={{ fontSize: 11, color, fontVariant: ['tabular-nums'] }}>{mmss(status.playing || pos > 0 ? pos : total)}</Text>
+    </View>
   );
 }
 
@@ -482,6 +606,11 @@ const styles = StyleSheet.create({
   input: { backgroundColor: '#F3F4F8', borderRadius: radius.sm, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colors.navy, marginTop: 4 },
   rcpt: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: '#fff' },
   bubble: { alignSelf: 'flex-end', backgroundColor: colors.navy, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10, maxWidth: '80%' },
+  bubbleIn: { alignSelf: 'flex-start', backgroundColor: '#F1F2F6' },
+  photo: { width: 200, height: 200, borderRadius: 12, backgroundColor: colors.navySoft },
+  viewer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
+  recPill: { flex: 1, borderRadius: 24, height: 44, paddingVertical: 0, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  recDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.danger },
   send: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   accRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 16 },
   logout: { height: 50, borderRadius: radius.md, borderWidth: 1, borderColor: colors.danger, alignItems: 'center', justifyContent: 'center' },

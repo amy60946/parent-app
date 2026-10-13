@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { Alert } from 'react-native';
+import { Alert, AppState } from 'react-native';
+import { File } from 'expo-file-system';
 import { Difficulty } from './theme';
 import { Template, Category, templates as baseTemplates } from './data/templates';
 import { fromISO, toISO, todayISO } from './dates';
@@ -36,7 +37,18 @@ export type CompletionStatus = 'pending' | 'approved';
 // anahtar: `${taskId}|${childId}|${date}`
 export type Completions = Record<string, CompletionStatus>;
 
-export type Message = { id: string; childId: string; text: string; at: string };
+export type MessageKind = 'text' | 'image' | 'audio';
+export type Message = {
+  id: string;
+  childId: string;
+  text: string;
+  at: string;
+  sender: 'parent' | 'child';
+  kind: MessageKind;
+  mediaPath?: string; // Storage yolu
+  mediaUrl?: string; // gösterim için (imzalı URL ya da gönderilirken yerel dosya)
+  durationMs?: number; // sesli mesaj
+};
 
 export type InviteCode = { code: string; createdAt: string; expiresAt?: string };
 // Kodlar sunucuda üretilir: tek kullanımlık, süreli (24 saat)
@@ -64,6 +76,8 @@ type Store = {
   addCustomTemplate: (t: Omit<Template, 'id' | 'usedBy' | 'custom'>) => string;
   allTemplates: Template[];
   sendMessage: (childId: string, text: string) => void;
+  sendPhoto: (childId: string, localUri: string, mimeType?: string) => Promise<void>;
+  sendVoice: (childId: string, localUri: string, durationMs: number) => Promise<void>;
   createInviteCode: () => Promise<string>;
   createChildCode: (childId: string) => Promise<IssuedCode>;
   joinFamily: (code: string) => Promise<void>;
@@ -128,7 +142,31 @@ const taskRow = (t: Partial<Task>) => {
 const assignmentRows = (familyId: string, taskId: string, list: Assignment[]) =>
   list.map((a) => ({ task_id: taskId, child_id: a.childId, family_id: familyId, difficulty: a.difficulty, coins: a.coins }));
 
-const toMessage = (r: Row): Message => ({ id: r.id, childId: r.child_id, text: r.body ?? '', at: r.created_at });
+const toMessage = (r: Row): Message => ({
+  id: r.id,
+  childId: r.child_id,
+  text: r.body ?? '',
+  at: r.created_at,
+  sender: r.sender,
+  kind: r.kind,
+  mediaPath: r.media_path ?? undefined,
+  durationMs: r.duration_ms ?? undefined,
+});
+
+const SIGNED_URL_SECONDS = 60 * 60 * 24; // gizli kovadaki dosyalar için geçici bağlantı
+
+// Medya mesajlarına görüntüleme bağlantısı ekle
+async function withMediaUrls(list: Message[]): Promise<Message[]> {
+  const paths = list.filter((m) => m.mediaPath && !m.mediaUrl).map((m) => m.mediaPath!);
+  if (!paths.length) return list;
+  const { data } = await supabase.storage.from(MAIL_BUCKET).createSignedUrls(paths, SIGNED_URL_SECONDS);
+  const urls: Record<string, string> = {};
+  (data ?? []).forEach((d) => { if (d.path && d.signedUrl) urls[d.path] = d.signedUrl; });
+  return list.map((m) => (m.mediaPath && urls[m.mediaPath] ? { ...m, mediaUrl: urls[m.mediaPath] } : m));
+}
+
+const extFor = (mime: string) =>
+  ({ 'image/png': 'png', 'image/heic': 'heic', 'image/webp': 'webp', 'audio/mp4': 'm4a' } as Record<string, string>)[mime] ?? 'jpg';
 
 const emptyParent: Parent = { id: '', nickname: 'Ben', name: '', avatar: 'erkek' };
 
@@ -148,6 +186,9 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   const fid = useRef<string | null>(null);
   const completionsRef = useRef<Completions>({});
   completionsRef.current = completions;
+  const messagesRef = useRef<Message[]>([]);
+  messagesRef.current = messages;
+  const sendingIds = useRef(new Set<string>()); // yüklenmekte olan medya mesajları
 
   /* --- okuma --- */
 
@@ -176,7 +217,13 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
 
   const loadMessages = useCallback(async (f: string) => {
     const { data, error } = await supabase.from('messages').select('*').eq('family_id', f).order('created_at');
-    if (!error && data) setMessages(data.map(toMessage));
+    if (!error && data) {
+      const loaded = await withMediaUrls(data.map(toMessage));
+      setMessages((prev) => [
+        ...loaded,
+        ...prev.filter((m) => sendingIds.current.has(m.id) && !loaded.some((x) => x.id === m.id)),
+      ]);
+    }
   }, []);
 
   const loadSaved = useCallback(async (f: string) => {
@@ -230,8 +277,11 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     const filter = `family_id=eq.${f}`;
     const channel = supabase
       .channel(`family:${f}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter }, (p) => {
-        const m = toMessage(p.new as Row);
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter }, async (p) => {
+        const raw = toMessage(p.new as Row);
+        // Kendi gönderdiğimiz mesaj zaten ekranda (yerel dosyayla); bağlantı imzalamaya gerek yok
+        if (messagesRef.current.some((x) => x.id === raw.id)) return;
+        const [m] = await withMediaUrls([raw]);
         setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, (p) => {
@@ -249,6 +299,21 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
       supabase.removeChannel(channel);
     };
   }, [familyId, loadCompletions, loadTasks, loadChildren]);
+
+  // Ön plana dönünce eşitle (arka plandayken kaçan Realtime olayları, süresi dolan medya bağlantıları)
+  useEffect(() => {
+    if (!familyId) return;
+    const f = familyId;
+    let prev = AppState.currentState;
+    const sub = AppState.addEventListener('change', (state) => {
+      // Yalnızca gerçekten arka plandan dönünce (galeri/izin pencereleri 'inactive' yapar, onları sayma)
+      if (state === 'active' && prev === 'background') {
+        loadMessages(f); loadCompletions(f); loadTasks(f); loadChildren(f);
+      }
+      prev = state;
+    });
+    return () => sub.remove();
+  }, [familyId, loadMessages, loadCompletions, loadTasks, loadChildren]);
 
   /* --- yazma --- */
 
@@ -410,12 +475,59 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   const sendMessage = useCallback((childId: string, text: string) => {
     const f = fid.current;
     if (!f || !userId) return;
-    const m: Message = { id: uuid(), childId, text, at: new Date().toISOString() };
+    const m: Message = { id: uuid(), childId, text, at: new Date().toISOString(), sender: 'parent', kind: 'text' };
     setMessages((p) => [...p, m]);
     run(() => supabase.from('messages').insert({
       id: m.id, family_id: f, child_id: childId, sender: 'parent', sender_id: userId, kind: 'text', body: text,
     }));
   }, [run, userId]);
+
+  // Fotoğraf / ses: önce Storage'a yükle, sonra mesaj kaydını ekle.
+  // Ekranda yerel dosya hemen görünür; hata olursa mesaj geri alınır.
+  const sendMedia = useCallback(async (
+    childId: string, localUri: string, kind: 'image' | 'audio', contentType: string, durationMs?: number,
+  ) => {
+    const f = fid.current;
+    if (!f || !userId) return;
+    const id = uuid();
+    const path = `${f}/${id}.${extFor(contentType)}`;
+    const m: Message = {
+      id, childId, text: '', at: new Date().toISOString(), sender: 'parent', kind,
+      mediaPath: path, mediaUrl: localUri, durationMs,
+    };
+    setMessages((p) => [...p, m]);
+    sendingIds.current.add(id);
+    try {
+      const body = await new File(localUri).arrayBuffer();
+      const up = await supabase.storage.from(MAIL_BUCKET).upload(path, body, { contentType, upsert: false });
+      if (up.error) throw up.error;
+      const ins = await supabase.from('messages').insert({
+        id, family_id: f, child_id: childId, sender: 'parent', sender_id: userId, kind,
+        media_path: path, duration_ms: durationMs ?? null,
+      });
+      if (ins.error) {
+        await supabase.storage.from(MAIL_BUCKET).remove([path]);
+        throw ins.error;
+      }
+    } catch (e) {
+      setMessages((p) => p.filter((x) => x.id !== id));
+      Alert.alert('Gönderilemedi', (e as Error).message ?? 'Tekrar dene.');
+    } finally {
+      sendingIds.current.delete(id);
+    }
+  }, [userId]);
+
+  const sendPhoto = useCallback(
+    (childId: string, localUri: string, mimeType?: string) =>
+      sendMedia(childId, localUri, 'image', mimeType?.startsWith('image/') ? mimeType : 'image/jpeg'),
+    [sendMedia],
+  );
+
+  const sendVoice = useCallback(
+    (childId: string, localUri: string, durationMs: number) =>
+      sendMedia(childId, localUri, 'audio', 'audio/mp4', Math.round(durationMs)),
+    [sendMedia],
+  );
 
   const issueCode = useCallback(async (kind: 'parent' | 'child', childId?: string): Promise<IssuedCode> => {
     const { data, error } = await supabase.rpc('create_invite_code', { p_kind: kind, p_child_id: childId ?? null });
@@ -483,7 +595,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     ready, familyId,
     parent, children, tasks, completions, messages, savedIds, customTemplates, inviteCodes,
     addChild, updateParent, addTasks, updateTask, deleteTask, toggleCompletion, review,
-    toggleSaved, addCustomTemplate, allTemplates, sendMessage, createInviteCode, createChildCode, joinFamily, refresh,
+    toggleSaved, addCustomTemplate, allTemplates, sendMessage, sendPhoto, sendVoice, createInviteCode, createChildCode, joinFamily, refresh,
     isOnlyParent, deleteAccount,
   };
   return <Ctx.Provider value={value}>{kids}</Ctx.Provider>;

@@ -11,6 +11,7 @@ npx create-expo-app@latest fidan --template blank-typescript
 cd fidan
 npx expo install @react-navigation/native @react-navigation/bottom-tabs @react-navigation/native-stack react-native-screens react-native-safe-area-context @react-native-community/datetimepicker expo-clipboard @expo/vector-icons
 npx expo install @supabase/supabase-js @react-native-async-storage/async-storage react-native-url-polyfill expo-linking
+npx expo install expo-image-picker expo-audio expo-file-system
 ```
 
 4. Bu depodaki **App.tsx** dosyasını, **src/** klasörünü, **.env.example** ve **.gitignore** dosyalarını proje klasörüne kopyala (var olan App.tsx'in üzerine yaz).
@@ -19,7 +20,15 @@ npx expo install @supabase/supabase-js @react-native-async-storage/async-storage
    - Panelde **SQL Editor > New query**: `supabase/migrations/20261013000000_init.sql` dosyasının tamamını yapıştır, **Run**. (Boş projede bir kez çalıştırılır; tabloları, Row Level Security kurallarını, kod/hesap silme fonksiyonlarını, Realtime ve `mail` Storage kovasını kurar.)
    - `.env.example` dosyasını `.env` adıyla kopyala; **Project Settings > API** sayfasındaki proje URL'sini ve *publishable* (anon) anahtarı yaz. `.env` git'e eklenmez. `service_role`/secret anahtarı uygulamaya asla yazılmaz.
    - E-posta, yönlendirme adresleri ve Türkçe e-posta şablonları için **[docs/SUPABASE.md](docs/SUPABASE.md)** dosyasındaki adımları uygula.
-   - E-postadaki bağlantıların uygulamayı açması için proje klasöründeki `app.json` içinde `"expo"` altına `"scheme": "fidan"` ekle.
+   - Proje klasöründeki `app.json` içinde `"expo"` altına şunları ekle (deep link ve Türkçe izin metinleri; Expo Go'da gerekmez ama derlenmiş uygulamada gerekir):
+
+     ```json
+     "scheme": "fidan",
+     "plugins": [
+       ["expo-image-picker", { "photosPermission": "Çocuğuna fotoğraf göndermek için galerine erişim gerekiyor." }],
+       ["expo-audio", { "microphonePermission": "Sesli mesaj kaydetmek için mikrofona erişim gerekiyor." }]
+     ]
+     ```
 6. Çalıştır:
 
 ```bash
