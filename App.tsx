@@ -1,0 +1,72 @@
+import React from 'react';
+import { StatusBar } from 'expo-status-bar';
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { StoreProvider, useStore } from './src/store';
+import { colors } from './src/theme';
+import TasksScreen from './src/screens/TasksScreen';
+import ReviewScreen from './src/screens/ReviewScreen';
+import ProgressScreen from './src/screens/ProgressScreen';
+import FamilyScreen from './src/screens/FamilyScreen';
+import CreateTaskScreen from './src/screens/CreateTaskScreen';
+import TaskDetailsScreen from './src/screens/TaskDetailsScreen';
+
+const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+
+const navTheme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: colors.bg } };
+
+const icons: Record<string, [keyof typeof Ionicons.glyphMap, keyof typeof Ionicons.glyphMap]> = {
+  Görevler: ['list-outline', 'list'],
+  İnceleme: ['checkmark-circle-outline', 'checkmark-circle'],
+  Gelişim: ['stats-chart-outline', 'stats-chart'],
+  Aile: ['people-outline', 'people'],
+};
+
+function Tabs() {
+  const { completions } = useStore();
+  const pending = Object.values(completions).filter((s) => s === 'pending').length;
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: colors.navy,
+        tabBarInactiveTintColor: colors.faint,
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
+        tabBarStyle: { borderTopColor: colors.line, borderTopWidth: 0.5, backgroundColor: '#fff' },
+        tabBarIcon: ({ focused, color, size }) => (
+          <Ionicons name={icons[route.name][focused ? 1 : 0]} size={size} color={color} />
+        ),
+      })}
+    >
+      <Tab.Screen name="Görevler" component={TasksScreen} />
+      <Tab.Screen
+        name="İnceleme"
+        component={ReviewScreen}
+        options={{ tabBarBadge: pending || undefined, tabBarBadgeStyle: { backgroundColor: colors.gold, color: colors.navy } }}
+      />
+      <Tab.Screen name="Gelişim" component={ProgressScreen} />
+      <Tab.Screen name="Aile">{() => <FamilyScreen onLogout={() => { /* Supabase signOut burada bağlanacak */ }} />}</Tab.Screen>
+    </Tab.Navigator>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <StoreProvider>
+        <NavigationContainer theme={navTheme}>
+          <StatusBar style="dark" />
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Tabs" component={Tabs} />
+            <Stack.Screen name="CreateTask" component={CreateTaskScreen} options={{ presentation: 'modal' }} />
+            <Stack.Screen name="TaskDetails" component={TaskDetailsScreen} options={{ presentation: 'modal' }} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </StoreProvider>
+    </SafeAreaProvider>
+  );
+}
