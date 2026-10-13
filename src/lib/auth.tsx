@@ -19,7 +19,11 @@ type Auth = {
   updatePassword: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
   signOutLocal: () => Promise<void>; // hesap silindikten sonra (sunucuda oturum kalmadı)
+  childSignIn: (code: string) => Promise<ChildProfile>; // çocuk: giriş koduyla (anonim oturum)
+  childLinking: boolean; // çocuk kodu bağlanırken true
 };
+
+export type ChildProfile = { child_id: string; family_id: string; name: string; avatar: string };
 
 const Ctx = createContext<Auth | null>(null);
 
@@ -38,6 +42,7 @@ export function authErrorText(e: unknown): string {
     case 'over_email_send_rate_limit':
     case 'over_request_rate_limit': return 'Çok fazla deneme yapıldı. Biraz sonra tekrar dene.';
     case 'otp_expired': return 'Bağlantının süresi dolmuş. Yeniden iste.';
+    case 'anonymous_provider_disabled': return 'Çocuk girişi henüz açık değil. Ebeveyninden Supabase ayarlarında "Anonymous Sign-Ins" seçeneğini açmasını iste.';
   }
   if (err?.status === 429) return 'Çok fazla deneme yapıldı. Biraz sonra tekrar dene.';
   if (err?.message?.toLowerCase().includes('network')) return 'İnternet bağlantını kontrol et.';
@@ -63,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [recovery, setRecovery] = useState(false);
+  const [childLinking, setChildLinking] = useState(false);
 
   // E-posta bağlantısından gelen oturumu kur
   const handleUrl = useCallback(async (url: string | null) => {
@@ -158,8 +164,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut({ scope: 'local' });
   }, []);
 
+  // Çocuk girişi: anonim oturum aç, sonra kodu bu oturuma bağla. Kod geçersizse
+  // oturum kapatılır; ebeveyn uygulaması hiçbir zaman anonim oturumla açılmaz.
+  const childSignIn = useCallback(async (code: string) => {
+    setChildLinking(true);
+    try {
+      const { data: current } = await supabase.auth.getSession();
+      if (!current.session) {
+        const { error } = await supabase.auth.signInAnonymously();
+        if (error) throw error;
+      }
+      const { data, error } = await supabase.rpc('redeem_child_code', { p_code: code.trim().toUpperCase() });
+      if (error) {
+        await supabase.auth.signOut({ scope: 'local' });
+        throw new Error(error.message.includes('geçersiz') ? 'Bu kod geçersiz ya da süresi dolmuş. Ebeveyninden yeni kod iste.' : error.message);
+      }
+      return data as ChildProfile;
+    } finally {
+      setChildLinking(false);
+    }
+  }, []);
+
   return (
-    <Ctx.Provider value={{ session, loading, recovery, signIn, signUp, resendConfirmation, sendPasswordReset, updatePassword, signOut, signOutLocal }}>
+    <Ctx.Provider value={{ session, loading, recovery, signIn, signUp, resendConfirmation, sendPasswordReset, updatePassword, signOut, signOutLocal, childSignIn, childLinking }}>
       {children}
     </Ctx.Provider>
   );

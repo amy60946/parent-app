@@ -59,7 +59,8 @@
           "microphonePermission": "Sesli mesaj kaydetmek için mikrofona erişim gerekiyor.",
           "enableBackgroundPlayback": false
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "eas": {

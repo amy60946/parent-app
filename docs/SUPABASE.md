@@ -8,6 +8,8 @@ Bu adımlar bir kez yapılır. Menü adları Supabase panelinin güncel sürüm�
 2. `supabase/migrations/20261013000000_init.sql` dosyasının tamamını yapıştır, **Run**.
 3. "Success. No rows returned" görmelisin. Bu adım tabloları, Row Level Security kurallarını, kod/hesap silme fonksiyonlarını, Realtime yayınını ve `mail` Storage kovasını kurar.
 
+4. Ardından **yeni bir sorguda** `supabase/migrations/20261014000000_task_repeat_order.sql` dosyasını yapıştır, **Run**. Bu ek; tekrarlayan görevlerde hafta/ay günü seçimini ve Görevler ekranındaki sürükle-bırak sırasını saklar. Tekrar çalıştırmak zarar vermez.
+
 Kontrol: **Table Editor**'da 9 tablo (profiles, families, children, tasks, task_assignments, completions, messages, saved_templates, invite_codes) ve her birinde "RLS enabled" yazmalı. **Storage**'da `mail` adlı gizli (private) kova olmalı.
 
 ## 2. Anahtarlar
@@ -168,7 +170,7 @@ Kodlar sunucuda üretilir (`create_invite_code`), `invite_codes` tablosunda sakl
 
 - **İkinci ebeveyn**: Aile > + > Ebeveyn > "Davet kodu üret". Diğer ebeveyn kendi hesabıyla Aile > Hesap > **Aileye katıl** bölümüne kodu yazar (`join_family`). Katılan ebeveynin eski ailesinde başka ebeveyn yoksa o aile ve verisi silinir (uygulama önce uyarır).
 - **Çocuk girişi** (çocuk uygulaması için hazır): Aile > çocuğu seç > Genel > "Giriş kodu üret". Aynı çocuk için yeni kod üretilince kullanılmamış eskisi geçersiz olur.
-  Çocuk uygulaması şu iki çağrıyla girer (Anonymous Sign-Ins açık olmalı):
+  Uygulamanın açılış ekranındaki **sihirli kod** alanı bu iki çağrıyı yapar. Bunun için panelde **Authentication > Sign In / Providers > Anonymous Sign-Ins** açık olmalı:
 
   ```ts
   await supabase.auth.signInAnonymously();

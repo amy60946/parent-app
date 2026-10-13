@@ -10,7 +10,7 @@ type Row = Record<string, any>;
 type Err = { message: string; code?: string } | null;
 type Db = { users: Row[]; blobs: Record<string, string>; session: Row | null } & Record<string, any>;
 
-const KEY = 'fidan-onizleme-v1';
+const KEY = 'fidan-onizleme-v2';
 const TABLES = ['profiles', 'families', 'children', 'tasks', 'task_assignments', 'completions', 'messages', 'saved_templates', 'invite_codes'];
 
 const uuid = () =>
@@ -37,7 +37,10 @@ function seed(): Db {
     { id: 'c-arven', family_id: F, name: 'Arven', avatar: 'keçi', gender: 'erkek', birthday: '2020-09-03', user_id: null, created_at: ago(8000) },
   );
   const task = (id: string, title: string, emoji: string, skill: string, start: number, recurring: boolean, reminder: string | null, review: boolean, kids: [string, string, number][]) => {
-    db.tasks.push({ id, family_id: F, title, emoji, skill, description: '', start_date: day(start), recurring, end_date: null, reminder, requires_review: review, created_at: ago(5000 - db.tasks.length) });
+    db.tasks.push({
+      id, family_id: F, title, emoji, skill, description: '', start_date: day(start), recurring, end_date: null, reminder,
+      requires_review: review, created_at: ago(5000 - db.tasks.length), repeat_kind: 'daily', repeat_days: [], sort_order: db.tasks.length,
+    });
     kids.forEach(([child_id, difficulty, coins]) => db.task_assignments.push({ task_id: id, child_id, family_id: F, difficulty, coins }));
   };
   task('k-yatak', 'Yatağını topla', '🛏️', 'Takım Çalışması', -14, true, '08:00', true, [['c-nazli', 'easy', 5], ['c-arven', 'easy', 5]]);
@@ -201,6 +204,13 @@ const auth = {
     save(); emit('SIGNED_IN');
     return { data: { session: db.session, user: db.session.user }, error: null };
   },
+  async signInAnonymously() {
+    const id = uuid();
+    db.users.push({ id, email: '', password: '', anonymous: true });
+    db.session = { user: { id, email: null, is_anonymous: true }, access_token: 'demo' };
+    save(); emit('SIGNED_IN');
+    return { data: { session: db.session }, error: null };
+  },
   async signOut() { db.session = null; save(); emit('SIGNED_OUT'); return { error: null }; },
   async updateUser({ password }: { password?: string }) {
     const u = db.users.find((x) => x.id === db.session?.user.id);
@@ -237,6 +247,16 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
     db.invite_codes.push(row);
     save();
     return { data: [{ code: row.code, expires_at: row.expires_at }], error: null };
+  }
+  if (name === 'redeem_child_code') {
+    const inv = db.invite_codes.find((i: Row) => i.code === String(args.p_code).trim().toUpperCase() && i.kind === 'child');
+    if (!inv || inv.used_at || inv.expires_at < now()) return { data: null, error: { message: 'Kod geçersiz ya da süresi dolmuş' } };
+    const c = db.children.find((x: Row) => x.id === inv.child_id);
+    db.children.forEach((x: Row) => { if (x.user_id === uid) x.user_id = null; });
+    c.user_id = uid;
+    inv.used_at = now(); inv.used_by = uid;
+    save();
+    return { data: { child_id: c.id, family_id: c.family_id, name: c.name, avatar: c.avatar }, error: null };
   }
   if (name === 'join_family') {
     const inv = db.invite_codes.find((i: Row) => i.code === String(args.p_code).trim().toUpperCase() && i.kind === 'parent');

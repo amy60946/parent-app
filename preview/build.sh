@@ -6,7 +6,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="${FIDAN_PREVIEW_WORK:-${TMPDIR:-/tmp}/fidan-preview}"
 
-if [ ! -d "$WORK/node_modules/expo" ]; then
+if [ ! -d "$WORK/node_modules/react-native-draggable-flatlist" ]; then
   echo "› Expo projesi hazırlanıyor ($WORK)"
   rm -rf "$WORK"
   npx --yes create-expo-app@latest "$WORK" --template blank-typescript --no-install >/dev/null
@@ -16,9 +16,10 @@ if [ ! -d "$WORK/node_modules/expo" ]; then
     const w = ["@react-navigation/native","@react-navigation/bottom-tabs","@react-navigation/native-stack",
       "react-native-screens","react-native-safe-area-context","@react-native-community/datetimepicker",
       "expo-clipboard","@expo/vector-icons","@react-native-async-storage/async-storage","react-native-url-polyfill",
-      "expo-linking","expo-image-picker","expo-audio","expo-file-system","react-dom","react-native-web","@expo/metro-runtime"];
+      "expo-linking","expo-image-picker","expo-audio","expo-file-system","react-dom","react-native-web","@expo/metro-runtime",
+      "react-native-gesture-handler","react-native-reanimated","react-native-worklets","react-native-svg"];
     console.log(w.map((x) => x + "@" + (b[x] || "latest")).join(" "))')
-  (cd "$WORK" && npm install $PKGS @supabase/supabase-js >/dev/null)
+  (cd "$WORK" && npm install $PKGS @supabase/supabase-js react-native-draggable-flatlist >/dev/null)
 fi
 
 echo "› Kaynaklar kopyalanıyor"

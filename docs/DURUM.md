@@ -1,7 +1,7 @@
 # Proje durumu ve devam notu
 
 Bu dosya, yeni bir Claude oturumunun kaldığı yerden devam edebilmesi için tutulur.
-Son güncelleme: 13 Ekim 2026.
+Son güncelleme: 13 Ekim 2026 (akşam).
 
 ## Kullanıcı hakkında
 - Yazılımcı değil; platformları ilk kez kullanıyor. Her adımı sade Türkçeyle, tek tek, nereye tıklayacağını söyleyerek anlat.
@@ -28,16 +28,30 @@ Son güncelleme: 13 Ekim 2026.
    https://claude.ai/artifact/QkoAjUUic8zUjtRaBUcyqB (güncellemek için aynı URL'ye yayınla)
 7. Depo derlenebilir Expo projesi: `package.json`, `app.json`, `eas.json`, geçici simge
 
+## Sistem (kullanıcının anlattığı hedef, Joon benzeri)
+- Bu uygulama **ebeveyn paneli**: ebeveyn çocuklara gerçek hayat görevi atar.
+- Çocuk ayrı bir **oyun** tarafında görevleri görür, "tamamladım" işaretler; oyunda coin harcayarak daha zengin içeriğe erişir.
+- Ebeveyn **İnceleme**'de tamamlanan/diğer durumdaki görevleri görüp onaylar → çocuk coin kazanır. (Çocuk tarafı henüz yok; İnceleme bu yüzden boş.)
+- Aile > çocuk > Genel'deki **giriş kodu**, çocuğun oyuna girişi içindir. Ayrıntıları kullanıcıyla birlikte sonra tasarlanacak.
+
 ## Sıradaki adım
-**Expo Go ile telefonda deneme — yayınlandı, kullanıcının telefonda açması bekleniyor.**
+**Kullanıcının telefonda geri bildirimi (14 Ekim turu) uygulandı; Supabase'de 2 ayar bekleniyor:**
+1. SQL Editor'da `supabase/migrations/20261014000000_task_repeat_order.sql` çalıştırılmalı (yoksa yeni görev kaydı hata verir).
+2. Authentication > Sign In / Providers > **Anonymous Sign-Ins** açılmalı (çocuk kodu girişi için).
+
+Bu turda yapılanlar: klavye her alanda yazılanı gösteriyor (alt sayfalar `src/components/Sheet.tsx`, iOS klavye yüksekliği `src/lib/useKeyboardHeight.ts`); tarih seçici iOS'ta açık temada + Vazgeç/Kaydet (karanlık modda boş görünüyordu; datetimepicker sürümü de Expo Go'nunkine eşitlendi); Posta → sohbet (`ChatScreen`); Görev Oluştur filtreleri sabit yükseklikte; tekrarlayan görevde hafta/ay günü seçimi; hatırlatma açıklaması; Görevler'de tamamla yuvarlağı kaldırıldı, sürükle-bırak sıralama + sola kaydırıp silme + düzenleme simgesi (`react-native-draggable-flatlist`, gesture-handler, reanimated); açılış ekranı çocuk için masalsı sihirli kod ekranı, ebeveyn girişi altta küçük bağlantı.
+
+**Expo Go yayını (her değişiklikten sonra):**
 - Expo projesi: https://expo.dev/accounts/amy60946/projects/fidan (ID `dff6d69f-1b4f-4373-93ad-a999cde37ede`)
-- EAS Update `preview` dalına yayınlandı, runtime `exposdk:57.0.0` (Expo Go uyumlu olsun diye `runtimeVersion.policy: sdkVersion`).
+- EAS Update `preview` dalı, runtime `exposdk:57.0.0` (Expo Go uyumlu olsun diye `runtimeVersion.policy: sdkVersion`).
   **TestFlight build'inden önce `appVersion` politikasına geri dön.**
-- Yeniden yayınlama (`.env` yereldir, her yeni oturumda kullanıcının anon anahtarıyla yeniden oluştur):
+- `.env` yereldir; yeni oturumda kullanıcının anon anahtarıyla yeniden oluştur. Yayınlama:
   `set -a && . ./.env && set +a && npx eas-cli update --branch preview --environment preview --message "..." --non-interactive`
   (`--environment` ile .env otomatik okunmuyor; değişkenleri bu yüzden kabuğa yüklüyoruz.)
+- Kullanıcı Expo Go'da açar: Expo Go > son açılanlar > Fidan; ya da expo.dev'deki update sayfasındaki Preview QR kodu.
+- Yeni yerel paket eklenirse yalnızca `npx expo install` ile ekle (Expo Go'daki yerel sürümle aynı olmalı); `npx expo install --check` temiz olmalı.
 - Expo sunucusuna ortam değişkeni yazma (`eas env:create`) bu oturumda izin almadı; TestFlight aşamasında kullanıcı expo.dev'den elle ekleyebilir.
-- Kullanıcı Expo Go'yu indirip `amy60946` ile giriş yapacak; uygulama Expo Go'da Profile/Home > projeler veya expo.dev'deki update sayfasındaki "Preview" QR kodu ile açılır.
+- Web önizlemesi (`bash preview/build.sh`) bu turda güncellendi ama Artifact yeniden yayınlanmadı.
 
 **Apple onayı gelince (TestFlight):**
 1. App Store Connect'te uygulama kaydı (ad: Fidan, kimlik: `com.fidan.ebeveyn`).

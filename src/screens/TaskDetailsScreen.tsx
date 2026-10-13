@@ -5,8 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, Difficulty, difficultyMeta } from '../theme';
 import { Avatar, IconButton, Segmented, Toggle, Label } from '../components/ui';
 import DateField from '../components/DateField';
-import { useStore, Assignment } from '../store';
-import { todayISO } from '../dates';
+import { useStore, Assignment, RepeatKind } from '../store';
+import { DAY_SHORT, fromISO, todayISO } from '../dates';
 
 type Row = { on: boolean; difficulty: Difficulty; coins: string };
 
@@ -35,6 +35,8 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
   });
   const [startDate, setStartDate] = useState<string>(editing?.startDate ?? date ?? todayISO());
   const [recurring, setRecurring] = useState(editing?.recurring ?? false);
+  const [repeatKind, setRepeatKind] = useState<RepeatKind>(editing?.repeatKind ?? 'daily');
+  const [repeatDays, setRepeatDays] = useState<number[]>(editing?.repeatDays ?? []);
   const [endDate, setEndDate] = useState<string | undefined>(editing?.endDate);
   const [reminder, setReminder] = useState<string | undefined>(editing?.reminder);
   const [requiresReview, setRequiresReview] = useState(editing?.requiresReview ?? true);
@@ -43,6 +45,17 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
   const isPast = startDate < todayISO();
   const isCustom = !!custom;
   const canTitle = editing || isCustom;
+
+  // Haftalık/aylık seçilince gün seçili değilse başlangıç tarihinin gününü öner
+  const chooseKind = (k: RepeatKind) => {
+    setRepeatKind(k);
+    const d = fromISO(startDate);
+    if (k === 'weekly') setRepeatDays(repeatKind === 'weekly' && repeatDays.length ? repeatDays : [((d.getDay() + 6) % 7) + 1]);
+    else if (k === 'monthly') setRepeatDays(repeatKind === 'monthly' && repeatDays.length ? repeatDays : [d.getDate()]);
+    else setRepeatDays([]);
+  };
+  const toggleDay = (n: number) =>
+    setRepeatDays((p) => (p.includes(n) ? p.filter((x) => x !== n) : [...p, n].sort((a, b) => a - b)));
 
   const setRow = (id: string, patch: Partial<Row>) => setRows((p) => ({ ...p, [id]: { ...p[id], ...patch } }));
 
@@ -56,13 +69,18 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
       }));
     if (assignments.length === 0) return Alert.alert('En az bir çocuk seçin');
     if (canTitle && !title.trim()) return Alert.alert('Görev adı gerekli');
-    if (endDate && endDate < startDate) return Alert.alert('Bitiş tarihi başlangıçtan önce olamaz');
+    if (recurring && endDate && endDate < startDate) return Alert.alert('Son tarih başlangıçtan önce olamaz');
+    if (recurring && repeatKind !== 'daily' && repeatDays.length === 0) {
+      return Alert.alert(repeatKind === 'weekly' ? 'Haftanın en az bir gününü seç' : 'Ayın en az bir gününü seç');
+    }
 
     const common = {
       description: description.trim(),
       assignments,
       startDate,
       recurring,
+      repeatKind: recurring ? repeatKind : 'daily' as RepeatKind,
+      repeatDays: recurring && repeatKind !== 'daily' ? repeatDays : [],
       endDate: recurring ? endDate : undefined,
       reminder,
       requiresReview,
@@ -114,7 +132,12 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
         </View>
       )}
 
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 140 }} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={{ padding: 20, paddingBottom: 140 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        automaticallyAdjustKeyboardInsets
+      >
         {canTitle ? (
           <>
             <Label>Görev adı</Label>
@@ -181,14 +204,51 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
           onChange={(v) => setRecurring(v === 'repeat')}
         />
         {recurring && (
-          <>
-            <Text style={styles.sub}>Son tarih (boşsa tamamlanana kadar kalır)</Text>
-            <DateField mode="date" value={endDate} onChange={setEndDate} placeholder="gg.aa.yyyy" clearable />
-          </>
+          <View style={styles.repeatBox}>
+            <Segmented
+              options={[{ id: 'daily', label: 'Her gün' }, { id: 'weekly', label: 'Haftalık' }, { id: 'monthly', label: 'Aylık' }]}
+              value={repeatKind}
+              onChange={chooseKind}
+            />
+            {repeatKind === 'weekly' && (
+              <>
+                <Text style={styles.repeatHint}>Hangi günler? (birden fazla seçebilirsin)</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  {DAY_SHORT.map((d, i) => (
+                    <DayDot key={d} label={d} on={repeatDays.includes(i + 1)} onPress={() => toggleDay(i + 1)} size={40} />
+                  ))}
+                </View>
+              </>
+            )}
+            {repeatKind === 'monthly' && (
+              <>
+                <Text style={styles.repeatHint}>Ayın hangi günleri? (birden fazla seçebilirsin)</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                  {Array.from({ length: 31 }, (_, i) => (
+                    <DayDot key={i} label={String(i + 1)} on={repeatDays.includes(i + 1)} onPress={() => toggleDay(i + 1)} size={38} />
+                  ))}
+                </View>
+                {repeatDays.some((x) => x > 28) && (
+                  <Text style={styles.sub}>29, 30 ve 31 olmayan aylarda görev ayın son gününe atanır.</Text>
+                )}
+              </>
+            )}
+            <View style={styles.summary}>
+              <Ionicons name="repeat" size={16} color={colors.navy} />
+              <Text style={{ flex: 1, fontSize: 13, fontWeight: '600', color: colors.navy }}>
+                {repeatSummary(repeatKind, repeatDays)}
+              </Text>
+            </View>
+            <Text style={[styles.sub, { marginTop: 4 }]}>Son tarih (isteğe bağlı · boş bırakırsan sürekli tekrar eder)</Text>
+            <DateField mode="date" value={endDate} onChange={setEndDate} placeholder="Son tarih seç" clearable />
+          </View>
         )}
 
-        <Label>Hatırlatma saati</Label>
-        <DateField mode="time" value={reminder} onChange={setReminder} placeholder="--:--" clearable />
+        <Label>Hatırlatma saati (isteğe bağlı)</Label>
+        <Text style={[styles.sub, { marginTop: -2, marginBottom: 8 }]}>
+          Bir saat seçersen görev günü o saatte çocuğuna hatırlatma gider. Boş bırakırsan hatırlatma gönderilmez.
+        </Text>
+        <DateField mode="time" value={reminder} onChange={setReminder} placeholder="Saat seç (ör. 19:00)" clearable />
 
         <View style={[styles.switchRow, { marginTop: 20 }]}>
           <View style={{ flex: 1 }}>
@@ -224,7 +284,36 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
   );
 }
 
+function DayDot({ label, on, onPress, size }: { label: string; on: boolean; onPress: () => void; size: number }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityLabel={label}
+      accessibilityState={{ selected: on }}
+      style={{
+        width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center',
+        backgroundColor: on ? colors.navy : '#F1F2F6',
+      }}
+    >
+      <Text style={{ fontSize: label.length > 2 ? 11 : 13, fontWeight: '700', color: on ? '#fff' : colors.navy }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function repeatSummary(kind: RepeatKind, days: number[]) {
+  if (kind === 'daily') return 'Her gün tekrar eder';
+  if (!days.length) return 'Gün seçilmedi';
+  if (kind === 'weekly') {
+    if (days.length === 7) return 'Haftada 7 gün (her gün)';
+    return `Haftada ${days.length} gün: ${days.map((d) => DAY_SHORT[d - 1]).join(', ')}`;
+  }
+  return `Ayda ${days.length} kez: her ayın ${days.join(', ')}. günü`;
+}
+
 const styles = StyleSheet.create({
+  repeatBox: { backgroundColor: '#fff', borderRadius: radius.md, padding: 14, marginTop: 10, gap: 10 },
+  repeatHint: { fontSize: 12, color: colors.muted },
+  summary: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.today, borderRadius: radius.sm, padding: 10 },
   safe: { flex: 1, backgroundColor: colors.bg },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 4 },
   topTitle: { fontSize: 16, fontWeight: '700', color: colors.navy },

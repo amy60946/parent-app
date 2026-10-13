@@ -1,3 +1,4 @@
+import 'react-native-gesture-handler';
 import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -6,6 +7,7 @@ import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { StoreProvider, useStore } from './src/store';
 import { AuthProvider, useAuth } from './src/lib/auth';
@@ -16,7 +18,10 @@ import ProgressScreen from './src/screens/ProgressScreen';
 import FamilyScreen from './src/screens/FamilyScreen';
 import CreateTaskScreen from './src/screens/CreateTaskScreen';
 import TaskDetailsScreen from './src/screens/TaskDetailsScreen';
-import { LoginScreen, SignUpScreen, ForgotPasswordScreen, NewPasswordScreen } from './src/screens/AuthScreens';
+import ChatScreen from './src/screens/ChatScreen';
+import {
+  LoginScreen, SignUpScreen, ForgotPasswordScreen, NewPasswordScreen, ChildCodeScreen, ChildHomeScreen,
+} from './src/screens/AuthScreens';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -75,6 +80,7 @@ function Main() {
       <Stack.Screen name="Tabs" component={Tabs} />
       <Stack.Screen name="CreateTask" component={CreateTaskScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="TaskDetails" component={TaskDetailsScreen} options={{ presentation: 'modal' }} />
+      <Stack.Screen name="Chat" component={ChatScreen} />
     </Stack.Navigator>
   );
 }
@@ -82,9 +88,9 @@ function Main() {
 function AuthFlow() {
   return (
     <NavigationContainer theme={navTheme}>
-      <StatusBar style="dark" />
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="ChildCode" component={ChildCodeScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="Forgot" component={ForgotPasswordScreen} />
       </Stack.Navigator>
@@ -93,8 +99,10 @@ function AuthFlow() {
 }
 
 function Root() {
-  const { session, loading, recovery } = useAuth();
+  const { session, loading, recovery, childLinking } = useAuth();
   if (loading) return <Loading />;
+  // Çocuk oturumu (giriş koduyla açılan anonim oturum) ebeveyn paneline giremez
+  if (session?.user.is_anonymous) return childLinking ? <Loading /> : <ChildHomeScreen />;
   if (recovery && session) return <NewPasswordScreen />;
   if (!session) return <AuthFlow />;
   return (
@@ -109,10 +117,12 @@ function Root() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <Root />
-      </AuthProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <Root />
+        </AuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

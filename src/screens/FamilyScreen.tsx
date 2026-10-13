@@ -1,23 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  View, Text, TextInput, Pressable, ScrollView, Modal, Share, Alert, StyleSheet, KeyboardAvoidingView, Platform,
-  ActivityIndicator, Image,
-} from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import {
-  useAudioRecorder, useAudioRecorderState, useAudioPlayer, useAudioPlayerStatus, RecordingPresets,
-  requestRecordingPermissionsAsync, setAudioModeAsync,
-} from 'expo-audio';
+import React, { useState } from 'react';
+import { View, Text, TextInput, Pressable, ScrollView, Share, Alert, StyleSheet, ActivityIndicator } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { colors, radius } from '../theme';
 import { Avatar, IconButton, Segmented, Card } from '../components/ui';
 import DateField from '../components/DateField';
+import Sheet from '../components/Sheet';
+import { messagePreview } from './ChatScreen';
 import { childAvatars, parentAvatars } from '../data/avatars';
-import { useStore, Message } from '../store';
+import { useStore } from '../store';
 import { useAuth } from '../lib/auth';
-import { formatTR } from '../dates';
+import { formatTR, toISO, todayISO } from '../dates';
 
 type Tab = 'general' | 'mail' | 'account';
 const soon = () => Alert.alert('Yakında', 'Bu özellik sonraki sürümde.');
@@ -82,7 +77,12 @@ function Person({ label, avatar, active, onPress }: { label: string; avatar: str
 function MyProfile() {
   const { parent, updateParent } = useStore();
   return (
-    <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 40 }}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
+      automaticallyAdjustKeyboardInsets
+    >
       <Text style={styles.h}>Profilim</Text>
       <Card style={{ gap: 14 }}>
         <Text style={styles.cap}>Avatar</Text>
@@ -160,183 +160,65 @@ function CodeBox({ code, shareText }: { code: string; shareText: string }) {
   );
 }
 
-function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function Field({ label, value, onChange, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string;
+}) {
   return (
     <View>
       <Text style={styles.cap}>{label}</Text>
-      <TextInput value={value} onChangeText={onChange} style={styles.input} placeholderTextColor={colors.muted} />
+      <TextInput value={value} onChangeText={onChange} placeholder={placeholder} style={styles.input} placeholderTextColor={colors.muted} />
     </View>
   );
 }
 
-/* ---------- Posta ---------- */
+/* ---------- Posta: sohbet listesi ---------- */
 
-const mmss = (ms: number) => {
-  const t = Math.max(0, Math.round(ms / 1000));
-  return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+const listTime = (iso: string) => {
+  const d = new Date(iso);
+  return toISO(d) === todayISO()
+    ? d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
 };
 
 function Mail() {
-  const { children, messages, sendMessage, sendPhoto, sendVoice } = useStore();
-  const [to, setTo] = useState(children[0]?.id);
-  const [text, setText] = useState('');
-  const [viewer, setViewer] = useState<string | null>(null);
-  const [recording, setRecording] = useState(false);
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const recState = useAudioRecorderState(recorder, 250);
-  const listRef = useRef<ScrollView>(null);
-  const thread = messages.filter((m) => m.childId === to);
-  const target = children.find((c) => c.id === to);
-
-  useEffect(() => {
-    if (!to && children[0]) setTo(children[0].id);
-  }, [children, to]);
-
-  const pickPhoto = async () => {
-    if (!to) return;
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
-    if (r.canceled || !r.assets?.[0]) return;
-    sendPhoto(to, r.assets[0].uri, r.assets[0].mimeType);
-  };
-
-  const startRecording = async () => {
-    if (!to) return;
-    const perm = await requestRecordingPermissionsAsync();
-    if (!perm.granted) return Alert.alert('Mikrofon izni gerekli', 'Sesli mesaj için Ayarlar\'dan Fidan\'a mikrofon izni ver.');
-    try {
-      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-      await recorder.prepareToRecordAsync();
-      recorder.record();
-      setRecording(true);
-    } catch (e) {
-      Alert.alert('Kayıt başlatılamadı', (e as Error).message);
-    }
-  };
-
-  const stopRecording = async (send: boolean) => {
-    const duration = recorder.getStatus().durationMillis;
-    setRecording(false);
-    try {
-      await recorder.stop();
-    } finally {
-      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
-    }
-    const uri = recorder.uri;
-    if (send && to && uri && duration >= 700) sendVoice(to, uri, duration);
-  };
-
-  return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={{ padding: 20, gap: 12, flex: 1 }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ gap: 8 }}>
-          {children.map((c) => (
-            <Pressable key={c.id} onPress={() => setTo(c.id)} style={[styles.rcpt, to === c.id && { backgroundColor: colors.navy }]}>
-              <Avatar id={c.avatar} size={22} />
-              <Text style={{ fontSize: 13, fontWeight: '600', color: to === c.id ? '#fff' : colors.navy }}>{c.name}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-
-        <ScrollView
-          ref={listRef}
-          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
-          style={{ flex: 1, backgroundColor: '#fff', borderRadius: radius.lg }}
-          contentContainerStyle={{ padding: 14, gap: 8 }}
-        >
-          {thread.map((m) => <Bubble key={m.id} m={m} onImage={setViewer} />)}
-        </ScrollView>
-
-        {recording ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <IconButton name="trash-outline" label="Kaydı sil" color={colors.danger} onPress={() => stopRecording(false)} />
-            <View style={[styles.input, styles.recPill]}>
-              <View style={styles.recDot} />
-              <Text style={{ fontSize: 15, color: colors.navy, fontVariant: ['tabular-nums'] }}>{mmss(recState.durationMillis)}</Text>
-            </View>
-            <Pressable accessibilityLabel="Sesli mesajı gönder" onPress={() => stopRecording(true)} style={[styles.send, { backgroundColor: colors.navy }]}>
-              <Ionicons name="paper-plane-outline" size={18} color="#fff" />
-            </Pressable>
-          </View>
-        ) : (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <IconButton name="image-outline" label="Fotoğraf" onPress={pickPhoto} />
-            <IconButton name="mic-outline" label="Sesli mesaj" onPress={startRecording} />
-            <TextInput
-              value={text} onChangeText={setText} placeholder={`${target?.name ?? ''} için mesaj yaz`}
-              placeholderTextColor={colors.muted} style={[styles.input, { flex: 1, minWidth: 0, borderRadius: 24, height: 44, paddingVertical: 0 }]}
-            />
-            <Pressable
-              accessibilityLabel="Gönder"
-              onPress={() => { if (to && text.trim()) { sendMessage(to, text.trim()); setText(''); } }}
-              style={[styles.send, { backgroundColor: text.trim() ? colors.navy : '#A9AEBB' }]}
-            >
-              <Ionicons name="paper-plane-outline" size={18} color="#fff" />
-            </Pressable>
-          </View>
-        )}
-      </View>
-
-      <Modal visible={!!viewer} transparent animationType="fade" onRequestClose={() => setViewer(null)}>
-        <View style={styles.viewer}>
-          {viewer && <Image source={{ uri: viewer }} style={{ width: '100%', height: '80%' }} resizeMode="contain" />}
-          <IconButton name="close" label="Kapat" onPress={() => setViewer(null)} style={{ position: 'absolute', top: 56, right: 20 }} />
-        </View>
-      </Modal>
-    </KeyboardAvoidingView>
-  );
-}
-
-function Bubble({ m, onImage }: { m: Message; onImage: (uri: string) => void }) {
-  const mine = m.sender === 'parent';
-  const fg = mine ? '#fff' : colors.navy;
-  return (
-    <View style={[styles.bubble, !mine && styles.bubbleIn, m.kind === 'image' && { padding: 4 }]}>
-      {m.kind === 'image' ? (
-        <Pressable onPress={() => m.mediaUrl && onImage(m.mediaUrl)} accessibilityLabel="Fotoğrafı aç">
-          <Image source={m.mediaUrl ? { uri: m.mediaUrl } : undefined} style={styles.photo} resizeMode="cover" />
-        </Pressable>
-      ) : m.kind === 'audio' ? (
-        <Voice uri={m.mediaUrl} durationMs={m.durationMs} color={fg} />
-      ) : (
-        <Text style={{ color: fg, fontSize: 15 }}>{m.text}</Text>
-      )}
-      <Text style={{ color: mine ? '#AEB6D1' : colors.muted, fontSize: 10, marginTop: 2, marginHorizontal: m.kind === 'image' ? 8 : 0 }}>
-        {new Date(m.at).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+  const { children, messages } = useStore();
+  const navigation = useNavigation<any>();
+  if (!children.length) {
+    return (
+      <Text style={{ color: colors.muted, textAlign: 'center', marginTop: 40, paddingHorizontal: 32 }}>
+        Mesajlaşmak için önce sağ üstteki + ile bir çocuk ekle.
       </Text>
-    </View>
-  );
-}
-
-function Voice({ uri, durationMs, color }: { uri?: string; durationMs?: number; color: string }) {
-  const player = useAudioPlayer(uri ? { uri } : null);
-  const status = useAudioPlayerStatus(player);
-
-  useEffect(() => {
-    if (status.didJustFinish) {
-      player.pause();
-      player.seekTo(0);
-    }
-  }, [status.didJustFinish, player]);
-
-  const total = status.duration > 0 ? status.duration * 1000 : durationMs ?? 0;
-  const pos = status.currentTime * 1000;
-  const progress = total > 0 ? Math.min(1, pos / total) : 0;
-  const toggle = async () => {
-    if (status.playing) return player.pause();
-    await setAudioModeAsync({ playsInSilentMode: true });
-    player.play();
-  };
-
+    );
+  }
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: 180 }}>
-      <Pressable onPress={toggle} hitSlop={8} accessibilityLabel={status.playing ? 'Duraklat' : 'Oynat'}>
-        <Ionicons name={status.playing ? 'pause' : 'play'} size={20} color={color} />
-      </Pressable>
-      <View style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: color, opacity: 0.3 }}>
-        <View style={{ width: `${progress * 100}%`, height: 3, borderRadius: 2, backgroundColor: color }} />
-      </View>
-      <Text style={{ fontSize: 11, color, fontVariant: ['tabular-nums'] }}>{mmss(status.playing || pos > 0 ? pos : total)}</Text>
-    </View>
+    <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+      <Card style={{ padding: 0 }}>
+        {children.map((c, i) => {
+          const thread = messages.filter((m) => m.childId === c.id);
+          const last = thread[thread.length - 1];
+          return (
+            <Pressable
+              key={c.id}
+              onPress={() => navigation.navigate('Chat', { childId: c.id })}
+              style={[styles.convRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line }]}
+              accessibilityLabel={`${c.name} ile sohbet`}
+            >
+              <Avatar id={c.avatar} size={48} />
+              <View style={{ flex: 1, gap: 3 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', color: colors.navy }}>{c.name}</Text>
+                  {last && <Text style={styles.cap}>{listTime(last.at)}</Text>}
+                </View>
+                <Text numberOfLines={1} style={{ fontSize: 13, color: colors.muted }}>
+                  {last ? `${last.sender === 'parent' ? 'Sen: ' : ''}${messagePreview(last)}` : 'Sohbeti başlatmak için dokun'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.faint} />
+            </Pressable>
+          );
+        })}
+      </Card>
+    </ScrollView>
   );
 }
 
@@ -381,27 +263,6 @@ function Account({ onLogout }: { onLogout?: () => void }) {
       <ManageSheet visible={open === 'manage'} onClose={() => setOpen(null)} />
       <JoinSheet visible={open === 'join'} onClose={() => setOpen(null)} />
     </ScrollView>
-  );
-}
-
-/* ---------- Alttan açılan sayfa ---------- */
-
-function Sheet({ visible, title, onClose, children }: {
-  visible: boolean; title: string; onClose: () => void; children: React.ReactNode;
-}) {
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={{ flex: 1, backgroundColor: 'rgba(15,27,61,0.35)' }} onPress={onClose} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.sheet}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <Text style={styles.h}>{title}</Text>
-            <IconButton name="close" label="Kapat" onPress={onClose} style={{ backgroundColor: '#F1F2F6' }} />
-          </View>
-          {children}
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
   );
 }
 
@@ -536,63 +397,63 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
-      <Pressable style={{ flex: 1, backgroundColor: 'rgba(15,27,61,0.35)' }} onPress={close} />
-      <View style={styles.sheet}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <Text style={styles.h}>Ekle</Text>
-          <IconButton name="close" label="Kapat" onPress={close} style={{ backgroundColor: '#F1F2F6' }} />
-        </View>
-        <Segmented options={[{ id: 'child', label: 'Çocuk' }, { id: 'parent', label: 'Ebeveyn' }]} value={kind} onChange={(k) => { setKind(k); setCode(undefined); }} />
-
-        <ScrollView style={{ maxHeight: 460 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingTop: 16, gap: 14 }}>
-          {kind === 'child' ? (
-            <>
-              <Text style={styles.cap}>Avatar</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                {childAvatars.map((a) => (
-                  <Pressable key={a.id} onPress={() => setAvatar(a.id)} accessibilityLabel={a.name}>
-                    <Avatar id={a.id} size={48} ring={avatar === a.id} />
-                  </Pressable>
-                ))}
-              </View>
-              <Field label="İsim" value={name} onChange={setName} />
-              <View>
-                <Text style={[styles.cap, { marginBottom: 6 }]}>Cinsiyet</Text>
-                <Segmented options={[{ id: 'kız', label: 'Kız' }, { id: 'erkek', label: 'Erkek' }]} value={gender} onChange={setGender} />
-              </View>
-              <View>
-                <Text style={[styles.cap, { marginBottom: 6 }]}>Doğum günü</Text>
-                <DateField mode="date" value={birthday} onChange={setBirthday} placeholder="Tarih seç" clearable />
-              </View>
-              <Pressable style={styles.cta} onPress={save}><Text style={styles.ctaText}>Çocuğu ekle</Text></Pressable>
-            </>
+    <Sheet
+      visible={visible}
+      title="Ekle"
+      onClose={close}
+      header={
+        <Segmented
+          options={[{ id: 'child', label: 'Çocuk' }, { id: 'parent', label: 'Ebeveyn' }]}
+          value={kind}
+          onChange={(k) => { setKind(k); setCode(undefined); }}
+        />
+      }
+    >
+      {kind === 'child' ? (
+        <>
+          <Text style={styles.cap}>Avatar</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+            {childAvatars.map((a) => (
+              <Pressable key={a.id} onPress={() => setAvatar(a.id)} accessibilityLabel={a.name}>
+                <Avatar id={a.id} size={48} ring={avatar === a.id} />
+              </Pressable>
+            ))}
+          </View>
+          <Field label="İsim" value={name} onChange={setName} placeholder="Çocuğunun adı" />
+          <View>
+            <Text style={[styles.cap, { marginBottom: 6 }]}>Cinsiyet</Text>
+            <Segmented options={[{ id: 'kız', label: 'Kız' }, { id: 'erkek', label: 'Erkek' }]} value={gender} onChange={setGender} />
+          </View>
+          <View>
+            <Text style={[styles.cap, { marginBottom: 6 }]}>Doğum günü (isteğe bağlı)</Text>
+            <DateField mode="date" value={birthday} onChange={setBirthday} placeholder="Tarih seç" clearable maximumDate={new Date()} />
+          </View>
+          <Pressable style={styles.cta} onPress={save}><Text style={styles.ctaText}>Çocuğu ekle</Text></Pressable>
+        </>
+      ) : (
+        <>
+          <Text style={{ fontSize: 13, color: colors.muted }}>
+            Her yeni ebeveyn için size özel bir kod üretilir. Diğer ebeveyn bu kodla aileye katılır.
+          </Text>
+          {code ? (
+            <CodeBox code={code} shareText={`Fidan'a katılmak için davet kodun: ${code}\nUygulamada Aile > Hesap > Aileye katıl bölümüne yaz.`} />
           ) : (
-            <>
-              <Text style={{ fontSize: 13, color: colors.muted }}>
-                Her yeni ebeveyn için size özel bir kod üretilir. Diğer ebeveyn bu kodla aileye katılır.
-              </Text>
-              {code ? (
-                <CodeBox code={code} shareText={`Fidan'a katılmak için davet kodun: ${code}\nUygulamada Aile > Hesap > Aileye katıl bölümüne yaz.`} />
-              ) : (
-                <Pressable
-                  style={[styles.cta, busy && { opacity: 0.6 }]}
-                  disabled={busy}
-                  onPress={async () => {
-                    setBusy(true);
-                    try { setCode(await createInviteCode()); }
-                    catch (e) { Alert.alert('Kod üretilemedi', (e as Error).message); }
-                    finally { setBusy(false); }
-                  }}
-                >
-                  <Text style={styles.ctaText}>Davet kodu üret</Text>
-                </Pressable>
-              )}
-            </>
+            <Pressable
+              style={[styles.cta, busy && { opacity: 0.6 }]}
+              disabled={busy}
+              onPress={async () => {
+                setBusy(true);
+                try { setCode(await createInviteCode()); }
+                catch (e) { Alert.alert('Kod üretilemedi', (e as Error).message); }
+                finally { setBusy(false); }
+              }}
+            >
+              <Text style={styles.ctaText}>Davet kodu üret</Text>
+            </Pressable>
           )}
-        </ScrollView>
-      </View>
-    </Modal>
+        </>
+      )}
+    </Sheet>
   );
 }
 
@@ -604,17 +465,9 @@ const styles = StyleSheet.create({
   h: { fontSize: 16, fontWeight: '700', color: colors.navy },
   cap: { fontSize: 12, color: colors.muted },
   input: { backgroundColor: '#F3F4F8', borderRadius: radius.sm, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colors.navy, marginTop: 4 },
-  rcpt: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: '#fff' },
-  bubble: { alignSelf: 'flex-end', backgroundColor: colors.navy, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10, maxWidth: '80%' },
-  bubbleIn: { alignSelf: 'flex-start', backgroundColor: '#F1F2F6' },
-  photo: { width: 200, height: 200, borderRadius: 12, backgroundColor: colors.navySoft },
-  viewer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
-  recPill: { flex: 1, borderRadius: 24, height: 44, paddingVertical: 0, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  recDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.danger },
-  send: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  convRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 14 },
   accRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 16 },
   logout: { height: 50, borderRadius: radius.md, borderWidth: 1, borderColor: colors.danger, alignItems: 'center', justifyContent: 'center' },
-  sheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 34 },
   cta: { height: 52, borderRadius: radius.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
   ctaText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   codeBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#F3F4F8', borderRadius: radius.md, padding: 14 },

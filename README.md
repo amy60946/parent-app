@@ -5,7 +5,8 @@
 Depo, doğrudan çalışan bir Expo projesidir (Expo SDK 57). Uygulama adı **Fidan**, uygulama kimliği `com.fidan.ebeveyn`, Expo hesabı `amy60946`.
 
 1. Supabase'i bağla (bir kez):
-   - Panelde **SQL Editor > New query**: `supabase/migrations/20261013000000_init.sql` dosyasının tamamını yapıştır, **Run**.
+   - Panelde **SQL Editor > New query**: `supabase/migrations/` altındaki dosyaları sırayla (önce `20261013000000_init.sql`, sonra `20261014000000_task_repeat_order.sql`) yapıştır, **Run**.
+   - Çocuk girişi için **Authentication > Sign In / Providers > Anonymous Sign-Ins** açık olmalı.
    - E-posta, yönlendirme adresleri ve Türkçe e-posta şablonları: **[docs/SUPABASE.md](docs/SUPABASE.md)**.
 2. `.env.example` dosyasını `.env` adıyla kopyala; Supabase proje adresini ve *publishable* (anon) anahtarı yaz. `.env` git'e eklenmez; `service_role`/secret anahtar uygulamaya asla yazılmaz. Expo'nun bulutta derlediği sürümler için aynı iki değer expo.dev'deki proje ayarlarına (Environment variables) girilir.
 3. Bilgisayarda çalıştırmak için (Node.js gerekir):
@@ -25,15 +26,16 @@ npx expo start
 
 ## Neler var
 
-- **Görevler**: Tek sayfada kaydırmalı haftalık takvim (ay/yıl başlıkta, bugün hafif renkli, seçili gün lacivert), çocuğa göre filtre, tamamlananlar ayrı ve soluk, sağ altta büyük + butonu. Satıra dokununca düzenleme açılır. Silme yalnızca düzenleme ekranının en altında ve onay ister (yanlışlıkla silinmez).
-- **Tekrarlayan görev**: Tek kayıt tutulur; bir kez düzenlemek tüm günlere yansır.
-- **Görev Oluştur**: Arama, kategori filtreleri, Kaydedilenler, çoklu seçim, "kaç ebeveyn kullandı" bilgisi (lacivert), kolay/orta/zor ve beceri etiketi, "Aradığını bulamadın mı?" + büyük "+" ile yeni görev.
+- **Görevler**: Ebeveyn paneli; kaydırmalı haftalık takvim, çocuğa göre filtre, sağ altta büyük + butonu. Görevi ebeveyn tamamlamaz (çocuk uygulaması işaretler, ebeveyn İnceleme'den onaylar); satırda yalnızca durum etiketi görünür (Onay bekliyor / Tamamlandı). Satıra ya da kalem simgesine dokununca düzenleme açılır; basılı tutup sürükleyerek sıralanır (sol tutamaç); sola kaydırınca Sil çıkar (onay ister).
+- **Tekrarlayan görev**: Tek kayıt tutulur; bir kez düzenlemek tüm günlere yansır. Her gün / haftanın seçilen günleri (haftada kaç gün) / ayın seçilen günleri (ayda kaç kez).
+- **Görev Oluştur**: Arama, sabit yükseklikte yatay kaydırılan filtreler (Tümü, Kaydedilenler + sayısı, kategoriler), çoklu seçim, "kaç ebeveyn kullandı" bilgisi, kolay/orta/zor ve beceri etiketi, "Aradığını bulamadın mı?" + büyük "+" ile yeni görev.
 - **Görev ayrıntıları**: Çocuk başına zorluk ve coin, başlangıç tarihi, tek seferlik/tekrarlayan, hatırlatma, inceleme, özel görevi şablon olarak kaydetme. Geçmiş güne atamada uyarı çıkar ve görev o günde görünür.
-- **Aile**: Ben + çocuk avatarları, lacivert + butonu aynı hizada; Genel / Posta / Hesap; alttan açılan tek "Ekle" sayfası (çocuk: avatar, isim, cinsiyet, doğum günü; ebeveyn: benzersiz davet kodu, kopyala ve paylaş simgeleri); Profilim düzenleme; Posta; Hesap listesi ve Çıkış Yap.
+- **Aile**: Ben + çocuk avatarları, lacivert + butonu; Genel / Posta / Hesap; alttan açılan "Ekle" sayfası klavye açılınca yukarı kayar (çocuk: avatar, isim, cinsiyet, doğum günü; ebeveyn: davet kodu); Profilim düzenleme; Hesap listesi ve Çıkış Yap.
 - **Gelişim** ve **İnceleme** (onayla/reddet).
+- **Giriş**: Açılış ekranı çocuk içindir: masalsı tam ekran sahne (vektör çizim, `src/components/FairyScene.tsx`) ve yalnızca 6 haneli sihirli kod alanı. Altındaki küçük "Ebeveyn olarak giriş yap" bağlantısı e-posta/şifre ekranını açar. Çocuk koduyla girince şimdilik "oyun yakında" ekranı görünür.
 - **Hesap**: Kayıt ol, giriş yap, şifremi unuttum (e-postadaki bağlantı uygulamayı açar, yeni şifre belirlenir), Çıkış Yap, Hesabı yönet > Hesabı sil.
 - **Kodlar**: İkinci ebeveyn davet kodu (Aile > Hesap > Aileye katıl) ve çocuk giriş kodu (çocuğun Genel sekmesi); tek kullanımlık, 24 saat geçerli.
-- **Posta**: Yazı, fotoğraf ve sesli mesaj; Realtime ile anında gelir.
+- **Posta**: Çocuk listesi (son mesaj önizlemesi) → tam ekran sohbet; gün ayraçları, saatli baloncuklar, klavyenin üstünde kalan yazı alanı. Yazı, fotoğraf ve sesli mesaj; Realtime ile anında gelir.
 - **Avatarlar**: Çizim görseller için hazır (`assets/avatars/README.md`); görsel eklenene kadar emoji görünür.
 
 ## Sıradaki adımlar

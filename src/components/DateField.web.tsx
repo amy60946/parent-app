@@ -10,9 +10,11 @@ type Props = {
   onChange: (v: string | undefined) => void;
   placeholder: string;
   clearable?: boolean;
+  maximumDate?: Date;
 };
 
-export default function DateField({ mode, value, onChange, clearable }: Props) {
+export default function DateField({ mode, value, onChange, clearable, maximumDate }: Props) {
+  const max = maximumDate ? maximumDate.toISOString().slice(0, 10) : undefined;
   return (
     <View style={{
       backgroundColor: '#fff', borderRadius: radius.md, paddingHorizontal: 14, minHeight: 48,
@@ -21,6 +23,7 @@ export default function DateField({ mode, value, onChange, clearable }: Props) {
       {React.createElement('input', {
         type: mode,
         lang: 'tr',
+        max: mode === 'date' ? max : undefined,
         value: value ?? '',
         onChange: (e: { target: { value: string } }) => onChange(e.target.value || undefined),
         style: {

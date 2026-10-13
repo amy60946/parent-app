@@ -27,11 +27,16 @@ export type Task = {
   description: string;
   assignments: Assignment[];
   startDate: string;
-  recurring: boolean; // true: her gün tekrar eder
+  recurring: boolean;
+  repeatKind: RepeatKind; // recurring ise: her gün / haftanın günleri / ayın günleri
+  repeatDays: number[]; // weekly: 1 = Pzt … 7 = Paz, monthly: 1 … 31
   endDate?: string;
   reminder?: string; // HH:MM
   requiresReview: boolean;
+  sortOrder: number; // Görevler ekranındaki sıra (küçük olan üstte)
 };
+
+export type RepeatKind = 'daily' | 'weekly' | 'monthly';
 
 export type CompletionStatus = 'pending' | 'approved';
 // anahtar: `${taskId}|${childId}|${date}`
@@ -67,7 +72,8 @@ type Store = {
   inviteCodes: InviteCode[];
   addChild: (c: Omit<Child, 'id'>) => void;
   updateParent: (p: Partial<Parent>) => void;
-  addTasks: (t: Omit<Task, 'id'>[]) => void;
+  addTasks: (t: Omit<Task, 'id' | 'sortOrder'>[]) => void;
+  reorderTasks: (orderedIds: string[]) => void; // verilen görevleri bu sırayla diz
   updateTask: (id: string, patch: Partial<Task>) => void; // tekrarlayan görevde tek kayıt => tüm günlere yansır
   deleteTask: (id: string) => void;
   toggleCompletion: (task: Task, childId: string, date: string) => void;
@@ -94,7 +100,20 @@ export const completionKey = (taskId: string, childId: string, date: string) =>
 export const taskOccursOn = (task: Task, date: string) => {
   if (date < task.startDate) return false;
   if (!task.recurring) return date === task.startDate;
-  return !task.endDate || date <= task.endDate;
+  if (task.endDate && date > task.endDate) return false;
+  const d = fromISO(date);
+  if (task.repeatKind === 'weekly') {
+    const dow = ((d.getDay() + 6) % 7) + 1; // 1 = Pzt … 7 = Paz
+    const days = task.repeatDays.length ? task.repeatDays : [((fromISO(task.startDate).getDay() + 6) % 7) + 1];
+    return days.includes(dow);
+  }
+  if (task.repeatKind === 'monthly') {
+    const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const days = task.repeatDays.length ? task.repeatDays : [fromISO(task.startDate).getDate()];
+    // Ayda olmayan günler (ör. 31) ayın son gününe düşer
+    return days.some((x) => Math.min(x, last) === d.getDate());
+  }
+  return true;
 };
 
 /* ---------- Veritabanı satırı <-> uygulama nesnesi ---------- */
@@ -120,10 +139,15 @@ const toTask = (r: Row): Task => ({
   })),
   startDate: r.start_date,
   recurring: r.recurring,
+  repeatKind: r.repeat_kind ?? 'daily',
+  repeatDays: r.repeat_days ?? [],
   endDate: r.end_date ?? undefined,
   reminder: r.reminder ?? undefined,
   requiresReview: r.requires_review,
+  sortOrder: r.sort_order ?? new Date(r.created_at).getTime() / 1000,
 });
+
+const bySortOrder = (a: Task, b: Task) => a.sortOrder - b.sortOrder;
 
 const taskRow = (t: Partial<Task>) => {
   const r: Row = {};
@@ -133,6 +157,9 @@ const taskRow = (t: Partial<Task>) => {
   if (t.description !== undefined) r.description = t.description;
   if (t.startDate !== undefined) r.start_date = t.startDate;
   if (t.recurring !== undefined) r.recurring = t.recurring;
+  if (t.repeatKind !== undefined) r.repeat_kind = t.repeatKind;
+  if (t.repeatDays !== undefined) r.repeat_days = t.repeatDays;
+  if (t.sortOrder !== undefined) r.sort_order = t.sortOrder;
   if ('endDate' in t) r.end_date = t.endDate ?? null;
   if ('reminder' in t) r.reminder = t.reminder ?? null;
   if (t.requiresReview !== undefined) r.requires_review = t.requiresReview;
@@ -186,6 +213,8 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   const fid = useRef<string | null>(null);
   const completionsRef = useRef<Completions>({});
   completionsRef.current = completions;
+  const tasksRef = useRef<Task[]>([]);
+  tasksRef.current = tasks;
   const messagesRef = useRef<Message[]>([]);
   messagesRef.current = messages;
   const sendingIds = useRef(new Set<string>()); // yüklenmekte olan medya mesajları
@@ -203,7 +232,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
       .select('*, task_assignments(child_id, difficulty, coins)')
       .eq('family_id', f)
       .order('created_at');
-    if (!error && data) setTasks(data.map(toTask));
+    if (!error && data) setTasks(data.map(toTask).sort(bySortOrder));
   }, []);
 
   const loadCompletions = useCallback(async (f: string) => {
@@ -355,10 +384,11 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     }, 600);
   }, [userId, run]);
 
-  const addTasks = useCallback((list: Omit<Task, 'id'>[]) => {
+  const addTasks = useCallback((list: Omit<Task, 'id' | 'sortOrder'>[]) => {
     const f = fid.current;
     if (!f) return;
-    const created: Task[] = list.map((x) => ({ ...x, id: uuid() }));
+    const now = Date.now() / 1000;
+    const created: Task[] = list.map((x, i) => ({ ...x, id: uuid(), sortOrder: now + i / 1000 }));
     setTasks((p) => [...p, ...created]);
     run(async () => {
       const ins = await supabase.from('tasks').insert(
@@ -388,6 +418,30 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
         return supabase.from('task_assignments').upsert(assignmentRows(f, id, patch.assignments));
       }
       return { error: null };
+    });
+  }, [run]);
+
+  // Sürükle-bırak: bu görevlerin mevcut sıra değerleri yeni sıraya göre yeniden dağıtılır;
+  // listede olmayan (başka günlerdeki) görevlerin yeri değişmez.
+  const reorderTasks = useCallback((orderedIds: string[]) => {
+    const current = tasksRef.current;
+    const slots = orderedIds
+      .map((id) => current.find((t) => t.id === id)?.sortOrder)
+      .filter((x): x is number => x !== undefined)
+      .sort((a, b) => a - b);
+    if (slots.length !== orderedIds.length) return;
+    // Aynı değer varsa ayır
+    for (let i = 1; i < slots.length; i++) if (slots[i] <= slots[i - 1]) slots[i] = slots[i - 1] + 0.001;
+    const next: Record<string, number> = {};
+    orderedIds.forEach((id, i) => { next[id] = slots[i]; });
+    const changed = orderedIds.filter((id) => current.find((t) => t.id === id)!.sortOrder !== next[id]);
+    if (!changed.length) return;
+    setTasks((p) => p.map((t) => (t.id in next ? { ...t, sortOrder: next[t.id] } : t)).sort(bySortOrder));
+    run(async () => {
+      const results = await Promise.all(
+        changed.map((id) => supabase.from('tasks').update({ sort_order: next[id] }).eq('id', id)),
+      );
+      return results.find((r) => r.error) ?? { error: null };
     });
   }, [run]);
 
@@ -594,7 +648,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   const value: Store = {
     ready, familyId,
     parent, children, tasks, completions, messages, savedIds, customTemplates, inviteCodes,
-    addChild, updateParent, addTasks, updateTask, deleteTask, toggleCompletion, review,
+    addChild, updateParent, addTasks, reorderTasks, updateTask, deleteTask, toggleCompletion, review,
     toggleSaved, addCustomTemplate, allTemplates, sendMessage, sendPhoto, sendVoice, createInviteCode, createChildCode, joinFamily, refresh,
     isOnlyParent, deleteAccount,
   };
