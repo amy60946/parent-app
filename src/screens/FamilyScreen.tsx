@@ -263,7 +263,7 @@ function Mail() {
             <IconButton name="mic-outline" label="Sesli mesaj" onPress={startRecording} />
             <TextInput
               value={text} onChangeText={setText} placeholder={`${target?.name ?? ''} için mesaj yaz`}
-              placeholderTextColor={colors.muted} style={[styles.input, { flex: 1, borderRadius: 24, height: 44, paddingVertical: 0 }]}
+              placeholderTextColor={colors.muted} style={[styles.input, { flex: 1, minWidth: 0, borderRadius: 24, height: 44, paddingVertical: 0 }]}
             />
             <Pressable
               accessibilityLabel="Gönder"

@@ -161,7 +161,7 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
                       <TextInput
                         value={r.coins} keyboardType="number-pad"
                         onChangeText={(v) => setRow(c.id, { coins: v.replace(/[^0-9]/g, '') })}
-                        style={{ minWidth: 28, fontSize: 14, fontWeight: '700', color: colors.navy, padding: 0 }}
+                        style={{ width: 36, fontSize: 14, fontWeight: '700', color: colors.navy, padding: 0 }}
                       />
                     </View>
                   </View>
