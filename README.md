@@ -26,7 +26,7 @@ npx expo start
 
 Çıkan QR kodu telefonunla okut. Uygulama Expo Go içinde açılır.
 
-> Not: Bu sürümde veriler telefonda geçici tutulur (uygulamayı kapatınca sıfırlanır). Supabase bağlanınca kalıcı olacak.
+> Not: Veriler Supabase'de kalıcı tutulur (`src/store.tsx`). Ekranlar değişikliği anında gösterir, kayıt arka planda yapılır; hata olursa uyarı çıkar ve veri sunucudan yeniden yüklenir. Diğer ebeveynin ve çocuk uygulamasının değişiklikleri Realtime ile anında gelir.
 
 ## Neler var
 

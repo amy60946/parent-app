@@ -223,6 +223,7 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
   const [birthday, setBirthday] = useState<string | undefined>();
   const [avatar, setAvatar] = useState(childAvatars[1].id);
   const [code, setCode] = useState<string | undefined>();
+  const [busy, setBusy] = useState(false);
 
   const close = () => { setName(''); setBirthday(undefined); setCode(undefined); setKind('child'); onClose(); };
 
@@ -278,7 +279,16 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
                     onPress={() => Share.share({ message: `Fidan'a katılmak için davet kodun: ${code}` })} />
                 </View>
               ) : (
-                <Pressable style={styles.cta} onPress={() => setCode(createInviteCode())}>
+                <Pressable
+                  style={[styles.cta, busy && { opacity: 0.6 }]}
+                  disabled={busy}
+                  onPress={async () => {
+                    setBusy(true);
+                    try { setCode(await createInviteCode()); }
+                    catch (e) { Alert.alert('Kod üretilemedi', (e as Error).message); }
+                    finally { setBusy(false); }
+                  }}
+                >
                   <Text style={styles.ctaText}>Davet kodu üret</Text>
                 </Pressable>
               )}

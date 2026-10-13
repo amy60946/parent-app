@@ -1,4 +1,5 @@
 import React from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -6,6 +7,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StoreProvider, useStore } from './src/store';
+import { AuthProvider, useAuth } from './src/lib/auth';
 import { colors } from './src/theme';
 import TasksScreen from './src/screens/TasksScreen';
 import ReviewScreen from './src/screens/ReviewScreen';
@@ -54,19 +56,45 @@ function Tabs() {
   );
 }
 
+function Loading() {
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
+      <ActivityIndicator color={colors.navy} />
+    </View>
+  );
+}
+
+function Main() {
+  const { ready } = useStore();
+  if (!ready) return <Loading />;
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Tabs" component={Tabs} />
+      <Stack.Screen name="CreateTask" component={CreateTaskScreen} options={{ presentation: 'modal' }} />
+      <Stack.Screen name="TaskDetails" component={TaskDetailsScreen} options={{ presentation: 'modal' }} />
+    </Stack.Navigator>
+  );
+}
+
+function Root() {
+  const { session, loading } = useAuth();
+  if (loading) return <Loading />;
+  return (
+    <StoreProvider userId={session?.user.id ?? null}>
+      <NavigationContainer theme={navTheme}>
+        <StatusBar style="dark" />
+        <Main />
+      </NavigationContainer>
+    </StoreProvider>
+  );
+}
+
 export default function App() {
   return (
     <SafeAreaProvider>
-      <StoreProvider>
-        <NavigationContainer theme={navTheme}>
-          <StatusBar style="dark" />
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Tabs" component={Tabs} />
-            <Stack.Screen name="CreateTask" component={CreateTaskScreen} options={{ presentation: 'modal' }} />
-            <Stack.Screen name="TaskDetails" component={TaskDetailsScreen} options={{ presentation: 'modal' }} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </StoreProvider>
+      <AuthProvider>
+        <Root />
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }
