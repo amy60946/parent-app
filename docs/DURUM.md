@@ -29,11 +29,15 @@ Son güncelleme: 13 Ekim 2026.
 7. Depo derlenebilir Expo projesi: `package.json`, `app.json`, `eas.json`, geçici simge
 
 ## Sıradaki adım
-**Expo Go ile telefonda deneme (Apple hesabı beklenirken):**
-1. `EXPO_TOKEN` ortamda var mı kontrol et (değerini yazdırma).
-2. `npm install`, sonra `npx eas-cli init` (proje kimliğini `app.json`'a ekler), `npx eas-cli update:configure`.
-3. `.env` dosyasını Supabase adresi + publishable anahtarla oluştur (anahtarı kullanıcıdan iste).
-4. `npx eas-cli update --branch preview --message "..."` ile yayınla; kullanıcıya Expo Go'da nasıl açacağını adım adım anlat (expo.dev'deki proje > Updates sayfasındaki QR/bağlantı).
+**Expo Go ile telefonda deneme — yayınlandı, kullanıcının telefonda açması bekleniyor.**
+- Expo projesi: https://expo.dev/accounts/amy60946/projects/fidan (ID `dff6d69f-1b4f-4373-93ad-a999cde37ede`)
+- EAS Update `preview` dalına yayınlandı, runtime `exposdk:57.0.0` (Expo Go uyumlu olsun diye `runtimeVersion.policy: sdkVersion`).
+  **TestFlight build'inden önce `appVersion` politikasına geri dön.**
+- Yeniden yayınlama (`.env` yereldir, her yeni oturumda kullanıcının anon anahtarıyla yeniden oluştur):
+  `set -a && . ./.env && set +a && npx eas-cli update --branch preview --environment preview --message "..." --non-interactive`
+  (`--environment` ile .env otomatik okunmuyor; değişkenleri bu yüzden kabuğa yüklüyoruz.)
+- Expo sunucusuna ortam değişkeni yazma (`eas env:create`) bu oturumda izin almadı; TestFlight aşamasında kullanıcı expo.dev'den elle ekleyebilir.
+- Kullanıcı Expo Go'yu indirip `amy60946` ile giriş yapacak; uygulama Expo Go'da Profile/Home > projeler veya expo.dev'deki update sayfasındaki "Preview" QR kodu ile açılır.
 
 **Apple onayı gelince (TestFlight):**
 1. App Store Connect'te uygulama kaydı (ad: Fidan, kimlik: `com.fidan.ebeveyn`).
