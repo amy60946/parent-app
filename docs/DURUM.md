@@ -30,7 +30,7 @@ Son güncelleme: 13 Ekim 2026 (akşam).
 
 ## ŞU ANKİ ODAK: Pofi Adası (çocuk oyunu, Unity) — plan onayı bekleniyor
 - Kullanıcı ebeveyn tarafını (Fidan) park etti. Çocuk oyunu "Pofi Adası" ayrı bir Unity uygulaması olacak (6–15 yaş, 12 pet, ada, mini oyunlar, görev → coin).
-- Plan, riskler, açık sorular: **`docs/pofi/PLAN.md`**. Kullanıcı onay vermeden kod/varlık üretme. Açık sorular S1–S9 orada.
+- Plan, riskler, açık sorular: **`docs/pofi/PLAN.md`**. Kullanıcı onay vermeden kod/varlık üretme. Açık sorular S1–S9 orada. Kararlar: yeni depo `pofi-adasi`; test yalnızca iPhone (WebGL önizleme → TestFlight); nihai 3D yapay zekâ + temizlik; ses şimdilik yok. Bekleyen: plan onayı, S2 (Unity hesabı + GitHub Secrets), S6–S9.
 - Kullanıcının iki brief'i (oyun + 3D varlık) sohbette verildi. Özeti PLAN.md'de. Stil referansı: `ornek-gorsellerim.docx` (57 görsel, vinil oyuncak stili; karakterleri kopyalamak yasak).
 - Bu ortamda Unity indirilemiyor (ağ politikası). Plan: GitHub Actions + GameCI. Blender `bpy` PyPI'dan kurulabiliyor.
 

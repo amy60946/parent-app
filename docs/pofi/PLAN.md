@@ -1,6 +1,12 @@
 # Pofi Adası — Mimari plan, proje yapısı, riskler ve açık sorular
 
 Durum: **TASLAK — kullanıcı onayı bekleniyor.** Onaydan önce kod/varlık üretimi yapılmaz.
+
+### Kullanıcı kararları (13 Ekim 2026)
+- **S1 Depo:** Yeni ayrı depo (`pofi-adasi`, Git LFS).
+- **S3 Test cihazı:** Yalnızca iPhone → Apple onayına kadar WebGL önizleme (iPhone Safari'de açılır); Apple gelince TestFlight. Android APK üretilir ama kullanıcı denemez.
+- **S4 Nihai 3D:** Yapay zekâ ile 3D üretim (Meshy/Tripo vb.) + temizlik. 0A/0B ve yer tutucuları Claude Blender betikleriyle yapar. Araç seçimi ve ticari lisans planı (ücretli plan gerekebilir) 0B sonunda kullanıcıya sunulacak.
+- **S5 Ses:** Şimdilik sessiz, sonra stüdyo. `VoiceSubtitleSystem` + `VoiceLineSO` + altyazı/karaoke altyapısı ses dosyası olmadan çalışır (zamanlama yoksa düz altyazı). Not/öneri: ara çözüm olarak cihazın yerleşik Türkçe sesi (iOS AVSpeechSynthesizer, kelime aralığı geri çağrısıyla vurgulama) ücretsiz kullanılabilir — onay beklemekte.
 Tarih: 13 Ekim 2026. Kaynak: kullanıcının oyun brief'i + 3D varlık brief'i + `ornek-gorsellerim.docx` (57 stil referansı).
 
 ---
@@ -220,11 +226,11 @@ Pembe ayı/kedi ve mor yaratık referansları da var; Mimi ve Boncuk'un silüeti
 
 ## 10. Açık sorular
 
-- **S1 Depo:** Yeni depo `pofi-adasi` (önerim) mi, yoksa `parent-app/game/` mi?
+- ~~S1 Depo~~ → yeni depo.
 - **S2 Unity hesabı + CI:** Ücretsiz Unity Personal hesabı açıp bilgileri GitHub Secrets'a ekleyebilir misin? (Adım adım anlatırım.)
-- **S3 Test cihazı:** Elinde bir Android telefon var mı? Yoksa Apple onayına kadar WebGL önizleme mi kullanalım?
-- **S4 Nihai 3D modeller:** İnsan sanatçı mı, yapay zekâ ile üretim + temizlik mi, yoksa şimdilik yalnızca benim betikli modellerim mi?
-- **S5 Ses:** Azure TTS (anahtar gerekir) uygun mu, yoksa sonradan stüdyo kaydı mı?
+- ~~S3~~ → yalnızca iPhone.
+- ~~S4~~ → yapay zekâ ile 3D üretim + temizlik.
+- ~~S5~~ → şimdilik sessiz, sonra stüdyo.
 - **S6 Fidan'daki çocuk giriş ekranı:** Çocuklar artık Pofi Adası'na girecek. Fidan'daki masalsı kod ekranı kaldırılsın mı (Fidan yalnızca ebeveyn uygulaması olur)?
 - **S7 Yaş bandı:** Doğum gününden otomatik önerilip ebeveyn mi değiştirsin, yoksa her zaman elle mi seçilsin?
 - **S8 Mağaza stratejisi:** §9 Seçenek A mı, B mi?
