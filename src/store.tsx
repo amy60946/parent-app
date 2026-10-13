@@ -38,7 +38,9 @@ export type Completions = Record<string, CompletionStatus>;
 
 export type Message = { id: string; childId: string; text: string; at: string };
 
-export type InviteCode = { code: string; createdAt: string };
+export type InviteCode = { code: string; createdAt: string; expiresAt?: string };
+// Kodlar sunucuda üretilir: tek kullanımlık, süreli (24 saat)
+export type IssuedCode = { code: string; expiresAt: string };
 
 type Store = {
   ready: boolean;
@@ -63,6 +65,8 @@ type Store = {
   allTemplates: Template[];
   sendMessage: (childId: string, text: string) => void;
   createInviteCode: () => Promise<string>;
+  createChildCode: (childId: string) => Promise<IssuedCode>;
+  joinFamily: (code: string) => Promise<void>;
   refresh: () => Promise<void>;
   isOnlyParent: () => Promise<boolean>;
   deleteAccount: () => Promise<void>;
@@ -182,8 +186,8 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
 
   const loadCodes = useCallback(async (f: string) => {
     const { data, error } = await supabase
-      .from('invite_codes').select('code, created_at').eq('family_id', f).eq('kind', 'parent').order('created_at');
-    if (!error && data) setInviteCodes(data.map((r) => ({ code: r.code, createdAt: r.created_at })));
+      .from('invite_codes').select('code, created_at, expires_at').eq('family_id', f).eq('kind', 'parent').order('created_at');
+    if (!error && data) setInviteCodes(data.map((r) => ({ code: r.code, createdAt: r.created_at, expiresAt: r.expires_at })));
   }, []);
 
   const refresh = useCallback(async () => {
@@ -413,13 +417,27 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     }));
   }, [run, userId]);
 
-  const createInviteCode = useCallback(async () => {
-    const { data, error } = await supabase.rpc('create_invite_code', { p_kind: 'parent' });
+  const issueCode = useCallback(async (kind: 'parent' | 'child', childId?: string): Promise<IssuedCode> => {
+    const { data, error } = await supabase.rpc('create_invite_code', { p_kind: kind, p_child_id: childId ?? null });
     const row = Array.isArray(data) ? data[0] : data;
     if (error || !row) throw new Error(error?.message ?? 'Kod üretilemedi');
-    setInviteCodes((p) => [...p, { code: row.code, createdAt: new Date().toISOString() }]);
-    return row.code as string;
+    return { code: row.code, expiresAt: row.expires_at };
   }, []);
+
+  const createInviteCode = useCallback(async () => {
+    const c = await issueCode('parent');
+    setInviteCodes((p) => [...p, { code: c.code, createdAt: new Date().toISOString(), expiresAt: c.expiresAt }]);
+    return c.code;
+  }, [issueCode]);
+
+  const createChildCode = useCallback((childId: string) => issueCode('child', childId), [issueCode]);
+
+  // İkinci ebeveyn: davet koduyla aileye katıl
+  const joinFamily = useCallback(async (code: string) => {
+    const { error } = await supabase.rpc('join_family', { p_code: code.trim().toUpperCase() });
+    if (error) throw new Error(error.message);
+    await refresh();
+  }, [refresh]);
 
   // Ailede başka ebeveyn var mı?
   const isOnlyParent = useCallback(async () => {
@@ -465,7 +483,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     ready, familyId,
     parent, children, tasks, completions, messages, savedIds, customTemplates, inviteCodes,
     addChild, updateParent, addTasks, updateTask, deleteTask, toggleCompletion, review,
-    toggleSaved, addCustomTemplate, allTemplates, sendMessage, createInviteCode, refresh,
+    toggleSaved, addCustomTemplate, allTemplates, sendMessage, createInviteCode, createChildCode, joinFamily, refresh,
     isOnlyParent, deleteAccount,
   };
   return <Ctx.Provider value={value}>{kids}</Ctx.Provider>;

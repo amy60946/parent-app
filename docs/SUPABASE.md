@@ -161,3 +161,19 @@ Fidan e-posta adresini onayla
 - [ ] "Confirm signup" ve "Reset Password" şablonları Türkçe
 - [ ] Test: kayıt ol → e-postadaki "Hesabımı aç" → uygulama açılıp giriş yapılmış olmalı
 - [ ] Test: Şifremi unuttum → e-postadaki "Yeni şifre belirle" → uygulamada yeni şifre ekranı
+
+## 8. Davet ve giriş kodları
+
+Kodlar sunucuda üretilir (`create_invite_code`), `invite_codes` tablosunda saklanır, **tek kullanımlıktır** ve **24 saat** sonra geçersiz olur. İstemci tabloya doğrudan yazamaz.
+
+- **İkinci ebeveyn**: Aile > + > Ebeveyn > "Davet kodu üret". Diğer ebeveyn kendi hesabıyla Aile > Hesap > **Aileye katıl** bölümüne kodu yazar (`join_family`). Katılan ebeveynin eski ailesinde başka ebeveyn yoksa o aile ve verisi silinir (uygulama önce uyarır).
+- **Çocuk girişi** (çocuk uygulaması için hazır): Aile > çocuğu seç > Genel > "Giriş kodu üret". Aynı çocuk için yeni kod üretilince kullanılmamış eskisi geçersiz olur.
+  Çocuk uygulaması şu iki çağrıyla girer (Anonymous Sign-Ins açık olmalı):
+
+  ```ts
+  await supabase.auth.signInAnonymously();
+  const { data } = await supabase.rpc('redeem_child_code', { p_code: 'ABC123' });
+  // data: { child_id, family_id, name, avatar }
+  ```
+
+  Bundan sonra çocuk oturumu RLS ile yalnızca kendi görevlerini, atamalarını ve mesajlarını okuyabilir; görev tamamlayabilir (inceleme gerektiren görevler "bekliyor" olarak düşer) ve mesaj gönderebilir.

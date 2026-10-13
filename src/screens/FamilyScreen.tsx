@@ -97,9 +97,20 @@ function MyProfile() {
 }
 
 function ChildInfo({ id }: { id: string }) {
-  const { children } = useStore();
+  const { children, createChildCode } = useStore();
+  const [code, setCode] = useState<string | undefined>();
+  const [busy, setBusy] = useState(false);
   const c = children.find((x) => x.id === id);
+  React.useEffect(() => setCode(undefined), [id]);
   if (!c) return null;
+
+  const issue = async () => {
+    setBusy(true);
+    try { setCode((await createChildCode(c.id)).code); }
+    catch (e) { Alert.alert('Kod üretilemedi', (e as Error).message); }
+    finally { setBusy(false); }
+  };
+
   return (
     <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }}>
       <Card style={{ gap: 12 }}>
@@ -111,7 +122,36 @@ function ChildInfo({ id }: { id: string }) {
           </View>
         </View>
       </Card>
+      <Card style={{ gap: 12 }}>
+        <Text style={styles.h}>Giriş kodu</Text>
+        <Text style={{ fontSize: 13, color: colors.muted }}>
+          {c.name}, Fidan oyununa bu kodla giriş yapar. Yeni kod üretince eskisi geçersiz olur.
+        </Text>
+        {code ? (
+          <CodeBox code={code} shareText={`${c.name} için Fidan giriş kodu: ${code}`} />
+        ) : (
+          <Pressable style={[styles.cta, busy && { opacity: 0.6 }]} disabled={busy} onPress={issue}>
+            <Text style={styles.ctaText}>Giriş kodu üret</Text>
+          </Pressable>
+        )}
+      </Card>
     </ScrollView>
+  );
+}
+
+// Kod + kopyala/paylaş simgeleri (tek kullanımlık, süreli kodlar için)
+function CodeBox({ code, shareText }: { code: string; shareText: string }) {
+  return (
+    <View style={{ gap: 6 }}>
+      <View style={styles.codeBox}>
+        <Text style={{ flex: 1, fontSize: 28, fontWeight: '800', letterSpacing: 6, color: colors.navy }}>{code}</Text>
+        <IconButton name="copy-outline" label="Kopyala" style={{ backgroundColor: '#fff' }}
+          onPress={async () => { await Clipboard.setStringAsync(code); Alert.alert('Kod kopyalandı'); }} />
+        <IconButton name="share-outline" label="Paylaş" style={{ backgroundColor: '#fff' }}
+          onPress={() => Share.share({ message: shareText })} />
+      </View>
+      <Text style={styles.cap}>Tek kullanımlık · 24 saat geçerli</Text>
+    </View>
   );
 }
 
@@ -182,7 +222,7 @@ type AccountRow = 'manage' | 'join' | 'other';
 
 const accountRows: { icon: keyof typeof Ionicons.glyphMap; label: string; id?: AccountRow }[] = [
   { icon: 'person-outline', label: 'Hesabı yönet', id: 'manage' },
-  { icon: 'person-add-outline', label: 'Aileye katıl' },
+  { icon: 'person-add-outline', label: 'Aileye katıl', id: 'join' },
   { icon: 'notifications-outline', label: 'Bildirim ayarları' },
   { icon: 'medkit-outline', label: 'Terapistimi bağla' },
   { icon: 'create-outline', label: 'Geri bildirim gönder' },
@@ -215,6 +255,7 @@ function Account({ onLogout }: { onLogout?: () => void }) {
         <Text style={{ color: colors.danger, fontWeight: '700' }}>Çıkış Yap</Text>
       </Pressable>
       <ManageSheet visible={open === 'manage'} onClose={() => setOpen(null)} />
+      <JoinSheet visible={open === 'join'} onClose={() => setOpen(null)} />
     </ScrollView>
   );
 }
@@ -237,6 +278,62 @@ function Sheet({ visible, title, onClose, children }: {
         </View>
       </KeyboardAvoidingView>
     </Modal>
+  );
+}
+
+/* ---------- Aileye katıl (ikinci ebeveyn) ---------- */
+
+function JoinSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { joinFamily, isOnlyParent, children, tasks } = useStore();
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const close = () => { setCode(''); onClose(); };
+
+  const join = async () => {
+    setBusy(true);
+    try {
+      await joinFamily(code);
+      close();
+      Alert.alert('Aileye katıldın');
+    } catch (e) {
+      Alert.alert('Katılınamadı', (e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submit = async () => {
+    if (code.trim().length !== 6) return Alert.alert('Kod 6 karakter olmalı');
+    let loses = false;
+    try { loses = (children.length > 0 || tasks.length > 0) && (await isOnlyParent()); } catch { /* sunucu yine kontrol eder */ }
+    if (!loses) return join();
+    Alert.alert(
+      'Mevcut aileden ayrılınsın mı?',
+      'Yeni aileye katılınca şu anki ailendeki çocuklar, görevler ve mesajlar silinir.',
+      [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Katıl', style: 'destructive', onPress: join }],
+    );
+  };
+
+  return (
+    <Sheet visible={visible} title="Aileye katıl" onClose={close}>
+      <View style={{ gap: 14 }}>
+        <Text style={{ fontSize: 13, color: colors.muted }}>
+          Diğer ebeveynin Aile {'>'} + {'>'} Ebeveyn bölümünden ürettiği 6 haneli kodu yaz.
+        </Text>
+        <TextInput
+          value={code}
+          onChangeText={(v) => setCode(v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6))}
+          placeholder="KOD"
+          placeholderTextColor={colors.faint}
+          autoCapitalize="characters"
+          autoCorrect={false}
+          style={[styles.input, { fontSize: 24, fontWeight: '800', letterSpacing: 6, textAlign: 'center' }]}
+        />
+        <Pressable style={[styles.cta, busy && { opacity: 0.6 }]} disabled={busy} onPress={submit}>
+          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Katıl</Text>}
+        </Pressable>
+      </View>
+    </Sheet>
   );
 }
 
@@ -352,13 +449,7 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
                 Her yeni ebeveyn için size özel bir kod üretilir. Diğer ebeveyn bu kodla aileye katılır.
               </Text>
               {code ? (
-                <View style={styles.codeBox}>
-                  <Text style={{ flex: 1, fontSize: 28, fontWeight: '800', letterSpacing: 6, color: colors.navy }}>{code}</Text>
-                  <IconButton name="copy-outline" label="Kopyala" style={{ backgroundColor: '#fff' }}
-                    onPress={async () => { await Clipboard.setStringAsync(code); Alert.alert('Kod kopyalandı'); }} />
-                  <IconButton name="share-outline" label="Paylaş" style={{ backgroundColor: '#fff' }}
-                    onPress={() => Share.share({ message: `Fidan'a katılmak için davet kodun: ${code}` })} />
-                </View>
+                <CodeBox code={code} shareText={`Fidan'a katılmak için davet kodun: ${code}\nUygulamada Aile > Hesap > Aileye katıl bölümüne yaz.`} />
               ) : (
                 <Pressable
                   style={[styles.cta, busy && { opacity: 0.6 }]}
