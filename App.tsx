@@ -15,6 +15,7 @@ import ProgressScreen from './src/screens/ProgressScreen';
 import FamilyScreen from './src/screens/FamilyScreen';
 import CreateTaskScreen from './src/screens/CreateTaskScreen';
 import TaskDetailsScreen from './src/screens/TaskDetailsScreen';
+import { LoginScreen, SignUpScreen, ForgotPasswordScreen, NewPasswordScreen } from './src/screens/AuthScreens';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -30,6 +31,7 @@ const icons: Record<string, [keyof typeof Ionicons.glyphMap, keyof typeof Ionico
 
 function Tabs() {
   const { completions } = useStore();
+  const { signOut } = useAuth();
   const pending = Object.values(completions).filter((s) => s === 'pending').length;
   return (
     <Tab.Navigator
@@ -51,7 +53,7 @@ function Tabs() {
         options={{ tabBarBadge: pending || undefined, tabBarBadgeStyle: { backgroundColor: colors.gold, color: colors.navy } }}
       />
       <Tab.Screen name="Gelişim" component={ProgressScreen} />
-      <Tab.Screen name="Aile">{() => <FamilyScreen onLogout={() => { /* Supabase signOut burada bağlanacak */ }} />}</Tab.Screen>
+      <Tab.Screen name="Aile">{() => <FamilyScreen onLogout={signOut} />}</Tab.Screen>
     </Tab.Navigator>
   );
 }
@@ -76,9 +78,24 @@ function Main() {
   );
 }
 
+function AuthFlow() {
+  return (
+    <NavigationContainer theme={navTheme}>
+      <StatusBar style="dark" />
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="SignUp" component={SignUpScreen} />
+        <Stack.Screen name="Forgot" component={ForgotPasswordScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+
 function Root() {
-  const { session, loading } = useAuth();
+  const { session, loading, recovery } = useAuth();
   if (loading) return <Loading />;
+  if (recovery && session) return <NewPasswordScreen />;
+  if (!session) return <AuthFlow />;
   return (
     <StoreProvider userId={session?.user.id ?? null}>
       <NavigationContainer theme={navTheme}>
