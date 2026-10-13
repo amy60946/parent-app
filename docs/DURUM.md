@@ -28,6 +28,12 @@ Son güncelleme: 13 Ekim 2026 (akşam).
    https://claude.ai/artifact/QkoAjUUic8zUjtRaBUcyqB (güncellemek için aynı URL'ye yayınla)
 7. Depo derlenebilir Expo projesi: `package.json`, `app.json`, `eas.json`, geçici simge
 
+## ŞU ANKİ ODAK: Pofi Adası (çocuk oyunu, Unity) — plan onayı bekleniyor
+- Kullanıcı ebeveyn tarafını (Fidan) park etti. Çocuk oyunu "Pofi Adası" ayrı bir Unity uygulaması olacak (6–15 yaş, 12 pet, ada, mini oyunlar, görev → coin).
+- Plan, riskler, açık sorular: **`docs/pofi/PLAN.md`**. Kullanıcı onay vermeden kod/varlık üretme. Açık sorular S1–S9 orada.
+- Kullanıcının iki brief'i (oyun + 3D varlık) sohbette verildi. Özeti PLAN.md'de. Stil referansı: `ornek-gorsellerim.docx` (57 görsel, vinil oyuncak stili; karakterleri kopyalamak yasak).
+- Bu ortamda Unity indirilemiyor (ağ politikası). Plan: GitHub Actions + GameCI. Blender `bpy` PyPI'dan kurulabiliyor.
+
 ## Sistem (kullanıcının anlattığı hedef, Joon benzeri)
 - Bu uygulama **ebeveyn paneli**: ebeveyn çocuklara gerçek hayat görevi atar.
 - Çocuk ayrı bir **oyun** tarafında görevleri görür, "tamamladım" işaretler; oyunda coin harcayarak daha zengin içeriğe erişir.
