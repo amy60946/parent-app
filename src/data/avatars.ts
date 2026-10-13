@@ -1,28 +1,32 @@
-// Geçici olarak emoji kullanılıyor. Çizim avatarlar hazır olunca `image` alanı
-// (require('../../assets/avatars/kedi.png')) ile değiştirilecek; Avatar bileşeni
-// image varsa onu gösterir.
-export type AvatarDef = { id: string; name: string; emoji: string; image?: number };
+import { avatarImages } from '../../assets/avatars';
+
+// Görsel eklenene kadar emoji gösterilir. Çizim görseller assets/avatars/ altına
+// `file` adıyla konur ve assets/avatars/index.ts içinde açılır; Avatar bileşeni
+// image varsa onu gösterir. `id` veritabanında saklandığı için değiştirilmemeli.
+export type AvatarDef = { id: string; name: string; emoji: string; file: string; image?: number };
+
+const withImage = (a: Omit<AvatarDef, 'image'>): AvatarDef => ({ ...a, image: avatarImages[a.file] });
 
 export const childAvatars: AvatarDef[] = [
-  { id: 'martı', name: 'Martı', emoji: '🕊️' },
-  { id: 'kedi', name: 'Kedi', emoji: '🐱' },
-  { id: 'sincap', name: 'Sincap', emoji: '🐿️' },
-  { id: 'köpek', name: 'Köpek', emoji: '🐶' },
-  { id: 'kuş', name: 'Kuş', emoji: '🐦' },
-  { id: 'caretta', name: 'Caretta caretta', emoji: '🐢' },
-  { id: 'ayı', name: 'Boz ayı', emoji: '🐻' },
-  { id: 'kurt', name: 'Kurt', emoji: '🐺' },
-  { id: 'keçi', name: 'Keçi', emoji: '🐐' },
-  { id: 'flamingo', name: 'Flamingo', emoji: '🦩' },
-  { id: 'fil', name: 'Fil', emoji: '🐘' },
-  { id: 'zebra', name: 'Zebra', emoji: '🦓' },
-  { id: 'at', name: 'At', emoji: '🐴' },
-];
+  { id: 'martı', name: 'Martı', emoji: '🕊️', file: 'marti' },
+  { id: 'kedi', name: 'Kedi', emoji: '🐱', file: 'kedi' },
+  { id: 'sincap', name: 'Sincap', emoji: '🐿️', file: 'sincap' },
+  { id: 'köpek', name: 'Köpek', emoji: '🐶', file: 'kopek' },
+  { id: 'kuş', name: 'Kuş', emoji: '🐦', file: 'kus' },
+  { id: 'caretta', name: 'Caretta caretta', emoji: '🐢', file: 'caretta' },
+  { id: 'ayı', name: 'Boz ayı', emoji: '🐻', file: 'boz-ayi' },
+  { id: 'kurt', name: 'Kurt', emoji: '🐺', file: 'kurt' },
+  { id: 'keçi', name: 'Keçi', emoji: '🐐', file: 'keci' },
+  { id: 'flamingo', name: 'Flamingo', emoji: '🦩', file: 'flamingo' },
+  { id: 'fil', name: 'Fil', emoji: '🐘', file: 'fil' },
+  { id: 'zebra', name: 'Zebra', emoji: '🦓', file: 'zebra' },
+  { id: 'at', name: 'At', emoji: '🐴', file: 'at' },
+].map(withImage);
 
 export const parentAvatars: AvatarDef[] = [
-  { id: 'kadın', name: 'Kadın', emoji: '👩' },
-  { id: 'erkek', name: 'Erkek', emoji: '👨' },
-];
+  { id: 'kadın', name: 'Kadın', emoji: '👩', file: 'kadin' },
+  { id: 'erkek', name: 'Erkek', emoji: '👨', file: 'erkek' },
+].map(withImage);
 
 export const findAvatar = (id: string): AvatarDef =>
   [...childAvatars, ...parentAvatars].find((a) => a.id === id) ?? childAvatars[1];

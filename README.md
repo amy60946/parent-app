@@ -14,7 +14,7 @@ npx expo install @supabase/supabase-js @react-native-async-storage/async-storage
 npx expo install expo-image-picker expo-audio expo-file-system
 ```
 
-4. Bu depodaki **App.tsx** dosyasını, **src/** klasörünü, **.env.example** ve **.gitignore** dosyalarını proje klasörüne kopyala (var olan App.tsx'in üzerine yaz).
+4. Bu depodaki **App.tsx** dosyasını, **src/** ve **assets/avatars/** klasörlerini, **.env.example** ve **.gitignore** dosyalarını proje klasörüne kopyala (var olan App.tsx'in üzerine yaz).
 5. Supabase'i bağla:
    - https://supabase.com üzerinde yeni proje aç.
    - Panelde **SQL Editor > New query**: `supabase/migrations/20261013000000_init.sql` dosyasının tamamını yapıştır, **Run**. (Boş projede bir kez çalıştırılır; tabloları, Row Level Security kurallarını, kod/hesap silme fonksiyonlarını, Realtime ve `mail` Storage kovasını kurar.)
@@ -47,12 +47,16 @@ npx expo start
 - **Görev ayrıntıları**: Çocuk başına zorluk ve coin, başlangıç tarihi, tek seferlik/tekrarlayan, hatırlatma, inceleme, özel görevi şablon olarak kaydetme. Geçmiş güne atamada uyarı çıkar ve görev o günde görünür.
 - **Aile**: Ben + çocuk avatarları, lacivert + butonu aynı hizada; Genel / Posta / Hesap; alttan açılan tek "Ekle" sayfası (çocuk: avatar, isim, cinsiyet, doğum günü; ebeveyn: benzersiz davet kodu, kopyala ve paylaş simgeleri); Profilim düzenleme; Posta; Hesap listesi ve Çıkış Yap.
 - **Gelişim** ve **İnceleme** (onayla/reddet).
+- **Hesap**: Kayıt ol, giriş yap, şifremi unuttum (e-postadaki bağlantı uygulamayı açar, yeni şifre belirlenir), Çıkış Yap, Hesabı yönet > Hesabı sil.
+- **Kodlar**: İkinci ebeveyn davet kodu (Aile > Hesap > Aileye katıl) ve çocuk giriş kodu (çocuğun Genel sekmesi); tek kullanımlık, 24 saat geçerli.
+- **Posta**: Yazı, fotoğraf ve sesli mesaj; Realtime ile anında gelir.
+- **Avatarlar**: Çizim görseller için hazır (`assets/avatars/README.md`); görsel eklenene kadar emoji görünür.
 
 ## Sıradaki adımlar
 
-1. Supabase: kayıt, giriş, şifremi unuttum, hoş geldin e-postası, kalıcı veri.
-2. Çizim hayvan avatarları (`src/data/avatars.ts` içindeki `image` alanı hazır).
-3. Fotoğraf ve sesli mesaj, push bildirimleri.
+1. Çizim avatar görsellerini `assets/avatars/` altına ekle.
+2. Çocuk uygulaması (giriş kodu altyapısı hazır, bkz. `docs/SUPABASE.md` §8).
+3. Push bildirimleri.
 4. App Store hazırlığı (aşağıda).
 
 ## App Store için şimdiden bilinmesi gerekenler
