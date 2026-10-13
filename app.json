@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "Fidan",
+    "slug": "fidan",
+    "owner": "amy60946",
+    "scheme": "fidan",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "ios": {
+      "bundleIdentifier": "com.fidan.ebeveyn",
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "tr"
+      }
+    },
+    "android": {
+      "package": "com.fidan.ebeveyn",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F1B3D",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "backgroundColor": "#0F1B3D"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Çocuğuna fotoğraf göndermek için galerine erişim gerekiyor.",
+          "cameraPermission": false
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Sesli mesaj kaydetmek için mikrofona erişim gerekiyor.",
+          "enableBackgroundPlayback": false
+        }
+      ]
+    ]
+  }
+}

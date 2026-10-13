@@ -1,41 +1,25 @@
 # Fidan – Ebeveyn Uygulaması (iOS + Android, Expo)
 
-## Kurulum (bilgisayarında bir kez)
+## Kurulum
 
-1. Node.js (LTS) kur: https://nodejs.org
-2. Telefonuna **Expo Go** uygulamasını indir (App Store / Google Play).
-3. Terminalde:
+Depo, doğrudan çalışan bir Expo projesidir (Expo SDK 57). Uygulama adı **Fidan**, uygulama kimliği `com.fidan.ebeveyn`, Expo hesabı `amy60946`.
 
-```bash
-npx create-expo-app@latest fidan --template blank-typescript
-cd fidan
-npx expo install @react-navigation/native @react-navigation/bottom-tabs @react-navigation/native-stack react-native-screens react-native-safe-area-context @react-native-community/datetimepicker expo-clipboard @expo/vector-icons
-npx expo install @supabase/supabase-js @react-native-async-storage/async-storage react-native-url-polyfill expo-linking
-npx expo install expo-image-picker expo-audio expo-file-system
-```
-
-4. Bu depodaki **App.tsx** dosyasını, **src/** ve **assets/avatars/** klasörlerini, **.env.example** ve **.gitignore** dosyalarını proje klasörüne kopyala (var olan App.tsx'in üzerine yaz).
-5. Supabase'i bağla:
-   - https://supabase.com üzerinde yeni proje aç.
-   - Panelde **SQL Editor > New query**: `supabase/migrations/20261013000000_init.sql` dosyasının tamamını yapıştır, **Run**. (Boş projede bir kez çalıştırılır; tabloları, Row Level Security kurallarını, kod/hesap silme fonksiyonlarını, Realtime ve `mail` Storage kovasını kurar.)
-   - `.env.example` dosyasını `.env` adıyla kopyala; **Project Settings > API** sayfasındaki proje URL'sini ve *publishable* (anon) anahtarı yaz. `.env` git'e eklenmez. `service_role`/secret anahtarı uygulamaya asla yazılmaz.
-   - E-posta, yönlendirme adresleri ve Türkçe e-posta şablonları için **[docs/SUPABASE.md](docs/SUPABASE.md)** dosyasındaki adımları uygula.
-   - Proje klasöründeki `app.json` içinde `"expo"` altına şunları ekle (deep link ve Türkçe izin metinleri; Expo Go'da gerekmez ama derlenmiş uygulamada gerekir):
-
-     ```json
-     "scheme": "fidan",
-     "plugins": [
-       ["expo-image-picker", { "photosPermission": "Çocuğuna fotoğraf göndermek için galerine erişim gerekiyor." }],
-       ["expo-audio", { "microphonePermission": "Sesli mesaj kaydetmek için mikrofona erişim gerekiyor." }]
-     ]
-     ```
-6. Çalıştır:
+1. Supabase'i bağla (bir kez):
+   - Panelde **SQL Editor > New query**: `supabase/migrations/20261013000000_init.sql` dosyasının tamamını yapıştır, **Run**.
+   - E-posta, yönlendirme adresleri ve Türkçe e-posta şablonları: **[docs/SUPABASE.md](docs/SUPABASE.md)**.
+2. `.env.example` dosyasını `.env` adıyla kopyala; Supabase proje adresini ve *publishable* (anon) anahtarı yaz. `.env` git'e eklenmez; `service_role`/secret anahtar uygulamaya asla yazılmaz. Expo'nun bulutta derlediği sürümler için aynı iki değer expo.dev'deki proje ayarlarına (Environment variables) girilir.
+3. Bilgisayarda çalıştırmak için (Node.js gerekir):
 
 ```bash
+npm install
 npx expo start
 ```
 
-Çıkan QR kodu telefonunla okut. Uygulama Expo Go içinde açılır.
+Çıkan QR kodu telefondaki **Expo Go** ile okut.
+
+- Ayarlar: `app.json` (ad, kimlik, simge, açılış ekranı, Türkçe izin metinleri, `fidan://` bağlantıları), `eas.json` (Expo bulut derleme profilleri).
+- Geçici simge: `assets/icon.png` (lacivert zeminde fidan). Asıl tasarım gelince aynı adla değiştirilir.
+- Tip kontrolü: `npm run typecheck`
 
 > Not: Veriler Supabase'de kalıcı tutulur (`src/store.tsx`). Ekranlar değişikliği anında gösterir, kayıt arka planda yapılır; hata olursa uyarı çıkar ve veri sunucudan yeniden yüklenir. Diğer ebeveynin ve çocuk uygulamasının değişiklikleri Realtime ile anında gelir.
 
