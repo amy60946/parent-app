@@ -66,3 +66,10 @@ npx expo start
 - Herkese açık **gizlilik politikası URL'si** ve App Store Connect'te "App Privacy" formu gerekir. Çocuk verisi için KVKK/COPPA metni hazırlanmalı.
 - Apple Developer hesabı (yıllık ücretli) ve EAS Build ile derleme gerekir.
 - Giriş zorunluysa App Review için çalışan bir demo hesap verilmeli.
+
+## Web önizlemesi (deneme veritabanıyla)
+
+Uygulama Claude sohbetinde tıklanabilir bir sayfa olarak da açılır. Bu sayfa dış sunuculara bağlanamadığı için gerçek Supabase yerine tarayıcıda çalışan bir deneme veritabanı (`preview/demo-supabase.ts`) kullanır; veriler o tarayıcıda saklanır. Hazır hesap: `demo@fidan.app` / `12345678`.
+
+- Üretmek için: `bash preview/build.sh` → `preview/out/index.html` + `app.html`
+- `src/lib/webAlert.web.ts`, `src/components/DateField.web.tsx`, `src/lib/files.web.ts` yalnızca web'de devreye girer; telefondaki davranış değişmez.

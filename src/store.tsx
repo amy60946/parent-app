@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { Alert, AppState } from 'react-native';
-import { File } from 'expo-file-system';
 import { Difficulty } from './theme';
 import { Template, Category, templates as baseTemplates } from './data/templates';
 import { fromISO, toISO, todayISO } from './dates';
 import { supabase, MAIL_BUCKET } from './lib/supabase';
 import { uuid } from './lib/uuid';
+import { readFileBytes } from './lib/files';
 
 export type Child = {
   id: string;
@@ -498,7 +498,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     setMessages((p) => [...p, m]);
     sendingIds.current.add(id);
     try {
-      const body = await new File(localUri).arrayBuffer();
+      const body = await readFileBytes(localUri);
       const up = await supabase.storage.from(MAIL_BUCKET).upload(path, body, { contentType, upsert: false });
       if (up.error) throw up.error;
       const ins = await supabase.from('messages').insert({
