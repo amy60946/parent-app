@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import { Difficulty } from './theme';
 import { Template, Category, templates as baseTemplates } from './data/templates';
 import { fromISO, toISO, todayISO } from './dates';
-import { supabase } from './lib/supabase';
+import { supabase, MAIL_BUCKET } from './lib/supabase';
 import { uuid } from './lib/uuid';
 
 export type Child = {
@@ -64,6 +64,8 @@ type Store = {
   sendMessage: (childId: string, text: string) => void;
   createInviteCode: () => Promise<string>;
   refresh: () => Promise<void>;
+  isOnlyParent: () => Promise<boolean>;
+  deleteAccount: () => Promise<void>;
 };
 
 const Ctx = createContext<Store | null>(null);
@@ -419,6 +421,34 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     return row.code as string;
   }, []);
 
+  // Ailede başka ebeveyn var mı?
+  const isOnlyParent = useCallback(async () => {
+    const f = fid.current;
+    if (!f) return true;
+    const { count, error } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('family_id', f);
+    if (error) throw new Error(error.message);
+    return (count ?? 0) <= 1;
+  }, []);
+
+  // Hesabı ve (tek ebeveynse) ailenin tüm verisini kalıcı olarak sil
+  const deleteAccount = useCallback(async () => {
+    const f = fid.current;
+    if (f && (await isOnlyParent())) {
+      // Storage dosyaları veritabanından silinemez; önce Storage API ile silinir.
+      const bucket = supabase.storage.from(MAIL_BUCKET);
+      for (;;) {
+        const { data, error } = await bucket.list(f, { limit: 100 });
+        if (error) throw new Error(error.message);
+        if (!data || data.length === 0) break;
+        const rm = await bucket.remove(data.map((o) => `${f}/${o.name}`));
+        if (rm.error) throw new Error(rm.error.message);
+        if (!rm.data?.length) break; // silinemeyen dosya kaldıysa döngüye girme
+      }
+    }
+    const { error } = await supabase.rpc('delete_account');
+    if (error) throw new Error(error.message);
+  }, [isOnlyParent]);
+
   const savedIds = useMemo(() => savedRows.filter((r) => r.saved).map((r) => r.template_key as string), [savedRows]);
 
   const customTemplates = useMemo<Template[]>(
@@ -436,6 +466,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     parent, children, tasks, completions, messages, savedIds, customTemplates, inviteCodes,
     addChild, updateParent, addTasks, updateTask, deleteTask, toggleCompletion, review,
     toggleSaved, addCustomTemplate, allTemplates, sendMessage, createInviteCode, refresh,
+    isOnlyParent, deleteAccount,
   };
   return <Ctx.Provider value={value}>{kids}</Ctx.Provider>;
 }

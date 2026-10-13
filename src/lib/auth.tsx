@@ -18,6 +18,7 @@ type Auth = {
   sendPasswordReset: (email: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  signOutLocal: () => Promise<void>; // hesap silindikten sonra (sunucuda oturum kalmadı)
 };
 
 const Ctx = createContext<Auth | null>(null);
@@ -152,8 +153,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) await supabase.auth.signOut({ scope: 'local' });
   }, []);
 
+  const signOutLocal = useCallback(async () => {
+    setRecovery(false);
+    await supabase.auth.signOut({ scope: 'local' });
+  }, []);
+
   return (
-    <Ctx.Provider value={{ session, loading, recovery, signIn, signUp, resendConfirmation, sendPasswordReset, updatePassword, signOut }}>
+    <Ctx.Provider value={{ session, loading, recovery, signIn, signUp, resendConfirmation, sendPasswordReset, updatePassword, signOut, signOutLocal }}>
       {children}
     </Ctx.Provider>
   );

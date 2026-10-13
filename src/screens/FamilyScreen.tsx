@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, Pressable, ScrollView, Modal, Share, Alert, StyleSheet, KeyboardAvoidingView, Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +11,7 @@ import { Avatar, IconButton, Segmented, Card } from '../components/ui';
 import DateField from '../components/DateField';
 import { childAvatars, parentAvatars } from '../data/avatars';
 import { useStore } from '../store';
+import { useAuth } from '../lib/auth';
 import { formatTR } from '../dates';
 
 type Tab = 'general' | 'mail' | 'account';
@@ -176,8 +178,10 @@ function Mail() {
 
 /* ---------- Hesap ---------- */
 
-const accountRows: { icon: keyof typeof Ionicons.glyphMap; label: string }[] = [
-  { icon: 'person-outline', label: 'Hesabı yönet' },
+type AccountRow = 'manage' | 'join' | 'other';
+
+const accountRows: { icon: keyof typeof Ionicons.glyphMap; label: string; id?: AccountRow }[] = [
+  { icon: 'person-outline', label: 'Hesabı yönet', id: 'manage' },
   { icon: 'person-add-outline', label: 'Aileye katıl' },
   { icon: 'notifications-outline', label: 'Bildirim ayarları' },
   { icon: 'medkit-outline', label: 'Terapistimi bağla' },
@@ -189,11 +193,12 @@ const accountRows: { icon: keyof typeof Ionicons.glyphMap; label: string }[] = [
 ];
 
 function Account({ onLogout }: { onLogout?: () => void }) {
+  const [open, setOpen] = useState<AccountRow | null>(null);
   return (
     <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}>
       <Card style={{ padding: 0 }}>
         {accountRows.map((r, i) => (
-          <Pressable key={r.label} onPress={soon} style={[styles.accRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line }]}>
+          <Pressable key={r.label} onPress={r.id ? () => setOpen(r.id!) : soon} style={[styles.accRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line }]}>
             <Ionicons name={r.icon} size={20} color={colors.navy} />
             <Text style={{ flex: 1, fontSize: 15, color: colors.navy }}>{r.label}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.faint} />
@@ -209,7 +214,83 @@ function Account({ onLogout }: { onLogout?: () => void }) {
       >
         <Text style={{ color: colors.danger, fontWeight: '700' }}>Çıkış Yap</Text>
       </Pressable>
+      <ManageSheet visible={open === 'manage'} onClose={() => setOpen(null)} />
     </ScrollView>
+  );
+}
+
+/* ---------- Alttan açılan sayfa ---------- */
+
+function Sheet({ visible, title, onClose, children }: {
+  visible: boolean; title: string; onClose: () => void; children: React.ReactNode;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: 'rgba(15,27,61,0.35)' }} onPress={onClose} />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.sheet}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <Text style={styles.h}>{title}</Text>
+            <IconButton name="close" label="Kapat" onPress={onClose} style={{ backgroundColor: '#F1F2F6' }} />
+          </View>
+          {children}
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+/* ---------- Hesabı yönet ---------- */
+
+function ManageSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { session, signOutLocal } = useAuth();
+  const { isOnlyParent, deleteAccount } = useStore();
+  const [busy, setBusy] = useState(false);
+
+  const doDelete = async () => {
+    setBusy(true);
+    try {
+      await deleteAccount();
+      onClose();
+      await signOutLocal();
+      Alert.alert('Hesabın silindi');
+    } catch (e) {
+      Alert.alert('Hesap silinemedi', (e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirm = async () => {
+    let only = true;
+    try { only = await isOnlyParent(); } catch { /* emin değilsek en kapsamlı uyarıyı göster */ }
+    Alert.alert(
+      'Hesap kalıcı olarak silinsin mi?',
+      only
+        ? 'Hesabınla birlikte ailenin tüm verisi (çocuklar, görevler, tamamlananlar, mesajlar, fotoğraf ve sesler) kalıcı olarak silinir. Bu işlem geri alınamaz.'
+        : 'Hesabın ve profilin kalıcı olarak silinir. Aile verisi diğer ebeveynde kalmaya devam eder. Bu işlem geri alınamaz.',
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        { text: 'Hesabı sil', style: 'destructive', onPress: doDelete },
+      ],
+    );
+  };
+
+  return (
+    <Sheet visible={visible} title="Hesabı yönet" onClose={onClose}>
+      <View style={{ gap: 14 }}>
+        <View>
+          <Text style={styles.cap}>E-posta</Text>
+          <Text style={{ fontSize: 15, color: colors.navy, marginTop: 4 }}>{session?.user.email}</Text>
+        </View>
+        <Pressable onPress={confirm} disabled={busy} style={[styles.logout, busy && { opacity: 0.6 }]} accessibilityLabel="Hesabı sil">
+          {busy ? <ActivityIndicator color={colors.danger} /> : <Text style={{ color: colors.danger, fontWeight: '700' }}>Hesabı sil</Text>}
+        </Pressable>
+        <Text style={{ fontSize: 11, color: colors.muted, textAlign: 'center' }}>
+          Hesabı silmek tüm kişisel verini kalıcı olarak kaldırır.
+        </Text>
+      </View>
+    </Sheet>
   );
 }
 
