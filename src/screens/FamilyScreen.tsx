@@ -10,6 +10,7 @@ import DateField from '../components/DateField';
 import Sheet from '../components/Sheet';
 import { messagePreview } from './ChatScreen';
 import { childAvatars, parentAvatars } from '../data/avatars';
+import { AgeBand, ageBands, suggestAgeBand } from '../data/ageBands';
 import { useStore } from '../store';
 import { useAuth } from '../lib/auth';
 import { formatTR, toISO, todayISO } from '../dates';
@@ -102,12 +103,34 @@ function MyProfile() {
 }
 
 function ChildInfo({ id }: { id: string }) {
-  const { children, createChildCode } = useStore();
+  const { children, completions, createChildCode, setChildAgeBand, childBalance, unlinkChildDevice } = useStore();
   const [code, setCode] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
+  const [balance, setBalance] = useState<number | undefined>();
   const c = children.find((x) => x.id === id);
   React.useEffect(() => setCode(undefined), [id]);
+  // Bakiye onay/harcama ile değişir: tamamlamalar değişince yeniden oku.
+  React.useEffect(() => {
+    let live = true;
+    childBalance(id).then((b) => { if (live) setBalance(b); }).catch(() => { if (live) setBalance(undefined); });
+    return () => { live = false; };
+  }, [id, completions, childBalance]);
   if (!c) return null;
+
+  const unlink = () => Alert.alert(
+    'Cihaz bağlantısı kaldırılsın mı?',
+    `${c.name} oyundan çıkarılır. Tekrar girmek için yeni bir giriş kodu gerekir. Oyundaki ilerlemesi silinmez.`,
+    [
+      { text: 'Vazgeç', style: 'cancel' },
+      {
+        text: 'Kaldır', style: 'destructive',
+        onPress: async () => {
+          try { await unlinkChildDevice(c.id); }
+          catch (e) { Alert.alert('Kaldırılamadı', (e as Error).message); }
+        },
+      },
+    ],
+  );
 
   const issue = async () => {
     setBusy(true);
@@ -125,7 +148,23 @@ function ChildInfo({ id }: { id: string }) {
             <Text style={styles.h}>{c.name}</Text>
             <Text style={styles.cap}>{c.gender === 'kız' ? 'Kız' : c.gender === 'erkek' ? 'Erkek' : ''}{c.birthday ? ` · ${formatTR(c.birthday)}` : ''}</Text>
           </View>
+          <View style={{ flex: 1 }} />
+          <View style={styles.coins} accessibilityLabel={`Coin bakiyesi ${balance ?? 'bilinmiyor'}`}>
+            <View style={styles.coinDot} />
+            <Text style={{ fontSize: 15, fontWeight: '800', color: colors.navy }}>{balance ?? '–'}</Text>
+          </View>
         </View>
+      </Card>
+      <Card style={{ gap: 10 }}>
+        <Text style={styles.h}>Oyundaki yaş grubu</Text>
+        <Text style={{ fontSize: 13, color: colors.muted }}>
+          Pofi Adası oyununun dili ve zorluğu buna göre ayarlanır.
+        </Text>
+        <Segmented<AgeBand>
+          options={ageBands}
+          value={c.ageBand ?? suggestAgeBand(c.birthday)}
+          onChange={(b) => setChildAgeBand(c.id, b)}
+        />
       </Card>
       <Card style={{ gap: 12 }}>
         <Text style={styles.h}>Giriş kodu</Text>
@@ -137,6 +176,11 @@ function ChildInfo({ id }: { id: string }) {
         ) : (
           <Pressable style={[styles.cta, busy && { opacity: 0.6 }]} disabled={busy} onPress={issue}>
             <Text style={styles.ctaText}>Giriş kodu üret</Text>
+          </Pressable>
+        )}
+        {c.linked && (
+          <Pressable onPress={unlink} style={styles.logout} accessibilityLabel="Cihaz bağlantısını kaldır">
+            <Text style={{ color: colors.danger, fontWeight: '700' }}>Cihaz bağlantısını kaldır</Text>
           </Pressable>
         )}
       </Card>
@@ -384,15 +428,16 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
   const [name, setName] = useState('');
   const [gender, setGender] = useState<'kız' | 'erkek'>('kız');
   const [birthday, setBirthday] = useState<string | undefined>();
+  const [band, setBand] = useState<AgeBand>('A');
   const [avatar, setAvatar] = useState(childAvatars[1].id);
   const [code, setCode] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
 
-  const close = () => { setName(''); setBirthday(undefined); setCode(undefined); setKind('child'); onClose(); };
+  const close = () => { setName(''); setBirthday(undefined); setBand('A'); setCode(undefined); setKind('child'); onClose(); };
 
   const save = () => {
     if (!name.trim()) return Alert.alert('İsim gerekli');
-    addChild({ name: name.trim(), avatar, gender, birthday });
+    addChild({ name: name.trim(), avatar, gender, birthday, ageBand: band });
     close();
   };
 
@@ -426,7 +471,18 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
           </View>
           <View>
             <Text style={[styles.cap, { marginBottom: 6 }]}>Doğum günü (isteğe bağlı)</Text>
-            <DateField mode="date" value={birthday} onChange={setBirthday} placeholder="Tarih seç" clearable maximumDate={new Date()} />
+            <DateField
+              mode="date"
+              value={birthday}
+              onChange={(d) => { setBirthday(d); if (d) setBand(suggestAgeBand(d)); }}
+              placeholder="Tarih seç"
+              clearable
+              maximumDate={new Date()}
+            />
+          </View>
+          <View>
+            <Text style={[styles.cap, { marginBottom: 6 }]}>Oyundaki yaş grubu</Text>
+            <Segmented<AgeBand> options={ageBands} value={band} onChange={setBand} />
           </View>
           <Pressable style={styles.cta} onPress={save}><Text style={styles.ctaText}>Çocuğu ekle</Text></Pressable>
         </>
@@ -470,5 +526,7 @@ const styles = StyleSheet.create({
   logout: { height: 50, borderRadius: radius.md, borderWidth: 1, borderColor: colors.danger, alignItems: 'center', justifyContent: 'center' },
   cta: { height: 52, borderRadius: radius.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
   ctaText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  coins: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFF6DE', borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 6 },
+  coinDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.gold },
   codeBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#F3F4F8', borderRadius: radius.md, padding: 14 },
 });

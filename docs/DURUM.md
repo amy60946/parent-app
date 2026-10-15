@@ -42,6 +42,10 @@ Son güncelleme: 13 Ekim 2026 (akşam).
 - Ebeveyn **İnceleme**'de tamamlanan/diğer durumdaki görevleri görüp onaylar → çocuk coin kazanır. (Çocuk tarafı henüz yok; İnceleme bu yüzden boş.)
 - Aile > çocuk > Genel'deki **giriş kodu**, çocuğun oyuna girişi içindir. Ayrıntıları kullanıcıyla birlikte sonra tasarlanacak.
 
+## M4: oyun bağlantısı (15 Ekim 2026, onaylandı)
+- Sunucu eklemeleri oyun deposunda: `pofi-adasi/supabase/proposed/20261015000000_pofi_game.sql` (yaş bandı, görev durumları `declined`/`rejected` + `parent_note`, coin defteri `coin_ledger`, `game_items`, `game_saves`, RPC'ler). Uygulama adımları: `pofi-adasi/docs/M4_UYGULAMA.md`. **Fidan'ın bu sürümü o SQL uygulanmadan yayınlanmamalı** (yaş bandı, ret, bakiye, bağlantı kaldırma RPC'leri yoksa hata/boş görünür).
+- Fidan'daki eklemeler: çocuk eklerken ve Aile > çocuk > Genel'de oyundaki yaş grubu (`set_child_age_band`), İnceleme'de "Reddet" notla (`review_completion`, kayıt silinmez), çocuğun coin bakiyesi (`child_balance`), "Cihaz bağlantısını kaldır" (`unlink_child_device`). Görevler'de yeni durum etiketleri: Yapamadı / Reddedildi. Önizleme veritabanı (`preview/demo-supabase.ts`) bu RPC'leri taklit eder.
+
 ## Sıradaki adım
 **Kullanıcının telefonda geri bildirimi (14 Ekim turu) uygulandı; Supabase'de 2 ayar bekleniyor:**
 1. SQL Editor'da `supabase/migrations/20261014000000_task_repeat_order.sql` çalıştırılmalı (yoksa yeni görev kaydı hata verir).

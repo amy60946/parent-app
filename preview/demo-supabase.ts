@@ -10,7 +10,7 @@ type Row = Record<string, any>;
 type Err = { message: string; code?: string } | null;
 type Db = { users: Row[]; blobs: Record<string, string>; session: Row | null } & Record<string, any>;
 
-const KEY = 'fidan-onizleme-v2';
+const KEY = 'fidan-onizleme-v3';
 const TABLES = ['profiles', 'families', 'children', 'tasks', 'task_assignments', 'completions', 'messages', 'saved_templates', 'invite_codes'];
 
 const uuid = () =>
@@ -33,7 +33,7 @@ function seed(): Db {
   db.families.push({ id: F, name: 'Ailem', created_at: now() });
   db.profiles.push({ id: U, family_id: F, nickname: 'Anne', name: 'Ayşe', avatar: 'kadın', created_at: now() });
   db.children.push(
-    { id: 'c-nazli', family_id: F, name: 'Nazlı', avatar: 'flamingo', gender: 'kız', birthday: '2018-04-12', user_id: null, created_at: ago(9000) },
+    { id: 'c-nazli', family_id: F, name: 'Nazlı', avatar: 'flamingo', gender: 'kız', birthday: '2018-04-12', age_band: 'A', user_id: 'demo-child', coins_spent: 15, created_at: ago(9000) },
     { id: 'c-arven', family_id: F, name: 'Arven', avatar: 'keçi', gender: 'erkek', birthday: '2020-09-03', user_id: null, created_at: ago(8000) },
   );
   const task = (id: string, title: string, emoji: string, skill: string, start: number, recurring: boolean, reminder: string | null, review: boolean, kids: [string, string, number][]) => {
@@ -257,6 +257,38 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
     inv.used_at = now(); inv.used_by = uid;
     save();
     return { data: { child_id: c.id, family_id: c.family_id, name: c.name, avatar: c.avatar }, error: null };
+  }
+  // Pofi Adası (M4) fonksiyonları: yaş bandı, ret + not, coin bakiyesi, cihaz bağlantısı
+  const myChild = (id: string) => db.children.find((x: Row) => x.id === id && x.family_id === me?.family_id);
+  if (name === 'set_child_age_band') {
+    const c = myChild(args.p_child_id);
+    if (!c) return { data: null, error: { message: 'Çocuk bulunamadı' } };
+    c.age_band = args.p_band;
+    save();
+    return { data: null, error: null };
+  }
+  if (name === 'review_completion') {
+    const key = { task_id: args.p_task_id, child_id: args.p_child_id, date: args.p_date };
+    let row = db.completions.find((r: Row) => r.task_id === key.task_id && r.child_id === key.child_id && r.date === key.date);
+    if (!row) { row = { id: uuid(), family_id: me.family_id, ...key, created_at: now() }; db.completions.push(row); }
+    Object.assign(row, { status: args.p_status, parent_note: args.p_note ?? null, reviewed_at: now(), reviewed_by: uid });
+    save();
+    return { data: null, error: null };
+  }
+  if (name === 'child_balance') {
+    const c = myChild(args.p_child_id);
+    if (!c) return { data: null, error: { message: 'Yetki yok' } };
+    const earned = db.completions
+      .filter((r: Row) => r.child_id === c.id && r.status === 'approved')
+      .reduce((sum: number, r: Row) => sum + (db.task_assignments.find((a: Row) => a.task_id === r.task_id && a.child_id === c.id)?.coins ?? 0), 0);
+    return { data: earned - (c.coins_spent ?? 0), error: null };
+  }
+  if (name === 'unlink_child_device') {
+    const c = myChild(args.p_child_id);
+    if (!c) return { data: null, error: { message: 'Çocuk bulunamadı' } };
+    c.user_id = null;
+    save();
+    return { data: null, error: null };
   }
   if (name === 'join_family') {
     const inv = db.invite_codes.find((i: Row) => i.code === String(args.p_code).trim().toUpperCase() && i.kind === 'parent');

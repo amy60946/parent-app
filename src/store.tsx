@@ -6,6 +6,7 @@ import { fromISO, toISO, todayISO } from './dates';
 import { supabase, MAIL_BUCKET } from './lib/supabase';
 import { uuid } from './lib/uuid';
 import { readFileBytes } from './lib/files';
+import { AgeBand } from './data/ageBands';
 
 export type Child = {
   id: string;
@@ -13,6 +14,8 @@ export type Child = {
   avatar: string;
   gender?: 'kız' | 'erkek';
   birthday?: string; // ISO
+  ageBand?: AgeBand; // Pofi Adası oyunu: A 6–9, B 10–12, C 13–15
+  linked: boolean; // çocuk oyuna giriş kodunu kullandı (cihaz bağlı)
 };
 
 export type Parent = { id: string; nickname: string; name: string; avatar: string };
@@ -38,7 +41,9 @@ export type Task = {
 
 export type RepeatKind = 'daily' | 'weekly' | 'monthly';
 
-export type CompletionStatus = 'pending' | 'approved';
+// pending: çocuk "yaptım" dedi · approved: onaylandı (coin verilir)
+// declined: çocuk "yapamam" dedi · rejected: ebeveyn notla reddetti
+export type CompletionStatus = 'pending' | 'approved' | 'declined' | 'rejected';
 // anahtar: `${taskId}|${childId}|${date}`
 export type Completions = Record<string, CompletionStatus>;
 
@@ -70,14 +75,17 @@ type Store = {
   savedIds: string[];
   customTemplates: Template[];
   inviteCodes: InviteCode[];
-  addChild: (c: Omit<Child, 'id'>) => void;
+  addChild: (c: Omit<Child, 'id' | 'linked'>) => void;
+  setChildAgeBand: (childId: string, band: AgeBand) => void;
+  childBalance: (childId: string) => Promise<number>;
+  unlinkChildDevice: (childId: string) => Promise<void>;
   updateParent: (p: Partial<Parent>) => void;
   addTasks: (t: Omit<Task, 'id' | 'sortOrder'>[]) => void;
   reorderTasks: (orderedIds: string[]) => void; // verilen görevleri bu sırayla diz
   updateTask: (id: string, patch: Partial<Task>) => void; // tekrarlayan görevde tek kayıt => tüm günlere yansır
   deleteTask: (id: string) => void;
   toggleCompletion: (task: Task, childId: string, date: string) => void;
-  review: (key: string, approve: boolean) => void;
+  review: (key: string, approve: boolean, note?: string) => void; // ret: not çocuğa oyunda görünür
   toggleSaved: (templateId: string) => void;
   addCustomTemplate: (t: Omit<Template, 'id' | 'usedBy' | 'custom'>) => string;
   allTemplates: Template[];
@@ -126,6 +134,8 @@ const toChild = (r: Row): Child => ({
   avatar: r.avatar,
   gender: r.gender ?? undefined,
   birthday: r.birthday ?? undefined,
+  ageBand: r.age_band ?? undefined,
+  linked: !!r.user_id,
 });
 
 const toTask = (r: Row): Task => ({
@@ -358,15 +368,38 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     [refresh],
   );
 
-  const addChild = useCallback((c: Omit<Child, 'id'>) => {
+  const addChild = useCallback((c: Omit<Child, 'id' | 'linked'>) => {
     const f = fid.current;
     if (!f) return;
-    const child: Child = { ...c, id: uuid() };
+    const child: Child = { ...c, id: uuid(), linked: false };
     setChildren((p) => [...p, child]);
-    run(() => supabase.from('children').insert({
-      id: child.id, family_id: f, name: c.name, avatar: c.avatar, gender: c.gender ?? null, birthday: c.birthday ?? null,
-    }));
+    run(async () => {
+      const ins = await supabase.from('children').insert({
+        id: child.id, family_id: f, name: c.name, avatar: c.avatar, gender: c.gender ?? null, birthday: c.birthday ?? null,
+      });
+      if (ins.error || !c.ageBand) return ins;
+      return supabase.rpc('set_child_age_band', { p_child_id: child.id, p_band: c.ageBand });
+    });
   }, [run]);
+
+  const setChildAgeBand = useCallback((childId: string, band: AgeBand) => {
+    setChildren((p) => p.map((c) => (c.id === childId ? { ...c, ageBand: band } : c)));
+    run(() => supabase.rpc('set_child_age_band', { p_child_id: childId, p_band: band }));
+  }, [run]);
+
+  // Coin bakiyesi sunucuda (coin_ledger): yalnızca onaylanan görevlerle artar, oyunda harcanınca düşer.
+  const childBalance = useCallback(async (childId: string) => {
+    const { data, error } = await supabase.rpc('child_balance', { p_child_id: childId });
+    if (error) throw new Error(error.message);
+    return Number(data ?? 0);
+  }, []);
+
+  // Oyundaki cihaz bağlantısını kaldır: oyun "bağlantın kapatıldı" der, yeni giriş kodu gerekir.
+  const unlinkChildDevice = useCallback(async (childId: string) => {
+    const { error } = await supabase.rpc('unlink_child_device', { p_child_id: childId });
+    if (error) throw new Error(error.message);
+    setChildren((p) => p.map((c) => (c.id === childId ? { ...c, linked: false } : c)));
+  }, []);
 
   // Profil alanları her tuşta değişir; sunucuya kısa bir beklemeyle tek seferde yazılır.
   const parentPatch = useRef<Row>({});
@@ -477,21 +510,18 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     }
   }, [run]);
 
-  const review = useCallback((key: string, approve: boolean) => {
+  const review = useCallback((key: string, approve: boolean, note?: string) => {
     const [taskId, childId, date] = key.split('|');
-    setCompletions((p) => {
-      const n = { ...p };
-      if (approve) n[key] = 'approved';
-      else delete n[key];
-      return n;
-    });
-    const match = { task_id: taskId, child_id: childId, date };
+    setCompletions((p) => ({ ...p, [key]: approve ? 'approved' : 'rejected' }));
     if (approve) {
       run(() => supabase.from('completions')
         .update({ status: 'approved', reviewed_at: new Date().toISOString(), reviewed_by: userId })
-        .match(match));
+        .match({ task_id: taskId, child_id: childId, date }));
     } else {
-      run(() => supabase.from('completions').delete().match(match));
+      // Ret kaydı silinmez: çocuk oyunda "reddedildi" ve ebeveynin notunu görür.
+      run(() => supabase.rpc('review_completion', {
+        p_task_id: taskId, p_child_id: childId, p_date: date, p_status: 'rejected', p_note: note?.trim() || null,
+      }));
     }
   }, [run, userId]);
 
@@ -648,7 +678,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   const value: Store = {
     ready, familyId,
     parent, children, tasks, completions, messages, savedIds, customTemplates, inviteCodes,
-    addChild, updateParent, addTasks, reorderTasks, updateTask, deleteTask, toggleCompletion, review,
+    addChild, setChildAgeBand, childBalance, unlinkChildDevice, updateParent, addTasks, reorderTasks, updateTask, deleteTask, toggleCompletion, review,
     toggleSaved, addCustomTemplate, allTemplates, sendMessage, sendPhoto, sendVoice, createInviteCode, createChildCode, joinFamily, refresh,
     isOnlyParent, deleteAccount,
   };

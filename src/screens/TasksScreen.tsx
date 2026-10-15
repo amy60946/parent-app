@@ -160,6 +160,8 @@ export default function TasksScreen({ navigation }: any) {
 const statusMeta: Record<CompletionStatus, { label: string; bg: string; fg: string; icon: keyof typeof Ionicons.glyphMap }> = {
   pending: { label: 'Onay bekliyor', bg: colors.medium.bg, fg: colors.medium.fg, icon: 'time-outline' },
   approved: { label: 'Tamamlandı', bg: colors.easy.bg, fg: colors.easy.fg, icon: 'checkmark-circle' },
+  declined: { label: 'Yapamadı', bg: '#ECEEF3', fg: colors.muted, icon: 'remove-circle-outline' },
+  rejected: { label: 'Reddedildi', bg: colors.hard.bg, fg: colors.hard.fg, icon: 'close-circle-outline' },
 };
 
 function TaskRow({ item, date, kids, completions, active, onDrag, onEdit, onDelete }: {
@@ -175,9 +177,10 @@ function TaskRow({ item, date, kids, completions, active, onDrag, onEdit, onDele
     .map((a) => completions[completionKey(t.id, a.childId, date)])
     .filter(Boolean) as CompletionStatus[];
   const status: CompletionStatus | undefined =
-    statuses.length === item.assigns.length
-      ? (statuses.every((x) => x === 'approved') ? 'approved' : 'pending')
-      : statuses.includes('pending') ? 'pending' : undefined;
+    statuses.includes('pending') ? 'pending'
+      : statuses.length === item.assigns.length && statuses.every((x) => x === 'approved') ? 'approved'
+      : statuses.includes('rejected') ? 'rejected'
+      : statuses.includes('declined') ? 'declined' : undefined;
 
   return (
     <View style={{ marginBottom: 10 }}>
