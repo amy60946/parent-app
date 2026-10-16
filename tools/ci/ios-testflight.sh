@@ -3,8 +3,11 @@
 # arşivler ve TestFlight'a yükler. EAS hesabı/sertifika kurulumu gerekmez; Apple sertifika ve profili bulutta yönetir.
 # Gerekli: ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 (p8 metni), APPLE_TEAM_ID, BUILD_NUMBER. Gizli bilgiler loga yazılmaz.
 set -euo pipefail
+# App Store yüklemesi iOS 26 SDK (Xcode 26+) ister: kurulu en yeni kararlı Xcode seçilir
 xc=$(ls -d /Applications/Xcode_*.app 2>/dev/null | grep -v -i beta | sort -V | tail -1 || true)
 [ -n "$xc" ] && sudo xcode-select -s "$xc/Contents/Developer"
+v=$(xcodebuild -version | head -1 | awk '{print $2}' | cut -d. -f1)
+[ "${v:-0}" -ge 26 ] || { echo "::error::Xcode $v kurulu; App Store Xcode 26+ istiyor (runs-on: macos-26)"; exit 1; }
 xcodebuild -version
 
 jq --arg b "$BUILD_NUMBER" '.expo.ios.buildNumber = $b' app.json > app.tmp && mv app.tmp app.json
