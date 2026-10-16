@@ -12,7 +12,7 @@
       "policy": "sdkVersion"
     },
     "ios": {
-      "bundleIdentifier": "com.fidan.ebeveyn",
+      "bundleIdentifier": "com.fidan.parentapp",
       "supportsTablet": false,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -20,7 +20,7 @@
       }
     },
     "android": {
-      "package": "com.fidan.ebeveyn",
+      "package": "com.fidan.parentapp",
       "adaptiveIcon": {
         "backgroundColor": "#0F1B3D",
         "foregroundImage": "./assets/android-icon-foreground.png",

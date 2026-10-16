@@ -2,7 +2,7 @@
 
 ## Kurulum
 
-Depo, doğrudan çalışan bir Expo projesidir (Expo SDK 57). Uygulama adı **Fidan**, uygulama kimliği `com.fidan.ebeveyn`, Expo hesabı `amy60946`.
+Depo, doğrudan çalışan bir Expo projesidir (Expo SDK 57). Uygulama adı **Fidan**, uygulama kimliği `com.fidan.parentapp`, Expo hesabı `amy60946`.
 
 1. Supabase'i bağla (bir kez):
    - Panelde **SQL Editor > New query**: `supabase/migrations/` altındaki dosyaları sırayla (önce `20261013000000_init.sql`, sonra `20261014000000_task_repeat_order.sql`) yapıştır, **Run**.

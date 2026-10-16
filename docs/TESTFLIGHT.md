@@ -6,14 +6,14 @@ Fidan yalnızca **ebeveyn** uygulamasıdır (16 Ekim 2026): açılış ekranı e
 | | Fidan | Pofi Adası |
 |---|---|---|
 | Kim kullanır | Ebeveyn | Çocuk |
-| Bundle ID | `com.fidan.ebeveyn` | `com.fidan.pofi` |
+| Bundle ID | `com.fidan.parentapp` | `com.fidan.gameapp` |
 | Yön | Dikey | Yatay |
 | Derleme | Expo EAS (`.github/workflows/ios-testflight.yml`) | Unity + Xcode (`pofi-adasi/.github/workflows/ios.yml`) |
 
 ## Bir kez yapılacaklar
 
-1. developer.apple.com → Certificates, IDs & Profiles → **Identifiers** → **+** → App IDs → App → Bundle ID (Explicit): `com.fidan.ebeveyn`.
-2. appstoreconnect.apple.com → **Apps** → **+** → **New App**: iOS, ad "Fidan" (alınmışsa "Fidan Ebeveyn"), dil Türkçe, Bundle ID `com.fidan.ebeveyn`, SKU `fidan-ebeveyn`.
+1. developer.apple.com → Certificates, IDs & Profiles → **Identifiers** → **+** → App IDs → App → Bundle ID (Explicit): `com.fidan.parentapp`.
+2. appstoreconnect.apple.com → **Apps** → **+** → **New App**: iOS, ad "Fidan" (alınmışsa "Fidan Ebeveyn"), dil Türkçe, Bundle ID `com.fidan.parentapp`, SKU `parentapp`.
    Oluşunca uygulama → **App Information** → **Apple ID** (10 haneli sayı) → `FIDAN_ASC_APP_ID`.
 3. expo.dev (amy60946 hesabı) → sağ üst profil → **Account settings** → **Access tokens** → **Create token** → `EXPO_TOKEN`.
 4. Bu depoda (amy60946/parent-app) → Settings → Secrets and variables → Actions → **New repository secret**:

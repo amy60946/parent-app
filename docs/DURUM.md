@@ -14,7 +14,7 @@ Son güncelleme: 13 Ekim 2026 (akşam).
   - `supabase/migrations/20261013000000_init.sql` çalıştırıldı (9 tablo, RLS, `mail` kovası).
   - Email provider açık, **Confirm email kapalı** (geliştirme için; yayından önce açılacak, SMTP kurulacak).
   - Publishable (anon) anahtar repoda yok; yerel test için `.env`'e yazılır (bkz. `.env.example`). Kullanıcıdan tekrar istenebilir; paylaşılması güvenli anahtardır, secret anahtar asla istenmez.
-- Expo hesabı: `amy60946`. `app.json` → ad **Fidan**, kimlik `com.fidan.ebeveyn`.
+- Expo hesabı: `amy60946`. `app.json` → ad **Fidan**, kimlik `com.fidan.parentapp`.
 - Ortam ayarları: Allowed domains içinde `uhelhxqgpcjemadhsifx.supabase.co`, `expo.dev`, `api.expo.dev`, `u.expo.dev`; ortam değişkeni `EXPO_TOKEN` eklendi.
 - Apple Developer Program: başvuru sırasında sorun çıktı, Apple desteği dönüş yapacak (bekleniyor).
 
@@ -66,7 +66,7 @@ Bu turda yapılanlar: klavye her alanda yazılanı gösteriyor (alt sayfalar `sr
 - Web önizlemesi (`bash preview/build.sh`) bu turda güncellendi ama Artifact yeniden yayınlanmadı.
 
 **Apple onayı gelince (TestFlight):**
-1. App Store Connect'te uygulama kaydı (ad: Fidan, kimlik: `com.fidan.ebeveyn`).
+1. App Store Connect'te uygulama kaydı (ad: Fidan, kimlik: `com.fidan.parentapp`).
 2. App Store Connect API anahtarını Expo'ya tanıt (kullanıcıya adım adım).
 3. Expo ortam değişkenleri: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_KEY` (expo.dev > proje > Environment variables).
 4. `eas build --platform ios --profile production` + `eas submit` → TestFlight, iç test kullanıcısı olarak kullanıcıyı ekle.
