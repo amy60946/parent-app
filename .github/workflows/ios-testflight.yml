@@ -1,9 +1,11 @@
 name: iOS (TestFlight)
 
 # Fidan (ebeveyn uygulaması) → EAS Build (bulutta iOS derlemesi) → EAS Submit (TestFlight).
-# Elle: Actions → "iOS (TestFlight)" → Run workflow. Gerekli secret'lar: docs/TESTFLIGHT.md
+# Elle: Actions → "iOS (TestFlight)" → Run workflow. Otomatik: commit mesajında [ios] geçerse. Gerekli secret'lar: docs/TESTFLIGHT.md
 on:
   workflow_dispatch:
+  push:
+    branches: [claude/zen-noether-nlt3wm, main]
 
 concurrency:
   group: fidan-ios
@@ -11,6 +13,7 @@ concurrency:
 
 jobs:
   testflight:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[ios]')
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
