@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "Fidan",
-    "slug": "fidan",
+    "name": "ParentApp",
+    "slug": "parentapp",
     "owner": "amy60946",
-    "scheme": "fidan",
+    "scheme": "parentapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,7 +12,7 @@
       "policy": "sdkVersion"
     },
     "ios": {
-      "bundleIdentifier": "com.fidan.parentapp",
+      "bundleIdentifier": "com.parentapp.ios",
       "supportsTablet": false,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -20,7 +20,7 @@
       }
     },
     "android": {
-      "package": "com.fidan.parentapp",
+      "package": "com.parentapp.ios",
       "adaptiveIcon": {
         "backgroundColor": "#0F1B3D",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -61,14 +61,6 @@
         }
       ],
       "@react-native-community/datetimepicker"
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "dff6d69f-1b4f-4373-93ad-a999cde37ede"
-      }
-    },
-    "updates": {
-      "url": "https://u.expo.dev/dff6d69f-1b4f-4373-93ad-a999cde37ede"
-    }
+    ]
   }
 }

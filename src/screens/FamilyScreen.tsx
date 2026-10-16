@@ -492,7 +492,7 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
             Her yeni ebeveyn için size özel bir kod üretilir. Diğer ebeveyn bu kodla aileye katılır.
           </Text>
           {code ? (
-            <CodeBox code={code} shareText={`Fidan'a katılmak için davet kodun: ${code}\nUygulamada Aile > Hesap > Aileye katıl bölümüne yaz.`} />
+            <CodeBox code={code} shareText={`ParentApp'e katılmak için davet kodun: ${code}\nUygulamada Aile > Hesap > Aileye katıl bölümüne yaz.`} />
           ) : (
             <Pressable
               style={[styles.cta, busy && { opacity: 0.6 }]}

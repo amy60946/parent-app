@@ -5,7 +5,7 @@ import type { Session, EmailOtpType } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
 // E-postadaki bağlantılar uygulamayı bu adresle açar:
-// geliştirmede exp://…/--/auth (Expo Go), derlenmiş uygulamada fidan://auth
+// geliştirmede exp://…/--/auth (Expo Go), derlenmiş uygulamada parentapp://auth
 export const authRedirectUrl = () => Linking.createURL('auth');
 
 type Auth = {

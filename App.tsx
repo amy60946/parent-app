@@ -89,7 +89,7 @@ function AuthFlow() {
   return (
     <NavigationContainer theme={navTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {/* Fidan yalnızca ebeveyn uygulaması: açılış ekranı ebeveyn girişi (çocuk girişi Pofi Adası oyununda) */}
+        {/* ParentApp yalnızca ebeveyn uygulaması: açılış ekranı ebeveyn girişi (çocuk girişi Pofi Adası oyununda) */}
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="Forgot" component={ForgotPasswordScreen} />

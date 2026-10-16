@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Fidan web önizlemesini üretir: preview/out/index.html (telefon çerçevesi) + app.html (uygulama)
+# ParentApp web önizlemesini üretir: preview/out/index.html (telefon çerçevesi) + app.html (uygulama)
 # Deneme veritabanı (preview/demo-supabase.ts) kullanılır; gerçek Supabase'e bağlanmaz.
 # Kullanım: bash preview/build.sh
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-WORK="${FIDAN_PREVIEW_WORK:-${TMPDIR:-/tmp}/fidan-preview}"
+WORK="${PARENTAPP_PREVIEW_WORK:-${TMPDIR:-/tmp}/parentapp-preview}"
 
 if [ ! -d "$WORK/node_modules/react-native-draggable-flatlist" ]; then
   echo "› Expo projesi hazırlanıyor ($WORK)"

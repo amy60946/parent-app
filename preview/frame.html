@@ -1,4 +1,4 @@
-<title>Fidan Önizleme</title>
+<title>ParentApp Önizleme</title>
 <style>
   /* Düzen: ortada telefon boyutunda uygulama, altında tek satır bilgi ve sıfırlama. Dar ekranda uygulama tüm ekranı kaplar. */
   :root {
@@ -44,9 +44,9 @@
 </style>
 
 <div class="stage">
-  <div class="phone"><iframe id="app" src="app.html" title="Fidan uygulaması"></iframe></div>
+  <div class="phone"><iframe id="app" src="app.html" title="ParentApp uygulaması"></iframe></div>
   <div class="bar">
-    <span>Deneme veritabanı · Hazır hesap: <b>demo@fidan.app</b> / <b>12345678</b></span>
+    <span>Deneme veritabanı · Hazır hesap: <b>demo@parentapp.app</b> / <b>12345678</b></span>
     <button id="reset" type="button">Baştan başlat</button>
   </div>
 </div>
@@ -63,7 +63,7 @@
       return;
     }
     clearTimeout(timer);
-    try { localStorage.removeItem('fidan-onizleme-v1'); } catch (e) { /* depolama kapalı */ }
+    try { localStorage.removeItem('parentapp-onizleme-v1'); } catch (e) { /* depolama kapalı */ }
     document.getElementById('app').src = 'app.html?' + Date.now();
     armed = false; btn.textContent = 'Baştan başlat'; btn.classList.remove('confirm');
   });

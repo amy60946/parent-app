@@ -1,6 +1,6 @@
 name: iOS (TestFlight)
 
-# Fidan (ebeveyn uygulaması) → EAS Build (bulutta iOS derlemesi) → EAS Submit (TestFlight).
+# ParentApp (ebeveyn uygulaması) → EAS Build (bulutta iOS derlemesi) → EAS Submit (TestFlight).
 # Elle: Actions → "iOS (TestFlight)" → Run workflow. Otomatik: commit mesajında [ios] geçerse. Gerekli secret'lar: docs/TESTFLIGHT.md
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ on:
     branches: [claude/zen-noether-nlt3wm, main]
 
 concurrency:
-  group: fidan-ios
+  group: parentapp-ios
   cancel-in-progress: false
 
 jobs:
@@ -31,10 +31,10 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          FIDAN_ASC_APP_ID: ${{ secrets.FIDAN_ASC_APP_ID }}
+          PARENTAPP_ASC_APP_ID: ${{ secrets.PARENTAPP_ASC_APP_ID }}
         run: |
           miss=""
-          for v in EXPO_TOKEN SUPABASE_PUBLISHABLE_KEY ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 APPLE_TEAM_ID FIDAN_ASC_APP_ID; do
+          for v in EXPO_TOKEN SUPABASE_PUBLISHABLE_KEY ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 APPLE_TEAM_ID PARENTAPP_ASC_APP_ID; do
             [ -z "${!v}" ] && miss="$miss $v"
           done
           if [ -n "$miss" ]; then echo "::error::Eksik secret:$miss (docs/TESTFLIGHT.md)"; exit 1; fi
@@ -45,6 +45,8 @@ jobs:
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
+      - name: Expo projesi (ilk çalıştırmada amy60946 hesabında "parentapp" projesi oluşturulur, sonra ona bağlanır)
+        run: eas init --non-interactive --force
       - name: Ayarları yaz (.env, App Store Connect anahtarı, gönderim profili)
         env:
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
@@ -52,11 +54,11 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          FIDAN_ASC_APP_ID: ${{ secrets.FIDAN_ASC_APP_ID }}
+          PARENTAPP_ASC_APP_ID: ${{ secrets.PARENTAPP_ASC_APP_ID }}
         run: |
           printf 'EXPO_PUBLIC_SUPABASE_URL=https://uhelhxqgpcjemadhsifx.supabase.co\nEXPO_PUBLIC_SUPABASE_KEY=%s\n' "$SUPABASE_PUBLISHABLE_KEY" > .env
           printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/asc.p8"; chmod 600 "$RUNNER_TEMP/asc.p8"
-          jq --arg app "$FIDAN_ASC_APP_ID" --arg key "$RUNNER_TEMP/asc.p8" --arg kid "$ASC_KEY_ID" --arg iss "$ASC_ISSUER_ID" --arg team "$APPLE_TEAM_ID" \
+          jq --arg app "$PARENTAPP_ASC_APP_ID" --arg key "$RUNNER_TEMP/asc.p8" --arg kid "$ASC_KEY_ID" --arg iss "$ASC_ISSUER_ID" --arg team "$APPLE_TEAM_ID" \
             '.submit.production.ios = {ascAppId: $app, ascApiKeyPath: $key, ascApiKeyId: $kid, ascApiKeyIssuerId: $iss, appleTeamId: $team}' eas.json > eas.tmp && mv eas.tmp eas.json
       - name: iOS derlemesi (EAS, bulutta; sertifika/profil otomatik)
         env:

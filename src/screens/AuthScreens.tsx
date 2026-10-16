@@ -27,7 +27,7 @@ function Layout({ title, subtitle, onBack, children }: {
           <View style={{ height: 36, justifyContent: 'center' }}>
             {onBack && <IconButton name="chevron-back" label="Geri" onPress={onBack} />}
           </View>
-          <Text style={styles.brand}>Fidan</Text>
+          <Text style={styles.brand}>ParentApp</Text>
           <Text style={styles.title}>{title}</Text>
           {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
           <View style={{ gap: 12, marginTop: 24 }}>{children}</View>
@@ -82,7 +82,7 @@ function Sent({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: stri
 }
 
 /* ---------- Çocuk oturumu açık kalmış cihaz ----------
-   Fidan yalnızca ebeveyn uygulamasıdır (16 Ekim 2026). Çocuk giriş kodunu Pofi Adası oyununa yazar.
+   ParentApp yalnızca ebeveyn uygulamasıdır (16 Ekim 2026). Çocuk giriş kodunu Pofi Adası oyununa yazar.
    Eski sürümden kalan çocuk (anonim) oturumu varsa yalnızca bu cihazda kapatılır; çocuğun oyun bağlantısı silinmez. */
 
 export function ChildHomeScreen() {
@@ -93,7 +93,7 @@ export function ChildHomeScreen() {
       <FairyScene />
       <SafeAreaView style={[fairy.content, { justifyContent: 'center' }]}>
         <View style={[fairy.card, { alignItems: 'center', gap: 12 }]}>
-          <Text style={fairy.cardTitle}>Fidan ebeveyn uygulamasıdır</Text>
+          <Text style={fairy.cardTitle}>ParentApp ebeveyn uygulamasıdır</Text>
           <Text style={{ color: '#E9E3FF', fontSize: 15, textAlign: 'center', lineHeight: 21 }}>
             Çocuğunun giriş kodu Pofi Adası oyununda kullanılır. Ebeveyn olarak devam etmek için giriş yap.
           </Text>

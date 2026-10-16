@@ -23,7 +23,7 @@ const app = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fidan</title>
+<title>ParentApp</title>
 ${style}
 <style>html,body{background:#F5F6F8}</style>
 </head>

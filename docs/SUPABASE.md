@@ -37,14 +37,14 @@ Kontrol: **Table Editor**'da 9 tablo (profiles, families, children, tasks, task_
 
 **Authentication > URL Configuration**:
 
-- **Site URL**: `fidan://`
+- **Site URL**: `parentapp://`
 - **Redirect URLs** (Add URL ile tek tek ekle):
-  - `fidan://**` → derlenmiş uygulama (development build / mağaza sürümü)
+  - `parentapp://**` → derlenmiş uygulama (development build / mağaza sürümü)
   - `exp://**` → Expo Go ile geliştirme
 
-Uygulama tarafında `app.json` içinde `"expo": { "scheme": "fidan", ... }` olmalı (README'deki kurulum adımına bak).
+Uygulama tarafında `app.json` içinde `"expo": { "scheme": "parentapp", ... }` olmalı (README'deki kurulum adımına bak).
 
-Akış: E-postadaki bağlantı önce Supabase'in `https://…supabase.co/auth/v1/verify` adresine gider, oradan uygulamaya (`fidan://auth` ya da Expo Go'da `exp://…/--/auth`) yönlendirir. Uygulama oturumu açar; şifre yenileme bağlantısıysa "Yeni şifre belirle" ekranını gösterir. Bağlantıya uygulamanın kurulu olduğu telefondan dokunulmalı.
+Akış: E-postadaki bağlantı önce Supabase'in `https://…supabase.co/auth/v1/verify` adresine gider, oradan uygulamaya (`parentapp://auth` ya da Expo Go'da `exp://…/--/auth`) yönlendirir. Uygulama oturumu açar; şifre yenileme bağlantısıysa "Yeni şifre belirle" ekranını gösterir. Bağlantıya uygulamanın kurulu olduğu telefondan dokunulmalı.
 
 ## 5. E-posta gönderimi (SMTP) — önemli
 
@@ -54,7 +54,7 @@ Supabase'in yerleşik e-posta servisi yalnızca **proje ekibindeki adreslere** v
 
 - Bir e-posta servisi seç (ör. Resend, Brevo, Postmark, Amazon SES) ve alan adını orada doğrula.
 - **Sender email**: `merhaba@alanadin.com`
-- **Sender name**: `Fidan`
+- **Sender name**: `ParentApp`
 - Host, port, kullanıcı adı ve şifreyi servisin verdiği SMTP bilgilerinden doldur.
 
 Sonra **Authentication > Rate Limits** içinde e-posta gönderim sınırını ihtiyacına göre artır (ör. saatte 30).
@@ -70,7 +70,7 @@ Sonra **Authentication > Rate Limits** içinde e-posta gönderim sınırını ih
 **Subject**
 
 ```
-Fidan'a hoş geldin 🌱
+ParentApp'e hoş geldin 🌱
 ```
 
 **Message body**
@@ -80,7 +80,7 @@ Fidan'a hoş geldin 🌱
   <p style="font-size:13px;font-weight:700;letter-spacing:1px;color:#8A91A3;margin:0">FİDAN</p>
   <h1 style="font-size:22px;margin:8px 0 16px">Hoş geldin!</h1>
   <p style="font-size:14px;line-height:22px;margin:0 0 16px">
-    Fidan ailesine katıldığın için çok mutluyuz. Çocuklarına görev atayabilir,
+    ParentApp ailesine katıldığın için çok mutluyuz. Çocuklarına görev atayabilir,
     tamamladıklarında coin kazanmalarını ve gelişimlerini birlikte izleyebilirsiniz.
   </p>
   <p style="font-size:14px;line-height:22px;margin:0 0 24px">
@@ -101,7 +101,7 @@ Fidan'a hoş geldin 🌱
 **Subject**
 
 ```
-Fidan şifreni yenile
+ParentApp şifreni yenile
 ```
 
 **Message body**
@@ -112,7 +112,7 @@ Fidan şifreni yenile
   <h1 style="font-size:22px;margin:8px 0 16px">Şifreni yenile</h1>
   <p style="font-size:14px;line-height:22px;margin:0 0 24px">
     Hesabın için şifre yenileme isteği aldık. Aşağıdaki düğmeye <b>uygulamanın kurulu olduğu telefondan</b>
-    dokun; Fidan açılınca yeni şifreni belirleyebilirsin.
+    dokun; ParentApp açılınca yeni şifreni belirleyebilirsin.
   </p>
   <a href="{{ .ConfirmationURL }}"
      style="display:inline-block;background:#0F1B3D;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:14px 24px;border-radius:14px">
@@ -130,7 +130,7 @@ Fidan şifreni yenile
 **Subject**
 
 ```
-Fidan e-posta adresini onayla
+ParentApp e-posta adresini onayla
 ```
 
 **Message body**
@@ -158,7 +158,7 @@ Fidan e-posta adresini onayla
 - [ ] SQL çalıştı, 9 tablo + `mail` kovası var
 - [ ] `.env` dolduruldu, Expo `-c` ile yeniden başlatıldı
 - [ ] Confirm email açık, minimum şifre 8
-- [ ] Site URL `fidan://`, Redirect URLs `fidan://**` ve `exp://**`
+- [ ] Site URL `parentapp://`, Redirect URLs `parentapp://**` ve `exp://**`
 - [ ] Custom SMTP ayarlandı (yoksa gerçek kullanıcılara e-posta gitmez)
 - [ ] "Confirm signup" ve "Reset Password" şablonları Türkçe
 - [ ] Test: kayıt ol → e-postadaki "Hesabımı aç" → uygulama açılıp giriş yapılmış olmalı

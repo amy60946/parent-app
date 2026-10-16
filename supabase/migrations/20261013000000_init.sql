@@ -1,5 +1,5 @@
 -- =====================================================================
--- Fidan – ilk veritabanı şeması
+-- ParentApp – ilk veritabanı şeması
 -- Supabase panelinde: SQL Editor > New query > bu dosyanın tamamını
 -- yapıştır > Run. Boş bir projede BİR KEZ çalıştırılmak üzere yazıldı.
 -- =====================================================================

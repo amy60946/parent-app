@@ -1,5 +1,5 @@
 -- =====================================================================
--- Fidan – görev tekrar ayrıntısı ve görev sırası
+-- ParentApp – görev tekrar ayrıntısı ve görev sırası
 -- Supabase panelinde: SQL Editor > New query > bu dosyanın tamamını
 -- yapıştır > Run. Birden fazla çalıştırılırsa zarar vermez.
 -- =====================================================================

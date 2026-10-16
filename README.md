@@ -1,8 +1,8 @@
-# Fidan – Ebeveyn Uygulaması (iOS + Android, Expo)
+# ParentApp – Ebeveyn Uygulaması (iOS + Android, Expo)
 
 ## Kurulum
 
-Depo, doğrudan çalışan bir Expo projesidir (Expo SDK 57). Uygulama adı **Fidan**, uygulama kimliği `com.fidan.parentapp`, Expo hesabı `amy60946`.
+Depo, doğrudan çalışan bir Expo projesidir (Expo SDK 57). Uygulama adı **ParentApp**, uygulama kimliği `com.parentapp.ios`, Expo hesabı `amy60946`.
 
 1. Supabase'i bağla (bir kez):
    - Panelde **SQL Editor > New query**: `supabase/migrations/` altındaki dosyaları sırayla (önce `20261013000000_init.sql`, sonra `20261014000000_task_repeat_order.sql`) yapıştır, **Run**.
@@ -18,8 +18,8 @@ npx expo start
 
 Çıkan QR kodu telefondaki **Expo Go** ile okut.
 
-- Ayarlar: `app.json` (ad, kimlik, simge, açılış ekranı, Türkçe izin metinleri, `fidan://` bağlantıları), `eas.json` (Expo bulut derleme profilleri).
-- Geçici simge: `assets/icon.png` (lacivert zeminde fidan). Asıl tasarım gelince aynı adla değiştirilir.
+- Ayarlar: `app.json` (ad, kimlik, simge, açılış ekranı, Türkçe izin metinleri, `parentapp://` bağlantıları), `eas.json` (Expo bulut derleme profilleri).
+- Geçici simge: `assets/icon.png` (lacivert zeminde filiz). Asıl tasarım gelince aynı adla değiştirilir.
 - Tip kontrolü: `npm run typecheck`
 
 > Not: Veriler Supabase'de kalıcı tutulur (`src/store.tsx`). Ekranlar değişikliği anında gösterir, kayıt arka planda yapılır; hata olursa uyarı çıkar ve veri sunucudan yeniden yüklenir. Diğer ebeveynin ve çocuk uygulamasının değişiklikleri Realtime ile anında gelir.
@@ -55,7 +55,7 @@ npx expo start
 
 ## Web önizlemesi (deneme veritabanıyla)
 
-Uygulama Claude sohbetinde tıklanabilir bir sayfa olarak da açılır. Bu sayfa dış sunuculara bağlanamadığı için gerçek Supabase yerine tarayıcıda çalışan bir deneme veritabanı (`preview/demo-supabase.ts`) kullanır; veriler o tarayıcıda saklanır. Hazır hesap: `demo@fidan.app` / `12345678`.
+Uygulama Claude sohbetinde tıklanabilir bir sayfa olarak da açılır. Bu sayfa dış sunuculara bağlanamadığı için gerçek Supabase yerine tarayıcıda çalışan bir deneme veritabanı (`preview/demo-supabase.ts`) kullanır; veriler o tarayıcıda saklanır. Hazır hesap: `demo@parentapp.app` / `12345678`.
 
 - Üretmek için: `bash preview/build.sh` → `preview/out/index.html` + `app.html`
 - `src/lib/webAlert.web.ts`, `src/components/DateField.web.tsx`, `src/lib/files.web.ts` yalnızca web'de devreye girer; telefondaki davranış değişmez.

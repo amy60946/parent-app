@@ -10,7 +10,7 @@ type Row = Record<string, any>;
 type Err = { message: string; code?: string } | null;
 type Db = { users: Row[]; blobs: Record<string, string>; session: Row | null } & Record<string, any>;
 
-const KEY = 'fidan-onizleme-v3';
+const KEY = 'parentapp-onizleme-v3';
 const TABLES = ['profiles', 'families', 'children', 'tasks', 'task_assignments', 'completions', 'messages', 'saved_templates', 'invite_codes'];
 
 const uuid = () =>
@@ -29,7 +29,7 @@ function seed(): Db {
   const U = 'demo-user', F = 'demo-family';
   const db: Db = { users: [], blobs: {}, session: null };
   TABLES.forEach((t) => { db[t] = []; });
-  db.users.push({ id: U, email: 'demo@fidan.app', password: '12345678' });
+  db.users.push({ id: U, email: 'demo@parentapp.app', password: '12345678' });
   db.families.push({ id: F, name: 'Ailem', created_at: now() });
   db.profiles.push({ id: U, family_id: F, nickname: 'Anne', name: 'Ayşe', avatar: 'kadın', created_at: now() });
   db.children.push(
@@ -64,7 +64,7 @@ function seed(): Db {
   msg('c-nazli', 'child', 'Evet anne, 2 bölüm okudum!', 150);
   msg('c-nazli', 'parent', 'Harikasın! Akşam birlikte devam edelim 🌱', 140);
   db.saved_templates.push({ id: uuid(), family_id: F, template_key: 't1', is_custom: false, saved: true, created_at: now() });
-  db.session = { user: { id: U, email: 'demo@fidan.app' }, access_token: 'demo' };
+  db.session = { user: { id: U, email: 'demo@parentapp.app' }, access_token: 'demo' };
   return db;
 }
 
@@ -369,8 +369,8 @@ export const supabase = {
   removeChannel() {},
 } as unknown as SupabaseClient;
 
-// Önizlemeyi baştan başlatmak için (tarayıcı konsolunda): fidanSifirla()
-(globalThis as any).fidanSifirla = () => {
+// Önizlemeyi baştan başlatmak için (tarayıcı konsolunda): parentappSifirla()
+(globalThis as any).parentappSifirla = () => {
   try { localStorage.removeItem(KEY); } catch { /* yok say */ }
   db = seed();
   location.reload();

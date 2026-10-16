@@ -3,7 +3,7 @@ import { Animated, Easing, StyleSheet, View, useWindowDimensions } from 'react-n
 import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Circle, Path, G, Ellipse } from 'react-native-svg';
 
 // Masal dünyası arka planı: alacakaranlık gökyüzü, ay, yıldızlar, uzak şato,
-// katmanlı tepeler ve tepede parlayan küçük bir fidan. Tamamen vektör; her ekran
+// katmanlı tepeler ve tepede parlayan küçük bir filiz. Tamamen vektör; her ekran
 // boyutunda keskin görünür, ek görsel dosyası gerekmez.
 
 const W = 390;
@@ -142,7 +142,7 @@ export default function FairyScene() {
 
         <Path d="M0 690 C 110 640, 200 650, 270 668 C 330 684, 360 670, 390 662 L390 844 L0 844 Z" fill="url(#hill3)" />
 
-        {/* Tepedeki fidan */}
+        {/* Tepedeki filiz */}
         <Circle cx="196" cy="640" r="46" fill="url(#sprout)" />
         <Path d="M196 662 C 196 650, 195 640, 196 628" stroke="#7FD18B" strokeWidth="4" strokeLinecap="round" fill="none" />
         <Path d="M196 640 C 184 626, 170 628, 166 634 C 176 642, 188 644, 196 640 Z" fill="#8EE29A" />
