@@ -8,7 +8,7 @@ ls -d /Applications/Xcode*.app
 xc=$(ls -d /Applications/Xcode_*.app 2>/dev/null | grep -v -i beta | sort -V | tail -1 || true)
 [ -n "$xc" ] && sudo xcode-select -s "$xc/Contents/Developer"
 v=$(xcodebuild -version | head -1 | awk '{print $2}' | cut -d. -f1)
-[ "${v:-0}" -ge 26 ] || { echo "::error::Xcode $v kurulu; App Store Xcode 26+ istiyor (macos-15 imajında Xcode_26 yok)"; exit 1; }
+[ "${v:-0}" -ge 26 ] || { echo "::error::Xcode $v kurulu; App Store Xcode 26+ istiyor (çalıştırıcı imajında Xcode 26 yok)"; exit 1; }
 xcodebuild -version
 
 jq --arg b "$BUILD_NUMBER" '.expo.ios.buildNumber = $b' app.json > app.tmp && mv app.tmp app.json
