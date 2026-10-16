@@ -1,0 +1,67 @@
+name: iOS (TestFlight)
+
+# Fidan (ebeveyn uygulaması) → EAS Build (bulutta iOS derlemesi) → EAS Submit (TestFlight).
+# Elle: Actions → "iOS (TestFlight)" → Run workflow. Gerekli secret'lar: docs/TESTFLIGHT.md
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: fidan-ios
+  cancel-in-progress: false
+
+jobs:
+  testflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Secret denetimi
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          FIDAN_ASC_APP_ID: ${{ secrets.FIDAN_ASC_APP_ID }}
+        run: |
+          miss=""
+          for v in EXPO_TOKEN SUPABASE_PUBLISHABLE_KEY ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 APPLE_TEAM_ID FIDAN_ASC_APP_ID; do
+            [ -z "${!v}" ] && miss="$miss $v"
+          done
+          if [ -n "$miss" ]; then echo "::error::Eksik secret:$miss (docs/TESTFLIGHT.md)"; exit 1; fi
+          case "$SUPABASE_PUBLISHABLE_KEY" in sb_secret_*) echo "::error::SUPABASE_PUBLISHABLE_KEY gizli anahtar; publishable anahtarı yaz."; exit 1;; esac
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Ayarları yaz (.env, App Store Connect anahtarı, gönderim profili)
+        env:
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          FIDAN_ASC_APP_ID: ${{ secrets.FIDAN_ASC_APP_ID }}
+        run: |
+          printf 'EXPO_PUBLIC_SUPABASE_URL=https://uhelhxqgpcjemadhsifx.supabase.co\nEXPO_PUBLIC_SUPABASE_KEY=%s\n' "$SUPABASE_PUBLISHABLE_KEY" > .env
+          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/asc.p8"; chmod 600 "$RUNNER_TEMP/asc.p8"
+          jq --arg app "$FIDAN_ASC_APP_ID" --arg key "$RUNNER_TEMP/asc.p8" --arg kid "$ASC_KEY_ID" --arg iss "$ASC_ISSUER_ID" --arg team "$APPLE_TEAM_ID" \
+            '.submit.production.ios = {ascAppId: $app, ascApiKeyPath: $key, ascApiKeyId: $kid, ascApiKeyIssuerId: $iss, appleTeamId: $team}' eas.json > eas.tmp && mv eas.tmp eas.json
+      - name: iOS derlemesi (EAS, bulutta; sertifika/profil otomatik)
+        env:
+          EXPO_ASC_API_KEY_PATH: ${{ runner.temp }}/asc.p8
+          EXPO_ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          EXPO_ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          EXPO_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          EXPO_APPLE_TEAM_TYPE: ${{ secrets.APPLE_TEAM_TYPE || 'INDIVIDUAL' }}
+        run: eas build --platform ios --profile production --non-interactive --wait
+      - name: TestFlight'a gönder
+        run: eas submit --platform ios --profile production --latest --non-interactive --wait

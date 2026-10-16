@@ -169,10 +169,10 @@ function ChildInfo({ id }: { id: string }) {
       <Card style={{ gap: 12 }}>
         <Text style={styles.h}>Giriş kodu</Text>
         <Text style={{ fontSize: 13, color: colors.muted }}>
-          {c.name}, Fidan oyununa bu kodla giriş yapar. Yeni kod üretince eskisi geçersiz olur.
+          {c.name}, Pofi Adası oyununa bu kodla giriş yapar. Yeni kod üretince eskisi geçersiz olur.
         </Text>
         {code ? (
-          <CodeBox code={code} shareText={`${c.name} için Fidan giriş kodu: ${code}`} />
+          <CodeBox code={code} shareText={`${c.name} için Pofi Adası giriş kodu: ${code}`} />
         ) : (
           <Pressable style={[styles.cta, busy && { opacity: 0.6 }]} disabled={busy} onPress={issue}>
             <Text style={styles.ctaText}>Giriş kodu üret</Text>

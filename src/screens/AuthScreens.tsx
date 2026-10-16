@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, TextInput, Pressable, ScrollView, Alert, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
   TextInputProps,
@@ -6,9 +6,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import FairyScene from '../components/FairyScene';
-import { Avatar } from '../components/ui';
-import { supabase } from '../lib/supabase';
-import { useKeyboardHeight } from '../lib/useKeyboardHeight';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
 import { IconButton } from '../components/ui';
@@ -84,123 +81,26 @@ function Sent({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: stri
   );
 }
 
-/* ---------- Çocuk girişi (açılış ekranı) ---------- */
-
-const CODE_LEN = 6;
-
-export function ChildCodeScreen({ navigation }: any) {
-  const { childSignIn } = useAuth();
-  const [code, setCode] = useState('');
-  const [busy, setBusy] = useState(false);
-  const input = useRef<TextInput>(null);
-  const kb = useKeyboardHeight();
-
-  const submit = async () => {
-    if (code.length !== CODE_LEN) return Alert.alert('Sihirli kodun 6 karakter', 'Ebeveyninin sana verdiği kodu yaz.');
-    setBusy(true);
-    try {
-      await childSignIn(code);
-    } catch (e) {
-      Alert.alert('Kapı açılmadı', authErrorText(e));
-      setBusy(false);
-    }
-  };
-
-  return (
-    <View style={{ flex: 1, backgroundColor: '#0E0B2E' }}>
-      <StatusBar style="light" />
-      <FairyScene />
-      <SafeAreaView style={{ flex: 1 }}>
-        <Pressable style={{ flex: 1 }} onPress={() => input.current?.blur()} accessible={false}>
-          <View style={[fairy.content, { paddingBottom: kb ? kb - 10 : 24 }]}>
-            <View style={{ alignItems: 'center', marginTop: kb ? 8 : 48 }}>
-              <Text style={fairy.brand}>Fidan</Text>
-              {!kb && <Text style={fairy.tagline}>Görevlerini tamamla, dünyanı büyüt</Text>}
-            </View>
-
-            <View style={{ flex: 1 }} />
-
-            <View style={fairy.card}>
-              <Text style={fairy.cardTitle}>Sihirli kodunu yaz</Text>
-              <Pressable onPress={() => input.current?.focus()} style={fairy.boxes} accessibilityLabel="Giriş kodu">
-                {Array.from({ length: CODE_LEN }, (_, i) => {
-                  const ch = code[i];
-                  const focus = i === code.length;
-                  return (
-                    <View key={i} style={[fairy.box, ch && fairy.boxFilled, focus && fairy.boxFocus]}>
-                      <Text style={fairy.boxText}>{ch ?? ''}</Text>
-                    </View>
-                  );
-                })}
-              </Pressable>
-              <TextInput
-                ref={input}
-                value={code}
-                onChangeText={(v) => setCode(v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, CODE_LEN))}
-                autoCapitalize="characters"
-                autoCorrect={false}
-                autoComplete="off"
-                maxLength={CODE_LEN}
-                onSubmitEditing={submit}
-                returnKeyType="go"
-                style={fairy.hidden}
-                caretHidden
-              />
-              <Pressable
-                onPress={submit}
-                disabled={busy}
-                style={[fairy.cta, (busy || code.length < CODE_LEN) && { opacity: 0.75 }]}
-              >
-                {busy ? <ActivityIndicator color="#3B2300" /> : <Text style={fairy.ctaText}>Maceraya başla ✨</Text>}
-              </Pressable>
-            </View>
-
-            <Pressable onPress={() => navigation.navigate('Login')} hitSlop={10} style={{ alignSelf: 'center', marginTop: 18, padding: 6 }}>
-              <Text style={fairy.parent}>
-                Ebeveyn misin? <Text style={{ fontWeight: '700', textDecorationLine: 'underline' }}>Ebeveyn olarak giriş yap</Text>
-              </Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </SafeAreaView>
-    </View>
-  );
-}
-
-/* ---------- Çocuk girişi sonrası (oyun yakında) ---------- */
+/* ---------- Çocuk oturumu açık kalmış cihaz ----------
+   Fidan yalnızca ebeveyn uygulamasıdır (16 Ekim 2026). Çocuk giriş kodunu Pofi Adası oyununa yazar.
+   Eski sürümden kalan çocuk (anonim) oturumu varsa yalnızca bu cihazda kapatılır; çocuğun oyun bağlantısı silinmez. */
 
 export function ChildHomeScreen() {
-  const { session, signOut } = useAuth();
-  const [child, setChild] = useState<{ name: string; avatar: string } | null | undefined>(undefined);
-
-  useEffect(() => {
-    const uid = session?.user.id;
-    if (!uid) return;
-    supabase.from('children').select('name, avatar').eq('user_id', uid).maybeSingle()
-      .then(({ data }) => setChild(data ?? null));
-  }, [session?.user.id]);
-
+  const { signOutLocal } = useAuth();
   return (
     <View style={{ flex: 1, backgroundColor: '#0E0B2E' }}>
       <StatusBar style="light" />
       <FairyScene />
       <SafeAreaView style={[fairy.content, { justifyContent: 'center' }]}>
-        {child === undefined ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <View style={[fairy.card, { alignItems: 'center', gap: 12 }]}>
-            {child && <Avatar id={child.avatar} size={84} />}
-            <Text style={fairy.cardTitle}>{child ? `Merhaba ${child.name}!` : 'Kodun artık geçerli değil'}</Text>
-            <Text style={{ color: '#E9E3FF', fontSize: 15, textAlign: 'center', lineHeight: 21 }}>
-              {child
-                ? 'Sihirli kapı açıldı. Görevlerin ve oyun dünyan çok yakında burada olacak.'
-                : 'Ebeveyninden yeni bir sihirli kod iste.'}
-            </Text>
-            <Pressable onPress={signOut} style={[fairy.cta, { alignSelf: 'stretch' }]}>
-              <Text style={fairy.ctaText}>{child ? 'Çıkış yap' : 'Geri dön'}</Text>
-            </Pressable>
-          </View>
-        )}
+        <View style={[fairy.card, { alignItems: 'center', gap: 12 }]}>
+          <Text style={fairy.cardTitle}>Fidan ebeveyn uygulamasıdır</Text>
+          <Text style={{ color: '#E9E3FF', fontSize: 15, textAlign: 'center', lineHeight: 21 }}>
+            Çocuğunun giriş kodu Pofi Adası oyununda kullanılır. Ebeveyn olarak devam etmek için giriş yap.
+          </Text>
+          <Pressable onPress={signOutLocal} style={[fairy.cta, { alignSelf: 'stretch' }]}>
+            <Text style={fairy.ctaText}>Ebeveyn girişine geç</Text>
+          </Pressable>
+        </View>
       </SafeAreaView>
     </View>
   );
@@ -241,7 +141,7 @@ export function LoginScreen({ navigation }: any) {
   };
 
   return (
-    <Layout title="Ebeveyn girişi" subtitle="Ailenin görevlerine kaldığın yerden devam et." onBack={() => navigation.goBack()}>
+    <Layout title="Ebeveyn girişi" subtitle="Ailenin görevlerine kaldığın yerden devam et.">
       <Input value={email} onChangeText={setEmail} placeholder="E-posta" keyboardType="email-address"
         autoCapitalize="none" autoComplete="email" textContentType="emailAddress" />
       <Input value={password} onChangeText={setPassword} placeholder="Şifre" secure

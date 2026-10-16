@@ -74,3 +74,9 @@ Bu turda yapılanlar: klavye her alanda yazılanı gösteriyor (alt sayfalar `sr
 ## Bekleyen notlar
 - UI iyileştirmeleri: kullanıcı önizlemeyi kullanıp tek tek söyleyecek.
 - Yayından önce: Confirm email aç + custom SMTP, gizlilik politikası, Kids Category kuralları (README).
+
+## 16 Ekim 2026 — iki ayrı uygulama
+- **Fidan = yalnızca ebeveyn uygulaması.** Açılış ekranı ebeveyn girişi; çocuk "sihirli kod" ekranı Fidan'dan kaldırıldı.
+  Çocuk giriş kodunu **Pofi Adası** oyununa yazar (`amy60946/pofi-adasi`). Sunucu, `redeem_child_code`, görev/onay akışı aynı.
+  Eski sürümden kalan çocuk oturumu olan cihazda bilgi ekranı + "Ebeveyn girişine geç" (yalnız yerel oturum kapanır).
+- TestFlight: `docs/TESTFLIGHT.md` (EAS Build + Submit, `.github/workflows/ios-testflight.yml`).

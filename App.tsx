@@ -20,7 +20,7 @@ import CreateTaskScreen from './src/screens/CreateTaskScreen';
 import TaskDetailsScreen from './src/screens/TaskDetailsScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import {
-  LoginScreen, SignUpScreen, ForgotPasswordScreen, NewPasswordScreen, ChildCodeScreen, ChildHomeScreen,
+  LoginScreen, SignUpScreen, ForgotPasswordScreen, NewPasswordScreen, ChildHomeScreen,
 } from './src/screens/AuthScreens';
 
 const Tab = createBottomTabNavigator();
@@ -89,8 +89,8 @@ function AuthFlow() {
   return (
     <NavigationContainer theme={navTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="ChildCode" component={ChildCodeScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} options={{ animation: 'slide_from_bottom' }} />
+        {/* Fidan yalnızca ebeveyn uygulaması: açılış ekranı ebeveyn girişi (çocuk girişi Pofi Adası oyununda) */}
+        <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="Forgot" component={ForgotPasswordScreen} />
       </Stack.Navigator>
@@ -101,7 +101,7 @@ function AuthFlow() {
 function Root() {
   const { session, loading, recovery, childLinking } = useAuth();
   if (loading) return <Loading />;
-  // Çocuk oturumu (giriş koduyla açılan anonim oturum) ebeveyn paneline giremez
+  // Eski sürümden kalan çocuk (anonim) oturumu ebeveyn paneline giremez; bilgi ekranı + ebeveyn girişine geçiş
   if (session?.user.is_anonymous) return childLinking ? <Loading /> : <ChildHomeScreen />;
   if (recovery && session) return <NewPasswordScreen />;
   if (!session) return <AuthFlow />;
