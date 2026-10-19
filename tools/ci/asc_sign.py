@@ -4,6 +4,7 @@
 # Kullanım:
 #   python3 asc_sign.py create <p8> <bundle_id> <çıkış_klasörü>   → key.pem, cert.der, profile.mobileprovision, info.json
 #   python3 asc_sign.py cleanup <p8> <info.json>
+#   python3 asc_sign.py prune_dev <p8>   → CI'ın Xcode'u ile API'den açılmış eski geliştirme sertifikalarını iptal eder (kullanıcı onayı 19 Ekim 2026)
 # Ortam: ASC_KEY_ID, ASC_ISSUER_ID. Gizli bilgiler loga yazılmaz.
 import base64, json, os, sys, time, urllib.error, urllib.request
 import jwt
@@ -77,5 +78,16 @@ def cleanup(p8, info_path):
     if info.get('cert_id'): call(tok, 'DELETE', '/certificates/' + info['cert_id'], ok_missing=True)
     print('Geçici sertifika ve profil kaldırıldı.')
 
+def prune_dev(p8):
+    # Xcode otomatik imzası her CI işinde yeni bir geliştirme sertifikası açar (özel anahtarı iş bitince kaybolur);
+    # birikince "maximum number of certificates" hatası verir. Yalnız API ile açılmış ("Created via API") olanlar iptal edilir.
+    tok = token(p8)
+    certs = call(tok, 'GET', '/certificates?filter[certificateType]=DEVELOPMENT,IOS_DEVELOPMENT&limit=200')['data']
+    olds = [c for c in certs if 'via API' in (c['attributes'].get('displayName') or '') + (c['attributes'].get('name') or '')]
+    for c in olds: call(tok, 'DELETE', '/certificates/' + c['id'], ok_missing=True)
+    print('Geliştirme sertifikası: %d var, CI kalıntısı %d iptal edildi.' % (len(certs), len(olds)))
+    if certs and not olds: print('Adlar:', ', '.join(sorted({c['attributes'].get('displayName') or '?' for c in certs})))
+
 if __name__ == '__main__':
-    {'create': lambda: create(*sys.argv[2:5]), 'cleanup': lambda: cleanup(*sys.argv[2:4])}[sys.argv[1]]()
+    {'create': lambda: create(*sys.argv[2:5]), 'cleanup': lambda: cleanup(*sys.argv[2:4]),
+     'prune_dev': lambda: prune_dev(sys.argv[2])}[sys.argv[1]]()
