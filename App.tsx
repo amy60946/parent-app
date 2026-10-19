@@ -20,6 +20,7 @@ import CreateTaskScreen from './src/screens/CreateTaskScreen';
 import TaskDetailsScreen from './src/screens/TaskDetailsScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import NotificationsScreen, { openNotification } from './src/screens/NotificationsScreen';
+import AbcScreen from './src/screens/AbcScreen';
 import { NotificationsProvider } from './src/notifications';
 import { onNotificationTap } from './src/lib/notifications';
 import {
@@ -93,6 +94,7 @@ function Main() {
       <Stack.Screen name="TaskDetails" component={TaskDetailsScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
+      <Stack.Screen name="Abc" component={AbcScreen} />
     </Stack.Navigator>
   );
 }

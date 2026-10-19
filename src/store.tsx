@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { Alert, AppState } from 'react-native';
 import { Difficulty } from './theme';
-import { Template, Category, templates as baseTemplates } from './data/templates';
+import { Template, Category, templates as baseTemplates, toCategory } from './data/templates';
 import { fromISO, toISO, todayISO } from './dates';
 import { supabase, MAIL_BUCKET } from './lib/supabase';
 import { uuid } from './lib/uuid';
 import { readFileBytes } from './lib/files';
+import { TaskDayPart } from './data/dayParts';
 import { AgeBand } from './data/ageBands';
 
 export type Child = {
@@ -35,6 +36,7 @@ export type Task = {
   repeatDays: number[]; // weekly: 1 = Pzt … 7 = Paz, monthly: 1 … 31
   endDate?: string;
   reminder?: string; // HH:MM
+  dayPart?: TaskDayPart; // Sabah / Öğlen / Akşam; yoksa herhangi bir saat
   requiresReview: boolean;
   sortOrder: number; // Görevler ekranındaki sıra (küçük olan üstte)
 };
@@ -153,6 +155,7 @@ const toTask = (r: Row): Task => ({
   repeatDays: r.repeat_days ?? [],
   endDate: r.end_date ?? undefined,
   reminder: r.reminder ?? undefined,
+  dayPart: r.day_part ?? undefined,
   requiresReview: r.requires_review,
   sortOrder: r.sort_order ?? new Date(r.created_at).getTime() / 1000,
 });
@@ -172,6 +175,7 @@ const taskRow = (t: Partial<Task>) => {
   if (t.sortOrder !== undefined) r.sort_order = t.sortOrder;
   if ('endDate' in t) r.end_date = t.endDate ?? null;
   if ('reminder' in t) r.reminder = t.reminder ?? null;
+  if ('dayPart' in t) r.day_part = t.dayPart ?? null;
   if (t.requiresReview !== undefined) r.requires_review = t.requiresReview;
   return r;
 };
@@ -662,7 +666,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
 
   const customTemplates = useMemo<Template[]>(
     () => savedRows.filter((r) => r.is_custom).map((r) => ({
-      id: r.template_key, title: r.title, emoji: r.emoji ?? '⭐', category: r.category as Category,
+      id: r.template_key, title: r.title, emoji: r.emoji ?? '⭐', category: toCategory(r.category),
       difficulty: r.difficulty as Difficulty, skill: r.skill ?? 'Özel', usedBy: 0, custom: true,
     })),
     [savedRows],

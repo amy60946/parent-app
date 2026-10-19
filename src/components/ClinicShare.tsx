@@ -1,29 +1,31 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, TextInput, Pressable, Alert, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { colors, radius, difficultyMeta } from '../theme';
 import { Avatar, Card } from './ui';
 import Sheet from './Sheet';
 import { useStore } from '../store';
-import { useAuth } from '../lib/auth';
 import { formatTR, todayISO } from '../dates';
 import {
   ClinicLink, InvitePreview, Suggestion, listLinks, previewInvite, shareWithClinic, stopSharing, addChildToClinic,
-  pendingSuggestions, decideSuggestion, addAbcEvent,
+  pendingSuggestions, decideSuggestion,
 } from '../lib/clinic';
 
-type View_ = 'home' | 'code' | 'abc';
+type View_ = 'home' | 'code';
 
 // Uzmanla paylaş: kodla bağlan (açık rıza), paylaşımları yönet, uzman önerilerini kabul et, zor anı kaydet
 export default function ClinicShareSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const [view, setView] = useState<View_>('home');
+  const navigation = useNavigation<any>();
   const close = () => { setView('home'); onClose(); };
-  const title = view === 'code' ? 'Uzmanla paylaş' : view === 'abc' ? 'Zor bir anı kaydet' : 'Uzmanım';
+  const title = view === 'code' ? 'Uzmanla paylaş' : 'Uzmanım';
+  // Zor an kaydı artık kendi ekranında (Gelişim'den de açılır)
+  const openAbc = () => { close(); navigation.navigate('Abc', { new: true }); };
   return (
     <Sheet visible={visible} title={title} onClose={close}>
-      {view === 'home' && <Home onCode={() => setView('code')} onAbc={() => setView('abc')} visible={visible} />}
+      {view === 'home' && <Home onCode={() => setView('code')} onAbc={openAbc} visible={visible} />}
       {view === 'code' && <CodeFlow onDone={() => setView('home')} />}
-      {view === 'abc' && <AbcForm onDone={() => setView('home')} />}
     </Sheet>
   );
 }
@@ -287,77 +289,6 @@ function Bullet({ ok, text }: { ok?: boolean; text: string }) {
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
       <Ionicons name={ok ? 'checkmark-circle' : 'close-circle-outline'} size={18} color={ok ? colors.easy.fg : colors.faint} />
       <Text style={[styles.body, !ok && { color: colors.muted }]}>{text}{ok ? '' : ' paylaşılmaz'}</Text>
-    </View>
-  );
-}
-
-/* ---------- ABC kaydı ---------- */
-
-function AbcForm({ onDone }: { onDone: () => void }) {
-  const { children, familyId } = useStore();
-  const { session } = useAuth();
-  const [childId, setChildId] = useState(children[0]?.id);
-  const [a, setA] = useState('');
-  const [b, setB] = useState('');
-  const [c, setC] = useState('');
-  const [intensity, setIntensity] = useState(3);
-  const [busy, setBusy] = useState(false);
-
-  const save = async () => {
-    if (!familyId || !childId) return;
-    if (!b.trim()) return Alert.alert('Ne olduğunu kısaca yaz');
-    setBusy(true);
-    try {
-      await addAbcEvent(familyId, session?.user.id, { childId, antecedent: a, behavior: b, consequence: c, intensity });
-      Alert.alert('Kaydedildi');
-      onDone();
-    } catch (e) {
-      Alert.alert('Kaydedilemedi', (e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <View style={{ gap: 14 }}>
-      {children.length > 1 && (
-        <View style={{ flexDirection: 'row', gap: 16 }}>
-          {children.map((x) => (
-            <Pressable key={x.id} onPress={() => setChildId(x.id)} style={{ alignItems: 'center', gap: 4, opacity: childId === x.id ? 1 : 0.5 }}>
-              <Avatar id={x.avatar} size={44} ring={childId === x.id} />
-              <Text style={{ fontSize: 11, fontWeight: '600', color: colors.navy }}>{x.name}</Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
-      <Field label="Öncesinde ne oldu?" value={a} onChange={setA} placeholder="Ör. tablet süresi bitti" />
-      <Field label="Ne yaptı?" value={b} onChange={setB} placeholder="Ör. ağladı, kapıyı çarptı" />
-      <Field label="Sonrasında ne oldu?" value={c} onChange={setC} placeholder="Ör. odasına gitti, sakinleşti" />
-      <View>
-        <Text style={styles.cap}>Ne kadar zordu?</Text>
-        <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
-          {[1, 2, 3, 4, 5].map((n) => (
-            <Pressable key={n} onPress={() => setIntensity(n)} accessibilityLabel={`Şiddet ${n}`}
-              style={[styles.dot, intensity === n && { backgroundColor: colors.navy }]}>
-              <Text style={{ fontWeight: '700', color: intensity === n ? '#fff' : colors.navy }}>{n}</Text>
-            </Pressable>
-          ))}
-        </View>
-        <Text style={[styles.cap, { marginTop: 4 }]}>1 hafif · 5 çok zor</Text>
-      </View>
-      <Pressable style={[styles.cta, busy && { opacity: 0.6 }]} disabled={busy} onPress={save}>
-        {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Kaydet</Text>}
-      </Pressable>
-    </View>
-  );
-}
-
-function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
-  return (
-    <View>
-      <Text style={styles.cap}>{label}</Text>
-      <TextInput value={value} onChangeText={onChange} placeholder={placeholder} placeholderTextColor={colors.faint}
-        style={styles.input} maxLength={400} multiline />
     </View>
   );
 }

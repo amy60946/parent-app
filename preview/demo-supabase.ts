@@ -13,7 +13,7 @@ type Db = { users: Row[]; blobs: Record<string, string>; sessions: Record<string
 // ParentApp ve ClinicApp önizlemeleri aynı sayfada (aynı tarayıcı deposunda) birlikte çalışabilir:
 // veri ortak, oturum her uygulamaya ayrı. Uygulama adını paketleyici yazar (window.__PREVIEW_APP__).
 const APP: string = (globalThis as any).__PREVIEW_APP__ ?? 'parent';
-const KEY = 'pofi-onizleme-v5';
+const KEY = 'pofi-onizleme-v6';
 const TABLES = ['profiles', 'families', 'children', 'tasks', 'task_assignments', 'completions', 'messages', 'saved_templates', 'invite_codes',
   'clinics', 'clinicians', 'clinic_invites', 'clinic_links', 'clinic_notes', 'clinic_goals', 'goal_ratings', 'abc_events',
   'clinic_task_suggestions', 'family_subscriptions', 'notifications', 'push_tokens'];
@@ -104,7 +104,7 @@ function seed(): Db {
     { id: uuid(), link_id: L, clinic_id: K, author_id: D, body: 'Yatak toplama hatırlatmayla düzenli hale geliyor. Kitap okumada "zor" yanıtları var; süre 5 dakikaya inebilir.', created_at: ago(9 * 1440) },
   );
   const abc = (d: number, a: string, b: string, c: string, intensity: number) =>
-    db.abc_events.push({ id: uuid(), family_id: F, child_id: 'c-nazli', occurred_at: at(-d, '19:30', 0), antecedent: a, behavior: b, consequence: c, intensity, created_by: U, created_at: now() });
+    db.abc_events.push({ id: uuid(), family_id: F, child_id: 'c-nazli', occurred_at: at(-d, '19:30', 0), antecedent: a, behavior: b, consequence: c, intensity, day_part: 'evening', group_id: null, created_by: U, created_at: now() });
   abc(38, 'Tablet süresi bitti', 'Ağladı, tableti bırakmadı', 'Tablet elinden alındı', 5);
   abc(33, 'Tablet süresi bitti', 'Bağırdı, kapıyı çarptı', 'Odasına gitti', 4);
   abc(27, 'Ödev zamanı geldi', 'Masaya oturmayı reddetti', 'Ödev ertelendi', 3);

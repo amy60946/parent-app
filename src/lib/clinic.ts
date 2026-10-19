@@ -10,7 +10,6 @@ export type Suggestion = {
   id: string; childId: string; title: string; emoji: string; skill: string; difficulty: Difficulty;
   recurring: boolean; note: string; clinic: string;
 };
-export type AbcInput = { childId: string; antecedent: string; behavior: string; consequence: string; intensity: number };
 
 const fail = (e: { message: string } | null) => { if (e) throw new Error(e.message); };
 
@@ -62,13 +61,5 @@ export async function pendingSuggestions(familyId: string): Promise<Suggestion[]
 export async function decideSuggestion(id: string, accepted: boolean) {
   const { error } = await supabase
     .from('clinic_task_suggestions').update({ status: accepted ? 'accepted' : 'declined', decided_at: new Date().toISOString() }).eq('id', id);
-  fail(error);
-}
-
-export async function addAbcEvent(familyId: string, userId: string | undefined, e: AbcInput) {
-  const { error } = await supabase.from('abc_events').insert({
-    family_id: familyId, child_id: e.childId, antecedent: e.antecedent.trim(), behavior: e.behavior.trim(),
-    consequence: e.consequence.trim(), intensity: e.intensity, created_by: userId ?? null, occurred_at: new Date().toISOString(),
-  });
   fail(error);
 }

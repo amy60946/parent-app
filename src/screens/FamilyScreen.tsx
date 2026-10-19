@@ -105,6 +105,7 @@ function MyProfile() {
 
 function ChildInfo({ id }: { id: string }) {
   const { children, completions, createChildCode, setChildAgeBand, childBalance, unlinkChildDevice } = useStore();
+  const navigation = useNavigation<any>();
   const [code, setCode] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
   const [balance, setBalance] = useState<number | undefined>();
@@ -156,6 +157,14 @@ function ChildInfo({ id }: { id: string }) {
           </View>
         </View>
       </Card>
+      <Pressable onPress={() => navigation.navigate('Abc', { new: true, childId: c.id })} style={styles.abcRow}
+        accessibilityLabel={`${c.name} için zor bir anı kaydet`}>
+        <Ionicons name="pulse-outline" size={20} color={colors.navy} />
+        <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: colors.navy }}>Zor bir anı kaydet</Text>
+        <Pressable onPress={() => navigation.navigate('Abc', { childId: c.id })} hitSlop={8}>
+          <Text style={{ fontSize: 13, color: colors.muted }}>Geçmiş ›</Text>
+        </Pressable>
+      </Pressable>
       <Card style={{ gap: 10 }}>
         <Text style={styles.h}>Oyundaki yaş grubu</Text>
         <Text style={{ fontSize: 13, color: colors.muted }}>
@@ -518,6 +527,7 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
 }
 
 const styles = StyleSheet.create({
+  abcRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: radius.md, backgroundColor: '#fff' },
   safe: { flex: 1, backgroundColor: colors.bg },
   dot: { position: 'absolute', right: 1, top: 0, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.gold },
   plus: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },

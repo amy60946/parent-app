@@ -13,7 +13,7 @@ import { useStore, Message } from '../store';
 import { formatTR, todayISO, toISO, addDays } from '../dates';
 import { useKeyboardHeight } from '../lib/useKeyboardHeight';
 
-const mmss = (ms: number) => {
+export const mmss = (ms: number) => {
   const t = Math.max(0, Math.round(ms / 1000));
   return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
 };
@@ -218,7 +218,7 @@ function Bubble({ m, onImage }: { m: Message; onImage: (uri: string) => void }) 
   );
 }
 
-function Voice({ uri, durationMs, color }: { uri?: string; durationMs?: number; color: string }) {
+export function Voice({ uri, durationMs, color }: { uri?: string; durationMs?: number; color: string }) {
   const player = useAudioPlayer(uri ? { uri } : null);
   const status = useAudioPlayerStatus(player);
 

@@ -7,6 +7,7 @@ import { Avatar, IconButton, Segmented, Toggle, Label } from '../components/ui';
 import DateField from '../components/DateField';
 import { useStore, Assignment, RepeatKind } from '../store';
 import { DAY_SHORT, fromISO, todayISO } from '../dates';
+import { TaskDayPart, dayPartLabel, taskDayPartOf } from '../data/dayParts';
 
 type Row = { on: boolean; difficulty: Difficulty; coins: string };
 
@@ -39,6 +40,9 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
   const [repeatDays, setRepeatDays] = useState<number[]>(editing?.repeatDays ?? []);
   const [endDate, setEndDate] = useState<string | undefined>(editing?.endDate);
   const [reminder, setReminder] = useState<string | undefined>(editing?.reminder);
+  const [dayPart, setDayPart] = useState<TaskDayPart | 'any'>(editing?.dayPart ?? (editing?.reminder ? taskDayPartOf(editing.reminder) : 'any'));
+  // Hatırlatma saati seçilince gün bölümü kendiliğinden dolar (sonra değiştirilebilir)
+  const pickReminder = (v?: string) => { setReminder(v); if (v) setDayPart(taskDayPartOf(v)); };
   const [requiresReview, setRequiresReview] = useState(editing?.requiresReview ?? true);
   const [saveTemplate, setSaveTemplate] = useState(false);
 
@@ -83,6 +87,7 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
       repeatDays: recurring && repeatKind !== 'daily' ? repeatDays : [],
       endDate: recurring ? endDate : undefined,
       reminder,
+      dayPart: dayPart === 'any' ? undefined : dayPart,
       requiresReview,
     };
 
@@ -251,7 +256,20 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
         <Text style={[styles.sub, { marginTop: -2, marginBottom: 8 }]}>
           Bir saat seçersen görev günü o saatte çocuğuna hatırlatma gider. Boş bırakırsan hatırlatma gönderilmez.
         </Text>
-        <DateField mode="time" value={reminder} onChange={setReminder} placeholder="Saat seç (ör. 19:00)" clearable />
+        <DateField mode="time" value={reminder} onChange={pickReminder} placeholder="Saat seç (ör. 19:00)" clearable />
+
+        <Label>Günün bölümü</Label>
+        <Text style={[styles.sub, { marginTop: -2, marginBottom: 8 }]}>
+          Görevler ekranında Sabah / Öğlen / Akşam süzgeci için. Belli bir saati yoksa "Herhangi" kalsın.
+        </Text>
+        <Segmented<TaskDayPart | 'any'>
+          options={[
+            { id: 'morning', label: dayPartLabel.morning }, { id: 'noon', label: dayPartLabel.noon },
+            { id: 'evening', label: dayPartLabel.evening }, { id: 'any', label: 'Herhangi' },
+          ]}
+          value={dayPart}
+          onChange={setDayPart}
+        />
 
         <View style={[styles.switchRow, { marginTop: 20 }]}>
           <View style={{ flex: 1 }}>

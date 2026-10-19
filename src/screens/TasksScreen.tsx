@@ -11,6 +11,10 @@ import { DAY_SHORT, addDays, fromISO, monthYear, startOfWeek, toISO, todayISO } 
 import ClinicShareSheet from '../components/ClinicShare';
 import { pendingSuggestions } from '../lib/clinic';
 import { useNotifications } from '../notifications';
+import { TaskDayPart, dayPartIcon, dayPartLabel, taskDayPartOf } from '../data/dayParts';
+
+type PartFilter = 'all' | TaskDayPart | 'any';
+const partOf = (t: Task) => t.dayPart ?? (t.reminder ? taskDayPartOf(t.reminder) : undefined);
 
 const WEEK_RANGE = 52; // bugünden ±52 hafta
 
@@ -29,6 +33,7 @@ export default function TasksScreen({ navigation }: any) {
   }, [familyId, clinicOpen]);
   const [selected, setSelected] = useState(todayISO());
   const [childFilter, setChildFilter] = useState<string | 'all'>('all');
+  const [part, setPart] = useState<PartFilter>('all');
   const listRef = useRef<FlatList>(null);
 
   const weeks = useMemo(() => {
@@ -42,12 +47,13 @@ export default function TasksScreen({ navigation }: any) {
   const dayTasks = useMemo<DayItem[]>(() => {
     return tasks
       .filter((t) => taskOccursOn(t, selected))
+      .filter((t) => part === 'all' || (part === 'any' ? !partOf(t) : partOf(t) === part))
       .map((t) => ({
         task: t,
         assigns: t.assignments.filter((a) => childFilter === 'all' || a.childId === childFilter),
       }))
       .filter((x) => x.assigns.length > 0);
-  }, [tasks, selected, childFilter]);
+  }, [tasks, selected, childFilter, part]);
 
   const edit = (t: Task) => navigation.navigate('TaskDetails', { taskId: t.id });
 
@@ -140,7 +146,21 @@ export default function TasksScreen({ navigation }: any) {
         )}
       />
 
-      <View style={{ height: 50, justifyContent: 'center', marginTop: 8 }}>
+      {/* Günün bölümüne göre hızlı süzgeç */}
+      <View style={styles.parts}>
+        {(['all', 'morning', 'noon', 'evening', 'any'] as PartFilter[]).map((p) => {
+          const on = part === p;
+          const label = p === 'all' ? 'Tümü' : p === 'any' ? 'Herhangi' : `${dayPartIcon[p]} ${dayPartLabel[p]}`;
+          return (
+            <Pressable key={p} onPress={() => setPart(p)} style={[styles.part, on && styles.partOn]}
+              accessibilityRole="button" accessibilityState={{ selected: on }}>
+              <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '600', color: on ? colors.navy : colors.muted }}>{label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <View style={{ height: 50, justifyContent: 'center', marginTop: 4 }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8, alignItems: 'center' }}>
           <Chip label="Tümü" active={childFilter === 'all'} onPress={() => setChildFilter('all')} />
           {children.map((c) => (
@@ -294,6 +314,9 @@ const styles = StyleSheet.create({
   suggest: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 20, marginBottom: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.md, backgroundColor: '#FFF6DE' },
   safe: { flex: 1, backgroundColor: colors.bg },
   header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 10 },
+  parts: { flexDirection: 'row', marginHorizontal: 20, marginTop: 10, padding: 3, borderRadius: radius.pill, backgroundColor: '#E9EBF0' },
+  part: { flex: 1, height: 30, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  partOn: { backgroundColor: '#fff' },
   badge: { position: 'absolute', top: -6, right: -8, minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 3, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
   badgeText: { fontSize: 10, fontWeight: '800', color: colors.navy },
   title: { fontSize: 17, fontWeight: '700', color: colors.navy },

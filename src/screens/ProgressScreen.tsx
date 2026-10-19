@@ -7,7 +7,7 @@ import { Avatar, Card } from '../components/ui';
 import { useStore, taskOccursOn, completionKey } from '../store';
 import { DAY_SHORT, addDays, toISO, startOfWeek } from '../dates';
 
-export default function ProgressScreen() {
+export default function ProgressScreen({ navigation }: any) {
   const { children, tasks, completions } = useStore();
   const [childId, setChildId] = useState(children[0]?.id);
   const child = children.find((c) => c.id === childId) ?? children[0];
@@ -69,6 +69,18 @@ export default function ProgressScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 12 }}>
+        {/* Zor anlar: kayıt + arşiv */}
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <Pressable style={styles.abcMain} onPress={() => navigation.navigate('Abc', { new: true })} accessibilityLabel="Zor bir anı kaydet">
+            <Ionicons name="pulse-outline" size={20} color="#fff" />
+            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Zor bir anı kaydet</Text>
+          </Pressable>
+          <Pressable style={styles.abcList} onPress={() => navigation.navigate('Abc')} accessibilityLabel="Geçmiş zor anlar">
+            <Ionicons name="time-outline" size={20} color={colors.navy} />
+            <Text style={{ color: colors.navy, fontSize: 13, fontWeight: '600' }}>Geçmiş</Text>
+          </Pressable>
+        </View>
+
         <View style={{ flexDirection: 'row', gap: 16 }}>
           {children.map((c) => (
             <Pressable key={c.id} onPress={() => setChildId(c.id)} style={{ alignItems: 'center', gap: 4, opacity: c.id === child.id ? 1 : 0.5 }}>
@@ -148,6 +160,8 @@ export default function ProgressScreen() {
 }
 
 const styles = StyleSheet.create({
+  abcMain: { flex: 1, flexDirection: 'row', gap: 8, height: 50, borderRadius: radius.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
+  abcList: { flexDirection: 'row', gap: 6, height: 50, paddingHorizontal: 16, borderRadius: radius.md, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   safe: { flex: 1, backgroundColor: colors.bg },
   title: { fontSize: 17, fontWeight: '700', color: colors.navy },
   big: { fontSize: 18, fontWeight: '700', color: colors.navy },
