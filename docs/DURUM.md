@@ -3,6 +3,9 @@
 Bu dosya, yeni bir Claude oturumunun kaldığı yerden devam edebilmesi için tutulur.
 Son güncelleme: 13 Ekim 2026 (akşam).
 
+> **19 Ekim 2026:** Ortak kurallar ve karar günlüğü artık `amy60946/ortak` deposunda (`ortak/DURUM.md`). Bu dosyanın aşağısı 13 Ekim tarihli eski nottur.
+> Bu turda: İnceleme'de onay da `review_completion` ile gidiyor; görev ödülü 0–50; yaş grupları iki: 6–8 / 9–12 (eski C → B gösterilir).
+
 ## Kullanıcı hakkında
 - Yazılımcı değil; platformları ilk kez kullanıyor. Her adımı sade Türkçeyle, tek tek, nereye tıklayacağını söyleyerek anlat.
 - Amaç yayına almak değil: uygulamayı önizleme ve TestFlight ile deneyerek geliştirmek. App Store'a yayın şimdilik yok.

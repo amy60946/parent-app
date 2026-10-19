@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, Difficulty, difficultyMeta } from '../theme';
+import { colors, radius, Difficulty, difficultyMeta, MAX_TASK_COINS } from '../theme';
 import { Avatar, IconButton, Segmented, Toggle, Label } from '../components/ui';
 import DateField from '../components/DateField';
 import { useStore, Assignment, RepeatKind } from '../store';
@@ -65,7 +65,7 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
       .map((c) => ({
         childId: c.id,
         difficulty: rows[c.id].difficulty,
-        coins: Math.max(0, parseInt(rows[c.id].coins || '0', 10) || 0),
+        coins: Math.min(MAX_TASK_COINS, Math.max(0, parseInt(rows[c.id].coins || '0', 10) || 0)),
       }));
     if (assignments.length === 0) return Alert.alert('En az bir çocuk seçin');
     if (canTitle && !title.trim()) return Alert.alert('Görev adı gerekli');
@@ -182,8 +182,11 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
                     <View style={styles.coinBox}>
                       <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.gold }} />
                       <TextInput
-                        value={r.coins} keyboardType="number-pad"
-                        onChangeText={(v) => setRow(c.id, { coins: v.replace(/[^0-9]/g, '') })}
+                        value={r.coins} keyboardType="number-pad" maxLength={2}
+                        onChangeText={(v) => {
+                          const digits = v.replace(/[^0-9]/g, '');
+                          setRow(c.id, { coins: digits && Number(digits) > MAX_TASK_COINS ? String(MAX_TASK_COINS) : digits });
+                        }}
                         style={{ width: 36, fontSize: 14, fontWeight: '700', color: colors.navy, padding: 0 }}
                       />
                     </View>

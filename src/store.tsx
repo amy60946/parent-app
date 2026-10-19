@@ -14,7 +14,7 @@ export type Child = {
   avatar: string;
   gender?: 'kız' | 'erkek';
   birthday?: string; // ISO
-  ageBand?: AgeBand; // Pofi Adası oyunu: A 6–9, B 10–12, C 13–15
+  ageBand?: AgeBand; // Pofi Adası oyunu: A 6–8, B 9–12
   linked: boolean; // çocuk oyuna giriş kodunu kullandı (cihaz bağlı)
 };
 
@@ -134,7 +134,7 @@ const toChild = (r: Row): Child => ({
   avatar: r.avatar,
   gender: r.gender ?? undefined,
   birthday: r.birthday ?? undefined,
-  ageBand: r.age_band ?? undefined,
+  ageBand: r.age_band === 'C' ? 'B' : r.age_band ?? undefined, // eski C bandı (13–15) artık B
   linked: !!r.user_id,
 });
 
@@ -513,17 +513,12 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   const review = useCallback((key: string, approve: boolean, note?: string) => {
     const [taskId, childId, date] = key.split('|');
     setCompletions((p) => ({ ...p, [key]: approve ? 'approved' : 'rejected' }));
-    if (approve) {
-      run(() => supabase.from('completions')
-        .update({ status: 'approved', reviewed_at: new Date().toISOString(), reviewed_by: userId })
-        .match({ task_id: taskId, child_id: childId, date }));
-    } else {
-      // Ret kaydı silinmez: çocuk oyunda "reddedildi" ve ebeveynin notunu görür.
-      run(() => supabase.rpc('review_completion', {
-        p_task_id: taskId, p_child_id: childId, p_date: date, p_status: 'rejected', p_note: note?.trim() || null,
-      }));
-    }
-  }, [run, userId]);
+    // Onay da ret de aynı RPC ile (ortak/sozlesme/durumlar.md D2). Ret kaydı silinmez: çocuk oyunda "reddedildi" ve notu görür.
+    run(() => supabase.rpc('review_completion', {
+      p_task_id: taskId, p_child_id: childId, p_date: date,
+      p_status: approve ? 'approved' : 'rejected', p_note: approve ? null : note?.trim() || null,
+    }));
+  }, [run]);
 
   const toggleSaved = useCallback((templateId: string) => {
     const f = fid.current;

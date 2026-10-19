@@ -27,6 +27,9 @@ export const font = {
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
+// Görev ödülü üst sınırı; sunucudaki kısıtla aynı (ortak/sozlesme/ekonomi.md 2.1).
+export const MAX_TASK_COINS = 50;
+
 export const difficultyMeta: Record<Difficulty, { label: string; coins: number }> = {
   easy: { label: 'Kolay', coins: 5 },
   medium: { label: 'Orta', coins: 10 },
