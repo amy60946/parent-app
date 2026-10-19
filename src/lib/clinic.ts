@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { Difficulty } from '../theme';
 
-// Uzman (ClinicApp) paylaşımı: sunucu kuralları supabase/proposed/20261019000000_clinic.sql
+// Uzman (ClinicApp) paylaşımı: sunucu kuralları ortak/supabase/migrations/20261019000000_clinic.sql
 // Uzman yalnızca ebeveynin açık rızasıyla, yalnızca o çocuğun görev ve kayıtlarını okur. Posta ve coin paylaşılmaz.
 
 export type ClinicLink = { linkId: string; childId: string; clinic: string; clinician: string; title: string; consentAt: string };
