@@ -8,6 +8,7 @@ import { colors, radius } from '../theme';
 import { Avatar, IconButton, Segmented, Card } from '../components/ui';
 import DateField from '../components/DateField';
 import Sheet from '../components/Sheet';
+import ClinicShareSheet from '../components/ClinicShare';
 import { messagePreview } from './ChatScreen';
 import { childAvatars, parentAvatars } from '../data/avatars';
 import { AgeBand, ageBands, suggestAgeBand } from '../data/ageBands';
@@ -268,13 +269,13 @@ function Mail() {
 
 /* ---------- Hesap ---------- */
 
-type AccountRow = 'manage' | 'join' | 'other';
+type AccountRow = 'manage' | 'join' | 'clinic' | 'other';
 
 const accountRows: { icon: keyof typeof Ionicons.glyphMap; label: string; id?: AccountRow }[] = [
   { icon: 'person-outline', label: 'Hesabı yönet', id: 'manage' },
   { icon: 'person-add-outline', label: 'Aileye katıl', id: 'join' },
   { icon: 'notifications-outline', label: 'Bildirim ayarları' },
-  { icon: 'medkit-outline', label: 'Terapistimi bağla' },
+  { icon: 'medkit-outline', label: 'Uzmanım', id: 'clinic' },
   { icon: 'create-outline', label: 'Geri bildirim gönder' },
   { icon: 'star-outline', label: 'Uygulamayı puanla' },
   { icon: 'book-outline', label: 'Ebeveyn kaynakları' },
@@ -306,6 +307,7 @@ function Account({ onLogout }: { onLogout?: () => void }) {
       </Pressable>
       <ManageSheet visible={open === 'manage'} onClose={() => setOpen(null)} />
       <JoinSheet visible={open === 'join'} onClose={() => setOpen(null)} />
+      <ClinicShareSheet visible={open === 'clinic'} onClose={() => setOpen(null)} />
     </ScrollView>
   );
 }
