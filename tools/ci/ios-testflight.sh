@@ -45,6 +45,7 @@ done
 python3 -m pip install -q --disable-pip-version-check "pyjwt[crypto]" 2>/dev/null || python3 -m pip install -q --break-system-packages "pyjwt[crypto]"
 python3 "$here/asc_device.py" "$key"
 python3 "$here/asc_sign.py" prune_dev "$key"
+python3 "$here/asc_sign.py" push_cap "$key" "$BUNDLE_ID"
 archive="$RUNNER_TEMP/ParentApp.xcarchive"
 xcodebuild -workspace "$ws" -scheme "$scheme" -configuration Release \
   -destination 'generic/platform=iOS' -archivePath "$archive" \

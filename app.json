@@ -60,7 +60,11 @@
           "enableBackgroundPlayback": false
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        { "color": "#0F1B3D" }
+      ]
     ]
   }
 }

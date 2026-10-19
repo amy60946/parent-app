@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import * as Linking from 'expo-linking';
 import type { Session, EmailOtpType } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './supabase';
+import { unregisterPush } from './notifications';
 
 // E-postadaki bağlantılar uygulamayı bu adresle açar:
 // geliştirmede exp://…/--/auth (Expo Go), derlenmiş uygulamada parentapp://auth
@@ -160,6 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     setRecovery(false);
+    await unregisterPush().catch(() => {}); // bu telefona artık bu hesabın bildirimi gitmesin
     const { error } = await supabase.auth.signOut();
     // Ağ yoksa bile yerel oturumu kapat
     if (error) await supabase.auth.signOut({ scope: 'local' });

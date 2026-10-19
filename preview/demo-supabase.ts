@@ -13,10 +13,10 @@ type Db = { users: Row[]; blobs: Record<string, string>; sessions: Record<string
 // ParentApp ve ClinicApp önizlemeleri aynı sayfada (aynı tarayıcı deposunda) birlikte çalışabilir:
 // veri ortak, oturum her uygulamaya ayrı. Uygulama adını paketleyici yazar (window.__PREVIEW_APP__).
 const APP: string = (globalThis as any).__PREVIEW_APP__ ?? 'parent';
-const KEY = 'pofi-onizleme-v4';
+const KEY = 'pofi-onizleme-v5';
 const TABLES = ['profiles', 'families', 'children', 'tasks', 'task_assignments', 'completions', 'messages', 'saved_templates', 'invite_codes',
   'clinics', 'clinicians', 'clinic_invites', 'clinic_links', 'clinic_notes', 'clinic_goals', 'goal_ratings', 'abc_events',
-  'clinic_task_suggestions', 'family_subscriptions'];
+  'clinic_task_suggestions', 'family_subscriptions', 'notifications', 'push_tokens'];
 
 const uuid = () =>
   'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -115,6 +115,13 @@ function seed(): Db {
     id: uuid(), link_id: L, clinic_id: K, family_id: F, child_id: 'c-nazli', title: 'Kıyafetini akşamdan hazırla', emoji: '👕',
     skill: 'Planlama', difficulty: 'easy', recurring: true, note: 'Sabah rutinini kısaltmak için.', status: 'pending', created_by: D, created_at: ago(300), decided_at: null,
   });
+
+  // Örnek bildirimler (gerçekte sunucu tetikleyicileri yazar)
+  const note = (id: number, kind: string, title: string, body: string, min: number, data: Row, read = false) =>
+    db.notifications.push({ id, user_id: U, app: 'parent', kind, title, body, data, child_id: data.child_id ?? null, created_at: ago(min), read_at: read ? ago(min - 1) : null });
+  note(1, 'clinic_suggestion', 'Uzmanın Nazlı için görev önerdi', '👕 Kıyafetini akşamdan hazırla', 300, { child_id: 'c-nazli' });
+  note(2, 'task_done', 'Nazlı görevi yaptı: 10 dakika kitap oku', 'Onayını bekliyor.', 45, { child_id: 'c-nazli', task_id: 'k-kitap' });
+  note(3, 'message', 'Nazlı mesaj gönderdi', 'Anne bugün çok eğlendim!', 1500, { child_id: 'c-nazli' }, true);
 
   // İki uygulama aynı anda ilk kez açılabilir: hangisi kurarsa kursun her ikisinin hazır oturumu olsun
   db.sessions = {
@@ -465,6 +472,47 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
     save();
     return { data: { link_id: id }, error: null };
   }
+  if (name === 'redeem_clinic_invite_children') {
+    if (!me?.family_id) return err('Önce ebeveyn olarak giriş yapmalısın');
+    const ids: string[] = [...new Set<string>(args.p_child_ids ?? [])];
+    if (!ids.length) return err('En az bir çocuk seç');
+    if (ids.some((c) => !myChild(c))) return err('Çocuk bulunamadı');
+    const inv = openInvite(args.p_code, 'family');
+    if (!inv) return err('Kod geçersiz ya da süresi dolmuş');
+    const linkIds: string[] = [];
+    ids.forEach((child_id) => {
+      if (db.clinic_links.some((l: Row) => l.clinic_id === inv.clinic_id && l.child_id === child_id && l.status === 'active')) return;
+      const id = uuid();
+      linkIds.push(id);
+      db.clinic_links.push({ id, clinic_id: inv.clinic_id, clinician_id: inv.clinician_id, family_id: me.family_id, child_id,
+        label: inv.label, status: 'active', consent_by: uid, consent_at: now(), revoked_at: null, created_at: now() });
+    });
+    inv.used_at = now(); inv.used_by = uid;
+    save();
+    return { data: { link_ids: linkIds, clinic_id: inv.clinic_id }, error: null };
+  }
+  if (name === 'clinic_share_child') {
+    if (!me?.family_id) return err('Önce ebeveyn olarak giriş yapmalısın');
+    if (!myChild(args.p_child_id)) return err('Çocuk bulunamadı');
+    const base = db.clinic_links.find((l: Row) => l.family_id === me.family_id && l.clinic_id === args.p_clinic_id && l.status === 'active');
+    if (!base) return err('Bu uzmanla etkin paylaşım yok; uzmandan yeni kod iste');
+    const have = db.clinic_links.find((l: Row) => l.clinic_id === args.p_clinic_id && l.child_id === args.p_child_id && l.status === 'active');
+    if (have) return { data: { link_id: have.id }, error: null };
+    const id = uuid();
+    db.clinic_links.push({ id, clinic_id: args.p_clinic_id, clinician_id: base.clinician_id, family_id: me.family_id, child_id: args.p_child_id,
+      label: '', status: 'active', consent_by: uid, consent_at: now(), revoked_at: null, created_at: now() });
+    save();
+    return { data: { link_id: id }, error: null };
+  }
+  if (name === 'register_push_token' || name === 'unregister_push_token') return { data: null, error: null };
+  if (name === 'mark_notifications_read') {
+    let n = 0;
+    db.notifications.forEach((r: Row) => {
+      if (r.user_id === uid && !r.read_at && (!args.p_ids || args.p_ids.includes(r.id))) { r.read_at = now(); n++; }
+    });
+    save();
+    return { data: n, error: null };
+  }
   if (name === 'revoke_clinic_link') {
     const m = myClinician();
     const l = db.clinic_links.find((x: Row) => x.id === args.p_link_id && x.status === 'active'
@@ -477,7 +525,7 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
   if (name === 'family_clinic_links') {
     const rows = db.clinic_links.filter((l: Row) => l.family_id === me?.family_id && l.status === 'active').map((l: Row) => {
       const m = db.clinicians.find((x: Row) => x.id === l.clinician_id);
-      return { link_id: l.id, child_id: l.child_id, clinic: db.clinics.find((x: Row) => x.id === l.clinic_id)?.name ?? '', clinician: m?.name ?? '', title: m?.title ?? '', consent_at: l.consent_at };
+      return { link_id: l.id, clinic_id: l.clinic_id, child_id: l.child_id, clinic: db.clinics.find((x: Row) => x.id === l.clinic_id)?.name ?? '', clinician: m?.name ?? '', title: m?.title ?? '', consent_at: l.consent_at };
     });
     return { data: rows, error: null };
   }

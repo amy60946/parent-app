@@ -269,12 +269,12 @@ function Mail() {
 
 /* ---------- Hesap ---------- */
 
-type AccountRow = 'manage' | 'join' | 'clinic' | 'other';
+type AccountRow = 'manage' | 'join' | 'clinic' | 'notifications' | 'other';
 
 const accountRows: { icon: keyof typeof Ionicons.glyphMap; label: string; id?: AccountRow }[] = [
   { icon: 'person-outline', label: 'Hesabı yönet', id: 'manage' },
   { icon: 'person-add-outline', label: 'Aileye katıl', id: 'join' },
-  { icon: 'notifications-outline', label: 'Bildirim ayarları' },
+  { icon: 'notifications-outline', label: 'Bildirimler', id: 'notifications' },
   { icon: 'medkit-outline', label: 'Uzmanım', id: 'clinic' },
   { icon: 'create-outline', label: 'Geri bildirim gönder' },
   { icon: 'star-outline', label: 'Uygulamayı puanla' },
@@ -285,11 +285,13 @@ const accountRows: { icon: keyof typeof Ionicons.glyphMap; label: string; id?: A
 
 function Account({ onLogout }: { onLogout?: () => void }) {
   const [open, setOpen] = useState<AccountRow | null>(null);
+  const navigation = useNavigation<any>();
+  const pick = (id: AccountRow) => (id === 'notifications' ? navigation.navigate('Notifications') : setOpen(id));
   return (
     <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}>
       <Card style={{ padding: 0 }}>
         {accountRows.map((r, i) => (
-          <Pressable key={r.label} onPress={r.id ? () => setOpen(r.id!) : soon} style={[styles.accRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line }]}>
+          <Pressable key={r.label} onPress={r.id ? () => pick(r.id!) : soon} style={[styles.accRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line }]}>
             <Ionicons name={r.icon} size={20} color={colors.navy} />
             <Text style={{ flex: 1, fontSize: 15, color: colors.navy }}>{r.label}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.faint} />

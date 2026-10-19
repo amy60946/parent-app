@@ -4,7 +4,7 @@ import { Difficulty } from '../theme';
 // Uzman (ClinicApp) paylaşımı: sunucu kuralları ortak/supabase/migrations/20261019000000_clinic.sql
 // Uzman yalnızca ebeveynin açık rızasıyla, yalnızca o çocuğun görev ve kayıtlarını okur. Posta ve coin paylaşılmaz.
 
-export type ClinicLink = { linkId: string; childId: string; clinic: string; clinician: string; title: string; consentAt: string };
+export type ClinicLink = { linkId: string; clinicId: string; childId: string; clinic: string; clinician: string; title: string; consentAt: string };
 export type InvitePreview = { clinic: string; clinician: string; title: string };
 export type Suggestion = {
   id: string; childId: string; title: string; emoji: string; skill: string; difficulty: Difficulty;
@@ -18,7 +18,7 @@ export async function listLinks(): Promise<ClinicLink[]> {
   const { data, error } = await supabase.rpc('family_clinic_links');
   fail(error);
   return (data ?? []).map((r: any) => ({
-    linkId: r.link_id, childId: r.child_id, clinic: r.clinic, clinician: r.clinician, title: r.title, consentAt: r.consent_at,
+    linkId: r.link_id, clinicId: r.clinic_id, childId: r.child_id, clinic: r.clinic, clinician: r.clinician, title: r.title, consentAt: r.consent_at,
   }));
 }
 
@@ -28,8 +28,15 @@ export async function previewInvite(code: string): Promise<InvitePreview> {
   return data as InvitePreview;
 }
 
-export async function shareWithClinic(code: string, childId: string) {
-  const { error } = await supabase.rpc('redeem_clinic_invite', { p_code: code, p_child_id: childId });
+// Tek kodla seçilen bütün çocuklar (kod tek kullanımlık)
+export async function shareWithClinic(code: string, childIds: string[]) {
+  const { error } = await supabase.rpc('redeem_clinic_invite_children', { p_code: code, p_child_ids: childIds });
+  fail(error);
+}
+
+// Aynı uzmanla etkin paylaşım varsa yeni kod gerekmeden başka bir çocuğu da ekle
+export async function addChildToClinic(clinicId: string, childId: string) {
+  const { error } = await supabase.rpc('clinic_share_child', { p_clinic_id: clinicId, p_child_id: childId });
   fail(error);
 }
 

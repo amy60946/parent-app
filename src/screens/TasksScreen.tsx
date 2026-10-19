@@ -10,6 +10,7 @@ import { useStore, taskOccursOn, completionKey, Task, CompletionStatus } from '.
 import { DAY_SHORT, addDays, fromISO, monthYear, startOfWeek, toISO, todayISO } from '../dates';
 import ClinicShareSheet from '../components/ClinicShare';
 import { pendingSuggestions } from '../lib/clinic';
+import { useNotifications } from '../notifications';
 
 const WEEK_RANGE = 52; // bugünden ±52 hafta
 
@@ -18,6 +19,7 @@ type DayItem = { task: Task; assigns: Task['assignments'] };
 export default function TasksScreen({ navigation }: any) {
   const { width } = useWindowDimensions();
   const { tasks, children, completions, reorderTasks, deleteTask, familyId } = useStore();
+  const { unread } = useNotifications();
   // Uzmandan bekleyen görev önerisi varsa üstte kısa bir bildirim
   const [suggested, setSuggested] = useState(0);
   const [clinicOpen, setClinicOpen] = useState(false);
@@ -78,9 +80,18 @@ export default function TasksScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Görevler</Text>
-        <Text style={styles.month}>{monthYear(fromISO(selected))}</Text>
+      <View style={[styles.header, { flexDirection: 'row', alignItems: 'center' }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>Görevler</Text>
+          <Text style={styles.month}>{monthYear(fromISO(selected))}</Text>
+        </View>
+        <Pressable onPress={() => navigation.navigate('Notifications')} hitSlop={10}
+          accessibilityLabel={unread ? `Bildirimler, ${unread} okunmamış` : 'Bildirimler'}>
+          <Ionicons name={unread ? 'notifications' : 'notifications-outline'} size={22} color={colors.navy} />
+          {unread > 0 && (
+            <View style={styles.badge}><Text style={styles.badgeText}>{unread > 9 ? '9+' : unread}</Text></View>
+          )}
+        </Pressable>
       </View>
       {suggested > 0 && (
         <Pressable onPress={() => setClinicOpen(true)} style={styles.suggest} accessibilityLabel="Uzman önerilerini gör">
@@ -283,6 +294,8 @@ const styles = StyleSheet.create({
   suggest: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 20, marginBottom: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.md, backgroundColor: '#FFF6DE' },
   safe: { flex: 1, backgroundColor: colors.bg },
   header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 10 },
+  badge: { position: 'absolute', top: -6, right: -8, minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 3, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
+  badgeText: { fontSize: 10, fontWeight: '800', color: colors.navy },
   title: { fontSize: 17, fontWeight: '700', color: colors.navy },
   month: { fontSize: 13, color: colors.muted, marginTop: 2 },
   dayCell: { flex: 1, alignItems: 'center', gap: 6 },

@@ -4,6 +4,7 @@
 # Kullanım:
 #   python3 asc_sign.py create <p8> <bundle_id> <çıkış_klasörü>   → key.pem, cert.der, profile.mobileprovision, info.json
 #   python3 asc_sign.py cleanup <p8> <info.json>
+#   python3 asc_sign.py push_cap <p8> <bundle_id>   → App ID'de push bildirimi yeteneğini açar (arşivden önce)
 #   python3 asc_sign.py prune_dev <p8>   → CI'ın Xcode'u ile API'den açılmış eski geliştirme sertifikalarını iptal eder (kullanıcı onayı 19 Ekim 2026)
 # Ortam: ASC_KEY_ID, ASC_ISSUER_ID. Gizli bilgiler loga yazılmaz.
 import base64, json, os, sys, time, urllib.error, urllib.request
@@ -62,6 +63,7 @@ def create(p8, bundle, out):
     bids = call(tok, 'GET', '/bundleIds?filter[identifier]=%s&limit=20' % bundle)['data']
     bids = [b for b in bids if b['attributes']['identifier'] == bundle]
     if not bids: raise RuntimeError('Bundle ID kayıtlı değil: ' + bundle)
+    ensure_push(tok, bids[0]['id'])
     name = 'CI %s %d' % (bundle, int(time.time()))
     prof = call(tok, 'POST', '/profiles', {'data': {'type': 'profiles', 'attributes': {'name': name, 'profileType': 'IOS_APP_STORE'},
         'relationships': {'bundleId': {'data': {'type': 'bundleIds', 'id': bids[0]['id']}},
@@ -70,6 +72,21 @@ def create(p8, bundle, out):
     info.update(profile_id=prof['data']['id'], profile_uuid=prof['data']['attributes']['uuid'], profile_name=name)
     open(os.path.join(out, 'info.json'), 'w').write(json.dumps(info))
     print('Dağıtım sertifikası ve App Store profili hazır:', name)
+
+def ensure_push(tok, bid):
+    # Push bildirimi (expo-notifications → aps-environment) için App ID'de yetenek açık olmalı; yoksa profil uyuşmaz
+    caps = call(tok, 'GET', '/bundleIds/%s/bundleIdCapabilities?limit=50' % bid)['data']
+    if any(c['attributes'].get('capabilityType') == 'PUSH_NOTIFICATIONS' for c in caps): return
+    call(tok, 'POST', '/bundleIdCapabilities', {'data': {'type': 'bundleIdCapabilities',
+        'attributes': {'capabilityType': 'PUSH_NOTIFICATIONS'},
+        'relationships': {'bundleId': {'data': {'type': 'bundleIds', 'id': bid}}}}})
+    print('App ID için push bildirimi yeteneği açıldı.')
+
+def push_cap(p8, bundle):
+    tok = token(p8)
+    bids = [b for b in call(tok, 'GET', '/bundleIds?filter[identifier]=%s&limit=20' % bundle)['data'] if b['attributes']['identifier'] == bundle]
+    if not bids: raise RuntimeError('Bundle ID kayıtlı değil: ' + bundle)
+    ensure_push(tok, bids[0]['id'])
 
 def cleanup(p8, info_path):
     if not os.path.exists(info_path): return
@@ -90,4 +107,4 @@ def prune_dev(p8):
 
 if __name__ == '__main__':
     {'create': lambda: create(*sys.argv[2:5]), 'cleanup': lambda: cleanup(*sys.argv[2:4]),
-     'prune_dev': lambda: prune_dev(sys.argv[2])}[sys.argv[1]]()
+     'prune_dev': lambda: prune_dev(sys.argv[2]), 'push_cap': lambda: push_cap(sys.argv[2], sys.argv[3])}[sys.argv[1]]()

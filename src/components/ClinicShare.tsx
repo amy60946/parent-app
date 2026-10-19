@@ -8,7 +8,7 @@ import { useStore } from '../store';
 import { useAuth } from '../lib/auth';
 import { formatTR, todayISO } from '../dates';
 import {
-  ClinicLink, InvitePreview, Suggestion, listLinks, previewInvite, shareWithClinic, stopSharing,
+  ClinicLink, InvitePreview, Suggestion, listLinks, previewInvite, shareWithClinic, stopSharing, addChildToClinic,
   pendingSuggestions, decideSuggestion, addAbcEvent,
 } from '../lib/clinic';
 
@@ -48,13 +48,33 @@ function Home({ onCode, onAbc, visible }: { onCode: () => void; onAbc: () => voi
 
   const childName = (id: string) => children.find((c) => c.id === id)?.name ?? '';
 
+  // Uzman (klinik) başına grupla: her uzmanın altında ailenin bütün çocukları, paylaşılan/paylaşılmayan
+  const clinics = Object.values((links ?? []).reduce<Record<string, ClinicLink[]>>((acc, l) => {
+    (acc[l.clinicId] ??= []).push(l);
+    return acc;
+  }, {}));
+
+  const add = (first: ClinicLink, childId: string) => Alert.alert(
+    `${childName(childId)} da paylaşılsın mı?`,
+    `${first.clinician || first.clinic}, ${childName(childId)} için görevleri, tamamlanma durumunu ve zor an kayıtlarını görebilecek. Posta ve coin paylaşılmaz. İstediğin an durdurabilirsin.`,
+    [
+      { text: 'Vazgeç', style: 'cancel' },
+      {
+        text: 'Onaylıyorum, paylaş',
+        onPress: async () => {
+          try { await addChildToClinic(first.clinicId, childId); load(); } catch (e) { Alert.alert('Paylaşılamadı', (e as Error).message); }
+        },
+      },
+    ],
+  );
+
   const stop = (l: ClinicLink) => Alert.alert(
-    'Paylaşım durdurulsun mu?',
+    `${childName(l.childId)} paylaşımdan çıkarılsın mı?`,
     `${l.clinician || l.clinic}, ${childName(l.childId)} için yeni verileri artık göremez. Daha önce aldığı notlar uzmanda kalır.`,
     [
       { text: 'Vazgeç', style: 'cancel' },
       {
-        text: 'Durdur', style: 'destructive',
+        text: 'Çıkar', style: 'destructive',
         onPress: async () => {
           try { await stopSharing(l.linkId); load(); } catch (e) { Alert.alert('Durdurulamadı', (e as Error).message); }
         },
@@ -90,19 +110,35 @@ function Home({ onCode, onAbc, visible }: { onCode: () => void; onAbc: () => voi
         </Text>
       ) : (
         <View style={{ gap: 8 }}>
-          {links.map((l) => {
-            const c = children.find((x) => x.id === l.childId);
+          {clinics.map((group) => {
+            const first = group[0];
             return (
-              <Card key={l.linkId} style={styles.linkCard}>
-                {c && <Avatar id={c.avatar} size={40} />}
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.h}>{l.clinician || l.clinic}</Text>
-                  <Text style={styles.cap}>{[l.title, l.clinic].filter(Boolean).join(' · ')}</Text>
-                  <Text style={styles.cap}>{c?.name} · {formatTR(l.consentAt.slice(0, 10))} tarihinden beri</Text>
+              <Card key={first.clinicId} style={{ gap: 10, backgroundColor: '#F7F8FB' }}>
+                <View>
+                  <Text style={styles.h}>{first.clinician || first.clinic}</Text>
+                  <Text style={styles.cap}>{[first.title, first.clinic].filter(Boolean).join(' · ')}</Text>
                 </View>
-                <Pressable onPress={() => stop(l)} hitSlop={8} accessibilityLabel="Paylaşımı durdur">
-                  <Text style={{ color: colors.danger, fontSize: 13, fontWeight: '600' }}>Durdur</Text>
-                </Pressable>
+                {children.map((c) => {
+                  const l = group.find((x) => x.childId === c.id);
+                  return (
+                    <View key={c.id} style={styles.childRow}>
+                      <Avatar id={c.avatar} size={36} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.navy }}>{c.name}</Text>
+                        <Text style={styles.cap}>{l ? `Paylaşılıyor · ${formatTR(l.consentAt.slice(0, 10))}` : 'Paylaşılmıyor'}</Text>
+                      </View>
+                      {l ? (
+                        <Pressable onPress={() => stop(l)} hitSlop={8} accessibilityLabel={`${c.name} paylaşımını durdur`}>
+                          <Text style={{ color: colors.danger, fontSize: 13, fontWeight: '600' }}>Çıkar</Text>
+                        </Pressable>
+                      ) : (
+                        <Pressable onPress={() => add(first, c.id)} hitSlop={8} accessibilityLabel={`${c.name} çocuğunu da paylaş`}>
+                          <Text style={{ color: colors.navy, fontSize: 13, fontWeight: '700' }}>Ekle</Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  );
+                })}
               </Card>
             );
           })}
@@ -159,7 +195,8 @@ function CodeFlow({ onDone }: { onDone: () => void }) {
   const { children } = useStore();
   const [code, setCode] = useState('');
   const [preview, setPreview] = useState<InvitePreview | null>(null);
-  const [childId, setChildId] = useState<string | undefined>(children.length === 1 ? children[0].id : undefined);
+  const [childIds, setChildIds] = useState<string[]>(children.length === 1 ? [children[0].id] : []);
+  const toggle = (id: string) => setChildIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const [busy, setBusy] = useState(false);
 
   const check = async () => {
@@ -171,10 +208,10 @@ function CodeFlow({ onDone }: { onDone: () => void }) {
   };
 
   const consent = async () => {
-    if (!childId) return Alert.alert('Hangi çocuk için paylaşılacağını seç');
+    if (!childIds.length) return Alert.alert('Hangi çocuklar için paylaşılacağını seç');
     setBusy(true);
     try {
-      await shareWithClinic(code, childId);
+      await shareWithClinic(code, childIds);
       Alert.alert('Paylaşım başladı', 'İstediğin zaman Uzmanım bölümünden durdurabilirsin.');
       onDone();
     } catch (e) {
@@ -211,12 +248,15 @@ function CodeFlow({ onDone }: { onDone: () => void }) {
         <Text style={styles.cap}>{[preview.title, preview.clinic].filter(Boolean).join(' · ')}</Text>
       </Card>
 
-      <Text style={styles.section}>Hangi çocuk için?</Text>
+      <Text style={styles.section}>Hangi çocuklar için? (birden çok seçebilirsin)</Text>
       <View style={{ flexDirection: 'row', gap: 16, flexWrap: 'wrap' }}>
         {children.map((c) => (
-          <Pressable key={c.id} onPress={() => setChildId(c.id)} style={{ alignItems: 'center', gap: 4, opacity: childId === c.id ? 1 : 0.5 }}>
-            <Avatar id={c.avatar} size={48} ring={childId === c.id} />
-            <Text style={{ fontSize: 11, fontWeight: '600', color: colors.navy }}>{c.name}</Text>
+          <Pressable key={c.id} onPress={() => toggle(c.id)} accessibilityState={{ selected: childIds.includes(c.id) }}
+            style={{ alignItems: 'center', gap: 4, opacity: childIds.includes(c.id) ? 1 : 0.5 }}>
+            <Avatar id={c.avatar} size={48} ring={childIds.includes(c.id)} />
+            <Text style={{ fontSize: 11, fontWeight: '600', color: colors.navy }}>
+              {childIds.includes(c.id) ? '✓ ' : ''}{c.name}
+            </Text>
           </Pressable>
         ))}
       </View>
@@ -234,7 +274,7 @@ function CodeFlow({ onDone }: { onDone: () => void }) {
         Paylaşımı istediğin an durdurabilirsin.
       </Text>
 
-      <Pressable style={[styles.cta, (busy || !childId) && { opacity: 0.6 }]} disabled={busy} onPress={consent}>
+      <Pressable style={[styles.cta, (busy || !childIds.length) && { opacity: 0.6 }]} disabled={busy} onPress={consent}>
         {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Onaylıyorum, paylaş</Text>}
       </Pressable>
       <Pressable style={styles.ghost} onPress={onDone}><Text style={{ color: colors.navy, fontWeight: '600' }}>Vazgeç</Text></Pressable>
@@ -327,7 +367,7 @@ const styles = StyleSheet.create({
   cap: { fontSize: 12, color: colors.muted },
   body: { fontSize: 13, color: colors.navy, lineHeight: 19 },
   section: { fontSize: 11, fontWeight: '600', letterSpacing: 0.6, color: colors.muted, textTransform: 'uppercase' },
-  linkCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F7F8FB' },
+  childRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 12 },
   input: { backgroundColor: '#F3F4F8', borderRadius: radius.sm, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colors.navy, marginTop: 4 },
   cta: { height: 52, borderRadius: radius.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },

@@ -3,7 +3,7 @@ import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import './src/lib/webAlert';
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, createNavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -19,12 +19,16 @@ import FamilyScreen from './src/screens/FamilyScreen';
 import CreateTaskScreen from './src/screens/CreateTaskScreen';
 import TaskDetailsScreen from './src/screens/TaskDetailsScreen';
 import ChatScreen from './src/screens/ChatScreen';
+import NotificationsScreen, { openNotification } from './src/screens/NotificationsScreen';
+import { NotificationsProvider } from './src/notifications';
+import { onNotificationTap } from './src/lib/notifications';
 import {
   LoginScreen, SignUpScreen, ForgotPasswordScreen, NewPasswordScreen, ChildHomeScreen,
 } from './src/screens/AuthScreens';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+const navRef = createNavigationContainerRef<any>();
 
 const navTheme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: colors.bg } };
 
@@ -74,6 +78,13 @@ function Loading() {
 
 function Main() {
   const { ready } = useStore();
+  // Telefon bildirimine dokununca ilgili ekranı aç (uygulama kapalıyken açıldıysa da)
+  React.useEffect(() => {
+    if (!ready) return;
+    return onNotificationTap((data) => {
+      if (navRef.isReady()) openNotification(navRef, { kind: data.kind, data });
+    });
+  }, [ready]);
   if (!ready) return <Loading />;
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -81,6 +92,7 @@ function Main() {
       <Stack.Screen name="CreateTask" component={CreateTaskScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="TaskDetails" component={TaskDetailsScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="Chat" component={ChatScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
     </Stack.Navigator>
   );
 }
@@ -107,10 +119,12 @@ function Root() {
   if (!session) return <AuthFlow />;
   return (
     <StoreProvider userId={session?.user.id ?? null}>
-      <NavigationContainer theme={navTheme}>
-        <StatusBar style="dark" />
-        <Main />
-      </NavigationContainer>
+      <NotificationsProvider userId={session.user.id}>
+        <NavigationContainer theme={navTheme} ref={navRef}>
+          <StatusBar style="dark" />
+          <Main />
+        </NavigationContainer>
+      </NotificationsProvider>
     </StoreProvider>
   );
 }
