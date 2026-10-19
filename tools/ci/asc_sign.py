@@ -75,7 +75,7 @@ def create(p8, bundle, out):
 
 def ensure_push(tok, bid):
     # Push bildirimi (expo-notifications → aps-environment) için App ID'de yetenek açık olmalı; yoksa profil uyuşmaz
-    caps = call(tok, 'GET', '/bundleIds/%s/bundleIdCapabilities?limit=50' % bid)['data']
+    caps = call(tok, 'GET', '/bundleIds/%s/bundleIdCapabilities' % bid)['data']
     if any(c['attributes'].get('capabilityType') == 'PUSH_NOTIFICATIONS' for c in caps): return
     call(tok, 'POST', '/bundleIdCapabilities', {'data': {'type': 'bundleIdCapabilities',
         'attributes': {'capabilityType': 'PUSH_NOTIFICATIONS'},
