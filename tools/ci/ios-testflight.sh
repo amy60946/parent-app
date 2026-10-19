@@ -14,6 +14,13 @@ v=$(xcodebuild -version | awk 'NR==1{split($2,a,"."); print a[1]}')
 xcodebuild -version
 
 jq --arg b "$BUILD_NUMBER" '.expo.ios.buildNumber = $b' app.json > app.tmp && mv app.tmp app.json
+# Ön denetim (~1 dk): JS paketi Supabase adresini içeriyor mu; içermiyorsa 10 dk'lık derlemeye girmeden dur
+chk="$RUNNER_TEMP/precheck"; mkdir -p "$chk"
+npx expo export:embed --platform ios --dev false --entry-file index.ts \
+  --bundle-output "$chk/main.jsbundle" --assets-dest "$chk/assets" >/dev/null
+grep -q 'uhelhxqgpcjemadhsifx.supabase.co' "$chk/main.jsbundle" \
+  || { echo "::error::Ön denetim: Supabase adresi JS paketinde yok"; exit 1; }
+echo "Ön denetim: Supabase adresi JS paketinde var"
 CI=1 npx expo prebuild --platform ios --clean
 ws=$(ls -d ios/*.xcworkspace | head -1); scheme=$(basename "$ws" .xcworkspace)
 echo "Çalışma alanı: $ws, şema: $scheme"
@@ -45,8 +52,9 @@ xcodebuild -workspace "$ws" -scheme "$scheme" -configuration Release \
 [ -d "$archive" ] || { echo "::error::Arşiv oluşmadı"; exit 1; }
 # Sunucu adresi JS paketine girmiş mi (girmezse uygulamada her giriş "ağ hatası" verir)
 jsb=$(find "$archive/Products/Applications" -name 'main.jsbundle' | head -1)
-{ [ -n "$jsb" ] && grep -aq 'uhelhxqgpcjemadhsifx.supabase.co' "$jsb"; } \
-  || { echo "::error::Supabase adresi JS paketinde yok (.env okunmadı)"; exit 1; }
+has_url=$(grep -ac 'uhelhxqgpcjemadhsifx.supabase.co' "$jsb" || true); has_fallback=$(grep -ac 'ayarlanmadi.supabase.co' "$jsb" || true)
+echo "JS paketi: sunucu adresi=$has_url, yedek adres=$has_fallback"
+[ "${has_url:-0}" -gt 0 ] || { echo "::error::Supabase adresi JS paketinde yok (.env okunmadı)"; exit 1; }
 codesign -dvv "$(ls -d "$archive"/Products/Applications/*.app | head -1)" 2>&1 | grep -E "Authority|TeamIdentifier" || true
 
 # Dışa aktarma: elle App Store dağıtım imzası (asc_sign.py → geçici sertifika + profil, geçici yerel anahtar zinciri;

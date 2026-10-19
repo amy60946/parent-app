@@ -44,4 +44,7 @@ jobs:
       - name: Derle, imzala, TestFlight'a yükle
         env:
           BUILD_NUMBER: ${{ github.run_number }}
+          # .env'e ek olarak ortam değişkeni: Xcode'un JS paketleme adımı .env'i okumasa da değerler pakete girer
+          EXPO_PUBLIC_SUPABASE_URL: https://uhelhxqgpcjemadhsifx.supabase.co
+          EXPO_PUBLIC_SUPABASE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: bash tools/ci/ios-testflight.sh
