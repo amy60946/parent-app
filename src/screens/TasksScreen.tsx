@@ -8,6 +8,8 @@ import { colors, radius } from '../theme';
 import { Avatar, DifficultyBadge } from '../components/ui';
 import { useStore, taskOccursOn, completionKey, Task, CompletionStatus } from '../store';
 import { DAY_SHORT, addDays, fromISO, monthYear, startOfWeek, toISO, todayISO } from '../dates';
+import ClinicShareSheet from '../components/ClinicShare';
+import { pendingSuggestions } from '../lib/clinic';
 
 const WEEK_RANGE = 52; // bugünden ±52 hafta
 
@@ -15,7 +17,14 @@ type DayItem = { task: Task; assigns: Task['assignments'] };
 
 export default function TasksScreen({ navigation }: any) {
   const { width } = useWindowDimensions();
-  const { tasks, children, completions, reorderTasks, deleteTask } = useStore();
+  const { tasks, children, completions, reorderTasks, deleteTask, familyId } = useStore();
+  // Uzmandan bekleyen görev önerisi varsa üstte kısa bir bildirim
+  const [suggested, setSuggested] = useState(0);
+  const [clinicOpen, setClinicOpen] = useState(false);
+  React.useEffect(() => {
+    if (!familyId || clinicOpen) return;
+    pendingSuggestions(familyId).then((l) => setSuggested(l.length)).catch(() => setSuggested(0));
+  }, [familyId, clinicOpen]);
   const [selected, setSelected] = useState(todayISO());
   const [childFilter, setChildFilter] = useState<string | 'all'>('all');
   const listRef = useRef<FlatList>(null);
@@ -73,6 +82,14 @@ export default function TasksScreen({ navigation }: any) {
         <Text style={styles.title}>Görevler</Text>
         <Text style={styles.month}>{monthYear(fromISO(selected))}</Text>
       </View>
+      {suggested > 0 && (
+        <Pressable onPress={() => setClinicOpen(true)} style={styles.suggest} accessibilityLabel="Uzman önerilerini gör">
+          <Ionicons name="medkit-outline" size={16} color={colors.navy} />
+          <Text style={{ flex: 1, fontSize: 13, color: colors.navy, fontWeight: '600' }}>Uzmanından {suggested} görev önerisi var</Text>
+          <Ionicons name="chevron-forward" size={14} color={colors.muted} />
+        </Pressable>
+      )}
+      <ClinicShareSheet visible={clinicOpen} onClose={() => setClinicOpen(false)} />
 
       <FlatList
         ref={listRef}
@@ -137,7 +154,7 @@ export default function TasksScreen({ navigation }: any) {
               <Ionicons name="arrow-back" size={13} color={colors.muted} style={{ marginLeft: 8 }} />
               <Text style={styles.hintText}>Silmek için sola kaydır</Text>
             </View>
-          ) : null
+          ) : undefined
         }
         ListEmptyComponent={
           <Text style={{ color: colors.muted, textAlign: 'center', marginTop: 48 }}>
@@ -263,6 +280,7 @@ function Chip({ label, active, onPress, avatar }: { label: string; active: boole
 }
 
 const styles = StyleSheet.create({
+  suggest: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 20, marginBottom: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.md, backgroundColor: '#FFF6DE' },
   safe: { flex: 1, backgroundColor: colors.bg },
   header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 10 },
   title: { fontSize: 17, fontWeight: '700', color: colors.navy },
