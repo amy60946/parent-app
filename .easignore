@@ -1,0 +1,9 @@
+# EAS bulut derlemesine gönderilmeyecek dosyalar (.gitignore ile aynı; tek fark: .env gönderilir —
+# TestFlight iş akışı .env'i GitHub Secrets'tan yazar, yalnızca publishable anahtar içerir)
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+.DS_Store
+preview/out/

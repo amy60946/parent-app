@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "ParentApp",
+    "slug": "parentapp",
+    "owner": "amy60946",
+    "scheme": "parentapp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "ios": {
+      "bundleIdentifier": "com.parentapp.ios",
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "tr"
+      }
+    },
+    "android": {
+      "package": "com.parentapp.ios",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F1B3D",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "backgroundColor": "#0F1B3D"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Çocuğuna fotoğraf göndermek için galerine erişim gerekiyor.",
+          "cameraPermission": false
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Sesli mesaj kaydetmek için mikrofona erişim gerekiyor.",
+          "enableBackgroundPlayback": false
+        }
+      ],
+      "@react-native-community/datetimepicker"
+    ]
+  }
+}
