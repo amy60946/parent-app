@@ -1,14 +1,14 @@
 # ParentApp (ebeveyn uygulaması) — TestFlight
 
 ParentApp yalnızca **ebeveyn** uygulamasıdır (16 Ekim 2026): açılış ekranı ebeveyn girişi. Çocuk, ebeveynin ürettiği giriş kodunu
-**Pofi Adası** oyununa yazar (ayrı uygulama, depo `amy60946/pofi-adasi`). Sunucu (Supabase), kodlar ve görev akışı değişmedi.
+**Pofi Adası** oyununa yazar (ayrı uygulama, depo `amy60946/game-app`). Sunucu (Supabase), kodlar ve görev akışı değişmedi.
 
 | | ParentApp | Pofi Adası |
 |---|---|---|
 | Kim kullanır | Ebeveyn | Çocuk |
 | Bundle ID | `com.parentapp.ios` | `com.gameapp.ios` |
 | Yön | Dikey | Yatay |
-| Derleme | macOS'ta expo prebuild + Xcode (`.github/workflows/ios-testflight.yml`, `tools/ci/ios-testflight.sh`) | Unity + Xcode (`pofi-adasi/.github/workflows/ios.yml`) |
+| Derleme | macOS'ta expo prebuild + Xcode (`.github/workflows/ios-testflight.yml`, `tools/ci/ios-testflight.sh`) | Unity + Xcode (`game-app/.github/workflows/ios.yml`) |
 
 ## Bir kez yapılacaklar
 

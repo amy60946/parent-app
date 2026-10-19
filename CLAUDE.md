@@ -4,7 +4,7 @@ ParentApp, ebeveynin kullandığı uygulama (Expo / React Native, TypeScript). �
 
 | Ürün | Kim | Depo |
 |---|---|---|
-| Pofi Adası (GameApp) | Çocuk | `amy60946/pofi-adasi` (Unity) |
+| Pofi Adası (GameApp) | Çocuk | `amy60946/game-app` (Unity) |
 | **ParentApp** | Ebeveyn (aile aboneliği) | `amy60946/parent-app` (bu depo) |
 | ClinicApp | Uzman (klinisyen başına ücret) | `amy60946/clinic-app` |
 
