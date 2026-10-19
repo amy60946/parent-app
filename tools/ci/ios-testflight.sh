@@ -43,6 +43,10 @@ xcodebuild -workspace "$ws" -scheme "$scheme" -configuration Release \
   DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic \
   "${auth[@]}" -quiet archive
 [ -d "$archive" ] || { echo "::error::Arşiv oluşmadı"; exit 1; }
+# Sunucu adresi JS paketine girmiş mi (girmezse uygulamada her giriş "ağ hatası" verir)
+jsb=$(find "$archive/Products/Applications" -name 'main.jsbundle' | head -1)
+{ [ -n "$jsb" ] && grep -aq 'uhelhxqgpcjemadhsifx.supabase.co' "$jsb"; } \
+  || { echo "::error::Supabase adresi JS paketinde yok (.env okunmadı)"; exit 1; }
 codesign -dvv "$(ls -d "$archive"/Products/Applications/*.app | head -1)" 2>&1 | grep -E "Authority|TeamIdentifier" || true
 
 # Dışa aktarma: elle App Store dağıtım imzası (asc_sign.py → geçici sertifika + profil, geçici yerel anahtar zinciri;

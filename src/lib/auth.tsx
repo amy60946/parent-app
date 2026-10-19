@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import { Alert } from 'react-native';
 import * as Linking from 'expo-linking';
 import type { Session, EmailOtpType } from '@supabase/supabase-js';
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 
 // E-postadaki bağlantılar uygulamayı bu adresle açar:
 // geliştirmede exp://…/--/auth (Expo Go), derlenmiş uygulamada parentapp://auth
@@ -30,6 +30,8 @@ const Ctx = createContext<Auth | null>(null);
 // Supabase hata kodlarını sade Türkçe mesajlara çevir
 export function authErrorText(e: unknown): string {
   const err = e as { code?: string; message?: string; status?: number };
+  // Derlemede sunucu adresi/anahtarı uygulamaya girmediyse her istek ağ hatası gibi görünür
+  if (!isSupabaseConfigured) return 'Uygulama sunucuya bağlanacak şekilde derlenmemiş (Supabase anahtarı eksik). Yeni bir TestFlight derlemesi gerekiyor.';
   switch (err?.code) {
     case 'invalid_credentials': return 'E-posta ya da şifre hatalı.';
     case 'email_not_confirmed': return 'E-posta adresin henüz doğrulanmadı. Gelen kutunu kontrol et.';
@@ -44,6 +46,10 @@ export function authErrorText(e: unknown): string {
     case 'otp_expired': return 'Bağlantının süresi dolmuş. Yeniden iste.';
     case 'anonymous_provider_disabled': return 'Çocuk girişi henüz açık değil. Ebeveyninden Supabase ayarlarında "Anonymous Sign-Ins" seçeneğini açmasını iste.';
   }
+  if (err?.code === 'unexpected_failure' || err?.message?.includes('Database error')) {
+    return 'Sunucu hesabı oluşturamadı. Biraz sonra tekrar dene; sürerse bize bildir.';
+  }
+  if (err?.message?.includes('Invalid API key')) return 'Uygulamanın sunucu anahtarı geçersiz. Yeni bir TestFlight derlemesi gerekiyor.';
   if (err?.status === 429) return 'Çok fazla deneme yapıldı. Biraz sonra tekrar dene.';
   if (err?.message?.toLowerCase().includes('network')) return 'İnternet bağlantını kontrol et.';
   return err?.message || 'Bir şeyler ters gitti. Tekrar dene.';
