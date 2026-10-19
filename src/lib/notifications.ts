@@ -4,9 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 
 // Bildirimler: satırları sunucu yazar (ortak/supabase/proposed/20261019130000_notifications.sql);
-// burada yalnız telefonun push anahtarı kaydedilir ve uygulama açıkken gelen bildirim gösterilir.
-// Expo projesi (EAS) kimliği: Expo Push Service anahtarı bu projeye bağlar.
-const EXPO_PROJECT_ID = 'dff6d69f-1b4f-4373-93ad-a999cde37ede';
+// burada yalnız telefonun Apple (APNs) cihaz anahtarı kaydedilir ve uygulama açıkken gelen bildirim gösterilir.
+// Gönderimi Supabase Edge Function push-apns yapar (ortak/supabase/functions/push-apns); Expo hesabı gerekmez.
 const TOKEN_KEY = 'push-token';
 const OFF_KEY = 'push-off'; // kullanıcı telefona bildirimi kapattıysa '1'
 
@@ -41,7 +40,8 @@ export async function registerForPush(): Promise<'ok' | 'denied' | 'off' | 'unav
     let { status } = await Notifications.getPermissionsAsync();
     if (status !== 'granted') ({ status } = await Notifications.requestPermissionsAsync());
     if (status !== 'granted') return 'denied';
-    const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId: EXPO_PROJECT_ID });
+    const { data: token } = await Notifications.getDevicePushTokenAsync();
+    if (typeof token !== 'string' || !token) return 'unavailable';
     const { error } = await supabase.rpc('register_push_token', { p_token: token, p_app: 'parent', p_platform: Platform.OS });
     if (error) throw error;
     await AsyncStorage.setItem(TOKEN_KEY, token);
