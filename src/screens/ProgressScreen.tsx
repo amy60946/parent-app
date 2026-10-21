@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import NotificationBell from '../components/NotificationBell';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
@@ -68,6 +69,9 @@ export default function ProgressScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      <View style={{ alignItems: 'flex-end', paddingHorizontal: 20, paddingTop: 4 }}>
+        <NotificationBell />
+      </View>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 12 }}>
         {/* Zor anlar: kayıt + arşiv */}
         <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -144,7 +148,7 @@ export default function ProgressScreen({ navigation }: any) {
             return (
               <View key={title} style={{ marginTop: 12 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 13, color: colors.navy }}>{h.emoji} {title}</Text>
+                  <Text style={{ fontSize: 13, color: colors.navy }}>{title}</Text>
                   <Text style={{ fontSize: 13, fontWeight: '700', color: colors.navy }}>%{pct}</Text>
                 </View>
                 <View style={{ height: 5, borderRadius: 3, backgroundColor: '#F1F3F8', marginTop: 6, overflow: 'hidden' }}>

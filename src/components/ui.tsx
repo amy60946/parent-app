@@ -3,9 +3,19 @@ import { View, Text, Image, Pressable, StyleSheet, ViewStyle } from 'react-nativ
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, Difficulty, difficultyMeta } from '../theme';
 import { findAvatar } from '../data/avatars';
+import { isPhoto, usePhotoUrl } from '../lib/avatarPhoto';
 
 export function Avatar({ id, size = 44, ring = false }: { id: string; size?: number; ring?: boolean }) {
   const a = findAvatar(id);
+  const photo = usePhotoUrl(id);
+  if (isPhoto(id)) {
+    return (
+      <View style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', backgroundColor: '#EEF0F5',
+        borderWidth: ring ? 2 : 0, borderColor: colors.navy }}>
+        {photo ? <Image source={{ uri: photo }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : null}
+      </View>
+    );
+  }
   return (
     <View
       style={{
@@ -85,8 +95,8 @@ export function Toggle({ value, onChange }: { value: boolean; onChange: (v: bool
 }
 
 export const Label = ({ children }: { children: string }) => (
-  <Text style={{ fontSize: 11, fontWeight: '600', letterSpacing: 0.6, color: colors.muted, marginTop: 20, marginBottom: 8 }}>
-    {children.toUpperCase()}
+  <Text style={{ fontSize: 13, fontWeight: '600', color: colors.muted, marginTop: 20, marginBottom: 8 }}>
+    {children}
   </Text>
 );
 

@@ -109,7 +109,7 @@ export default function ChatScreen({ navigation, route }: any) {
         <Avatar id={child.avatar} size={38} />
         <View style={{ flex: 1 }}>
           <Text style={styles.name}>{child.name}</Text>
-          <Text style={styles.sub}>Posta</Text>
+          <Text style={styles.sub}>Mesajlar</Text>
         </View>
       </View>
 
@@ -118,7 +118,7 @@ export default function ChatScreen({ navigation, route }: any) {
           <Avatar id={child.avatar} size={64} />
           <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>{child.name} ile sohbet</Text>
           <Text style={{ fontSize: 13, color: colors.muted, textAlign: 'center' }}>
-            Yazı, fotoğraf ya da sesli mesaj gönder. {child.name} oyunda Posta kutusundan okuyacak.
+            Yazı, fotoğraf ya da sesli mesaj gönder. {child.name} oyunda mesaj kutusundan okuyacak.
           </Text>
         </View>
       ) : (
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   },
   barBtn: { backgroundColor: '#F1F2F6', width: 42, height: 42, borderRadius: 21 },
   inputWrap: { flex: 1, minHeight: 42, maxHeight: 120, borderRadius: 21, backgroundColor: '#F1F2F6', paddingHorizontal: 14, justifyContent: 'center' },
-  input: { fontSize: 15, color: colors.navy, paddingTop: 10, paddingBottom: 10, maxHeight: 116 },
+  input: { letterSpacing: 0, fontSize: 15, color: colors.navy, paddingTop: 10, paddingBottom: 10, maxHeight: 116 },
   send: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
   recPill: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   recDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.danger },

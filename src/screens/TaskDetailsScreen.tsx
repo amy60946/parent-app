@@ -152,7 +152,7 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
           <>
             <Label>Seçilen görevler</Label>
             {picked.map((t: any) => (
-              <Text key={t.id} style={{ fontSize: 15, color: colors.navy, marginBottom: 4 }}>{t.emoji}  {t.title}</Text>
+              <Text key={t.id} style={{ fontSize: 15, color: colors.navy, marginBottom: 4 }}>{t.title}</Text>
             ))}
           </>
         )}
@@ -336,10 +336,11 @@ const styles = StyleSheet.create({
   repeatHint: { fontSize: 12, color: colors.muted },
   summary: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.today, borderRadius: radius.sm, padding: 10 },
   safe: { flex: 1, backgroundColor: colors.bg },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 4 },
+  // Alttan açılan pencerede (modal) üst güvenli alan yok: başlık kenara yapışmasın
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 18, paddingBottom: 6 },
   topTitle: { fontSize: 16, fontWeight: '700', color: colors.navy },
   banner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.medium.bg, marginHorizontal: 20, marginTop: 12, padding: 12, borderRadius: radius.sm },
-  input: { backgroundColor: '#fff', borderRadius: radius.md, padding: 14, fontSize: 15, color: colors.navy },
+  input: { letterSpacing: 0, backgroundColor: '#fff', borderRadius: radius.md, padding: 14, fontSize: 15, color: colors.navy },
   coinBox: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#ECEEF3', borderRadius: radius.sm, paddingHorizontal: 12, height: 40 },
   sub: { fontSize: 12, color: colors.muted, marginTop: 6, marginBottom: 6 },
   switchRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: radius.md, padding: 14 },

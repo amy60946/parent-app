@@ -1,11 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, FlatList, Pressable, StyleSheet } from 'react-native';
+import { View, Text, TextInput, FlatList, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
 import { DifficultyBadge, IconButton } from '../components/ui';
-import { categories, Category } from '../data/templates';
-import { AgeBand, ageBands } from '../data/ageBands';
+import { categories, Category, TemplateAge, templateAges } from '../data/templates';
 import { useStore } from '../store';
 
 // Akıllı öneri (smart recommendation) sonra eklenecek: ortak/DURUM.md hatırlatıcı
@@ -18,7 +17,7 @@ export default function CreateTaskScreen({ navigation, route }: any) {
   const { allTemplates, savedIds, toggleSaved } = useStore();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
-  const [age, setAge] = useState<AgeBand | 'all'>('all');
+  const [age, setAge] = useState<TemplateAge | 'all'>('all');
   const [menu, setMenu] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
   const isCategory = filter !== 'all' && filter !== 'saved' && filter !== 'popular';
@@ -40,7 +39,7 @@ export default function CreateTaskScreen({ navigation, route }: any) {
     { id: 'all', label: 'Tüm görevler', icon: 'apps-outline' },
     { id: 'popular', label: 'Ebeveynlerin en çok kullandıkları', icon: 'flame-outline' },
     { id: 'saved', label: 'Kaydedilenler', icon: 'bookmark-outline' },
-    ...categories.map((c) => ({ id: c.id as Filter, label: `${c.emoji}  ${c.label}` })),
+    ...categories.map((c) => ({ id: c.id as Filter, label: c.label })),
   ];
   const current = options.find((o) => o.id === filter)!;
   const choose = (f: Filter) => { setFilter(f); setAge('all'); setMenu(false); };
@@ -65,7 +64,7 @@ export default function CreateTaskScreen({ navigation, route }: any) {
           onChangeText={setQuery}
           placeholder="Şablon ara"
           placeholderTextColor={colors.muted}
-          style={{ flex: 1, fontSize: 15, color: colors.navy }}
+          style={{ flex: 1, fontSize: 15, color: colors.navy, letterSpacing: 0 }}
         />
       </View>
 
@@ -95,12 +94,13 @@ export default function CreateTaskScreen({ navigation, route }: any) {
 
       {/* Kategori seçilince yaş grubu */}
       {isCategory && !menu && (
-        <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 20, marginTop: 10 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, marginTop: 10 }}
+          contentContainerStyle={{ flexDirection: 'row', gap: 8, paddingHorizontal: 20 }}>
           <Chip label="Tüm yaşlar" active={age === 'all'} onPress={() => setAge('all')} />
-          {ageBands.map((b) => (
+          {templateAges.map((b) => (
             <Chip key={b.id} label={b.label} active={age === b.id} onPress={() => setAge(b.id)} />
           ))}
-        </View>
+        </ScrollView>
       )}
 
       <Text style={styles.hint}>Birden fazla görev seçip tek seferde atayabilirsiniz.</Text>
@@ -126,7 +126,6 @@ export default function CreateTaskScreen({ navigation, route }: any) {
               <View style={[styles.radio, on && { backgroundColor: colors.navy, borderColor: colors.navy }]}>
                 {on && <Ionicons name="checkmark" size={14} color="#fff" />}
               </View>
-              <Text style={{ fontSize: 22 }}>{t.emoji}</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardTitle}>{t.title}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
@@ -192,7 +191,8 @@ function Chip({ label, active, onPress, icon, iconColor }: {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 4 },
+  // Alttan açılan pencerede (modal) üst güvenli alan yok: başlık kenara yapışmasın
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 18, paddingBottom: 6 },
   topTitle: { fontSize: 16, fontWeight: '700', color: colors.navy },
   search: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderRadius: radius.md, marginHorizontal: 20, marginTop: 14, paddingHorizontal: 14, height: 46 },
   dropdown: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 48, paddingHorizontal: 14, borderRadius: radius.md, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line },

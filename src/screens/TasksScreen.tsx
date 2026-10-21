@@ -10,8 +10,8 @@ import { useStore, taskOccursOn, completionKey, Task, CompletionStatus } from '.
 import { DAY_SHORT, addDays, fromISO, monthYear, startOfWeek, toISO, todayISO } from '../dates';
 import ClinicShareSheet from '../components/ClinicShare';
 import { pendingSuggestions } from '../lib/clinic';
-import { useNotifications } from '../notifications';
-import { TaskDayPart, dayPartIcon, dayPartLabel, taskDayPartOf } from '../data/dayParts';
+import NotificationBell from '../components/NotificationBell';
+import { TaskDayPart, dayPartLabel, taskDayPartOf } from '../data/dayParts';
 
 type PartFilter = 'all' | TaskDayPart | 'any';
 const partOf = (t: Task) => t.dayPart ?? (t.reminder ? taskDayPartOf(t.reminder) : undefined);
@@ -23,7 +23,6 @@ type DayItem = { task: Task; assigns: Task['assignments'] };
 export default function TasksScreen({ navigation }: any) {
   const { width } = useWindowDimensions();
   const { tasks, children, completions, reorderTasks, deleteTask, familyId } = useStore();
-  const { unread } = useNotifications();
   // Uzmandan bekleyen görev önerisi varsa üstte kısa bir bildirim
   const [suggested, setSuggested] = useState(0);
   const [clinicOpen, setClinicOpen] = useState(false);
@@ -91,13 +90,7 @@ export default function TasksScreen({ navigation }: any) {
           <Text style={styles.title}>Görevler</Text>
           <Text style={styles.month}>{monthYear(fromISO(selected))}</Text>
         </View>
-        <Pressable onPress={() => navigation.navigate('Notifications')} hitSlop={10}
-          accessibilityLabel={unread ? `Bildirimler, ${unread} okunmamış` : 'Bildirimler'}>
-          <Ionicons name={unread ? 'notifications' : 'notifications-outline'} size={22} color={colors.navy} />
-          {unread > 0 && (
-            <View style={styles.badge}><Text style={styles.badgeText}>{unread > 9 ? '9+' : unread}</Text></View>
-          )}
-        </Pressable>
+        <NotificationBell />
       </View>
       {suggested > 0 && (
         <Pressable onPress={() => setClinicOpen(true)} style={styles.suggest} accessibilityLabel="Uzman önerilerini gör">
@@ -150,7 +143,7 @@ export default function TasksScreen({ navigation }: any) {
       <View style={styles.parts}>
         {(['all', 'morning', 'noon', 'evening', 'any'] as PartFilter[]).map((p) => {
           const on = part === p;
-          const label = p === 'all' ? 'Tümü' : p === 'any' ? 'Herhangi' : `${dayPartIcon[p]} ${dayPartLabel[p]}`;
+          const label = p === 'all' ? 'Tümü' : p === 'any' ? 'Herhangi' : dayPartLabel[p];
           return (
             <Pressable key={p} onPress={() => setPart(p)} style={[styles.part, on && styles.partOn]}
               accessibilityRole="button" accessibilityState={{ selected: on }}>
@@ -261,7 +254,6 @@ function TaskRow({ item, date, kids, completions, active, onDrag, onEdit, onDele
           </Pressable>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={{ fontSize: 16 }}>{t.emoji}</Text>
               <Text numberOfLines={1} style={styles.rowTitle}>{t.title}</Text>
             </View>
             {!!t.description && <Text numberOfLines={1} style={styles.rowDesc}>{t.description}</Text>}

@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderRadius: radius.sm,
     paddingHorizontal: 14,
   },
-  input: { flex: 1, paddingVertical: 14, fontSize: 15, color: colors.navy },
+  input: { letterSpacing: 0, flex: 1, paddingVertical: 14, fontSize: 15, color: colors.navy },
   cta: { height: 52, borderRadius: radius.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   ctaText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   link: { fontSize: 13, fontWeight: '600', color: colors.navy },

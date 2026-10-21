@@ -13,7 +13,7 @@ import { useAuth } from '../lib/auth';
 import { addDays, formatTR, toISO, todayISO } from '../dates';
 import { AbcEvent, addAbc, deleteAbc, listAbc } from '../lib/abc';
 import { ClinicLink, listLinks } from '../lib/clinic';
-import { DayPart, dayPartIcon, dayPartLabel, dayPartOf } from '../data/dayParts';
+import { DayPart, dayPartLabel, dayPartOf } from '../data/dayParts';
 import { Voice, mmss } from './ChatScreen';
 
 // Zor anlar: yeni kayıt (çok çocuk, gün bölümü seçimi, sesli kayıt) + geçmiş kayıtlar (arşiv).
@@ -59,7 +59,7 @@ export default function AbcScreen({ navigation, route }: any) {
       </View>
 
       {form ? (
-        <AbcForm onDone={() => { setForm(false); load(); }} defaultChild={childFilter === 'all' ? undefined : childFilter} />
+        <AbcForm onDone={() => { setForm(false); load(); }} defaultChild={childFilter === 'all' ? undefined : childFilter} links={links} />
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }}>
           <Pressable style={styles.cta} onPress={() => setForm(true)}>
@@ -86,7 +86,7 @@ export default function AbcScreen({ navigation, route }: any) {
               <Pressable key={e.key} onLongPress={() => remove(e)} accessibilityHint="Uzun basınca silinir">
                 <Card style={{ gap: 6 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Text style={styles.h}>{formatTR(toISO(new Date(e.occurredAt)))} · {dayPartIcon[e.dayPart]} {dayPartLabel[e.dayPart]}</Text>
+                    <Text style={styles.h}>{formatTR(toISO(new Date(e.occurredAt)))} · {dayPartLabel[e.dayPart]}</Text>
                     <View style={{ flex: 1 }} />
                     <Text style={styles.badge}>Şiddet {e.intensity}/5</Text>
                   </View>
@@ -130,7 +130,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 
 const PARTS: DayPart[] = ['morning', 'noon', 'evening', 'night'];
 
-function AbcForm({ onDone, defaultChild }: { onDone: () => void; defaultChild?: string }) {
+function AbcForm({ onDone, defaultChild, links }: { onDone: () => void; defaultChild?: string; links: ClinicLink[] }) {
   const { children, familyId } = useStore();
   const { session } = useAuth();
   const today = todayISO();
@@ -186,7 +186,17 @@ function AbcForm({ onDone, defaultChild }: { onDone: () => void; defaultChild?: 
         childIds, date, dayPart: part, antecedent: a, behavior: b.trim() || '🎤 Sesli kayıt', consequence: c, intensity,
         audio: audio ?? undefined,
       });
-      Alert.alert('Kaydedildi', childIds.length > 1 ? 'Kayıt seçtiğin bütün çocukların raporuna eklendi.' : undefined);
+      // Asıl amaç uzmana iletmek: kime gittiğini açıkça söyle
+      const nm = (id: string) => children.find((x) => x.id === id)?.name ?? '';
+      const shared = childIds.filter((id) => links.some((l) => l.childId === id));
+      const experts = [...new Set(links.filter((l) => childIds.includes(l.childId)).map((l) => l.clinician || l.clinic))];
+      const notShared = childIds.filter((id) => !shared.includes(id)).map(nm);
+      if (experts.length) {
+        Alert.alert('Uzmana iletildi', `${experts.join(', ')} kaydı görebilir (${shared.map(nm).join(', ')}).`
+          + (notShared.length ? `\n\n${notShared.join(', ')} uzmanla paylaşılmadığı için kayıt yalnız ailede kaldı.` : ''));
+      } else {
+        Alert.alert('Kaydedildi', 'Uzmanla paylaşım olmadığı için kayıt yalnız ailede. Uzmanım bölümünden bir uzmanla paylaşırsan sonraki kayıtlar ona iletilir.');
+      }
       onDone();
     } catch (e) {
       Alert.alert('Kaydedilemedi', (e as Error).message);
@@ -231,7 +241,6 @@ function AbcForm({ onDone, defaultChild }: { onDone: () => void; defaultChild?: 
           {PARTS.map((p) => (
             <Pressable key={p} onPress={() => setPart(p)} style={[styles.part, part === p && styles.partOn]}
               accessibilityState={{ selected: part === p }}>
-              <Text style={{ fontSize: 18 }}>{dayPartIcon[p]}</Text>
               <Text style={{ fontSize: 12, fontWeight: '600', color: part === p ? colors.navy : colors.muted }}>{dayPartLabel[p]}</Text>
             </Pressable>
           ))}
@@ -306,13 +315,13 @@ const styles = StyleSheet.create({
   h: { fontSize: 14, fontWeight: '700', color: colors.navy },
   cap: { fontSize: 12, color: colors.muted },
   body: { fontSize: 13, color: colors.navy, lineHeight: 19 },
-  section: { fontSize: 11, fontWeight: '600', letterSpacing: 0.6, color: colors.muted, textTransform: 'uppercase' },
+  section: { fontSize: 13, fontWeight: '600', color: colors.muted },
   badge: { fontSize: 11, fontWeight: '700', color: colors.hard.fg, backgroundColor: colors.hard.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.pill, overflow: 'hidden' },
   chip: { height: 34, paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line, justifyContent: 'center' },
   parts: { flexDirection: 'row', gap: 8, marginTop: 10 },
   part: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: 8, borderRadius: radius.md, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line },
   partOn: { borderColor: colors.navy, borderWidth: 1.5 },
-  input: { backgroundColor: '#fff', borderRadius: radius.sm, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colors.navy, marginTop: 6 },
+  input: { letterSpacing: 0, backgroundColor: '#fff', borderRadius: radius.sm, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colors.navy, marginTop: 6 },
   recBox: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: radius.md, padding: 12 },
   recBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
   recDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.danger },

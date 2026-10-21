@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, Share, Alert, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, Share, Alert, StyleSheet, ActivityIndicator, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import NotificationBell from '../components/NotificationBell';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import * as ImagePicker from 'expo-image-picker';
+import { uploadChildPhoto } from '../lib/avatarPhoto';
 import { colors, radius } from '../theme';
 import { Avatar, IconButton, Segmented, Card } from '../components/ui';
 import DateField from '../components/DateField';
@@ -28,10 +31,7 @@ export default function FamilyScreen({ onLogout }: { onLogout?: () => void }) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={{ alignItems: 'flex-end', paddingHorizontal: 20, paddingTop: 4 }}>
-        <Pressable onPress={soon} accessibilityLabel="Bildirimler" hitSlop={10}>
-          <Ionicons name="notifications-outline" size={22} color={colors.navy} />
-          <View style={styles.dot} />
-        </Pressable>
+        <NotificationBell />
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 14, gap: 16, alignItems: 'flex-start' }}>
@@ -48,7 +48,7 @@ export default function FamilyScreen({ onLogout }: { onLogout?: () => void }) {
       </ScrollView>
 
       <View style={styles.tabs}>
-        {([['general', 'Genel'], ['mail', 'Posta'], ['account', 'Hesap']] as [Tab, string][]).map(([id, label]) => (
+        {([['general', 'Genel'], ['mail', 'Mesajlar'], ['account', 'Hesap']] as [Tab, string][]).map(([id, label]) => (
           <Pressable key={id} onPress={() => setTab(id)} style={{ alignItems: 'center', gap: 6 }}>
             <Text style={{ fontSize: 14, fontWeight: tab === id ? '700' : '500', color: tab === id ? colors.navy : colors.muted }}>{label}</Text>
             <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: tab === id ? colors.navy : 'transparent' }} />
@@ -436,7 +436,8 @@ function ManageSheet({ visible, onClose }: { visible: boolean; onClose: () => vo
 /* ---------- Ekle (alttan açılan tek sayfa) ---------- */
 
 function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const { addChild, createInviteCode } = useStore();
+  const { addChild, createInviteCode, familyId } = useStore();
+  const [photo, setPhoto] = useState<{ uri: string; mime?: string } | null>(null);
   const [kind, setKind] = useState<'child' | 'parent'>('child');
   const [name, setName] = useState('');
   const [gender, setGender] = useState<'kız' | 'erkek'>('kız');
@@ -446,11 +447,25 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
   const [code, setCode] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
 
-  const close = () => { setName(''); setBirthday(undefined); setBand('A'); setCode(undefined); setKind('child'); onClose(); };
+  const close = () => { setName(''); setBirthday(undefined); setBand('A'); setCode(undefined); setKind('child'); setPhoto(null); onClose(); };
 
-  const save = () => {
+  // Ebeveynin fotoğraflarından çocuğun fotoğrafı (kare kırpılır)
+  const pickPhoto = async () => {
+    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.6 });
+    if (r.canceled || !r.assets?.[0]) return;
+    setPhoto({ uri: r.assets[0].uri, mime: r.assets[0].mimeType ?? undefined });
+  };
+
+  const save = async () => {
     if (!name.trim()) return Alert.alert('İsim gerekli');
-    addChild({ name: name.trim(), avatar, gender, birthday, ageBand: band });
+    let av = avatar;
+    if (photo && familyId) {
+      setBusy(true);
+      try { av = await uploadChildPhoto(familyId, photo.uri, photo.mime); }
+      catch (e) { setBusy(false); return Alert.alert('Fotoğraf yüklenemedi', (e as Error).message); }
+      setBusy(false);
+    }
+    addChild({ name: name.trim(), avatar: av, gender, birthday, ageBand: band });
     close();
   };
 
@@ -471,9 +486,14 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
         <>
           <Text style={styles.cap}>Avatar</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+            <Pressable onPress={pickPhoto} accessibilityLabel="Fotoğraflarından seç"
+              style={[styles.photoPick, photo && { borderWidth: 2, borderColor: colors.navy, borderStyle: 'solid' }]}>
+              {photo ? <Image source={{ uri: photo.uri }} style={{ width: '100%', height: '100%' }} />
+                : <Ionicons name="camera-outline" size={22} color={colors.navy} />}
+            </Pressable>
             {childAvatars.map((a) => (
-              <Pressable key={a.id} onPress={() => setAvatar(a.id)} accessibilityLabel={a.name}>
-                <Avatar id={a.id} size={48} ring={avatar === a.id} />
+              <Pressable key={a.id} onPress={() => { setAvatar(a.id); setPhoto(null); }} accessibilityLabel={a.name}>
+                <Avatar id={a.id} size={48} ring={!photo && avatar === a.id} />
               </Pressable>
             ))}
           </View>
@@ -497,7 +517,7 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
             <Text style={[styles.cap, { marginBottom: 6 }]}>Oyundaki yaş grubu</Text>
             <Segmented<AgeBand> options={ageBands} value={band} onChange={setBand} />
           </View>
-          <Pressable style={styles.cta} onPress={save}><Text style={styles.ctaText}>Çocuğu ekle</Text></Pressable>
+          <Pressable style={[styles.cta, busy && { opacity: 0.6 }]} disabled={busy} onPress={save}><Text style={styles.ctaText}>Çocuğu ekle</Text></Pressable>
         </>
       ) : (
         <>
@@ -527,6 +547,7 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
 }
 
 const styles = StyleSheet.create({
+  photoPick: { width: 48, height: 48, borderRadius: 24, overflow: 'hidden', backgroundColor: '#EEF0F5', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.faint, borderStyle: 'dashed' },
   abcRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: radius.md, backgroundColor: '#fff' },
   safe: { flex: 1, backgroundColor: colors.bg },
   dot: { position: 'absolute', right: 1, top: 0, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.gold },
@@ -534,7 +555,7 @@ const styles = StyleSheet.create({
   tabs: { flexDirection: 'row', justifyContent: 'center', gap: 36, paddingVertical: 4 },
   h: { fontSize: 16, fontWeight: '700', color: colors.navy },
   cap: { fontSize: 12, color: colors.muted },
-  input: { backgroundColor: '#F3F4F8', borderRadius: radius.sm, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colors.navy, marginTop: 4 },
+  input: { letterSpacing: 0, backgroundColor: '#F3F4F8', borderRadius: radius.sm, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colors.navy, marginTop: 4 },
   convRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 14 },
   accRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 16 },
   logout: { height: 50, borderRadius: radius.md, borderWidth: 1, borderColor: colors.danger, alignItems: 'center', justifyContent: 'center' },

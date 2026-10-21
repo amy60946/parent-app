@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
+import NotificationBell from '../components/NotificationBell';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
@@ -23,6 +24,9 @@ export default function ReviewScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      <View style={{ alignItems: 'flex-end', paddingHorizontal: 20, paddingTop: 4 }}>
+        <NotificationBell />
+      </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ padding: 20, gap: 16 }}>
         <Pressable onPress={() => setFilter('all')} style={{ alignItems: 'center', gap: 4 }}>
           <View style={[styles.all, filter === 'all' && { borderWidth: 2, borderColor: colors.navy }]}>
@@ -51,7 +55,7 @@ export default function ReviewScreen() {
               <Avatar id={x.child!.avatar} size={36} />
               <View style={{ flex: 1 }}>
                 <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: '600', color: colors.navy }}>
-                  {x.task!.emoji} {x.task!.title}
+                  {x.task!.title}
                 </Text>
                 <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>
                   {x.child!.name} · {formatTR(x.date)}
@@ -112,7 +116,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 17, fontWeight: '700', color: colors.navy, paddingHorizontal: 20 },
   empty: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 24 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: radius.md, padding: 14 },
-  input: { backgroundColor: '#F3F4F8', borderRadius: radius.sm, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colors.navy, minHeight: 80, textAlignVertical: 'top' },
+  input: { letterSpacing: 0, backgroundColor: '#F3F4F8', borderRadius: radius.sm, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colors.navy, minHeight: 80, textAlignVertical: 'top' },
   cta: { height: 52, borderRadius: radius.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
   ctaText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   btn: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#F1F2F6', alignItems: 'center', justifyContent: 'center' },

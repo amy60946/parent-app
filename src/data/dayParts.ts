@@ -3,7 +3,6 @@ export type DayPart = 'morning' | 'noon' | 'evening' | 'night';
 export type TaskDayPart = Exclude<DayPart, 'night'>;
 
 export const dayPartLabel: Record<DayPart, string> = { morning: 'Sabah', noon: 'Öğlen', evening: 'Akşam', night: 'Gece' };
-export const dayPartIcon: Record<DayPart, string> = { morning: '🌅', noon: '☀️', evening: '🌆', night: '🌙' };
 
 // Saatten bölüm: sabah 05–11, öğle 11–16, akşam 16–21, gece 21–05
 export function dayPartOf(hhmm: string): DayPart {

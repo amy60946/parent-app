@@ -58,7 +58,7 @@ function Home({ onCode, onAbc, visible }: { onCode: () => void; onAbc: () => voi
 
   const add = (first: ClinicLink, childId: string) => Alert.alert(
     `${childName(childId)} da paylaşılsın mı?`,
-    `${first.clinician || first.clinic}, ${childName(childId)} için görevleri, tamamlanma durumunu ve zor an kayıtlarını görebilecek. Posta ve coin paylaşılmaz. İstediğin an durdurabilirsin.`,
+    `${first.clinician || first.clinic}, ${childName(childId)} için görevleri, tamamlanma durumunu ve zor an kayıtlarını görebilecek. Mesajlar ve coin paylaşılmaz. İstediğin an durdurabilirsin.`,
     [
       { text: 'Vazgeç', style: 'cancel' },
       {
@@ -268,7 +268,7 @@ function CodeFlow({ onDone }: { onDone: () => void }) {
         <Bullet ok text="Görevler ve tamamlanma durumu (saatiyle)" />
         <Bullet ok text='"Yapamam" yanıtları ve nedenleri' />
         <Bullet ok text="Bu uygulamada kaydettiğin zor anlar" />
-        <Bullet text="Posta mesajları, fotoğraf ve sesler" />
+        <Bullet text="Mesajlar, fotoğraf ve sesler" />
         <Bullet text="Coin bakiyesi ve oyun içi bilgiler" />
       </View>
       <Text style={styles.cap}>
@@ -297,10 +297,10 @@ const styles = StyleSheet.create({
   h: { fontSize: 15, fontWeight: '600', color: colors.navy },
   cap: { fontSize: 12, color: colors.muted },
   body: { fontSize: 13, color: colors.navy, lineHeight: 19 },
-  section: { fontSize: 11, fontWeight: '600', letterSpacing: 0.6, color: colors.muted, textTransform: 'uppercase' },
+  section: { fontSize: 13, fontWeight: '600', color: colors.muted },
   childRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 12 },
-  input: { backgroundColor: '#F3F4F8', borderRadius: radius.sm, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colors.navy, marginTop: 4 },
+  input: { letterSpacing: 0, backgroundColor: '#F3F4F8', borderRadius: radius.sm, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colors.navy, marginTop: 4 },
   cta: { height: 52, borderRadius: radius.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
   ctaText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   ghost: { height: 44, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },

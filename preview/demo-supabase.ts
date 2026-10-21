@@ -553,6 +553,9 @@ const storage = {
       save();
       return { data: { path }, error: null };
     },
+    async createSignedUrl(path: string) {
+      return { data: { signedUrl: db.blobs[path] ?? '' }, error: null };
+    },
     async createSignedUrls(paths: string[]) {
       return { data: paths.map((path) => ({ path, signedUrl: db.blobs[path] ?? '' })), error: null };
     },
