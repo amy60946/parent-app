@@ -560,7 +560,11 @@ const storage = {
       return { data: paths.map((path) => ({ path, signedUrl: db.blobs[path] ?? '' })), error: null };
     },
     async list(prefix: string) {
-      return { data: Object.keys(db.blobs).filter((k) => k.startsWith(`${prefix}/`)).map((k) => ({ name: k.slice(prefix.length + 1) })), error: null };
+      // Supabase gibi: doğrudan dosyalar (id'li) + alt klasörler (id'siz)
+      const rest = Object.keys(db.blobs).filter((k) => k.startsWith(`${prefix}/`)).map((k) => k.slice(prefix.length + 1));
+      const files = rest.filter((r) => !r.includes('/')).map((name) => ({ name, id: name }));
+      const dirs = [...new Set(rest.filter((r) => r.includes('/')).map((r) => r.split('/')[0]))].map((name) => ({ name, id: null }));
+      return { data: [...files, ...dirs], error: null };
     },
     async remove(paths: string[]) {
       paths.forEach((p) => delete db.blobs[p]);

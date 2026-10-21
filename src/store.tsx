@@ -644,19 +644,29 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   }, []);
 
   // Hesabı ve (tek ebeveynse) ailenin tüm verisini kalıcı olarak sil
+  // Klasörü alt klasörleriyle birlikte boşalt (Storage listesinde klasörlerin id'si yoktur)
+  const removeFolder = async (bucketName: string, prefix: string): Promise<void> => {
+    const bucket = supabase.storage.from(bucketName);
+    for (;;) {
+      const { data, error } = await bucket.list(prefix, { limit: 100 });
+      if (error) throw new Error(error.message);
+      const files = (data ?? []).filter((o: any) => o.id);
+      const folders = (data ?? []).filter((o: any) => !o.id);
+      for (const d of folders) await removeFolder(bucketName, `${prefix}/${d.name}`);
+      if (!files.length) break;
+      const rm = await bucket.remove(files.map((o) => `${prefix}/${o.name}`));
+      if (rm.error) throw new Error(rm.error.message);
+      if (!rm.data?.length) break; // silinemeyen dosya kaldıysa döngüye girme
+    }
+  };
+
   const deleteAccount = useCallback(async () => {
     const f = fid.current;
     if (f && (await isOnlyParent())) {
-      // Storage dosyaları veritabanından silinemez; önce Storage API ile silinir.
-      const bucket = supabase.storage.from(MAIL_BUCKET);
-      for (;;) {
-        const { data, error } = await bucket.list(f, { limit: 100 });
-        if (error) throw new Error(error.message);
-        if (!data || data.length === 0) break;
-        const rm = await bucket.remove(data.map((o) => `${f}/${o.name}`));
-        if (rm.error) throw new Error(rm.error.message);
-        if (!rm.data?.length) break; // silinemeyen dosya kaldıysa döngüye girme
-      }
+      // Storage dosyaları veritabanından silinemez; önce Storage API ile silinir:
+      // mesaj medyası ve çocuk fotoğrafları ('mail', alt klasör avatars/ dahil), zor an sesleri ('abc')
+      await removeFolder(MAIL_BUCKET, f);
+      await removeFolder('abc', f);
     }
     const { error } = await supabase.rpc('delete_account');
     if (error) throw new Error(error.message);
