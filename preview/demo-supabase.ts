@@ -13,7 +13,7 @@ type Db = { users: Row[]; blobs: Record<string, string>; sessions: Record<string
 // ParentApp ve ClinicApp önizlemeleri aynı sayfada (aynı tarayıcı deposunda) birlikte çalışabilir:
 // veri ortak, oturum her uygulamaya ayrı. Uygulama adını paketleyici yazar (window.__PREVIEW_APP__).
 const APP: string = (globalThis as any).__PREVIEW_APP__ ?? 'parent';
-const KEY = 'pofi-onizleme-v7';
+const KEY = 'pofi-onizleme-v8';
 const TABLES = ['profiles', 'families', 'children', 'tasks', 'task_assignments', 'completions', 'messages', 'saved_templates', 'invite_codes',
   'clinics', 'clinicians', 'clinic_invites', 'clinic_links', 'clinic_notes', 'clinic_goals', 'goal_ratings', 'abc_events',
   'clinic_task_suggestions', 'family_subscriptions', 'notifications', 'push_tokens', 'rewards', 'reward_requests', 'sun_stone_ledger'];
@@ -95,12 +95,12 @@ function seed(): Db {
   stone('c-nazli', -1, 'penalty', 900, 'Kardeşiyle kavga');
   stone('c-nazli', 2, 'task', 60);
   [1, 1, 1, 2].forEach((n, i) => stone('c-arven', n, 'task', 3000 - i * 400));
-  const rw = (id: string, title: string, cost: number, child_id: string | null = null) =>
-    db.rewards.push({ id, family_id: F, title, cost, child_id, active: true, created_at: ago(7000 - db.rewards.length) });
-  rw('r-park', 'Parkta 30 dakika', 5);
-  rw('r-film', 'Film gecesi', 12);
-  rw('r-oyun', '15 dakika ekstra oyun', 4);
-  rw('r-bisiklet', 'Bisiklet turu', 20, 'c-arven');
+  const rw = (id: string, title: string, cost: number, icon: string, child_ids: string[] = [], unit: string | null = null, unit_amount: number | null = null) =>
+    db.rewards.push({ id, family_id: F, title, kind: unit ? 'exchange' : 'item', cost, unit, unit_amount, child_ids, icon, active: true, created_at: ago(7000 - db.rewards.length) });
+  rw('r-ekran', 'Ekran süresi', 1, 'phone-portrait', [], 'minute', 10);
+  rw('r-park', 'Parkta 30 dakika', 5, 'football');
+  rw('r-film', 'Film gecesi', 12, 'film');
+  rw('r-bisiklet', 'Bisiklet turu', 20, 'bicycle', ['c-arven']);
   db.reward_requests.push({ id: 'rq-1', family_id: F, child_id: 'c-nazli', reward_id: 'r-film', title: 'Film gecesi', cost: 12, source: 'child', status: 'pending', note: null, created_at: ago(35) });
   // Tekrarlayan görevlerin başlangıcı 8 haftalık geçmişe yayılır (uzman paneli)
   db.tasks.forEach((t: Row) => { if (t.recurring && t.id !== 'k-kitap') t.start_date = day(-60); });
@@ -637,10 +637,12 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
     if (!myChild(args.p_child_id)) return err('Çocuk bulunamadı');
     if (!access().full) return premiumErr('ödül verme');
     const r = db.rewards.find((x: Row) => x.id === args.p_reward_id && x.family_id === me.family_id && x.active);
-    if (!r || (r.child_id && r.child_id !== args.p_child_id)) return err('Ödül bulunamadı');
-    const bad = spend(args.p_child_id, r.cost, 'reward', r.title);
+    if (!r || ((r.child_ids ?? []).length && !r.child_ids.includes(args.p_child_id))) return err('Ödül bulunamadı');
+    const q = args.p_quantity ?? 1;
+    const label = r.unit ? `${r.title} · ${r.unit_amount * q} ${r.unit === 'minute' ? 'dakika' : 'TL'}` : r.title;
+    const bad = spend(args.p_child_id, r.cost * q, 'reward', label);
     if (bad) return bad;
-    db.reward_requests.push({ id: uuid(), family_id: me.family_id, child_id: args.p_child_id, reward_id: r.id, title: r.title, cost: r.cost, source: 'parent', status: 'approved', created_at: now(), decided_at: now() });
+    db.reward_requests.push({ id: uuid(), family_id: me.family_id, child_id: args.p_child_id, reward_id: r.id, title: r.title, quantity: q, cost: r.cost * q, unit: r.unit, amount: r.unit ? r.unit_amount * q : null, source: 'parent', status: 'approved', created_at: now(), decided_at: now() });
     save();
     return { data: { balance: stones(args.p_child_id) }, error: null };
   }
