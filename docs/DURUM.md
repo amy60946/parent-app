@@ -6,6 +6,7 @@ Son güncelleme: 13 Ekim 2026 (akşam).
 > **19 Ekim 2026:** Ortak kurallar ve karar günlüğü artık `amy60946/ortak` deposunda (`ortak/DURUM.md`). Bu dosyanın aşağısı 13 Ekim tarihli eski nottur.
 > Bu turda: İnceleme'de onay da `review_completion` ile gidiyor; görev ödülü 0–50; yaş grupları iki: 6–8 / 9–12 (eski C → B gösterilir).
 > **21 Ekim 2026:** Üyelik (7 gün deneme, Aylık/Yıllık ekranı `PaywallScreen`, `src/billing.tsx`, ödeme henüz bağlı değil: `src/lib/billing.ts`), 15 dakikalık kodlar (geri sayım + "Yeni kod al"), Mesajlar sekmesi yeniden açık (çıkartma, okundu), + menüsünde Ödül (`RewardsScreen`: ödül ver, Güneş Taşı düş, çocuk isteği onayı), e-posta bağlantısıyla sessiz hesap değiştirme engellendi (`src/lib/auth.tsx`). Sunucu tarafı `ortak/supabase/proposed/2026102113…17*.sql`.
+> **21 Ekim 2026 (gece):** Ödüller ekranı karma v2 (`src/screens/RewardsScreen.tsx`): bakiyede −, çocuk harfi → son onay kartı, değiş tokuşta süre çipleri, istek bandı ✓/✕ → onay, Öneriler + Tümü, Geçmiş sağ üstte; ilk kullanım ipuçları `src/components/FirstTip.tsx` + `src/data/rewardTips.ts`. Tasarım: https://claude.ai/artifact/LcoiwjvWAqE4tqHn79LpMj (Karma öneri, 2. sıra).
 
 ## Kullanıcı hakkında
 - Yazılımcı değil; platformları ilk kez kullanıyor. Her adımı sade Türkçeyle, tek tek, nereye tıklayacağını söyleyerek anlat.
