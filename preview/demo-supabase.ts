@@ -629,7 +629,7 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
     db.sun_stone_ledger.push({ id: db.sun_stone_ledger.length + 1, family_id: me.family_id, child_id: cid, amount: -amount, reason, ref: uuid(), note, created_by: uid, created_at: now() });
     return null;
   };
-  if (name === 'sun_stone_balance') {
+  if (name === 'sun_stones_spendable') {
     if (!myChild(args.p_child_id)) return err('Yetki yok');
     return { data: stones(args.p_child_id), error: null };
   }

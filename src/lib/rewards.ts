@@ -46,7 +46,7 @@ export async function deleteReward(id: string) {
 export async function balances(childIds: string[]): Promise<Record<string, number>> {
   const out: Record<string, number> = {};
   await Promise.all(childIds.map(async (id) => {
-    const { data, error } = await supabase.rpc('sun_stone_balance', { p_child_id: id });
+    const { data, error } = await supabase.rpc('sun_stones_spendable', { p_child_id: id });
     fail(error);
     out[id] = Number(data ?? 0);
   }));
