@@ -10,7 +10,8 @@ import { AppNotification, pushEnabled, setPushEnabled } from '../lib/notificatio
 const icon: Record<string, keyof typeof Ionicons.glyphMap> = {
   task_done: 'checkmark-circle-outline', task_declined: 'close-circle-outline', message: 'mail-outline',
   clinic_suggestion: 'medkit-outline', clinic_revoked: 'medkit-outline', device_linked: 'phone-portrait-outline',
-  parent_joined: 'person-add-outline',
+  parent_joined: 'person-add-outline', reward_request: 'gift-outline', reward_given: 'gift-outline',
+  reward_decided: 'gift-outline', stones_deducted: 'sunny-outline',
 };
 
 // Bildirime dokununca ilgili ekran
@@ -19,6 +20,7 @@ export function openNotification(navigation: any, n: Pick<AppNotification, 'kind
   if (n.kind === 'task_done' || n.kind === 'task_declined') navigation.navigate('Tabs', { screen: n.kind === 'task_done' ? 'İnceleme' : 'Görevler' });
   else if (n.kind === 'message' && childId) navigation.navigate('Chat', { childId });
   else if (n.kind === 'clinic_suggestion') navigation.navigate('Tabs', { screen: 'Görevler' });
+  else if (n.kind.startsWith('reward_') || n.kind === 'stones_deducted') navigation.navigate('Rewards', { childId });
   else navigation.navigate('Tabs', { screen: 'Aile' });
 }
 

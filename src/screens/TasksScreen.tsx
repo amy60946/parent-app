@@ -13,8 +13,11 @@ import { pendingSuggestions } from '../lib/clinic';
 import NotificationBell from '../components/NotificationBell';
 import { TaskDayPart, dayPartLabel, taskDayPartOf } from '../data/dayParts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import TrialBanner from '../components/TrialBanner';
+import { useBilling } from '../billing';
 
 const HINT_KEY = 'hint-abc-longpress';
+const NEW_REWARD_KEY = 'hint-reward-new';
 
 type PartFilter = 'all' | TaskDayPart | 'any';
 const partOf = (t: Task) => t.dayPart ?? (t.reminder ? taskDayPartOf(t.reminder) : undefined);
@@ -36,11 +39,18 @@ export default function TasksScreen({ navigation }: any) {
   const [selected, setSelected] = useState(todayISO());
   const [childFilter, setChildFilter] = useState<string | 'all'>('all');
   const [part, setPart] = useState<PartFilter>('all');
-  // + düğmesi: kısa bas → görev oluştur, uzun bas → üstünde "Zor an" düğmesi (ilk seferde ipucu)
-  const [dial, setDial] = useState(false);
+  // + düğmesi: kısa bas → "Görev oluştur" ve "Ödül" düğmeleri; uzun bas → "Zor an" (ilk seferde ipucu)
+  const [dial, setDial] = useState<'menu' | 'abc' | null>(null);
   const [hint, setHint] = useState(false);
-  React.useEffect(() => { AsyncStorage.getItem(HINT_KEY).then((v) => setHint(!v)).catch(() => {}); }, []);
+  const [newReward, setNewReward] = useState(false);
+  React.useEffect(() => {
+    AsyncStorage.getItem(HINT_KEY).then((v) => setHint(!v)).catch(() => {});
+    AsyncStorage.getItem(NEW_REWARD_KEY).then((v) => setNewReward(!v)).catch(() => {});
+  }, []);
   const seenHint = () => { setHint(false); AsyncStorage.setItem(HINT_KEY, '1').catch(() => {}); };
+  const seenNewReward = () => { setNewReward(false); AsyncStorage.setItem(NEW_REWARD_KEY, '1').catch(() => {}); };
+  const { allow } = useBilling();
+  const go = (screen: string, params?: object) => { setDial(null); navigation.navigate(screen, params); };
   const listRef = useRef<FlatList>(null);
 
   const weeks = useMemo(() => {
@@ -100,6 +110,7 @@ export default function TasksScreen({ navigation }: any) {
         </View>
         <NotificationBell />
       </View>
+      <TrialBanner />
       {suggested > 0 && (
         <Pressable onPress={() => setClinicOpen(true)} style={styles.suggest} accessibilityLabel="Uzman önerilerini gör">
           <Ionicons name="medkit-outline" size={16} color={colors.navy} />
@@ -195,10 +206,30 @@ export default function TasksScreen({ navigation }: any) {
         }
       />
 
-      {dial && <Pressable style={StyleSheet.absoluteFill} onPress={() => setDial(false)} accessibilityLabel="Kapat" />}
-      {dial && (
+      {dial && <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(245,246,248,0.7)' }]} onPress={() => setDial(null)} accessibilityLabel="Kapat" />}
+      {dial === 'menu' && (
+        <View style={styles.dial}>
+          {newReward && (
+            <Pressable onPress={seenNewReward} style={styles.newTip} accessibilityLabel="İpucunu kapat">
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Yeni: Ödüller</Text>
+              <Text style={{ fontSize: 12, color: '#D6DBEA' }}>Görevlerden Güneş Taşı kazanılır; ödülü sen belirlersin, gerektiğinde taş düşebilirsin.</Text>
+            </Pressable>
+          )}
+          <Pressable style={styles.dialItem} accessibilityLabel="Ödüller ve Güneş Taşı"
+            onPress={() => { seenNewReward(); go('Rewards', childFilter !== 'all' ? { childId: childFilter } : undefined); }}>
+            <Text style={styles.dialLabel}>Ödül</Text>
+            <View style={styles.dialIcon}><Ionicons name="gift-outline" size={20} color={colors.navy} /></View>
+          </Pressable>
+          <Pressable style={styles.dialItem} accessibilityLabel="Görev oluştur"
+            onPress={() => { if (allow('task')) go('CreateTask', { date: selected }); else setDial(null); }}>
+            <Text style={styles.dialLabel}>Görev oluştur</Text>
+            <View style={styles.dialIcon}><Ionicons name="list-outline" size={20} color={colors.navy} /></View>
+          </Pressable>
+        </View>
+      )}
+      {dial === 'abc' && (
         <Pressable style={styles.dialBtn} accessibilityLabel="Zor bir anı kaydet"
-          onPress={() => { setDial(false); navigation.navigate('Abc', { new: true }); }}>
+          onPress={() => go('Abc', { new: true })}>
           <Ionicons name="pulse-outline" size={18} color={colors.navy} />
           <Text style={{ fontSize: 14, fontWeight: '700', color: colors.navy }}>Zor an</Text>
         </Pressable>
@@ -210,9 +241,9 @@ export default function TasksScreen({ navigation }: any) {
       )}
       <Pressable
         style={styles.fab}
-        accessibilityLabel="Görev oluştur. Zor an kaydetmek için basılı tut."
-        onPress={() => (dial ? setDial(false) : navigation.navigate('CreateTask', { date: selected }))}
-        onLongPress={() => { setDial(true); seenHint(); }}
+        accessibilityLabel="Görev ya da ödül ekle. Zor an kaydetmek için basılı tut."
+        onPress={() => setDial(dial ? null : 'menu')}
+        onLongPress={() => { setDial('abc'); seenHint(); }}
         delayLongPress={350}
       >
         <Ionicons name={dial ? 'close' : 'add'} size={32} color="#fff" />
@@ -356,6 +387,14 @@ const styles = StyleSheet.create({
     borderRadius: 22, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line,
     shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 5,
   },
+  dial: { position: 'absolute', right: 20, bottom: 96, alignItems: 'flex-end', gap: 12 },
+  dialItem: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dialLabel: { fontSize: 14, fontWeight: '700', color: colors.navy, backgroundColor: '#fff', paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.sm, overflow: 'hidden' },
+  dialIcon: {
+    width: 48, height: 48, borderRadius: 24, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginRight: 6,
+    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 5,
+  },
+  newTip: { maxWidth: 250, gap: 2, padding: 12, borderRadius: radius.md, backgroundColor: colors.navy, marginRight: 6 },
   hintBubble: { position: 'absolute', right: 90, bottom: 36, maxWidth: 220, paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.md, backgroundColor: colors.navy },
   fab: {
     position: 'absolute', right: 20, bottom: 24, width: 60, height: 60, borderRadius: 30,

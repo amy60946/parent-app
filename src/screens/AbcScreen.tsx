@@ -15,6 +15,7 @@ import { AbcEvent, addAbc, deleteAbc, listAbc } from '../lib/abc';
 import { ClinicLink, listLinks } from '../lib/clinic';
 import { DayPart, dayPartLabel, dayPartOf } from '../data/dayParts';
 import { Voice, mmss } from './ChatScreen';
+import { useBilling } from '../billing';
 
 // Zor anlar: yeni kayıt (çok çocuk, gün bölümü seçimi, sesli kayıt) + geçmiş kayıtlar (arşiv).
 // Rızalı paylaşım varsa kayıt o çocuğun uzmanına gider; olmasa da ailenin raporunda kalır.
@@ -133,6 +134,7 @@ const PARTS: DayPart[] = ['morning', 'noon', 'evening', 'night'];
 function AbcForm({ onDone, defaultChild, links }: { onDone: () => void; defaultChild?: string; links: ClinicLink[] }) {
   const { children, familyId } = useStore();
   const { session } = useAuth();
+  const { allow } = useBilling();
   const today = todayISO();
   const yesterday = toISO(addDays(new Date(), -1));
   const [childIds, setChildIds] = useState<string[]>(defaultChild ? [defaultChild] : children.length === 1 ? [children[0].id] : []);
@@ -176,14 +178,14 @@ function AbcForm({ onDone, defaultChild, links }: { onDone: () => void; defaultC
   const toggleChild = (id: string) => setChildIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
   const save = async () => {
-    if (!familyId) return;
+    if (!familyId || !allow('abc')) return;
     if (!childIds.length) return Alert.alert('Hangi çocuk(lar)la ilgili olduğunu seç');
     if (!b.trim() && !audio) return Alert.alert('Ne olduğunu kısaca yaz ya da sesli anlat');
     if (recording) await stopRec();
     setBusy(true);
     try {
       await addAbc(familyId, session?.user.id, {
-        childIds, date, dayPart: part, antecedent: a, behavior: b.trim() || '🎤 Sesli kayıt', consequence: c, intensity,
+        childIds, date, dayPart: part, antecedent: a, behavior: b.trim() || 'Sesli kayıt', consequence: c, intensity,
         audio: audio ?? undefined,
       });
       // Asıl amaç uzmana iletmek: kime gittiğini açıkça söyle

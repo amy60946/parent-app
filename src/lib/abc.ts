@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { readFileBytes } from './files';
 import { uuid } from './uuid';
 import { DayPart, dayPartHour } from '../data/dayParts';
+import { fail } from './errors';
 
 // Zor an kayıtları (abc_events): aynı olay birden çok çocuğu ilgilendiriyorsa her çocuğa bir satır, ortak group_id.
 // Ses: Storage 'abc' kovası, <family_id>/<dosya>.m4a — uzman yalnız rızalı çocuğun kaydına bağlı sesi dinler.
@@ -29,7 +30,7 @@ export type AbcInput = {
   audio?: { uri: string; durationMs: number };
 };
 
-const fail = (e: { message: string } | null) => { if (e) throw new Error(e.message); };
+
 
 // Seçilen gün + gün bölümünün temsil saati (yerel saat)
 const occurredAt = (date: string, part: DayPart) => {

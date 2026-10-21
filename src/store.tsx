@@ -8,6 +8,8 @@ import { uuid } from './lib/uuid';
 import { readFileBytes } from './lib/files';
 import { TaskDayPart } from './data/dayParts';
 import { AgeBand } from './data/ageBands';
+import { toAppError } from './lib/errors';
+import { requestPremium } from './lib/billing';
 
 export type Child = {
   id: string;
@@ -49,7 +51,7 @@ export type CompletionStatus = 'pending' | 'approved' | 'declined' | 'rejected';
 // anahtar: `${taskId}|${childId}|${date}`
 export type Completions = Record<string, CompletionStatus>;
 
-export type MessageKind = 'text' | 'image' | 'audio';
+export type MessageKind = 'text' | 'image' | 'audio' | 'sticker';
 export type Message = {
   id: string;
   childId: string;
@@ -60,10 +62,11 @@ export type Message = {
   mediaPath?: string; // Storage yolu
   mediaUrl?: string; // gösterim için (imzalı URL ya da gönderilirken yerel dosya)
   durationMs?: number; // sesli mesaj
+  readAt?: string; // karşı taraf okudu
 };
 
 export type InviteCode = { code: string; createdAt: string; expiresAt?: string };
-// Kodlar sunucuda üretilir: tek kullanımlık, süreli (24 saat)
+// Kodlar sunucuda üretilir: tek kullanımlık, 15 dakika geçerli
 export type IssuedCode = { code: string; expiresAt: string };
 
 type Store = {
@@ -92,9 +95,11 @@ type Store = {
   addCustomTemplate: (t: Omit<Template, 'id' | 'usedBy' | 'custom'>) => string;
   allTemplates: Template[];
   sendMessage: (childId: string, text: string) => void;
+  sendSticker: (childId: string, key: string) => void;
+  markThreadRead: (childId: string) => void;
   sendPhoto: (childId: string, localUri: string, mimeType?: string) => Promise<void>;
   sendVoice: (childId: string, localUri: string, durationMs: number) => Promise<void>;
-  createInviteCode: () => Promise<string>;
+  createInviteCode: () => Promise<IssuedCode>;
   createChildCode: (childId: string) => Promise<IssuedCode>;
   joinFamily: (code: string) => Promise<void>;
   refresh: () => Promise<void>;
@@ -192,6 +197,7 @@ const toMessage = (r: Row): Message => ({
   kind: r.kind,
   mediaPath: r.media_path ?? undefined,
   durationMs: r.duration_ms ?? undefined,
+  readAt: r.read_at ?? undefined,
 });
 
 const SIGNED_URL_SECONDS = 60 * 60 * 24; // gizli kovadaki dosyalar için geçici bağlantı
@@ -327,6 +333,10 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
         const [m] = await withMediaUrls([raw]);
         setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter }, (p) => {
+        const r = p.new as Row;
+        setMessages((prev) => prev.map((x) => (x.id === r.id ? { ...x, readAt: r.read_at ?? undefined } : x)));
+      })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, (p) => {
         const id = (p.old as Row).id;
         setMessages((prev) => prev.filter((x) => x.id !== id));
@@ -362,10 +372,12 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
 
   // Sunucu hatasında kullanıcıyı uyar ve ekranı sunucudaki gerçek veriyle eşitle.
   const run = useCallback(
-    async (op: () => PromiseLike<{ error: { message: string } | null }>) => {
+    async (op: () => PromiseLike<{ error: { message: string; hint?: string | null } | null }>) => {
       const { error } = await op();
       if (error) {
-        Alert.alert('Kaydedilemedi', error.message);
+        // Ücretsiz plan sınırı: üyelik ekranı (ortak/sozlesme/durumlar.md 12)
+        if (error.hint === 'premium_required') requestPremium(error.message);
+        else Alert.alert('Kaydedilemedi', error.message);
         refresh();
       }
     },
@@ -565,6 +577,25 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     }));
   }, [run, userId]);
 
+  const sendSticker = useCallback((childId: string, key: string) => {
+    const f = fid.current;
+    if (!f || !userId) return;
+    const m: Message = { id: uuid(), childId, text: key, at: new Date().toISOString(), sender: 'parent', kind: 'sticker' };
+    setMessages((p) => [...p, m]);
+    run(() => supabase.from('messages').insert({
+      id: m.id, family_id: f, child_id: childId, sender: 'parent', sender_id: userId, kind: 'sticker', body: key,
+    }));
+  }, [run, userId]);
+
+  // Sohbet açılınca çocuğun mesajları okundu (çocuk oyunda "görüldü"yü görebilir)
+  const markThreadRead = useCallback((childId: string) => {
+    const unread = messagesRef.current.some((m) => m.childId === childId && m.sender === 'child' && !m.readAt);
+    if (!unread) return;
+    const at = new Date().toISOString();
+    setMessages((p) => p.map((m) => (m.childId === childId && m.sender === 'child' && !m.readAt ? { ...m, readAt: at } : m)));
+    supabase.rpc('mark_messages_read', { p_child_id: childId }).then(() => {}, () => {});
+  }, []);
+
   // Fotoğraf / ses: önce Storage'a yükle, sonra mesaj kaydını ekle.
   // Ekranda yerel dosya hemen görünür; hata olursa mesaj geri alınır.
   const sendMedia = useCallback(async (
@@ -590,11 +621,12 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
       });
       if (ins.error) {
         await supabase.storage.from(MAIL_BUCKET).remove([path]);
-        throw ins.error;
+        throw toAppError(ins.error);
       }
     } catch (e) {
       setMessages((p) => p.filter((x) => x.id !== id));
-      Alert.alert('Gönderilemedi', (e as Error).message ?? 'Tekrar dene.');
+      if ((e as { hint?: string }).hint === 'premium_required') requestPremium((e as Error).message);
+      else Alert.alert('Gönderilemedi', (e as Error).message ?? 'Tekrar dene.');
     } finally {
       sendingIds.current.delete(id);
     }
@@ -615,22 +647,24 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   const issueCode = useCallback(async (kind: 'parent' | 'child', childId?: string): Promise<IssuedCode> => {
     const { data, error } = await supabase.rpc('create_invite_code', { p_kind: kind, p_child_id: childId ?? null });
     const row = Array.isArray(data) ? data[0] : data;
-    if (error || !row) throw new Error(error?.message ?? 'Kod üretilemedi');
+    if (error) throw toAppError(error);
+    if (!row) throw new Error('Kod üretilemedi');
     return { code: row.code, expiresAt: row.expires_at };
   }, []);
 
   const createInviteCode = useCallback(async () => {
     const c = await issueCode('parent');
     setInviteCodes((p) => [...p, { code: c.code, createdAt: new Date().toISOString(), expiresAt: c.expiresAt }]);
-    return c.code;
+    return c;
   }, [issueCode]);
 
   const createChildCode = useCallback((childId: string) => issueCode('child', childId), [issueCode]);
 
   // İkinci ebeveyn: davet koduyla aileye katıl
   const joinFamily = useCallback(async (code: string) => {
+    // Kod hatası (süresi doldu / kullanıldı / çok deneme) açık metinle gelir: ortak/sozlesme/durumlar.md 11
     const { error } = await supabase.rpc('join_family', { p_code: code.trim().toUpperCase() });
-    if (error) throw new Error(error.message);
+    if (error) throw toAppError(error);
     await refresh();
   }, [refresh]);
 
@@ -688,7 +722,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     ready, familyId,
     parent, children, tasks, completions, messages, savedIds, customTemplates, inviteCodes,
     addChild, setChildAgeBand, childBalance, unlinkChildDevice, updateParent, addTasks, reorderTasks, updateTask, deleteTask, toggleCompletion, review,
-    toggleSaved, addCustomTemplate, allTemplates, sendMessage, sendPhoto, sendVoice, createInviteCode, createChildCode, joinFamily, refresh,
+    toggleSaved, addCustomTemplate, allTemplates, sendMessage, sendSticker, markThreadRead, sendPhoto, sendVoice, createInviteCode, createChildCode, joinFamily, refresh,
     isOnlyParent, deleteAccount,
   };
   return <Ctx.Provider value={value}>{kids}</Ctx.Provider>;

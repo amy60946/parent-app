@@ -21,6 +21,9 @@ import TaskDetailsScreen from './src/screens/TaskDetailsScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import NotificationsScreen, { openNotification } from './src/screens/NotificationsScreen';
 import AbcScreen from './src/screens/AbcScreen';
+import PaywallScreen from './src/screens/PaywallScreen';
+import RewardsScreen from './src/screens/RewardsScreen';
+import { BillingProvider } from './src/billing';
 import { NotificationsProvider } from './src/notifications';
 import { onNotificationTap } from './src/lib/notifications';
 import { clearPendingInvite, getPendingInvite } from './src/lib/pendingInvite';
@@ -42,9 +45,10 @@ const icons: Record<string, [keyof typeof Ionicons.glyphMap, keyof typeof Ionico
 };
 
 function Tabs() {
-  const { completions } = useStore();
+  const { completions, messages } = useStore();
   const { signOut } = useAuth();
   const pending = Object.values(completions).filter((s) => s === 'pending').length;
+  const unread = messages.filter((m) => m.sender === 'child' && !m.readAt).length;
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -65,7 +69,9 @@ function Tabs() {
         options={{ tabBarBadge: pending || undefined, tabBarBadgeStyle: { backgroundColor: colors.gold, color: colors.navy } }}
       />
       <Tab.Screen name="Gelişim" component={ProgressScreen} />
-      <Tab.Screen name="Aile">{() => <FamilyScreen onLogout={signOut} />}</Tab.Screen>
+      <Tab.Screen name="Aile" options={{ tabBarBadge: unread || undefined, tabBarBadgeStyle: { backgroundColor: colors.gold, color: colors.navy } }}>
+        {() => <FamilyScreen onLogout={signOut} />}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 }
@@ -101,8 +107,12 @@ function Main() {
       if (navRef.isReady()) openNotification(navRef, { kind: data.kind, data });
     });
   }, [ready]);
+  const paywall = React.useCallback((reason?: string) => {
+    if (navRef.isReady()) navRef.navigate('Paywall', { reason });
+  }, []);
   if (!ready) return <Loading />;
   return (
+    <BillingProvider onPaywall={paywall}>
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Tabs" component={Tabs} />
       <Stack.Screen name="CreateTask" component={CreateTaskScreen} options={{ presentation: 'modal' }} />
@@ -110,7 +120,10 @@ function Main() {
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="Abc" component={AbcScreen} />
+      <Stack.Screen name="Rewards" component={RewardsScreen} />
+      <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
     </Stack.Navigator>
+    </BillingProvider>
   );
 }
 

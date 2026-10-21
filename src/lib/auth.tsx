@@ -71,6 +71,22 @@ function urlParams(url: string): Record<string, string> {
   return out;
 }
 
+// Bağlantıdaki erişim anahtarının e-postası (yalnız göstermek için; doğrulamayı sunucu yapar)
+function tokenEmail(token: string): string | undefined {
+  try {
+    const part = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(globalThis.atob(part.padEnd(part.length + ((4 - (part.length % 4)) % 4), '='))).email;
+  } catch {
+    return undefined;
+  }
+}
+
+const ask = (title: string, message: string) => new Promise<boolean>((resolve) =>
+  Alert.alert(title, message, [
+    { text: 'Vazgeç', style: 'cancel', onPress: () => resolve(false) },
+    { text: 'Devam et', onPress: () => resolve(true) },
+  ], { cancelable: true, onDismiss: () => resolve(false) }));
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -90,6 +106,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         : p.error_description || 'Bağlantı geçersiz.');
       return;
     }
+    // Güvenlik: başkasının gönderdiği bir bağlantı oturumu sessizce başka hesaba geçirmesin
+    const before = (await supabase.auth.getSession()).data.session?.user;
+    const target = p.access_token ? tokenEmail(p.access_token) : undefined;
+    if (before && !before.is_anonymous && (!target || target.toLowerCase() !== (before.email ?? '').toLowerCase())) {
+      const ok = await ask('Hesap değişsin mi?',
+        `Şu an ${before.email} ile girişlisin. Bu bağlantı ${target ?? 'başka bir hesapla'} oturum açar. Bağlantıyı sen istemediysen Vazgeç'e dokun.`);
+      if (!ok) return;
+    }
     try {
       if (p.access_token && p.refresh_token) {
         const { error } = await supabase.auth.setSession({ access_token: p.access_token, refresh_token: p.refresh_token });
@@ -102,6 +126,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (error) throw error;
       }
       if (p.type === 'recovery') setRecovery(true);
+      // Önceden oturum yoksa kimin hesabına girildiğini göster; tanımıyorsa hemen çıkabilsin
+      if (!before) {
+        const email = (await supabase.auth.getSession()).data.session?.user.email;
+        if (email) {
+          Alert.alert('Giriş yapıldı', `${email} hesabıyla giriş yapıldı.`, [
+            { text: 'Bu ben değilim', style: 'destructive', onPress: () => { supabase.auth.signOut(); } },
+            { text: 'Tamam' },
+          ]);
+        }
+      }
     } catch (e) {
       Alert.alert('Bağlantı açılamadı', authErrorText(e));
     }

@@ -13,10 +13,10 @@ type Db = { users: Row[]; blobs: Record<string, string>; sessions: Record<string
 // ParentApp ve ClinicApp önizlemeleri aynı sayfada (aynı tarayıcı deposunda) birlikte çalışabilir:
 // veri ortak, oturum her uygulamaya ayrı. Uygulama adını paketleyici yazar (window.__PREVIEW_APP__).
 const APP: string = (globalThis as any).__PREVIEW_APP__ ?? 'parent';
-const KEY = 'pofi-onizleme-v6';
+const KEY = 'pofi-onizleme-v7';
 const TABLES = ['profiles', 'families', 'children', 'tasks', 'task_assignments', 'completions', 'messages', 'saved_templates', 'invite_codes',
   'clinics', 'clinicians', 'clinic_invites', 'clinic_links', 'clinic_notes', 'clinic_goals', 'goal_ratings', 'abc_events',
-  'clinic_task_suggestions', 'family_subscriptions', 'notifications', 'push_tokens'];
+  'clinic_task_suggestions', 'family_subscriptions', 'notifications', 'push_tokens', 'rewards', 'reward_requests', 'sun_stone_ledger'];
 
 const uuid = () =>
   'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -35,7 +35,9 @@ function seed(): Db {
   const db: Db = { users: [], blobs: {}, sessions: {} };
   TABLES.forEach((t) => { db[t] = []; });
   db.users.push({ id: U, email: 'demo@parentapp.app', password: '12345678' });
-  db.families.push({ id: F, name: 'Ailem', created_at: now() });
+  db.families.push({ id: F, name: 'Ailem', created_at: now(), trial_started_at: ago(2 * 1440) });
+  // Abonelik anahtarı (sunucuda app_config.billing). Önizlemede tarayıcı konsolundan değiştirilebilir.
+  db.billing = { enforce: false, trial_days: 7, free_max_tasks: 3, free_max_children: 1 };
   db.profiles.push({ id: U, family_id: F, nickname: 'Anne', name: 'Ayşe', avatar: 'kadın', created_at: now() });
   db.children.push(
     { id: 'c-nazli', family_id: F, name: 'Nazlı', avatar: 'flamingo', gender: 'kız', birthday: '2018-04-12', age_band: 'A', user_id: 'demo-child', coins_spent: 15, created_at: ago(9000) },
@@ -78,10 +80,28 @@ function seed(): Db {
   }
   const msg = (child_id: string, sender: string, body: string, min: number) =>
     db.messages.push({ id: uuid(), family_id: F, child_id, sender, sender_id: sender === 'parent' ? U : null, kind: 'text', body, media_path: null, duration_ms: null, created_at: ago(min) });
-  msg('c-nazli', 'parent', 'Bugün kitabını okudun mu? 📖', 180);
+  msg('c-nazli', 'parent', 'Bugün kitabını okudun mu?', 180);
   msg('c-nazli', 'child', 'Evet anne, 2 bölüm okudum!', 150);
-  msg('c-nazli', 'parent', 'Harikasın! Akşam birlikte devam edelim 🌱', 140);
+  msg('c-nazli', 'parent', 'Harikasın! Akşam birlikte devam edelim.', 140);
   db.saved_templates.push({ id: uuid(), family_id: F, template_key: 't1', is_custom: false, saved: true, created_at: now() });
+  db.messages.push({ id: uuid(), family_id: F, child_id: 'c-nazli', sender: 'child', sender_id: 'demo-child', kind: 'sticker', body: 'love_you', media_path: null, duration_ms: null, created_at: ago(20), read_at: null });
+  db.messages.forEach((m: Row) => { if (m.sender === 'parent' || m.created_at < ago(100)) m.read_at = m.read_at ?? ago(90); });
+
+  // Güneş Taşı ve ödüller
+  const stone = (child_id: string, amount: number, reason: string, min: number, note: string | null = null) =>
+    db.sun_stone_ledger.push({ id: db.sun_stone_ledger.length + 1, family_id: F, child_id, amount, reason, ref: uuid(), note, created_at: ago(min) });
+  [3, 1, 2, 1, 1, 2, 1, 3, 1, 1].forEach((n, i) => stone('c-nazli', n, 'task', 6000 - i * 500));
+  stone('c-nazli', -5, 'reward', 2000, 'Parkta 30 dakika');
+  stone('c-nazli', -1, 'penalty', 900, 'Kardeşiyle kavga');
+  stone('c-nazli', 2, 'task', 60);
+  [1, 1, 1, 2].forEach((n, i) => stone('c-arven', n, 'task', 3000 - i * 400));
+  const rw = (id: string, title: string, cost: number, child_id: string | null = null) =>
+    db.rewards.push({ id, family_id: F, title, cost, child_id, active: true, created_at: ago(7000 - db.rewards.length) });
+  rw('r-park', 'Parkta 30 dakika', 5);
+  rw('r-film', 'Film gecesi', 12);
+  rw('r-oyun', '15 dakika ekstra oyun', 4);
+  rw('r-bisiklet', 'Bisiklet turu', 20, 'c-arven');
+  db.reward_requests.push({ id: 'rq-1', family_id: F, child_id: 'c-nazli', reward_id: 'r-film', title: 'Film gecesi', cost: 12, source: 'child', status: 'pending', note: null, created_at: ago(35) });
   // Tekrarlayan görevlerin başlangıcı 8 haftalık geçmişe yayılır (uzman paneli)
   db.tasks.forEach((t: Row) => { if (t.recurring && t.id !== 'k-kitap') t.start_date = day(-60); });
 
@@ -122,6 +142,8 @@ function seed(): Db {
   note(1, 'clinic_suggestion', 'Uzmanın Nazlı için görev önerdi', '👕 Kıyafetini akşamdan hazırla', 300, { child_id: 'c-nazli' });
   note(2, 'task_done', 'Nazlı görevi yaptı: 10 dakika kitap oku', 'Onayını bekliyor.', 45, { child_id: 'c-nazli', task_id: 'k-kitap' });
   note(3, 'message', 'Nazlı mesaj gönderdi', 'Anne bugün çok eğlendim!', 1500, { child_id: 'c-nazli' }, true);
+  note(4, 'reward_request', 'Nazlı bir ödül istiyor', 'Film gecesi · 12 Güneş Taşı', 35, { child_id: 'c-nazli', request_id: 'rq-1' });
+  note(5, 'message', 'Nazlı mesaj gönderdi', 'Çıkartma gönderdi', 20, { child_id: 'c-nazli' });
 
   // İki uygulama aynı anda ilk kez açılabilir: hangisi kurarsa kursun her ikisinin hazır oturumu olsun
   db.sessions = {
@@ -181,6 +203,27 @@ function cascade(table: string, removed: Row[]) {
   if (table === 'clinic_goals') db.goal_ratings = db.goal_ratings.filter((r: Row) => !ids.has(r.goal_id));
 }
 
+// Ücretsiz plan sınırları (sunucudaki tetikleyicilerle aynı); yalnız ödeme anahtarı açık ve deneme bitmişse
+function premiumBlock(table: string, adding: number): { message: string; hint: string } | null {
+  const me = db.profiles.find((p: Row) => p.id === db.sessions[APP]?.user.id);
+  const fam = db.families.find((f: Row) => f.id === me?.family_id);
+  const cfg = { enforce: false, trial_days: 7, free_max_tasks: 3, free_max_children: 1, ...(db.billing ?? {}) };
+  if (!fam || !cfg.enforce) return null;
+  const sub = db.family_subscriptions.find((x: Row) => x.family_id === fam.id);
+  if (sub?.plan === 'premium' && (!sub.period_end || sub.period_end > now())) return null;
+  if (fam.trial_started_at && new Date(fam.trial_started_at).getTime() + cfg.trial_days * 864e5 > Date.now()) return null;
+  const today = iso(new Date());
+  if (table === 'tasks') {
+    const n = db.tasks.filter((t: Row) => t.family_id === fam.id && (!t.end_date || t.end_date >= today) && (t.recurring || t.start_date >= today)).length;
+    return n + adding > cfg.free_max_tasks ? { message: `Ücretsiz planda en çok ${cfg.free_max_tasks} etkin görev olabilir`, hint: 'premium_required' } : null;
+  }
+  if (table === 'children') {
+    const n = db.children.filter((c: Row) => c.family_id === fam.id).length;
+    return n + adding > cfg.free_max_children ? { message: `Ücretsiz planda en çok ${cfg.free_max_children} çocuk eklenebilir`, hint: 'premium_required' } : null;
+  }
+  return { message: 'Bu özellik Premium üyelikte', hint: 'premium_required' };
+}
+
 class Query implements PromiseLike<{ data: any; error: Err; count?: number }> {
   private filters: ((r: Row) => boolean)[] = [];
   private op: 'select' | 'insert' | 'upsert' | 'update' | 'delete' = 'select';
@@ -225,6 +268,10 @@ class Query implements PromiseLike<{ data: any; error: Err; count?: number }> {
       if (this.head) return { data: null, error: null, count: out.length };
       return { data: this.one ? out[0] ?? null : out, error: null, count: out.length };
     }
+    if ((this.op === 'insert') && ['tasks', 'children', 'rewards', 'messages', 'abc_events'].includes(this.table)) {
+      const blocked = premiumBlock(this.table, Array.isArray(this.payload) ? this.payload.length : 1);
+      if (blocked) return { data: null, error: blocked };
+    }
     if (this.op === 'insert' || this.op === 'upsert') {
       const list: Row[] = (Array.isArray(this.payload) ? this.payload : [this.payload]).map((r: Row) => ({
         ...(PK[this.table] ? {} : { id: uuid() }), created_at: now(), ...r,
@@ -263,7 +310,7 @@ const myClinician = () => db.clinicians.find((m: Row) => m.id === sess()?.user.i
 
 function newFamilyFor(userId: string, name: string) {
   const fid = uuid();
-  db.families.push({ id: fid, name: 'Ailem', created_at: now() });
+  db.families.push({ id: fid, name: 'Ailem', created_at: now(), trial_started_at: now() });
   db.profiles.push({ id: userId, family_id: fid, nickname: 'Ben', name, avatar: 'erkek', created_at: now() });
 }
 
@@ -346,18 +393,27 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
   if (!uid) return { data: null, error: { message: 'Önce giriş yapmalısın' } };
   if (name === 'create_invite_code') {
     if (!me?.family_id) return { data: null, error: { message: 'Önce giriş yapmalısın' } };
-    if (args.p_kind === 'child') db.invite_codes = db.invite_codes.filter((i: Row) => !(i.child_id === args.p_child_id && !i.used_at));
+    if (args.p_kind === 'child') db.invite_codes.forEach((i: Row) => { if (i.child_id === args.p_child_id && !i.used_at && i.expires_at > now()) i.expires_at = now(); });
     const row = {
       code: makeCode(), family_id: me.family_id, kind: args.p_kind ?? 'parent', child_id: args.p_child_id ?? null,
-      created_by: uid, created_at: now(), expires_at: new Date(Date.now() + 864e5).toISOString(), used_at: null,
+      created_by: uid, created_at: now(), expires_at: new Date(Date.now() + 15 * 60e3).toISOString(), used_at: null,
     };
     db.invite_codes.push(row);
     save();
     return { data: [{ code: row.code, expires_at: row.expires_at }], error: null };
   }
+  // Kod hataları sunucudaki gibi: süresi doldu / kullanıldı / bulunamadı (ortak/sozlesme/durumlar.md 11)
+  const codeErr = (inv: Row | undefined) => {
+    const hint = !inv ? 'code_invalid' : inv.used_at ? 'code_used' : inv.expires_at <= now() ? 'code_expired' : null;
+    if (!hint) return null;
+    const message = hint === 'code_expired' ? 'Kodun süresi doldu (kodlar 15 dakika geçerli). Yeni kod iste.'
+      : hint === 'code_used' ? 'Bu kod daha önce kullanıldı. Yeni kod iste.' : 'Kod bulunamadı. Harfleri kontrol et ya da yeni kod iste.';
+    return { data: null, error: { message, hint, code: 'P0001' } };
+  };
   if (name === 'redeem_child_code') {
     const inv = db.invite_codes.find((i: Row) => i.code === String(args.p_code).trim().toUpperCase() && i.kind === 'child');
-    if (!inv || inv.used_at || inv.expires_at < now()) return { data: null, error: { message: 'Kod geçersiz ya da süresi dolmuş' } };
+    const bad = codeErr(inv);
+    if (bad) return bad;
     const c = db.children.find((x: Row) => x.id === inv.child_id);
     db.children.forEach((x: Row) => { if (x.user_id === uid) x.user_id = null; });
     c.user_id = uid;
@@ -399,7 +455,8 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
   }
   if (name === 'join_family') {
     const inv = db.invite_codes.find((i: Row) => i.code === String(args.p_code).trim().toUpperCase() && i.kind === 'parent');
-    if (!inv || inv.used_at || inv.expires_at < now()) return { data: null, error: { message: 'Kod geçersiz ya da süresi dolmuş' } };
+    const bad = codeErr(inv);
+    if (bad) return bad;
     if (inv.family_id === me.family_id) return { data: null, error: { message: 'Zaten bu ailedesin' } };
     const old = me.family_id;
     me.family_id = inv.family_id;
@@ -410,7 +467,7 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
       cascade('families', fam);
     }
     save();
-    return { data: inv.family_id, error: null };
+    return { data: { family_id: inv.family_id }, error: null };
   }
   if (name === 'delete_account') {
     const fid = me?.family_id;
@@ -430,8 +487,12 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
     const c = db.clinics.find((x: Row) => x.id === id);
     return !!c && (['small', 'business', 'custom'].includes(c.plan) || (c.plan === 'trial' && c.trial_ends_at > now()));
   };
-  const openInvite = (code: string, kind: string) =>
-    db.clinic_invites.find((i: Row) => i.code === String(code ?? '').trim().toUpperCase() && i.kind === kind && !i.used_at && i.expires_at > now());
+  const anyInvite = (code: string, kind: string) =>
+    db.clinic_invites.find((i: Row) => i.code === String(code ?? '').trim().toUpperCase() && i.kind === kind);
+  const openInvite = (code: string, kind: string) => {
+    const i = anyInvite(code, kind);
+    return i && !codeErr(i) ? i : undefined;
+  };
   if (name === 'clinician_me') {
     const m = myClinician();
     if (!m) return { data: null, error: null };
@@ -445,7 +506,7 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
     let code = makeCode();
     while (db.clinic_invites.some((i: Row) => i.code === code)) code = makeCode();
     const row = { code, clinic_id: m.clinic_id, clinician_id: m.id, kind: args.p_kind ?? 'family', label: String(args.p_label ?? '').slice(0, 60),
-      created_at: now(), expires_at: new Date(Date.now() + 7 * 864e5).toISOString(), used_at: null, used_by: null };
+      created_at: now(), expires_at: new Date(Date.now() + 15 * 60e3).toISOString(), used_at: null, used_by: null };
     db.clinic_invites.push(row);
     save();
     return { data: { code, expires_at: row.expires_at }, error: null };
@@ -453,7 +514,7 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
   if (name === 'clinic_invite_preview') {
     if (!me?.family_id) return err('Önce ebeveyn olarak giriş yapmalısın');
     const inv = openInvite(args.p_code, 'family');
-    if (!inv) return err('Kod geçersiz ya da süresi dolmuş');
+    if (!inv) return codeErr(anyInvite(args.p_code, 'family'))!;
     const m = db.clinicians.find((x: Row) => x.id === inv.clinician_id);
     return { data: { clinic: db.clinics.find((x: Row) => x.id === inv.clinic_id)?.name, clinician: m?.name ?? '', title: m?.title ?? '' }, error: null };
   }
@@ -461,7 +522,7 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
     if (!me?.family_id) return err('Önce ebeveyn olarak giriş yapmalısın');
     if (!myChild(args.p_child_id)) return err('Çocuk bulunamadı');
     const inv = openInvite(args.p_code, 'family');
-    if (!inv) return err('Kod geçersiz ya da süresi dolmuş');
+    if (!inv) return codeErr(anyInvite(args.p_code, 'family'))!;
     if (db.clinic_links.some((l: Row) => l.clinic_id === inv.clinic_id && l.child_id === args.p_child_id && l.status === 'active')) {
       return err('Bu çocuk bu klinikle zaten paylaşılıyor');
     }
@@ -478,7 +539,7 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
     if (!ids.length) return err('En az bir çocuk seç');
     if (ids.some((c) => !myChild(c))) return err('Çocuk bulunamadı');
     const inv = openInvite(args.p_code, 'family');
-    if (!inv) return err('Kod geçersiz ya da süresi dolmuş');
+    if (!inv) return codeErr(anyInvite(args.p_code, 'family'))!;
     const linkIds: string[] = [];
     ids.forEach((child_id) => {
       if (db.clinic_links.some((l: Row) => l.clinic_id === inv.clinic_id && l.child_id === child_id && l.status === 'active')) return;
@@ -533,6 +594,76 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
     const fid = args.p_family_id ?? me?.family_id;
     const own = db.family_subscriptions.some((s: Row) => s.family_id === fid && s.plan === 'premium');
     return { data: own || db.clinic_links.some((l: Row) => l.family_id === fid && l.status === 'active' && clinicActive(l.clinic_id)), error: null };
+  }
+  // Abonelik (20261021140000_subscriptions.sql)
+  const fam = db.families.find((f: Row) => f.id === me?.family_id);
+  const cfg = { enforce: false, trial_days: 7, free_max_tasks: 3, free_max_children: 1, ...(db.billing ?? {}) };
+  const access = () => {
+    const sub = db.family_subscriptions.find((x: Row) => x.family_id === fam?.id);
+    const premium = sub?.plan === 'premium' && (!sub.period_end || sub.period_end > now());
+    const end = fam?.trial_started_at ? new Date(new Date(fam.trial_started_at).getTime() + cfg.trial_days * 864e5) : null;
+    const state = premium ? 'premium' : !end ? 'pending' : end.getTime() > Date.now() ? 'trial' : 'expired';
+    return {
+      state, enforced: cfg.enforce, full: state !== 'expired' || !cfg.enforce, trial_ends_at: end?.toISOString() ?? null,
+      days_left: state === 'trial' ? Math.ceil((end!.getTime() - Date.now()) / 864e5) : null,
+      plan: premium ? sub.billing : null, period_end: premium ? sub.period_end : null, auto_renew: premium ? sub.auto_renew : null,
+      limits: { max_tasks: cfg.free_max_tasks, max_children: cfg.free_max_children },
+    };
+  };
+  const premiumErr = (what: string) => ({ data: null, error: { message: `Bu özellik Premium üyelikte: ${what}`, hint: 'premium_required', code: 'P0001' } });
+  if (name === 'family_access') return { data: access(), error: null };
+
+  // Mesajlar (20261021150000_messages.sql)
+  if (name === 'mark_messages_read') {
+    let n = 0;
+    db.messages.forEach((m: Row) => { if (m.child_id === args.p_child_id && m.family_id === me?.family_id && m.sender === 'child' && !m.read_at) { m.read_at = now(); n++; } });
+    save();
+    return { data: n, error: null };
+  }
+
+  // Güneş Taşı ve ödüller (20261021160000_sun_stones_rewards.sql)
+  const stones = (cid: string) => db.sun_stone_ledger.filter((l: Row) => l.child_id === cid).reduce((a: number, l: Row) => a + l.amount, 0);
+  const spend = (cid: string, amount: number, reason: string, note: string | null) => {
+    const bal = stones(cid);
+    if (bal < amount) return { data: null, error: { message: `Yeterli Güneş Taşı yok (bakiye ${bal}, gereken ${amount})`, hint: 'not_enough_stones' } };
+    db.sun_stone_ledger.push({ id: db.sun_stone_ledger.length + 1, family_id: me.family_id, child_id: cid, amount: -amount, reason, ref: uuid(), note, created_by: uid, created_at: now() });
+    return null;
+  };
+  if (name === 'sun_stone_balance') {
+    if (!myChild(args.p_child_id)) return err('Yetki yok');
+    return { data: stones(args.p_child_id), error: null };
+  }
+  if (name === 'give_reward') {
+    if (!myChild(args.p_child_id)) return err('Çocuk bulunamadı');
+    if (!access().full) return premiumErr('ödül verme');
+    const r = db.rewards.find((x: Row) => x.id === args.p_reward_id && x.family_id === me.family_id && x.active);
+    if (!r || (r.child_id && r.child_id !== args.p_child_id)) return err('Ödül bulunamadı');
+    const bad = spend(args.p_child_id, r.cost, 'reward', r.title);
+    if (bad) return bad;
+    db.reward_requests.push({ id: uuid(), family_id: me.family_id, child_id: args.p_child_id, reward_id: r.id, title: r.title, cost: r.cost, source: 'parent', status: 'approved', created_at: now(), decided_at: now() });
+    save();
+    return { data: { balance: stones(args.p_child_id) }, error: null };
+  }
+  if (name === 'deduct_sun_stones') {
+    if (!myChild(args.p_child_id)) return err('Çocuk bulunamadı');
+    if (!(args.p_amount >= 1 && args.p_amount <= 100)) return err('Düşülecek taş 1–100 arası olmalı');
+    if (!access().full) return premiumErr('Güneş Taşı düşme');
+    const bad = spend(args.p_child_id, args.p_amount, 'penalty', args.p_note ?? null);
+    if (bad) return bad;
+    save();
+    return { data: { balance: stones(args.p_child_id) }, error: null };
+  }
+  if (name === 'decide_reward_request') {
+    const q = db.reward_requests.find((x: Row) => x.id === args.p_request_id && x.family_id === me?.family_id);
+    if (!q) return err('İstek bulunamadı');
+    if (q.status !== 'pending') return err('Bu isteğe zaten karar verildi');
+    if (args.p_approve) {
+      const bad = spend(q.child_id, q.cost, 'reward', q.title);
+      if (bad) return bad;
+    }
+    Object.assign(q, { status: args.p_approve ? 'approved' : 'rejected', note: args.p_note ?? null, decided_at: now(), decided_by: uid });
+    save();
+    return { data: { status: q.status }, error: null };
   }
   return { data: null, error: null };
 }

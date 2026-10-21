@@ -18,12 +18,15 @@ import { AgeBand, ageBands, suggestAgeBand } from '../data/ageBands';
 import { useStore } from '../store';
 import { useAuth } from '../lib/auth';
 import { formatTR, toISO, todayISO } from '../dates';
+import { useBilling } from '../billing';
+import { IssuedCode } from '../store';
 
 type Tab = 'general' | 'mail' | 'account';
 const soon = () => Alert.alert('Yakında', 'Bu özellik sonraki sürümde.');
 
 export default function FamilyScreen({ onLogout }: { onLogout?: () => void }) {
-  const { parent, children } = useStore();
+  const { parent, children, messages } = useStore();
+  const unread = messages.filter((m) => m.sender === 'child' && !m.readAt).length;
   const [who, setWho] = useState<string>('me');
   const [tab, setTab] = useState<Tab>('general');
   const [sheet, setSheet] = useState(false);
@@ -48,10 +51,12 @@ export default function FamilyScreen({ onLogout }: { onLogout?: () => void }) {
       </ScrollView>
 
       <View style={styles.tabs}>
-        {/* Mesajlar şimdilik gizli (kullanıcı kararı 21 Ekim; oyun tarafı yok) */}
-        {([['general', 'Genel'], ['account', 'Hesap']] as [Tab, string][]).map(([id, label]) => (
+        {([['general', 'Genel'], ['mail', 'Mesajlar'], ['account', 'Hesap']] as [Tab, string][]).map(([id, label]) => (
           <Pressable key={id} onPress={() => setTab(id)} style={{ alignItems: 'center', gap: 6 }}>
-            <Text style={{ fontSize: 14, fontWeight: tab === id ? '700' : '500', color: tab === id ? colors.navy : colors.muted }}>{label}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+              <Text style={{ fontSize: 14, fontWeight: tab === id ? '700' : '500', color: tab === id ? colors.navy : colors.muted }}>{label}</Text>
+              {id === 'mail' && unread > 0 && <View style={styles.count}><Text style={styles.countText}>{unread}</Text></View>}
+            </View>
             <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: tab === id ? colors.navy : 'transparent' }} />
           </Pressable>
         ))}
@@ -107,7 +112,7 @@ function MyProfile() {
 function ChildInfo({ id }: { id: string }) {
   const { children, completions, createChildCode, setChildAgeBand, childBalance, unlinkChildDevice } = useStore();
   const navigation = useNavigation<any>();
-  const [code, setCode] = useState<string | undefined>();
+  const [code, setCode] = useState<IssuedCode | undefined>();
   const [busy, setBusy] = useState(false);
   const [balance, setBalance] = useState<number | undefined>();
   const c = children.find((x) => x.id === id);
@@ -137,7 +142,7 @@ function ChildInfo({ id }: { id: string }) {
 
   const issue = async () => {
     setBusy(true);
-    try { setCode((await createChildCode(c.id)).code); }
+    try { setCode(await createChildCode(c.id)); }
     catch (e) { Alert.alert('Kod üretilemedi', (e as Error).message); }
     finally { setBusy(false); }
   };
@@ -180,10 +185,10 @@ function ChildInfo({ id }: { id: string }) {
       <Card style={{ gap: 12 }}>
         <Text style={styles.h}>Giriş kodu</Text>
         <Text style={{ fontSize: 13, color: colors.muted }}>
-          {c.name}, Pofi Adası oyununa bu kodla giriş yapar. Yeni kod üretince eskisi geçersiz olur.
+          {c.name}, Pofi Adası oyununa bu kodla giriş yapar. Kod 15 dakika geçerlidir; yeni kod üretince eskisi geçersiz olur.
         </Text>
         {code ? (
-          <CodeBox code={code} shareText={`${c.name} için Pofi Adası giriş kodu: ${code}`} />
+          <CodeBox code={code} busy={busy} onRenew={issue} shareText={`${c.name} için Pofi Adası giriş kodu: ${code.code} (15 dakika geçerli)`} />
         ) : (
           <Pressable style={[styles.cta, busy && { opacity: 0.6 }]} disabled={busy} onPress={issue}>
             <Text style={styles.ctaText}>Giriş kodu üret</Text>
@@ -199,18 +204,47 @@ function ChildInfo({ id }: { id: string }) {
   );
 }
 
-// Kod + kopyala/paylaş simgeleri (tek kullanımlık, süreli kodlar için)
-function CodeBox({ code, shareText }: { code: string; shareText: string }) {
+// Kalan süre (saniye); her saniye güncellenir
+function useSecondsLeft(expiresAt: string) {
+  const left = () => Math.max(0, Math.round((new Date(expiresAt).getTime() - Date.now()) / 1000));
+  const [s, setS] = useState(left);
+  React.useEffect(() => {
+    setS(left());
+    const t = setInterval(() => setS(left()), 1000);
+    return () => clearInterval(t);
+  }, [expiresAt]); // eslint-disable-line react-hooks/exhaustive-deps
+  return s;
+}
+
+// Kod + kalan süre + kopyala/paylaş. Süre bitince kod soluklaşır, "Yeni kod al" çıkar (kodlar 15 dakika geçerli).
+function CodeBox({ code, shareText, onRenew, busy }: { code: IssuedCode; shareText: string; onRenew: () => void; busy?: boolean }) {
+  const left = useSecondsLeft(code.expiresAt);
+  const expired = left <= 0;
   return (
-    <View style={{ gap: 6 }}>
-      <View style={styles.codeBox}>
-        <Text style={{ flex: 1, fontSize: 28, fontWeight: '800', letterSpacing: 6, color: colors.navy }}>{code}</Text>
-        <IconButton name="copy-outline" label="Kopyala" style={{ backgroundColor: '#fff' }}
-          onPress={async () => { await Clipboard.setStringAsync(code); Alert.alert('Kod kopyalandı'); }} />
-        <IconButton name="share-outline" label="Paylaş" style={{ backgroundColor: '#fff' }}
-          onPress={() => Share.share({ message: shareText })} />
+    <View style={{ gap: 8 }}>
+      <View style={[styles.codeBox, expired && { opacity: 0.5 }]}>
+        <Text style={{ flex: 1, fontSize: 28, fontWeight: '800', letterSpacing: 6, color: colors.navy, textDecorationLine: expired ? 'line-through' : 'none' }}>{code.code}</Text>
+        {!expired && (
+          <>
+            <IconButton name="copy-outline" label="Kopyala" style={{ backgroundColor: '#fff' }}
+              onPress={async () => { await Clipboard.setStringAsync(code.code); Alert.alert('Kod kopyalandı'); }} />
+            <IconButton name="share-outline" label="Paylaş" style={{ backgroundColor: '#fff' }}
+              onPress={() => Share.share({ message: shareText })} />
+          </>
+        )}
       </View>
-      <Text style={styles.cap}>Tek kullanımlık · 24 saat geçerli</Text>
+      {expired ? (
+        <View style={{ gap: 8 }}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.danger }}>Kodun süresi doldu. Kullanmak için yeni kod al.</Text>
+          <Pressable style={[styles.cta, busy && { opacity: 0.6 }]} disabled={busy} onPress={onRenew} accessibilityLabel="Yeni kod al">
+            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Yeni kod al</Text>}
+          </Pressable>
+        </View>
+      ) : (
+        <Text style={styles.cap} accessibilityLabel={`Kalan süre ${Math.floor(left / 60)} dakika ${left % 60} saniye`}>
+          Tek kullanımlık · {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')} içinde geçerliliğini yitirir
+        </Text>
+      )}
     </View>
   );
 }
@@ -251,6 +285,7 @@ function Mail() {
         {children.map((c, i) => {
           const thread = messages.filter((m) => m.childId === c.id);
           const last = thread[thread.length - 1];
+          const n = thread.filter((m) => m.sender === 'child' && !m.readAt).length;
           return (
             <Pressable
               key={c.id}
@@ -264,10 +299,11 @@ function Mail() {
                   <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', color: colors.navy }}>{c.name}</Text>
                   {last && <Text style={styles.cap}>{listTime(last.at)}</Text>}
                 </View>
-                <Text numberOfLines={1} style={{ fontSize: 13, color: colors.muted }}>
+                <Text numberOfLines={1} style={{ fontSize: 13, color: n ? colors.navy : colors.muted, fontWeight: n ? '600' : '400' }}>
                   {last ? `${last.sender === 'parent' ? 'Sen: ' : ''}${messagePreview(last)}` : 'Sohbeti başlatmak için dokun'}
                 </Text>
               </View>
+              {n > 0 && <View style={styles.count}><Text style={styles.countText}>{n}</Text></View>}
               <Ionicons name="chevron-forward" size={16} color={colors.faint} />
             </Pressable>
           );
@@ -279,9 +315,10 @@ function Mail() {
 
 /* ---------- Hesap ---------- */
 
-type AccountRow = 'manage' | 'join' | 'clinic' | 'notifications' | 'other';
+type AccountRow = 'manage' | 'join' | 'clinic' | 'notifications' | 'membership' | 'other';
 
 const accountRows: { icon: keyof typeof Ionicons.glyphMap; label: string; id?: AccountRow }[] = [
+  { icon: 'sunny-outline', label: 'Üyelik', id: 'membership' },
   { icon: 'person-outline', label: 'Hesabı yönet', id: 'manage' },
   { icon: 'person-add-outline', label: 'Aileye katıl', id: 'join' },
   { icon: 'notifications-outline', label: 'Bildirimler', id: 'notifications' },
@@ -296,7 +333,12 @@ const accountRows: { icon: keyof typeof Ionicons.glyphMap; label: string; id?: A
 function Account({ onLogout }: { onLogout?: () => void }) {
   const [open, setOpen] = useState<AccountRow | null>(null);
   const navigation = useNavigation<any>();
-  const pick = (id: AccountRow) => (id === 'notifications' ? navigation.navigate('Notifications') : setOpen(id));
+  const { access } = useBilling();
+  const pick = (id: AccountRow) => (id === 'notifications' ? navigation.navigate('Notifications')
+    : id === 'membership' ? navigation.navigate('Paywall') : setOpen(id));
+  const memberText = !access ? '' : access.state === 'premium' ? (access.plan === 'yearly' ? 'Yıllık' : 'Aylık')
+    : access.state === 'clinic' ? 'Klinik' : access.state === 'trial' ? `Deneme · ${access.daysLeft ?? 0} gün`
+    : access.state === 'expired' ? 'Ücretsiz' : '';
   return (
     <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}>
       <Card style={{ padding: 0 }}>
@@ -304,6 +346,7 @@ function Account({ onLogout }: { onLogout?: () => void }) {
           <Pressable key={r.label} onPress={r.id ? () => pick(r.id!) : soon} style={[styles.accRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line }]}>
             <Ionicons name={r.icon} size={20} color={colors.navy} />
             <Text style={{ flex: 1, fontSize: 15, color: colors.navy }}>{r.label}</Text>
+            {r.id === 'membership' && !!memberText && <Text style={{ fontSize: 13, color: colors.muted }}>{memberText}</Text>}
             <Ionicons name="chevron-forward" size={16} color={colors.faint} />
           </Pressable>
         ))}
@@ -361,7 +404,7 @@ function JoinSheet({ visible, onClose }: { visible: boolean; onClose: () => void
     <Sheet visible={visible} title="Aileye katıl" onClose={close}>
       <View style={{ gap: 14 }}>
         <Text style={{ fontSize: 13, color: colors.muted }}>
-          Diğer ebeveynin Aile {'>'} + {'>'} Ebeveyn bölümünden ürettiği 6 haneli kodu yaz.
+          Diğer ebeveynin Aile {'>'} + {'>'} Ebeveyn bölümünden ürettiği 6 haneli kodu yaz. Kod 15 dakika geçerlidir.
         </Text>
         <TextInput
           value={code}
@@ -438,6 +481,7 @@ function ManageSheet({ visible, onClose }: { visible: boolean; onClose: () => vo
 
 function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { addChild, createInviteCode, familyId } = useStore();
+  const { allow } = useBilling();
   const [photo, setPhoto] = useState<{ uri: string; mime?: string } | null>(null);
   const [kind, setKind] = useState<'child' | 'parent'>('child');
   const [name, setName] = useState('');
@@ -445,8 +489,14 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
   const [birthday, setBirthday] = useState<string | undefined>();
   const [band, setBand] = useState<AgeBand>('A');
   const [avatar, setAvatar] = useState(childAvatars[1].id);
-  const [code, setCode] = useState<string | undefined>();
+  const [code, setCode] = useState<IssuedCode | undefined>();
   const [busy, setBusy] = useState(false);
+  const invite = async () => {
+    setBusy(true);
+    try { setCode(await createInviteCode()); }
+    catch (e) { Alert.alert('Kod üretilemedi', (e as Error).message); }
+    finally { setBusy(false); }
+  };
 
   const close = () => { setName(''); setBirthday(undefined); setBand('A'); setCode(undefined); setKind('child'); setPhoto(null); onClose(); };
 
@@ -459,6 +509,7 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
 
   const save = async () => {
     if (!name.trim()) return Alert.alert('İsim gerekli');
+    if (!allow('child')) return close();
     let av = avatar;
     if (photo && familyId) {
       setBusy(true);
@@ -526,17 +577,12 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
             Her yeni ebeveyn için size özel bir kod üretilir. Diğer ebeveyn bu kodla aileye katılır.
           </Text>
           {code ? (
-            <CodeBox code={code} shareText={`ParentApp'e katılmak için davet kodun: ${code}\nUygulamada Aile > Hesap > Aileye katıl bölümüne yaz.`} />
+            <CodeBox code={code} busy={busy} onRenew={invite} shareText={`ParentApp'e katılmak için davet kodun: ${code.code}\nUygulamada Aile > Hesap > Aileye katıl bölümüne yaz. Kod 15 dakika geçerli.`} />
           ) : (
             <Pressable
               style={[styles.cta, busy && { opacity: 0.6 }]}
               disabled={busy}
-              onPress={async () => {
-                setBusy(true);
-                try { setCode(await createInviteCode()); }
-                catch (e) { Alert.alert('Kod üretilemedi', (e as Error).message); }
-                finally { setBusy(false); }
-              }}
+              onPress={invite}
             >
               <Text style={styles.ctaText}>Davet kodu üret</Text>
             </Pressable>
@@ -564,5 +610,7 @@ const styles = StyleSheet.create({
   ctaText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   coins: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFF6DE', borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 6 },
   coinDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.gold },
+  count: { minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
+  countText: { fontSize: 11, fontWeight: '800', color: colors.navy },
   codeBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#F3F4F8', borderRadius: radius.md, padding: 14 },
 });
