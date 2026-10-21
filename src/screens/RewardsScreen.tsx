@@ -79,14 +79,14 @@ export default function RewardsScreen({ navigation }: any) {
 
   const load = useCallback(async () => {
     if (!familyId) return;
-    try {
-      const [r, b, h, q] = await Promise.all([listRewards(familyId), balances(children.map((c) => c.id)), history(familyId), requests(familyId)]);
-      setRewards(r); setBal(b); setMoves(h); setReqs(q); setMissing(false);
-    } catch {
-      setMissing(true);
-    } finally {
-      setLoading(false);
-    }
+    // Her parça ayrı yüklenir: sunucu güncellemesi eksikse ekran yine açılır, eksik kısım boş kalır
+    const [r, b, h, q] = await Promise.allSettled([listRewards(familyId), balances(children.map((c) => c.id)), history(familyId), requests(familyId)]);
+    if (r.status === 'fulfilled') setRewards(r.value);
+    if (b.status === 'fulfilled') setBal(b.value);
+    if (h.status === 'fulfilled') setMoves(h.value);
+    if (q.status === 'fulfilled') setReqs(q.value);
+    setMissing([r, b, h, q].some((x) => x.status === 'rejected'));
+    setLoading(false);
   }, [familyId, children]);
 
   useEffect(() => { load(); }, [load]);
@@ -104,6 +104,12 @@ export default function RewardsScreen({ navigation }: any) {
     return () => { clearTimeout(t); supabase.removeChannel(ch); };
   }, [familyId, load]);
 
+  // Sunucu güncellemesi uygulanmadan işlem yapılamaz; ekran yine görünür
+  const ready = () => {
+    if (!missing) return true;
+    Alert.alert('Sunucu güncellemesi bekleniyor', 'Ödül vermek, eklemek ve taş düşürmek, ortak SQL dosyaları Supabase\'de çalıştırılınca açılır.');
+    return false;
+  };
   const act = async (op: () => Promise<void>, title: string) => {
     try { await op(); await load(); return true; }
     catch (e) {
@@ -122,7 +128,7 @@ export default function RewardsScreen({ navigation }: any) {
   const fresh = useMemo(() => rewardTemplates.filter((t) => !rewards.some((r) => sameTitle(r.title, t.title))), [rewards]);
 
   const openEditor = (x: { reward?: Reward; template?: RewardTemplate }) => {
-    if (!allow('reward')) return;
+    if (!ready() || !allow('reward')) return;
     const open = () => setEditor(x);
     if (x.reward) return open();
     // iOS: Öneriler sayfası açıkken başka pencere açılamaz; önce kapanmasını bekle
@@ -131,7 +137,7 @@ export default function RewardsScreen({ navigation }: any) {
   };
   // Öneriye dokun: önerilen fiyatla, bütün çocuklar için eklenir (taş düşmez; satırdan düzenlenir/silinir)
   const addTemplate = (t: RewardTemplate) => {
-    if (!familyId || !allow('reward')) return;
+    if (!familyId || !ready() || !allow('reward')) return;
     tips.gate('create', rewardTips.create, async () => {
       const ok = await act(() => saveReward(familyId, {
         title: t.title, kind: t.kind, cost: t.cost, unit: t.unit, unitAmount: t.unitAmount, childIds: [], icon: iconKey(t.icon),
@@ -141,13 +147,13 @@ export default function RewardsScreen({ navigation }: any) {
   };
   // Çocuğun harfine dokun: eşyada onay kartı, değiş tokuşta önce kaç kez
   const tapKid = (r: Reward, childId: string) => {
-    if (!allow('reward')) return;
+    if (!ready() || !allow('reward')) return;
     tips.gate('give', rewardTips.give, () => {
       if (r.kind === 'exchange' && r.unit) { setConfirm(null); setPick({ rewardId: r.id, childId }); }
       else { setPick(null); setConfirm({ type: 'give', reward: r, childId, quantity: 1 }); }
     });
   };
-  const openDeduct = (id: string) => { if (allow('stones')) tips.gate('deduct', rewardTips.deduct, () => setDeduct(id)); };
+  const openDeduct = (id: string) => { if (ready() && allow('stones')) tips.gate('deduct', rewardTips.deduct, () => setDeduct(id)); };
   const decide = (req: RewardRequest, approve: boolean) =>
     tips.gate('request', rewardTips.request, () => { setPick(null); setConfirm({ type: 'request', req, approve }); });
 
@@ -176,10 +182,16 @@ export default function RewardsScreen({ navigation }: any) {
 
       {!children.length ? (
         <Text style={styles.empty}>Ödül vermek için önce Aile sekmesinden bir çocuk ekle.</Text>
-      ) : missing && !loading ? (
-        <Text style={styles.empty}>Ödüller sunucu güncellemesinden sonra açılacak.</Text>
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, gap: 14, paddingBottom: 140 }}>
+          {missing && !loading && (
+            <View style={styles.warn}>
+              <Ionicons name="cloud-offline-outline" size={18} color="#6B5300" />
+              <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: '#6B5300' }}>
+                Sunucu güncellemesi bekleniyor. Ekranı görebilirsin; ödül verme, ekleme ve taş düşürme güncellemeden sonra çalışır.
+              </Text>
+            </View>
+          )}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, flexGrow: 1 }}>
             {children.map((c) => {
               const [bg, fg] = tintOf(c.id);
@@ -300,7 +312,7 @@ export default function RewardsScreen({ navigation }: any) {
         </ScrollView>
       )}
 
-      {!missing && children.length > 0 && !confirm && (
+      {children.length > 0 && !confirm && (
         <Pressable onPress={() => openEditor({})} style={styles.fab} accessibilityLabel="Yeni ödül">
           <Ionicons name="add" size={20} color="#fff" />
           <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Yeni ödül</Text>
