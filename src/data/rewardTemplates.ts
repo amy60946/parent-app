@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 
 // Önerilen ödüller (Güneş Taşı fiyatlarıyla). Görev 1/2/3 taş kazandırır: fiyatlar buna göre.
-// Değişim ödülleri "cost taş = unitAmount birim" (dakika ekran süresi / TL harçlık); ortak/sozlesme/ekonomi.md 9.
+// Değiş tokuş ödülleri "cost taş = unitAmount birim" (dakika ekran süresi / TL harçlık); ortak/sozlesme/ekonomi.md 9.
 export type RewardKind = 'item' | 'exchange';
 export type RewardUnit = 'minute' | 'money';
 export type RewardIcon = keyof typeof Ionicons.glyphMap;

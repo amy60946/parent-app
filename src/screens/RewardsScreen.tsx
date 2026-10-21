@@ -6,6 +6,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors, radius } from '../theme';
 import { Avatar, IconButton, Card } from '../components/ui';
 import Sheet from '../components/Sheet';
+import { useFirstTip } from '../components/FirstTip';
+import { rewardTips } from '../data/rewardTips';
 import { useStore, Child } from '../store';
 import { useBilling } from '../billing';
 import { supabase } from '../lib/supabase';
@@ -41,8 +43,9 @@ export default function RewardsScreen({ navigation, route }: any) {
   const [editor, setEditor] = useState<{ reward?: Reward; template?: RewardTemplate } | null>(null);
   const [templates, setTemplates] = useState(false);
   const [give, setGive] = useState<Reward | null>(null);
-  const [deduct, setDeduct] = useState(false);
+  const [deduct, setDeduct] = useState<string | null>(null); // null: kapalı, '': çocuk seçilmedi, id: o çocuk
   const [intro, setIntro] = useState(false);
+  const tips = useFirstTip();
   const child = sel === 'all' ? undefined : children.find((c) => c.id === sel);
 
   useEffect(() => { AsyncStorage.getItem(INTRO_KEY).then((v) => { if (!v) setIntro(true); }).catch(() => {}); }, []);
@@ -91,9 +94,18 @@ export default function RewardsScreen({ navigation, route }: any) {
   const avg = weeklyAverage(moves, children.length);
   const nameOf = (id: string) => children.find((c) => c.id === id)?.name ?? '';
 
-  const openEditor = (x: { reward?: Reward; template?: RewardTemplate }) => { if (allow('reward')) { setTemplates(false); setEditor(x); } };
+  const openEditor = (x: { reward?: Reward; template?: RewardTemplate }) => {
+    if (!allow('reward')) return;
+    const open = () => { setTemplates(false); setEditor(x); };
+    if (x.reward) open(); else { setTemplates(false); tips.gate('create', rewardTips.create, open); }
+  };
+  // Taş düşür: ilk kullanımda ipucu, sonra sayfa (kid verilirse o çocuk seçili)
+  const openDeduct = (kid?: string) => { if (allow('stones')) tips.gate('deduct', rewardTips.deduct, () => setDeduct(kid ?? child?.id ?? '')); };
   const openGive = (r: Reward) => {
     if (!allow('reward')) return;
+    tips.gate('give', rewardTips.give, () => giveNow(r));
+  };
+  const giveNow = (r: Reward) => {
     const eligible = children.filter((c) => rewardAvailableFor(r, c.id));
     if (r.kind === 'item' && child) {
       Alert.alert('Ödül verilsin mi?', `${r.title}\n${r.cost} Güneş Taşı ${child.name} adlı çocuğun bakiyesinden düşer.`, [
@@ -105,7 +117,8 @@ export default function RewardsScreen({ navigation, route }: any) {
     }
   };
 
-  const decide = (q: RewardRequest, approve: boolean) => {
+  const decide = (q: RewardRequest, approve: boolean) => tips.gate('request', rewardTips.request, () => decideNow(q, approve));
+  const decideNow = (q: RewardRequest, approve: boolean) => {
     if (!approve) return act(() => decideRequest(q.id, false), 'Kaydedilemedi');
     Alert.alert('İstek onaylansın mı?', `${q.title}\n${q.cost} Güneş Taşı düşülür.`, [
       { text: 'Vazgeç', style: 'cancel' },
@@ -156,9 +169,9 @@ export default function RewardsScreen({ navigation, route }: any) {
                 )}
                 <Text style={{ fontSize: 12, color: colors.muted }}>Görev onaylandıkça artar</Text>
               </View>
-              <Pressable onPress={() => { if (allow('stones')) setDeduct(true); }} style={styles.outline} accessibilityLabel="Güneş Taşı düş">
+              <Pressable onPress={() => openDeduct()} style={styles.outline} accessibilityLabel="Güneş Taşı düşür">
                 <Ionicons name="remove-circle-outline" size={16} color={colors.danger} />
-                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.danger }}>Taş düş</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.danger }}>Taş düşür</Text>
               </Pressable>
             </View>
             {!child && !loading && children.map((c) => (
@@ -166,6 +179,9 @@ export default function RewardsScreen({ navigation, route }: any) {
                 <Avatar id={c.avatar} size={28} />
                 <Text style={{ flex: 1, fontSize: 14, color: colors.navy }}>{c.name}</Text>
                 <Cost n={bal[c.id] ?? 0} />
+                <Pressable onPress={() => openDeduct(c.id)} hitSlop={8} style={styles.minus} accessibilityLabel={`${c.name}: taş düşür`}>
+                  <Ionicons name="remove" size={18} color={colors.danger} />
+                </Pressable>
               </View>
             ))}
           </Card>
@@ -287,11 +303,12 @@ export default function RewardsScreen({ navigation, route }: any) {
       )}
       <GiveSheet reward={give} kids={children} balances={bal} preferred={child?.id} onClose={() => setGive(null)}
         onGive={(cid, q) => act(() => giveReward(cid, give!.id, q), 'Ödül verilemedi')} />
-      <DeductSheet visible={deduct} kids={children} balances={bal} preferred={child?.id} onClose={() => setDeduct(false)}
+      <DeductSheet visible={deduct !== null} kids={children} balances={bal} moves={moves} preferred={deduct || undefined} onClose={() => setDeduct(null)}
         onDeduct={async (ids, n, note) => {
           for (const id of ids) if (!(await act(() => deductStones(id, n, note), `${nameOf(id)}: taş düşülemedi`))) return;
         }} />
       <Intro visible={intro} onClose={closeIntro} />
+      {tips.element}
     </SafeAreaView>
   );
 }
@@ -419,7 +436,7 @@ function RewardEditor({ value, kids, avg, onClose, onSave, onDelete }: {
             <Text style={styles.h}>Ödül türü</Text>
             <View style={{ flexDirection: 'row', gap: 10 }}>
               {typeCard('item', 'Eşya ya da etkinlik', 'Diğer bütün ödüller için', ['gift-outline', 'film-outline', 'ice-cream-outline'])}
-              {typeCard('exchange', 'Değişim', 'Ekran süresi ya da harçlık için', ['sunny-outline', 'arrow-forward', 'phone-portrait-outline'])}
+              {typeCard('exchange', 'Değiş tokuş', 'Ekran süresi ya da harçlık için', ['sunny-outline', 'arrow-forward', 'phone-portrait-outline'])}
             </View>
           </View>
 
@@ -440,10 +457,10 @@ function RewardEditor({ value, kids, avg, onClose, onSave, onDelete }: {
           )}
 
           <View style={{ gap: 8 }}>
-            <Text style={styles.h}>{kind === 'exchange' ? 'Değişim oranı' : 'Fiyat'}</Text>
+            <Text style={styles.h}>{kind === 'exchange' ? 'Değiş tokuş oranı' : 'Fiyat'}</Text>
             <Text style={styles.reminder}>
               Hatırlatma: kolay görev 1, orta 2, zor 3 Güneş Taşı kazandırır. Son 7 günde çocuk başına ortalama {avg} taş kazanıldı.
-              {kind === 'exchange' ? ' Değişim ödülü adet adet alınır.' : ''}
+              {kind === 'exchange' ? ' Değiş tokuş ödülü adet adet alınır.' : ''}
             </Text>
             {kind === 'exchange' ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -517,7 +534,7 @@ function RewardEditor({ value, kids, avg, onClose, onSave, onDelete }: {
   );
 }
 
-// Ödül ver: çocuk seç (gerekirse) + değişimde kaç kez
+// Ödül ver: çocuk seç (gerekirse) + değiş tokuşta kaç kez
 function GiveSheet({ reward, kids, balances: bal, preferred, onClose, onGive }: {
   reward: Reward | null; kids: Child[]; balances: Record<string, number>; preferred?: string;
   onClose: () => void; onGive: (childId: string, quantity: number) => void;
@@ -570,8 +587,8 @@ function GiveSheet({ reward, kids, balances: bal, preferred, onClose, onGive }: 
 }
 
 // Taş düş: bir ya da birkaç çocuk, adet, neden (çocuk görür)
-function DeductSheet({ visible, kids, balances: bal, preferred, onClose, onDeduct }: {
-  visible: boolean; kids: Child[]; balances: Record<string, number>; preferred?: string;
+function DeductSheet({ visible, kids, balances: bal, moves, preferred, onClose, onDeduct }: {
+  visible: boolean; kids: Child[]; balances: Record<string, number>; moves: StoneMove[]; preferred?: string;
   onClose: () => void; onDeduct: (ids: string[], n: number, note: string) => void;
 }) {
   const [ids, setIds] = useState<string[]>([]);
@@ -580,6 +597,16 @@ function DeductSheet({ visible, kids, balances: bal, preferred, onClose, onDeduc
   useEffect(() => { if (visible) { setIds(preferred ? [preferred] : []); setN(1); setNote(''); } }, [visible, preferred]);
   const toggle = (id: string) => setIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const short = ids.filter((id) => (bal[id] ?? 0) < n);
+  // Son 7 günde düşürülen taş, kazanılanın dörtte birini geçerse uyar (ekonomi.md: seyrek kullanım)
+  const heavy = useMemo(() => {
+    const since = new Date(Date.now() - 7 * 864e5).toISOString();
+    return ids.filter((id) => {
+      const week = moves.filter((m) => m.childId === id && m.at >= since);
+      const earned = week.filter((m) => m.reason === 'task').reduce((a, m) => a + m.amount, 0);
+      const lost = -week.filter((m) => m.reason === 'penalty').reduce((a, m) => a + m.amount, 0);
+      return (lost + n) * 4 > earned;
+    });
+  }, [ids, moves, n]);
   const submit = () => {
     if (!ids.length) return Alert.alert('Kimden düşüleceğini seç');
     if (short.length) return Alert.alert('Bakiye yetersiz', short.map((id) => `${kids.find((k) => k.id === id)?.name}: ${bal[id] ?? 0} taş`).join('\n'));
@@ -587,10 +614,10 @@ function DeductSheet({ visible, kids, balances: bal, preferred, onClose, onDeduc
     onClose();
   };
   return (
-    <Sheet visible={visible} title="Güneş Taşı düş" onClose={onClose}>
+    <Sheet visible={visible} title="Güneş Taşı düşür" onClose={onClose}>
       <View style={{ gap: 16 }}>
         <Text style={{ fontSize: 14, lineHeight: 20, color: colors.navy }}>
-          Taş düşmeyi bir alışkanlığı pekiştirmek ya da çiğnenen bir kuralı göstermek için kullanabilirsin. Seyrek kullan ve nedenini yaz; çocuğun bunu oyunda görür.
+          Önceden konuştuğunuz bir kural çiğnendiğinde kullan. Seyrek kullan ve nedenini yaz; çocuğun bunu oyunda görür.
         </Text>
         <View style={styles.box}>
           <Text style={styles.boxTitle}>Kimden düşülsün?</Text>
@@ -624,8 +651,16 @@ function DeductSheet({ visible, kids, balances: bal, preferred, onClose, onDeduc
             placeholder="Bugün görevlerini aksattın ve eve geç geldin." style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]} />
           <Text style={{ fontSize: 12, color: colors.muted, alignSelf: 'flex-end' }}>{note.length}/100</Text>
         </View>
+        {heavy.length > 0 && (
+          <View style={styles.warn}>
+            <Ionicons name="alert-circle-outline" size={18} color="#6B5300" />
+            <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: '#6B5300' }}>
+              {heavy.map((id) => kids.find((k) => k.id === id)?.name).join(', ')}: bu hafta düşürülen taş, kazanılanın dörtte birini geçiyor. Önce kazandırmaya ve övmeye ağırlık vermek daha iyi sonuç verir.
+            </Text>
+          </View>
+        )}
         <Pressable style={[styles.cta, { backgroundColor: colors.danger }]} onPress={submit}>
-          <Text style={styles.ctaText}>{n} taş düş</Text>
+          <Text style={styles.ctaText}>{n} taş düşür</Text>
         </Pressable>
       </View>
     </Sheet>
@@ -636,8 +671,8 @@ function DeductSheet({ visible, kids, balances: bal, preferred, onClose, onDeduc
 function Intro({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const items: [keyof typeof Ionicons.glyphMap, string, string][] = [
     ['sunny-outline', 'Görevle kazanılır', 'Onayladığın her görev Güneş Taşı kazandırır: kolay 1, orta 2, zor 3.'],
-    ['gift-outline', 'Ödülü sen belirlersin', 'Önerilenlerden seç ya da kendin oluştur: film gecesi gibi etkinlikler ya da taşı ekran süresine, harçlığa çeviren değişim ödülleri. Çocuğun oyunda da isteyebilecek, onayı sen verirsin.'],
-    ['remove-circle-outline', 'Gerektiğinde taş düş', 'Bir kural çiğnendiğinde taş düşebilirsin. Seyrek kullan ve nedenini anlat; çocuk bunu görür.'],
+    ['gift-outline', 'Ödülü sen belirlersin', 'Önerilenlerden seç ya da kendin oluştur: film gecesi gibi etkinlikler ya da taşı ekran süresine, harçlığa çeviren değiş tokuş ödülleri. Çocuğun oyunda da isteyebilecek, onayı sen verirsin.'],
+    ['remove-circle-outline', 'Gerektiğinde taş düşür', 'Önceden konuşulan bir kural çiğnendiğinde taş düşürebilirsin. Seyrek kullan ve nedenini anlat; çocuk bunu görür.'],
   ];
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -690,6 +725,8 @@ const styles = StyleSheet.create({
   check: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderRadius: radius.sm, backgroundColor: '#fff', borderWidth: 1.5, borderColor: colors.line },
   iconPick: { width: 64, height: 64, borderRadius: 32, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.navy, backgroundColor: '#E6EAF5', alignItems: 'center', justifyContent: 'center' },
   iconCell: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#fff', borderWidth: 1.5, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },
+  minus: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: colors.hard.bg, backgroundColor: '#FFF8F9', alignItems: 'center', justifyContent: 'center' },
+  warn: { flexDirection: 'row', gap: 8, padding: 12, borderRadius: radius.sm, backgroundColor: '#FFF6DE' },
   box: { gap: 10, padding: 14, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line },
   boxTitle: { fontSize: 15, fontWeight: '700', color: colors.navy },
   who: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.line, backgroundColor: '#fff' },
