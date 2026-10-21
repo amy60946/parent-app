@@ -73,17 +73,12 @@ export default function ProgressScreen({ navigation }: any) {
         <NotificationBell />
       </View>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 12 }}>
-        {/* Zor anlar: kayıt + arşiv */}
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          <Pressable style={styles.abcMain} onPress={() => navigation.navigate('Abc', { new: true })} accessibilityLabel="Zor bir anı kaydet">
-            <Ionicons name="pulse-outline" size={20} color="#fff" />
-            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Zor bir anı kaydet</Text>
-          </Pressable>
-          <Pressable style={styles.abcList} onPress={() => navigation.navigate('Abc')} accessibilityLabel="Geçmiş zor anlar">
-            <Ionicons name="time-outline" size={20} color={colors.navy} />
-            <Text style={{ color: colors.navy, fontSize: 13, fontWeight: '600' }}>Geçmiş</Text>
-          </Pressable>
-        </View>
+        {/* Zor anlar arşivi (yeni kayıt: Görevler'de + düğmesine basılı tut) */}
+        <Pressable style={styles.abcList} onPress={() => navigation.navigate('Abc')} accessibilityLabel="Zor anlar">
+          <Ionicons name="pulse-outline" size={18} color={colors.navy} />
+          <Text style={{ flex: 1, color: colors.navy, fontSize: 14, fontWeight: '600' }}>Zor anlar</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.faint} />
+        </Pressable>
 
         <View style={{ flexDirection: 'row', gap: 16 }}>
           {children.map((c) => (
@@ -165,7 +160,7 @@ export default function ProgressScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   abcMain: { flex: 1, flexDirection: 'row', gap: 8, height: 50, borderRadius: radius.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
-  abcList: { flexDirection: 'row', gap: 6, height: 50, paddingHorizontal: 16, borderRadius: radius.md, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  abcList: { flexDirection: 'row', gap: 10, height: 48, paddingHorizontal: 16, borderRadius: radius.md, backgroundColor: '#fff', alignItems: 'center' },
   safe: { flex: 1, backgroundColor: colors.bg },
   title: { fontSize: 17, fontWeight: '700', color: colors.navy },
   big: { fontSize: 18, fontWeight: '700', color: colors.navy },

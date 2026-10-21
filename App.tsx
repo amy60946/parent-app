@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import './src/lib/webAlert';
 import { NavigationContainer, DefaultTheme, createNavigationContainerRef } from '@react-navigation/native';
@@ -23,6 +23,7 @@ import NotificationsScreen, { openNotification } from './src/screens/Notificatio
 import AbcScreen from './src/screens/AbcScreen';
 import { NotificationsProvider } from './src/notifications';
 import { onNotificationTap } from './src/lib/notifications';
+import { clearPendingInvite, getPendingInvite } from './src/lib/pendingInvite';
 import {
   LoginScreen, SignUpScreen, ForgotPasswordScreen, NewPasswordScreen, ChildHomeScreen,
 } from './src/screens/AuthScreens';
@@ -78,7 +79,21 @@ function Loading() {
 }
 
 function Main() {
-  const { ready } = useStore();
+  const { ready, joinFamily } = useStore();
+  // Giriş ekranında davet kodu girildiyse: kayıt/giriş sonrası aileye otomatik katıl
+  React.useEffect(() => {
+    if (!ready) return;
+    getPendingInvite().then(async (code) => {
+      if (!code) return;
+      await clearPendingInvite();
+      try {
+        await joinFamily(code);
+        Alert.alert('Aileye katıldın', 'Artık ailenin görevlerini, çocuklarını ve bildirimlerini görüyorsun.');
+      } catch (e) {
+        Alert.alert('Aileye katılınamadı', `${(e as Error).message}\n\nAile > Hesap > Aileye katıl bölümünden tekrar deneyebilirsin.`);
+      }
+    });
+  }, [ready, joinFamily]);
   // Telefon bildirimine dokununca ilgili ekranı aç (uygulama kapalıyken açıldıysa da)
   React.useEffect(() => {
     if (!ready) return;

@@ -12,6 +12,9 @@ import ClinicShareSheet from '../components/ClinicShare';
 import { pendingSuggestions } from '../lib/clinic';
 import NotificationBell from '../components/NotificationBell';
 import { TaskDayPart, dayPartLabel, taskDayPartOf } from '../data/dayParts';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const HINT_KEY = 'hint-abc-longpress';
 
 type PartFilter = 'all' | TaskDayPart | 'any';
 const partOf = (t: Task) => t.dayPart ?? (t.reminder ? taskDayPartOf(t.reminder) : undefined);
@@ -33,6 +36,11 @@ export default function TasksScreen({ navigation }: any) {
   const [selected, setSelected] = useState(todayISO());
   const [childFilter, setChildFilter] = useState<string | 'all'>('all');
   const [part, setPart] = useState<PartFilter>('all');
+  // + düğmesi: kısa bas → görev oluştur, uzun bas → üstünde "Zor an" düğmesi (ilk seferde ipucu)
+  const [dial, setDial] = useState(false);
+  const [hint, setHint] = useState(false);
+  React.useEffect(() => { AsyncStorage.getItem(HINT_KEY).then((v) => setHint(!v)).catch(() => {}); }, []);
+  const seenHint = () => { setHint(false); AsyncStorage.setItem(HINT_KEY, '1').catch(() => {}); };
   const listRef = useRef<FlatList>(null);
 
   const weeks = useMemo(() => {
@@ -187,12 +195,27 @@ export default function TasksScreen({ navigation }: any) {
         }
       />
 
+      {dial && <Pressable style={StyleSheet.absoluteFill} onPress={() => setDial(false)} accessibilityLabel="Kapat" />}
+      {dial && (
+        <Pressable style={styles.dialBtn} accessibilityLabel="Zor bir anı kaydet"
+          onPress={() => { setDial(false); navigation.navigate('Abc', { new: true }); }}>
+          <Ionicons name="pulse-outline" size={18} color={colors.navy} />
+          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.navy }}>Zor an</Text>
+        </Pressable>
+      )}
+      {hint && !dial && (
+        <Pressable style={styles.hintBubble} onPress={seenHint} accessibilityLabel="İpucunu kapat">
+          <Text style={{ fontSize: 12, color: '#fff' }}>Zor bir anı kaydetmek için + düğmesini basılı tut</Text>
+        </Pressable>
+      )}
       <Pressable
         style={styles.fab}
-        accessibilityLabel="Görev oluştur"
-        onPress={() => navigation.navigate('CreateTask', { date: selected })}
+        accessibilityLabel="Görev oluştur. Zor an kaydetmek için basılı tut."
+        onPress={() => (dial ? setDial(false) : navigation.navigate('CreateTask', { date: selected }))}
+        onLongPress={() => { setDial(true); seenHint(); }}
+        delayLongPress={350}
       >
-        <Ionicons name="add" size={32} color="#fff" />
+        <Ionicons name={dial ? 'close' : 'add'} size={32} color="#fff" />
       </Pressable>
     </SafeAreaView>
   );
@@ -328,6 +351,12 @@ const styles = StyleSheet.create({
   rowTitle: { fontSize: 15, fontWeight: '600', color: colors.navy, flexShrink: 1 },
   rowDesc: { fontSize: 12, color: colors.muted, marginTop: 3 },
   meta: { fontSize: 11, color: colors.muted },
+  dialBtn: {
+    position: 'absolute', right: 20, bottom: 96, flexDirection: 'row', alignItems: 'center', gap: 6, height: 44, paddingHorizontal: 16,
+    borderRadius: 22, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line,
+    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 5,
+  },
+  hintBubble: { position: 'absolute', right: 90, bottom: 36, maxWidth: 220, paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.md, backgroundColor: colors.navy },
   fab: {
     position: 'absolute', right: 20, bottom: 24, width: 60, height: 60, borderRadius: 30,
     backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center',

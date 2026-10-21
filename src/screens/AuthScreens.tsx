@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, Pressable, ScrollView, Alert, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
   TextInputProps,
@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
 import { IconButton } from '../components/ui';
 import { useAuth, authErrorText } from '../lib/auth';
+import { clearPendingInvite, getPendingInvite, normalizeCode, setPendingInvite } from '../lib/pendingInvite';
 
 const MIN_PASSWORD = 8;
 const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
@@ -151,14 +152,44 @@ export function LoginScreen({ navigation }: any) {
       </Pressable>
       <Cta label="Giriş yap" onPress={submit} busy={busy} />
       <LinkText onPress={() => navigation.navigate('SignUp')}>Hesabın yok mu? Kayıt ol</LinkText>
+      <InviteCode onSaved={(code) => navigation.navigate('SignUp', { code })} />
     </Layout>
+  );
+}
+
+// Davet kodu: küçük bir bağlantı; dokununca tek satırlık kod kutusu açılır. Kod saklanır, kayıt ya da girişten sonra
+// aileye otomatik katılınır (App.tsx → Main).
+function InviteCode({ onSaved }: { onSaved: (code: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState('');
+  useEffect(() => { getPendingInvite().then((c) => { if (c) setCode(c); }); }, []);
+  if (!open) {
+    return (
+      <Pressable onPress={() => setOpen(true)} hitSlop={8} style={{ alignSelf: 'center', paddingVertical: 4 }}>
+        <Text style={styles.small}>Davet kodum var</Text>
+      </Pressable>
+    );
+  }
+  const save = async () => {
+    if (code.length !== 6) return Alert.alert('Kod 6 karakter olmalı');
+    await setPendingInvite(code);
+    onSaved(code);
+  };
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'center' }}>
+      <TextInput value={code} onChangeText={(v) => setCode(normalizeCode(v))} placeholder="Davet kodu" autoCapitalize="characters"
+        autoCorrect={false} placeholderTextColor={colors.muted} style={styles.codeInput} onSubmitEditing={save} />
+      <Pressable onPress={save} hitSlop={8}><Text style={styles.link}>Devam</Text></Pressable>
+    </View>
   );
 }
 
 /* ---------- Kayıt ---------- */
 
-export function SignUpScreen({ navigation }: any) {
+export function SignUpScreen({ navigation, route }: any) {
   const { signUp, resendConfirmation } = useAuth();
+  const [invite, setInvite] = useState<string | undefined>(route.params?.code);
+  useEffect(() => { if (!invite) getPendingInvite().then((c) => c && setInvite(c)); }, [invite]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -202,6 +233,14 @@ export function SignUpScreen({ navigation }: any) {
         autoCapitalize="none" autoComplete="email" textContentType="emailAddress" />
       <Input value={password} onChangeText={setPassword} placeholder={`Şifre (en az ${MIN_PASSWORD} karakter)`} secure
         autoComplete="new-password" textContentType="newPassword" onSubmitEditing={submit} />
+      {!!invite && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center' }}>
+          <Text style={styles.small}>Davet kodu {invite} · kayıttan sonra aileye katılacaksın</Text>
+          <Pressable onPress={() => { clearPendingInvite(); setInvite(undefined); }} hitSlop={8} accessibilityLabel="Davet kodunu kaldır">
+            <Ionicons name="close-circle" size={16} color={colors.muted} />
+          </Pressable>
+        </View>
+      )}
       <Cta label="Kayıt ol" onPress={submit} busy={busy} />
       <LinkText onPress={() => navigation.navigate('Login')}>Zaten hesabın var mı? Giriş yap</LinkText>
     </Layout>
@@ -307,6 +346,7 @@ const fairy = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
+  codeInput: { width: 130, height: 38, borderRadius: radius.sm, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line, paddingHorizontal: 10, fontSize: 15, fontWeight: '700', color: colors.navy, letterSpacing: 0, textAlign: 'center' },
   safe: { flex: 1, backgroundColor: colors.bg },
   scroll: { padding: 24, paddingTop: 8, flexGrow: 1 },
   brand: { fontSize: 13, fontWeight: '700', color: colors.muted, letterSpacing: 1, marginTop: 28 },

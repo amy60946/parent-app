@@ -48,7 +48,8 @@ export default function FamilyScreen({ onLogout }: { onLogout?: () => void }) {
       </ScrollView>
 
       <View style={styles.tabs}>
-        {([['general', 'Genel'], ['mail', 'Mesajlar'], ['account', 'Hesap']] as [Tab, string][]).map(([id, label]) => (
+        {/* Mesajlar şimdilik gizli (kullanıcı kararı 21 Ekim; oyun tarafı yok) */}
+        {([['general', 'Genel'], ['account', 'Hesap']] as [Tab, string][]).map(([id, label]) => (
           <Pressable key={id} onPress={() => setTab(id)} style={{ alignItems: 'center', gap: 6 }}>
             <Text style={{ fontSize: 14, fontWeight: tab === id ? '700' : '500', color: tab === id ? colors.navy : colors.muted }}>{label}</Text>
             <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: tab === id ? colors.navy : 'transparent' }} />
