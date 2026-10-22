@@ -134,6 +134,7 @@ function seed(): Db {
   db.clinic_task_suggestions.push({
     id: uuid(), link_id: L, clinic_id: K, family_id: F, child_id: 'c-nazli', title: 'Kıyafetini akşamdan hazırla', emoji: '👕',
     skill: 'Planlama', difficulty: 'easy', recurring: true, note: 'Sabah rutinini kısaltmak için.', status: 'pending', created_by: D, created_at: ago(300), decided_at: null,
+    description: 'Yatmadan önce yarın giyeceklerini sandalyeye hazırla.', coins: 8, repeat_kind: 'weekly', repeat_days: [1, 2, 3, 4, 5], reminder: '19:30', requires_review: true,
   });
 
   // Örnek bildirimler (gerçekte sunucu tetikleyicileri yazar)

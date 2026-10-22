@@ -5,6 +5,7 @@ import { Template, Category, templates as baseTemplates, toCategory } from './da
 import { fromISO, toISO, todayISO } from './dates';
 import { supabase, MAIL_BUCKET } from './lib/supabase';
 import { uuid } from './lib/uuid';
+import { track } from './lib/track';
 import { readFileBytes } from './lib/files';
 import { TaskDayPart } from './data/dayParts';
 import { AgeBand } from './data/ageBands';
@@ -85,7 +86,7 @@ type Store = {
   childBalance: (childId: string) => Promise<number>;
   unlinkChildDevice: (childId: string) => Promise<void>;
   updateParent: (p: Partial<Parent>) => void;
-  addTasks: (t: Omit<Task, 'id' | 'sortOrder'>[]) => void;
+  addTasks: (t: Omit<Task, 'id' | 'sortOrder'>[], onSaved?: (ids: string[]) => void) => void;
   reorderTasks: (orderedIds: string[]) => void; // verilen görevleri bu sırayla diz
   updateTask: (id: string, patch: Partial<Task>) => void; // tekrarlayan görevde tek kayıt => tüm günlere yansır
   deleteTask: (id: string) => void;
@@ -385,6 +386,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   );
 
   const addChild = useCallback((c: Omit<Child, 'id' | 'linked'>) => {
+    track('child.add');
     const f = fid.current;
     if (!f) return;
     const child: Child = { ...c, id: uuid(), linked: false };
@@ -433,7 +435,9 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     }, 600);
   }, [userId, run]);
 
-  const addTasks = useCallback((list: Omit<Task, 'id' | 'sortOrder'>[]) => {
+  // onSaved: görevler sunucuya yazılınca kimlikleriyle çağrılır (ör. uzman önerisine task_id yazmak için)
+  const addTasks = useCallback((list: Omit<Task, 'id' | 'sortOrder'>[], onSaved?: (ids: string[]) => void) => {
+    track('task.create', { n: list.length });
     const f = fid.current;
     if (!f) return;
     const now = Date.now() / 1000;
@@ -444,7 +448,9 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
         created.map((t) => ({ ...taskRow(t), id: t.id, family_id: f, created_by: userId })),
       );
       if (ins.error) return ins;
-      return supabase.from('task_assignments').insert(created.flatMap((t) => assignmentRows(f, t.id, t.assignments)));
+      const a = await supabase.from('task_assignments').insert(created.flatMap((t) => assignmentRows(f, t.id, t.assignments)));
+      if (!a.error) onSaved?.(created.map((t) => t.id));
+      return a;
     });
   }, [run, userId]);
 
@@ -495,6 +501,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   }, [run]);
 
   const deleteTask = useCallback((id: string) => {
+    track('task.delete');
     setTasks((p) => p.filter((t) => t.id !== id));
     setCompletions((p) => {
       const n: Completions = {};
@@ -527,6 +534,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   }, [run]);
 
   const review = useCallback((key: string, approve: boolean, note?: string) => {
+    track('task.review', { approve });
     const [taskId, childId, date] = key.split('|');
     setCompletions((p) => ({ ...p, [key]: approve ? 'approved' : 'rejected' }));
     // Onay da ret de aynı RPC ile (ortak/sozlesme/durumlar.md D2). Ret kaydı silinmez: çocuk oyunda "reddedildi" ve notu görür.
@@ -555,6 +563,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   }, [savedRows, run, userId]);
 
   const addCustomTemplate = useCallback((t: Omit<Template, 'id' | 'usedBy' | 'custom'>) => {
+    track('template.custom');
     const f = fid.current;
     const id = uuid();
     if (!f) return id;
@@ -568,6 +577,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   }, [run, userId]);
 
   const sendMessage = useCallback((childId: string, text: string) => {
+    track('message.send', { kind: 'text' });
     const f = fid.current;
     if (!f || !userId) return;
     const m: Message = { id: uuid(), childId, text, at: new Date().toISOString(), sender: 'parent', kind: 'text' };
@@ -578,6 +588,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   }, [run, userId]);
 
   const sendSticker = useCallback((childId: string, key: string) => {
+    track('message.send', { kind: 'sticker' });
     const f = fid.current;
     if (!f || !userId) return;
     const m: Message = { id: uuid(), childId, text: key, at: new Date().toISOString(), sender: 'parent', kind: 'sticker' };
@@ -601,6 +612,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   const sendMedia = useCallback(async (
     childId: string, localUri: string, kind: 'image' | 'audio', contentType: string, durationMs?: number,
   ) => {
+    track('message.send', { kind });
     const f = fid.current;
     if (!f || !userId) return;
     const id = uuid();
@@ -645,6 +657,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   );
 
   const issueCode = useCallback(async (kind: 'parent' | 'child', childId?: string): Promise<IssuedCode> => {
+    track('invite.create', { kind });
     const { data, error } = await supabase.rpc('create_invite_code', { p_kind: kind, p_child_id: childId ?? null });
     const row = Array.isArray(data) ? data[0] : data;
     if (error) throw toAppError(error);
@@ -662,6 +675,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
 
   // İkinci ebeveyn: davet koduyla aileye katıl
   const joinFamily = useCallback(async (code: string) => {
+    track('family.join');
     // Kod hatası (süresi doldu / kullanıldı / çok deneme) açık metinle gelir: ortak/sozlesme/durumlar.md 11
     const { error } = await supabase.rpc('join_family', { p_code: code.trim().toUpperCase() });
     if (error) throw toAppError(error);

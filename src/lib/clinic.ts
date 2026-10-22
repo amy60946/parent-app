@@ -6,9 +6,14 @@ import { Difficulty } from '../theme';
 
 export type ClinicLink = { linkId: string; clinicId: string; childId: string; clinic: string; clinician: string; title: string; consentAt: string };
 export type InvitePreview = { clinic: string; clinician: string; title: string };
+import type { RepeatKind } from '../store';
+
+// Öneri, ParentApp "Görev Oluştur" ile aynı alanları taşır (ortak/sozlesme/akislar.md 5.4, 3a)
 export type Suggestion = {
   id: string; childId: string; title: string; emoji: string; skill: string; difficulty: Difficulty;
   recurring: boolean; note: string; clinic: string;
+  description: string; coins?: number; startDate?: string; repeatKind: RepeatKind; repeatDays: number[];
+  endDate?: string; reminder?: string; requiresReview: boolean;
 };
 
 const fail = (e: { message: string } | null) => { if (e) throw new Error(e.message); };
@@ -54,8 +59,18 @@ export async function pendingSuggestions(familyId: string): Promise<Suggestion[]
     .filter((r: any) => links.some((l) => l.linkId === r.link_id))
     .map((r: any) => ({
       id: r.id, childId: r.child_id, title: r.title, emoji: r.emoji, skill: r.skill, difficulty: r.difficulty,
-      recurring: r.recurring, note: r.note, clinic: links.find((l) => l.linkId === r.link_id)?.clinician || links.find((l) => l.linkId === r.link_id)?.clinic || 'Uzman',
+      recurring: r.recurring, note: r.note ?? '', clinic: links.find((l) => l.linkId === r.link_id)?.clinician || links.find((l) => l.linkId === r.link_id)?.clinic || 'Uzman',
+      description: r.description ?? '', coins: r.coins ?? undefined, startDate: r.start_date ?? undefined,
+      repeatKind: (['daily', 'weekly', 'monthly'].includes(r.repeat_kind) ? r.repeat_kind : 'daily') as RepeatKind,
+      repeatDays: (r.repeat_days ?? []).map(Number), endDate: r.end_date ?? undefined, reminder: r.reminder ?? undefined,
+      requiresReview: r.requires_review !== false,
     }));
+}
+
+// Kabul edilen önerinin hangi göreve dönüştüğü (uzman izler)
+export async function linkSuggestionTask(id: string, taskId: string) {
+  const { error } = await supabase.from('clinic_task_suggestions').update({ task_id: taskId }).eq('id', id);
+  fail(error);
 }
 
 export async function decideSuggestion(id: string, accepted: boolean) {

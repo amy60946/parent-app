@@ -6,6 +6,7 @@ import { colors, radius } from '../theme';
 import { IconButton } from '../components/ui';
 import { useNotifications } from '../notifications';
 import { AppNotification, pushEnabled, setPushEnabled } from '../lib/notifications';
+import { track } from '../lib/track';
 
 const icon: Record<string, keyof typeof Ionicons.glyphMap> = {
   task_done: 'checkmark-circle-outline', task_declined: 'close-circle-outline', message: 'mail-outline',
@@ -56,6 +57,7 @@ export default function NotificationsScreen({ navigation }: any) {
   const open = (n: AppNotification) => {
     if (!n.readAt) markRead([n.id]);
     if (!notificationTarget(n)) return;
+    track('notification.open', { kind: n.kind });
     navigation.goBack();
     openNotification(navigation, n);
   };

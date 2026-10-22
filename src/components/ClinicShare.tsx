@@ -9,7 +9,7 @@ import { useStore } from '../store';
 import { formatTR, todayISO } from '../dates';
 import {
   ClinicLink, InvitePreview, Suggestion, listLinks, previewInvite, shareWithClinic, stopSharing, addChildToClinic,
-  pendingSuggestions, decideSuggestion,
+  pendingSuggestions, decideSuggestion, linkSuggestionTask,
 } from '../lib/clinic';
 
 type View_ = 'home' | 'code';
@@ -87,15 +87,18 @@ function Home({ onCode, onAbc, visible }: { onCode: () => void; onAbc: () => voi
   const decide = async (s: Suggestion, accept: boolean) => {
     try {
       await decideSuggestion(s.id, accept);
+      // Kabul: öneri alanları göreve birebir taşınır; başlangıç yoksa ya da geçmişse bugün (akislar.md 5.4, 3a)
+      const start = s.startDate && s.startDate > todayISO() ? s.startDate : todayISO();
       if (accept) {
         addTasks([{
-          title: s.title, emoji: s.emoji, skill: s.skill || 'Özel', description: s.note,
-          assignments: [{ childId: s.childId, difficulty: s.difficulty, coins: difficultyMeta[s.difficulty].coins }],
-          startDate: todayISO(), recurring: s.recurring, repeatKind: 'daily', repeatDays: [], requiresReview: true,
-        }]);
+          title: s.title, emoji: s.emoji, skill: s.skill || 'Özel', description: s.description,
+          assignments: [{ childId: s.childId, difficulty: s.difficulty, coins: s.coins ?? difficultyMeta[s.difficulty].coins }],
+          startDate: start, recurring: s.recurring, repeatKind: s.repeatKind, repeatDays: s.repeatDays,
+          endDate: s.endDate && s.endDate >= start ? s.endDate : undefined, reminder: s.reminder, requiresReview: s.requiresReview,
+        }], ([taskId]) => { if (taskId) linkSuggestionTask(s.id, taskId).catch(() => {}); });
       }
       setSuggestions((p) => p.filter((x) => x.id !== s.id));
-      if (accept) Alert.alert('Görev eklendi', `"${s.title}" bugünden itibaren ${childName(s.childId)} için görevlerde.`);
+      if (accept) Alert.alert('Görev eklendi', `"${s.title}" ${start === todayISO() ? 'bugünden' : formatTR(start) + ' tarihinden'} itibaren ${childName(s.childId)} için görevlerde.`);
     } catch (e) {
       Alert.alert('Kaydedilemedi', (e as Error).message);
     }
@@ -156,10 +159,12 @@ function Home({ onCode, onAbc, visible }: { onCode: () => void; onAbc: () => voi
                 <Text style={{ fontSize: 24 }}>{s.emoji}</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.h}>{s.title}</Text>
-                  <Text style={styles.cap}>{childName(s.childId)} · {difficultyMeta[s.difficulty].label} · {s.recurring ? 'Her gün' : 'Bir kez'} · {s.clinic}</Text>
+                  <Text style={styles.cap}>{childName(s.childId)} · {difficultyMeta[s.difficulty].label} · {s.coins ?? difficultyMeta[s.difficulty].coins} coin · {s.clinic}</Text>
                 </View>
               </View>
-              {!!s.note && <Text style={styles.body}>{s.note}</Text>}
+              <Text style={styles.cap}>{scheduleText(s)}</Text>
+              {!!s.description && <Text style={styles.body}>{s.description}</Text>}
+              {!!s.note && <Text style={[styles.body, { fontStyle: 'italic' }]}>Uzmanın notu: {s.note}</Text>}
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <Pressable style={[styles.ghost, { flex: 1 }]} onPress={() => decide(s, false)}>
                   <Text style={{ color: colors.navy, fontWeight: '600' }}>Şimdilik değil</Text>
@@ -291,6 +296,22 @@ function Bullet({ ok, text }: { ok?: boolean; text: string }) {
       <Text style={[styles.body, !ok && { color: colors.muted }]}>{text}{ok ? '' : ' paylaşılmaz'}</Text>
     </View>
   );
+}
+
+// "Pzt, Çar, Cum · 18:00'de hatırlat · 30 Kasım'a kadar · İnceleme gerekli"
+const weekDays = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+function scheduleText(s: Suggestion) {
+  const when = !s.recurring ? 'Bir kez'
+    : s.repeatKind === 'weekly' && s.repeatDays.length ? [...s.repeatDays].sort((a, b) => a - b).map((d) => weekDays[d - 1]).filter(Boolean).join(', ')
+    : s.repeatKind === 'monthly' && s.repeatDays.length ? `Her ay ${[...s.repeatDays].sort((a, b) => a - b).join(', ')}. gün`
+    : 'Her gün';
+  return [
+    when,
+    s.startDate && s.startDate > todayISO() ? `${formatTR(s.startDate)} başlar` : '',
+    s.endDate ? `${formatTR(s.endDate)} tarihine kadar` : '',
+    s.reminder ? `${s.reminder} hatırlatma` : '',
+    s.requiresReview ? 'Onayınla tamamlanır' : 'Onaysız tamamlanır',
+  ].filter(Boolean).join(' · ');
 }
 
 const styles = StyleSheet.create({

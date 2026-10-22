@@ -3,6 +3,7 @@ import { readFileBytes } from './files';
 import { uuid } from './uuid';
 import { DayPart, dayPartHour } from '../data/dayParts';
 import { fail } from './errors';
+import { track } from './track';
 
 // Zor an kayıtları (abc_events): aynı olay birden çok çocuğu ilgilendiriyorsa her çocuğa bir satır, ortak group_id.
 // Ses: Storage 'abc' kovası, <family_id>/<dosya>.m4a — uzman yalnız rızalı çocuğun kaydına bağlı sesi dinler.
@@ -64,6 +65,7 @@ export async function listAbc(familyId: string): Promise<AbcEvent[]> {
 }
 
 export async function addAbc(familyId: string, userId: string | undefined, e: AbcInput) {
+  track('observation.create');
   let audioPath: string | null = null;
   if (e.audio) {
     audioPath = `${familyId}/${uuid()}.m4a`;

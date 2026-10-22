@@ -4,6 +4,7 @@ import { View, ActivityIndicator, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import './src/lib/webAlert';
 import { NavigationContainer, DefaultTheme, createNavigationContainerRef } from '@react-navigation/native';
+import { startTracking, trackScreen } from './src/lib/track';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -140,6 +141,12 @@ function AuthFlow() {
   );
 }
 
+// Kullanım kaydı: oturum açıkken başlar (kişisel veri yok; ortak/sozlesme/akislar.md 9)
+function Tracking({ userId }: { userId: string }) {
+  React.useEffect(() => startTracking(), [userId]);
+  return null;
+}
+
 function Root() {
   const { session, loading, recovery, childLinking } = useAuth();
   if (loading) return <Loading />;
@@ -150,8 +157,11 @@ function Root() {
   return (
     <StoreProvider userId={session?.user.id ?? null}>
       <NotificationsProvider userId={session.user.id}>
-        <NavigationContainer theme={navTheme} ref={navRef}>
+        <NavigationContainer theme={navTheme} ref={navRef}
+          onReady={() => trackScreen(navRef.getCurrentRoute()?.name)}
+          onStateChange={() => trackScreen(navRef.getCurrentRoute()?.name)}>
           <StatusBar style="dark" />
+          <Tracking userId={session.user.id} />
           <Main />
         </NavigationContainer>
       </NotificationsProvider>

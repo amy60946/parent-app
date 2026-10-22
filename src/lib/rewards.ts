@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { fail } from './errors';
+import { track } from './track';
 import { RewardKind, RewardUnit } from '../data/rewardTemplates';
 
 // Güneş Taşı ve gerçek ödüller: ortak/supabase/proposed/20261021160000_sun_stones_rewards.sql
@@ -28,6 +29,7 @@ export async function listRewards(familyId: string): Promise<Reward[]> {
 }
 
 export async function saveReward(familyId: string, r: RewardInput) {
+  track(r.id ? 'reward.update' : 'reward.create', { kind: r.kind });
   const row = {
     title: r.title.trim(), kind: r.kind, cost: r.cost, child_ids: r.childIds, icon: r.icon,
     unit: r.kind === 'exchange' ? r.unit : null, unit_amount: r.kind === 'exchange' ? r.unitAmount : null,
@@ -39,6 +41,7 @@ export async function saveReward(familyId: string, r: RewardInput) {
 }
 
 export async function deleteReward(id: string) {
+  track('reward.delete');
   const { error } = await supabase.from('rewards').delete().eq('id', id);
   fail(error);
 }
@@ -73,16 +76,19 @@ export async function requests(familyId: string): Promise<RewardRequest[]> {
 }
 
 export async function giveReward(childId: string, rewardId: string, quantity = 1) {
+  track('reward.give', { n: quantity });
   const { error } = await supabase.rpc('give_reward', { p_child_id: childId, p_reward_id: rewardId, p_quantity: quantity });
   fail(error);
 }
 
 export async function deductStones(childId: string, amount: number, note: string) {
+  track('stones.deduct', { n: amount, reason: !!note.trim() });
   const { error } = await supabase.rpc('deduct_sun_stones', { p_child_id: childId, p_amount: amount, p_note: note.trim() || null });
   fail(error);
 }
 
 export async function decideRequest(id: string, approve: boolean, note?: string) {
+  track('reward.decide', { approve });
   const { error } = await supabase.rpc('decide_reward_request', { p_request_id: id, p_approve: approve, p_note: note?.trim() || null });
   fail(error);
 }
