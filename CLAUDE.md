@@ -36,3 +36,5 @@ ParentApp, ebeveynin kullandığı uygulama (Expo / React Native, TypeScript). �
 - İş modeli (19 Ekim 2026): aile aboneliği (ParentApp) + klinik kanalı (ClinicApp). Raporlar iki okuyucuya yazılır: ebeveyn ve uzman. Klinik paylaşım yalnız ebeveyn rızasıyla, geri alınabilir.
 - Tasarım dili sade ve işlevsel (lacivert `#0F1B3D`); ClinicApp bunu izler.
 - Referanslar: Joon iş modeli kanvası https://claude.ai/code/artifact/df7eafa7-1e1e-4014-8a5f-7d88cb985485 · Oyun omurgası analizi https://claude.ai/code/artifact/3c82704c-e120-4d73-ba9f-a7ffdc75eeac
+
+- **XP sistemi takibi (22 Ekim 2026):** https://claude.ai/artifact/GBchgErLHs7MniTLGEsanE — pet XP senaryoları madde madde (iletişim, beyin fırtınası, son durum, tasarım, çocuğa metin, etkilenen uygulama). Veri sayfanın veritabanında (`items`, `log`); XP/görev/seviye işinden önce oku, kararları oraya işle (ArtifactData).
