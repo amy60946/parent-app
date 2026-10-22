@@ -91,11 +91,15 @@ export const moveLabel: Record<StoneMove['reason'], string> = {
   task: 'Görev onaylandı', task_undo: 'Onay geri alındı', reward: 'Ödül', penalty: 'Taş düşüldü', adjust: 'Düzeltme',
 };
 
-// Son 7 günde çocuk başına ortalama kazanılan taş (ödül fiyatlarken hatırlatma)
-export const weeklyAverage = (moves: StoneMove[], childCount: number) => {
-  const since = new Date(Date.now() - 7 * 864e5).toISOString();
-  const sum = moves.filter((m) => m.reason === 'task' && m.at >= since).reduce((a, m) => a + m.amount, 0);
-  return childCount ? Math.round(sum / childCount) : 0;
+// Bir çocuğun haftalık görev taşı kazancı: son 4 haftanın ortalaması; kayıtlar daha yeniyse ilk kayıttan bu yana geçen haftalara bölünür
+export const weeklyEarned = (moves: StoneMove[], childId: string) => {
+  const now = Date.now();
+  const since = now - 28 * 864e5;
+  const mine = moves.filter((m) => m.childId === childId && m.reason === 'task' && new Date(m.at).getTime() >= since);
+  if (!mine.length) return 0;
+  const first = Math.min(...mine.map((m) => new Date(m.at).getTime()));
+  const weeks = Math.min(4, Math.max(1, (now - first) / (7 * 864e5)));
+  return Math.round(mine.reduce((a, m) => a + m.amount, 0) / weeks);
 };
 
 export const rewardAvailableFor = (r: Reward, childId: string) => !r.childIds.length || r.childIds.includes(childId);

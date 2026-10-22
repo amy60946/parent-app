@@ -94,8 +94,9 @@ export default function CreateTaskScreen({ navigation, route }: any) {
 
       {/* Kategori seçilince yaş grubu */}
       {isCategory && !menu && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, marginTop: 10 }}
-          contentContainerStyle={{ flexDirection: 'row', gap: 8, paddingHorizontal: 20 }}>
+        // Yükseklik sabit: alttaki liste çipleri ezmesin (iOS'ta yatay kaydırma alanı küçülüp üst üste biniyordu)
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0, height: 44, marginTop: 12, marginBottom: 4 }}
+          contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20 }}>
           <Chip label="Tüm yaşlar" active={age === 'all'} onPress={() => setAge('all')} />
           {templateAges.map((b) => (
             <Chip key={b.id} label={b.label} active={age === b.id} onPress={() => setAge(b.id)} />

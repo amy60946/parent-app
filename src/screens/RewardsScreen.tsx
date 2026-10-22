@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, ScrollView, TextInput, Modal, Alert, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import ReanimatedSwipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors, radius } from '../theme';
 import { Avatar, IconButton, Card } from '../components/ui';
@@ -15,7 +16,7 @@ import { hintOf } from '../lib/errors';
 import { requestPremium } from '../lib/billing';
 import {
   Reward, RewardInput, RewardRequest, StoneMove, listRewards, saveReward, deleteReward, balances, history, requests,
-  giveReward, deductStones, decideRequest, moveLabel, weeklyAverage, rewardAvailableFor,
+  giveReward, deductStones, decideRequest, moveLabel, weeklyEarned, rewardAvailableFor,
 } from '../lib/rewards';
 import {
   RewardTemplate, RewardKind, RewardUnit, RewardGroup, rewardTemplates, rewardIcons, iconKey, iconOf, unitLabel, unitShort, groupLabel,
@@ -65,7 +66,7 @@ export default function RewardsScreen({ navigation }: any) {
   const [deduct, setDeduct] = useState<string | null>(null); // taş düşürülecek çocuk
   const [pick, setPick] = useState<{ rewardId: string; childId: string } | null>(null); // değiş tokuşta süre seçimi
   const [confirm, setConfirm] = useState<Confirm | null>(null);
-  const [toast, setToast] = useState<{ text: string; edit?: string } | null>(null); // edit: eklenen ödülün adı
+  const [toast, setToast] = useState<{ text: string; edit?: string; warn?: boolean } | null>(null); // edit: eklenen ödülün adı; warn: uyarı
   const [intro, setIntro] = useState(false);
   const tips = useFirstTip();
 
@@ -124,7 +125,6 @@ export default function RewardsScreen({ navigation }: any) {
   const nameOf = (id: string) => kid(id)?.name ?? '';
   const tintOf = (id: string) => tints[Math.max(0, children.findIndex((c) => c.id === id)) % tints.length];
   const pending = reqs.filter((r) => r.status === 'pending');
-  const avg = weeklyAverage(moves, children.length);
   const fresh = useMemo(() => rewardTemplates.filter((t) => !rewards.some((r) => sameTitle(r.title, t.title))), [rewards]);
 
   const openEditor = (x: { reward?: Reward; template?: RewardTemplate }) => {
@@ -152,6 +152,14 @@ export default function RewardsScreen({ navigation }: any) {
       if (r.kind === 'exchange' && r.unit) { setConfirm(null); setPick({ rewardId: r.id, childId }); }
       else { setPick(null); setConfirm({ type: 'give', reward: r, childId, quantity: 1 }); }
     });
+  };
+  // Sola kaydırıp Sil: önce sorar
+  const removeReward = (r: Reward) => {
+    if (!ready()) return;
+    Alert.alert('Ödül silinsin mi?', `${r.title}\nBekleyen istekler etkilenmez; çocuklar bu ödülü artık göremez.`, [
+      { text: 'Vazgeç', style: 'cancel' },
+      { text: 'Sil', style: 'destructive', onPress: async () => { if (await act(() => deleteReward(r.id), 'Silinemedi')) setToast({ text: `${r.title} silindi` }); } },
+    ]);
   };
   const openDeduct = (id: string) => { if (ready() && allow('stones')) tips.gate('deduct', rewardTips.deduct, () => setDeduct(id)); };
   const decide = (req: RewardRequest, approve: boolean) =>
@@ -267,7 +275,8 @@ export default function RewardsScreen({ navigation }: any) {
                 const picked = open ? pick!.childId : undefined;
                 const pb = picked ? bal[picked] ?? 0 : 0;
                 return (
-                  <View key={r.id} style={[i > 0 && styles.sep, (open || (confirm?.type === 'give' && confirm.reward.id === r.id)) && { backgroundColor: '#FFFBEF' }]}>
+                  <SwipeRow key={r.id} label={r.title} onDelete={() => removeReward(r)}>
+                  <View style={[i > 0 && styles.sep, { backgroundColor: '#fff' }, (open || (confirm?.type === 'give' && confirm.reward.id === r.id)) && { backgroundColor: '#FFFBEF' }]}>
                     <View style={styles.row}>
                       <Pressable onPress={() => openEditor({ reward: r })} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}
                         accessibilityLabel={`${r.title}, ${priceText(r)}. Düzenle`}>
@@ -281,7 +290,8 @@ export default function RewardsScreen({ navigation }: any) {
                         const short = (bal[c.id] ?? 0) < r.cost;
                         const [bg, fg] = tintOf(c.id);
                         return (
-                          <Pressable key={c.id} onPress={() => tapKid(r, c.id)} disabled={short || loading}
+                          <Pressable key={c.id} disabled={loading}
+                            onPress={() => (short ? setToast({ warn: true, text: `${c.name}: taşı yetmiyor. ${r.cost} taş gerekli, ${bal[c.id] ?? 0} taşı var (${r.cost - (bal[c.id] ?? 0)} eksik).` }) : tapKid(r, c.id))}
                             style={[styles.letter, short ? styles.letterShort : { backgroundColor: bg }, sel(c.id) && styles.letterOn]}
                             accessibilityLabel={short ? `${c.name}: ${r.cost - (bal[c.id] ?? 0)} taş eksik` : `${r.title}: ${c.name} için ver`}>
                             <Text style={{ fontSize: 15, fontWeight: '800', color: short ? '#B4B9C6' : fg }}>{initial(c.name)}</Text>
@@ -306,11 +316,12 @@ export default function RewardsScreen({ navigation }: any) {
                       </View>
                     )}
                   </View>
+                  </SwipeRow>
                 );
               })}
             </Card>
           )}
-          {rewards.length > 0 && <Text style={styles.cap}>Harfe dokun, sonra onayla. Soluk harf: taşı yetmiyor.</Text>}
+          {rewards.length > 0 && <Text style={styles.cap}>Harfe dokun, sonra onayla. Soluk harf: taşı yetmiyor. Silmek için ödülü sola kaydır.</Text>}
         </ScrollView>
       )}
 
@@ -321,8 +332,9 @@ export default function RewardsScreen({ navigation }: any) {
         </Pressable>
       )}
       {toast && !confirm && (
-        <View style={styles.toast} accessibilityRole="alert">
-          <Text style={{ flex: 1, color: '#fff', fontSize: 14, fontWeight: '600' }}>{toast.text}</Text>
+        <View style={[styles.toast, toast.warn && styles.toastWarn]} accessibilityRole="alert">
+          {toast.warn && <Ionicons name="alert-circle" size={20} color="#B07A00" />}
+          <Text style={{ flex: 1, color: toast.warn ? '#4A3500' : '#fff', fontSize: 14, fontWeight: '600', paddingVertical: 8 }}>{toast.text}</Text>
           {toast.edit && (
             <Pressable onPress={() => { const r = rewards.find((x) => sameTitle(x.title, toast.edit!)); setToast(null); if (r) openEditor({ reward: r }); }}
               hitSlop={8} style={{ paddingHorizontal: 10, paddingVertical: 8 }}>
@@ -344,7 +356,7 @@ export default function RewardsScreen({ navigation }: any) {
         onCustom={() => openEditor({})} tip={suggest ? tips.element : null} />
       {familyId && (
         <RewardEditor
-          value={editor} kids={children} avg={avg} onClose={() => setEditor(null)}
+          value={editor} kids={children} moves={moves} balances={bal} onClose={() => setEditor(null)}
           onSave={(r) => act(() => saveReward(familyId, r), 'Kaydedilemedi')}
           onDelete={(id) => act(() => deleteReward(id), 'Silinemedi')}
         />
@@ -357,6 +369,22 @@ export default function RewardsScreen({ navigation }: any) {
       <Intro visible={intro} onClose={closeIntro} />
       {!suggest && tips.element}
     </SafeAreaView>
+  );
+}
+
+// Ödül satırı: sola kaydırınca "Sil"
+function SwipeRow({ label, onDelete, children }: { label: string; onDelete: () => void; children: React.ReactNode }) {
+  const ref = useRef<SwipeableMethods>(null);
+  return (
+    <ReanimatedSwipeable ref={ref} friction={1.5} rightThreshold={40} overshootRight={false}
+      renderRightActions={() => (
+        <Pressable onPress={() => { ref.current?.close(); onDelete(); }} style={styles.deleteAction} accessibilityLabel={`${label} ödülünü sil`}>
+          <Ionicons name="trash-outline" size={22} color="#fff" />
+          <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700', marginTop: 2 }}>Sil</Text>
+        </Pressable>
+      )}>
+      {children}
+    </ReanimatedSwipeable>
   );
 }
 
@@ -495,7 +523,7 @@ function SuggestionsModal({ visible, rewards, onClose, onAdd, onCustom, tip }: {
 type Mode = 'item' | 'minute' | 'money';
 const prices = [3, 5, 10, 20, 50];
 const rateCosts = [1, 2, 3, 5];
-const rateAmounts: Record<RewardUnit, number[]> = { minute: [5, 10, 15, 30], money: [1, 2, 5, 10] };
+const rateAmounts: Record<RewardUnit, number[]> = { minute: [5, 10, 15, 30], money: [5, 10, 20, 50] };
 // Addan tür: "ekran süresi", "tablet" → dakika; "harçlık", "TL" → para (değiş tokuş)
 const detectUnit = (t: string): RewardUnit | null => {
   const s = t.toLocaleLowerCase('tr-TR');
@@ -503,8 +531,8 @@ const detectUnit = (t: string): RewardUnit | null => {
   if (/harçlık|para\b|\btl\b|lira/.test(s)) return 'money';
   return null;
 };
-function RewardEditor({ value, kids, avg, onClose, onSave, onDelete }: {
-  value: { reward?: Reward; template?: RewardTemplate } | null; kids: Child[]; avg: number; onClose: () => void;
+function RewardEditor({ value, kids, moves, balances: bal, onClose, onSave, onDelete }: {
+  value: { reward?: Reward; template?: RewardTemplate } | null; kids: Child[]; moves: StoneMove[]; balances: Record<string, number>; onClose: () => void;
   onSave: (r: RewardInput) => void; onDelete: (id: string) => void;
 }) {
   const editing = value?.reward;
@@ -552,11 +580,12 @@ function RewardEditor({ value, kids, avg, onClose, onSave, onDelete }: {
   const setRate = (m: RewardUnit) => {
     setMode(m); setSuggested(false); setIcon(m === 'minute' ? 'phone-portrait' : 'wallet');
     if (!rateCosts.includes(cost)) setCost(1);
-    if (!amount || !rateAmounts[m].includes(amount)) setAmount(m === 'minute' ? 10 : 5);
+    if (!amount || !rateAmounts[m].includes(amount)) setAmount(m === 'minute' ? 10 : 20);
   };
+  // "Herkes" seçiliyken bir isme dokununca yalnız o çocuk seçilir; sonra isimler ekleyip çıkarılır
   const toggle = (id: string) => setWho((p) => {
-    const cur = p.length ? p : kids.map((k) => k.id);
-    const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
+    if (!p.length) return kids.length > 1 ? [id] : [];
+    const next = p.includes(id) ? p.filter((x) => x !== id) : [...p, id];
     return next.length === kids.length ? [] : next;
   });
   const exchange = mode !== 'item';
@@ -575,7 +604,11 @@ function RewardEditor({ value, kids, avg, onClose, onSave, onDelete }: {
     { text: 'Vazgeç', style: 'cancel' },
     { text: 'Sil', style: 'destructive', onPress: () => { onDelete(editing.id); onClose(); } },
   ]);
-  const days = avg > 0 && cost > 0 ? Math.max(1, Math.round((cost / avg) * 7)) : 0;
+  // Seçili her çocuğun gerçek haftalık kazancı (görev taşları, son 4 hafta) ve bu fiyatın kaç günlük emek olduğu
+  const effort = (who.length ? kids.filter((k) => who.includes(k.id)) : kids).map((k) => {
+    const w = weeklyEarned(moves, k.id);
+    return { name: k.name, w, days: w > 0 && cost > 0 ? Math.max(1, Math.round((cost / w) * 7)) : 0 };
+  });
   const Pill = ({ on, label, onPress, a11y }: { on: boolean; label: string; onPress: () => void; a11y?: string }) => (
     <Pressable onPress={onPress} style={[styles.pill, on && styles.pillOn]} accessibilityState={{ selected: on }} accessibilityLabel={a11y}>
       <Text style={{ fontSize: 15, fontWeight: '700', color: on ? '#fff' : colors.navy }}>{label}</Text>
@@ -666,18 +699,24 @@ function RewardEditor({ value, kids, avg, onClose, onSave, onDelete }: {
               )}
             </View>
           )}
-          {days > 0 && (
-            <Text style={styles.avgNote}>
-              Çocuklar haftada ortalama {avg} taş kazanıyor: {exchange ? `${cost} taş` : 'bu ödül'} yaklaşık {days} günlük emek.
-            </Text>
+          {cost > 0 && effort.length > 0 && (
+            <View style={styles.avgNote}>
+              {effort.map((e) => (
+                <Text key={e.name} style={{ fontSize: 13, lineHeight: 19, color: '#4A5165' }}>
+                  {e.w > 0
+                    ? `${e.name} haftada ortalama ${e.w} taş kazanıyor: ${exchange ? `${cost} taş` : 'bu ödül'} yaklaşık ${e.days} günlük emek.`
+                    : `${e.name} son 4 haftada görevden taş kazanmadı; önce kolay bir ödülle başlamak iyi olabilir.`}
+                </Text>
+              ))}
+            </View>
           )}
 
           {kids.length > 1 && (
             <View style={{ gap: 10 }}>
-              <Text style={styles.h}>Kimler için</Text>
+              <Text style={styles.h}>Kimler için <Text style={{ fontWeight: '500', color: colors.muted }}>(yanında harcanabilir taşı)</Text></Text>
               <View style={styles.pills}>
                 <Pill on={who.length === 0} label="Herkes" onPress={() => setWho([])} />
-                {kids.map((k) => <Pill key={k.id} on={who.includes(k.id)} label={k.name} onPress={() => toggle(k.id)} />)}
+                {kids.map((k) => <Pill key={k.id} on={who.includes(k.id)} label={`${k.name} · ${bal[k.id] ?? 0} taş`} onPress={() => toggle(k.id)} />)}
               </View>
             </View>
           )}
@@ -862,6 +901,8 @@ const styles = StyleSheet.create({
   request: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFF6DE', borderRadius: radius.md, paddingVertical: 8, paddingLeft: 12, paddingRight: 8 },
   round: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   suggest: { height: 40, paddingLeft: 10, paddingRight: 14, borderRadius: 20, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center', gap: 6 },
+  toastWarn: { backgroundColor: '#FFF6DE', borderWidth: 1.5, borderColor: colors.gold, paddingLeft: 12, gap: 10 },
+  deleteAction: { width: 84, backgroundColor: colors.danger, alignItems: 'center', justifyContent: 'center' },
   allBtn: { minHeight: 44, paddingHorizontal: 10, justifyContent: 'center', marginRight: -10 },
   editorHead: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 },
   saveBtn: { minWidth: 72, height: 40, paddingHorizontal: 16, borderRadius: 20, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
@@ -873,7 +914,7 @@ const styles = StyleSheet.create({
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pill: { minWidth: 52, height: 44, paddingHorizontal: 14, borderRadius: 22, borderWidth: 1, borderColor: '#E1E4EB', backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   pillOn: { backgroundColor: colors.navy, borderColor: colors.navy },
-  avgNote: { fontSize: 13, lineHeight: 19, color: '#4A5165', backgroundColor: '#FFF6DE', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
+  avgNote: { gap: 4, backgroundColor: '#FFF6DE', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   chipLine: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#D5D9E2', minHeight: 40, justifyContent: 'center' },
   amount: { minWidth: 44, alignItems: 'center' },
   fab: { position: 'absolute', right: 20, bottom: 34, height: 56, paddingHorizontal: 22, borderRadius: 28, backgroundColor: colors.navy, flexDirection: 'row', alignItems: 'center', gap: 8, shadowColor: '#0F1B3D', shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 },

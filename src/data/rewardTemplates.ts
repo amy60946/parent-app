@@ -12,7 +12,7 @@ export type RewardTemplate = { title: string; icon: RewardIcon; kind: RewardKind
 
 export const rewardTemplates: RewardTemplate[] = [
   { title: 'Ekran süresi', icon: 'phone-portrait-outline', kind: 'exchange', cost: 1, unit: 'minute', unitAmount: 10, group: 'exchange' },
-  { title: 'Harçlık', icon: 'wallet-outline', kind: 'exchange', cost: 2, unit: 'money', unitAmount: 5, group: 'exchange' },
+  { title: 'Harçlık', icon: 'wallet-outline', kind: 'exchange', cost: 2, unit: 'money', unitAmount: 20, group: 'exchange' },
   { title: 'Aileyle özel vakit', icon: 'people-outline', kind: 'item', cost: 4, group: 'activity' },
   { title: 'Sevdiği bir tatlı', icon: 'ice-cream-outline', kind: 'item', cost: 5, group: 'thing' },
   { title: 'Dondurma (evde)', icon: 'ice-cream-outline', kind: 'item', cost: 5, group: 'thing' },
