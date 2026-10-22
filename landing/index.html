@@ -1,0 +1,684 @@
+<title>ParentApp</title>
+<script>document.documentElement.lang="tr"</script>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="ParentApp ile çocuğunuza günlük görevler verin, oyunda tamamladığında onaylayın, Güneş Taşı kazansın. Rutinler, ödüller, gelişim ve aile mesajları tek uygulamada.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Tek tema: açık (beyaz / açık gri zemin), kullanıcı isteği 22 Ekim 2026.
+   Layout: tek kolon, 1120px şerit; hero iki kolon (söz + telefon), bölümler açık zemin üzerinde beyaz kartlar, lacivert bantlar güven ve son çağrı için. */
+:root{
+  --navy:#0F1B3D;
+  --navy-2:#1A2A57;
+  --gold:#E9B22B;
+  --gold-soft:#FBF1D6;
+  --gold-ink:#7A5800;
+  --green:#2F7D4A;
+  --green-soft:#E3F1E8;
+  --bg:#F5F6F8;
+  --surface:#FFFFFF;
+  --surface-2:#EEF0F5;
+  --fg:#0F1B3D;
+  --muted:#4A5573;
+  --line:#DDE1EA;
+  --band:#0F1B3D;
+  --band-fg:#F2F4F9;
+  --band-muted:#B7C0D8;
+  --band-card:#16234B;
+  --shadow:0 1px 2px rgba(15,27,61,.06),0 8px 24px rgba(15,27,61,.06);
+  --shadow-lift:0 2px 4px rgba(15,27,61,.08),0 16px 36px rgba(15,27,61,.12);
+  --focus:#E9B22B;
+  --font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --r-sm:10px; --r-md:16px; --r-lg:24px;
+  --maxw:1120px;
+  color-scheme:light;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--surface)}
+img,svg{max-width:100%}
+h1,h2,h3{margin:0;line-height:1.15;letter-spacing:-.02em;text-wrap:balance}
+p{margin:0}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:3px;border-radius:6px}
+.skip{position:absolute;left:-999px;top:8px;background:var(--surface);color:var(--fg);padding:10px 14px;border-radius:8px;z-index:100}
+.skip:focus{left:16px}
+
+.wrap{max-width:calc(var(--maxw) + 2*16px);margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+section{padding-block:clamp(64px,9vw,112px)}
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-ink)}
+.band .eyebrow{color:var(--gold)}
+.h2{font-size:clamp(28px,3.6vw,40px);font-weight:700}
+.lead{font-size:clamp(17px,1.6vw,19px);color:var(--muted);max-width:60ch}
+.sec-head{display:grid;gap:14px;margin-bottom:clamp(36px,5vw,56px);max-width:720px}
+
+/* Butonlar */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:0 22px;border-radius:999px;font:600 16px/1 var(--font);text-decoration:none;border:1px solid transparent;cursor:pointer;transition:transform .2s ease,box-shadow .2s ease,background-color .2s ease}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-primary:hover{background:var(--navy-2);transform:translateY(-1px)}
+.btn-store{background:var(--navy);color:#fff;border-color:rgba(255,255,255,.08)}
+.btn-store .small{display:block;font-size:11px;font-weight:500;opacity:.8;letter-spacing:.02em;margin-bottom:3px}
+.btn-store .big{display:block;font-size:16px;font-weight:700}
+.btn-store .txt{display:flex;flex-direction:column;align-items:flex-start;line-height:1}
+.btn-store:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+.btn-ghost{background:transparent;color:var(--fg);border-color:var(--line)}
+.btn-ghost:hover{background:var(--surface)}
+.btn-gold{background:var(--gold);color:#0F1B3D}
+.btn-gold:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(233,178,43,.25)}
+
+/* Header */
+.site-header{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:saturate(1.4) blur(10px);-webkit-backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line)}
+.site-header .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:64px}
+.brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;font-weight:800;font-size:19px;letter-spacing:-.02em;min-height:44px}
+.nav{display:flex;align-items:center;gap:28px}
+.nav-links{display:flex;gap:24px;list-style:none;margin:0;padding:0}
+.nav-links a{text-decoration:none;color:var(--muted);font-size:15px;font-weight:500;display:inline-flex;align-items:center;min-height:44px}
+.nav-links a:hover{color:var(--fg)}
+.site-header .btn-store{min-height:44px;padding:0 16px}
+@media (max-width:860px){.nav-links{display:none}}
+@media (max-width:400px){.site-header .btn-store .small{display:none}.site-header .btn-store{padding:0 14px}.site-header .btn-store .big{font-size:14px}}
+
+/* Hero */
+.hero{padding-block:clamp(48px,7vw,96px) clamp(56px,8vw,104px);position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:auto -20% -40% 40%;height:80%;background:radial-gradient(closest-side,color-mix(in srgb,var(--gold) 16%,transparent),transparent);pointer-events:none}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(32px,5vw,72px);align-items:center;position:relative}
+.hero-copy{display:grid;gap:22px;min-width:0}
+.hero h1{font-size:clamp(36px,5.4vw,60px);font-weight:800;letter-spacing:-.035em}
+.hero h1 .gold{background:linear-gradient(transparent 62%,color-mix(in srgb,var(--gold) 45%,transparent) 62%);padding:0 .06em}
+.hero .lead{max-width:52ch}
+.cta-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.trial-note{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}
+.chips li{font-size:13.5px;font-weight:500;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+@media (max-width:900px){.hero-grid{grid-template-columns:1fr}.hero-visual{order:2}}
+
+/* Telefon */
+.hero-visual{display:flex;justify-content:center;min-width:0}
+.phone{position:relative;width:300px;max-width:100%;aspect-ratio:300/612;border-radius:46px;background:#0B1430;padding:12px;box-shadow:0 30px 60px -20px rgba(15,27,61,.45),0 0 0 1px rgba(255,255,255,.06) inset}
+.screen{position:relative;height:100%;border-radius:36px;overflow:hidden;background:#F5F6F8;color:#0F1B3D;font-size:13px;line-height:1.35}
+.notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:92px;height:26px;background:#0B1430;border-radius:20px;z-index:3}
+.status{display:flex;justify-content:space-between;padding:14px 26px 0;font-size:12px;font-weight:600}
+.app-top{display:flex;justify-content:space-between;align-items:center;padding:26px 18px 12px}
+.app-top .day{font-size:11.5px;color:#5A6482;font-weight:500}
+.app-top h3{font-size:20px;font-weight:700;letter-spacing:-.02em}
+.counter{position:relative;display:flex;align-items:center;gap:6px;background:#0F1B3D;color:#fff;border-radius:999px;padding:6px 11px 6px 7px;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums}
+.counter .num{position:relative;display:inline-block;width:2ch;height:1.2em;overflow:hidden}
+.counter .num span{position:absolute;inset:0;text-align:left}
+.tasks{display:grid;gap:9px;padding:4px 14px}
+.task{display:flex;align-items:center;gap:11px;background:#fff;border-radius:14px;padding:11px 12px;box-shadow:0 1px 2px rgba(15,27,61,.06)}
+.task .box{flex:none;width:22px;height:22px;border-radius:7px;border:2px solid #C9CFDD;display:grid;place-items:center;position:relative}
+.task.done .box{background:#2F7D4A;border-color:#2F7D4A}
+.task .box svg{width:14px;height:14px}
+.task .t{flex:1;min-width:0}
+.task .t b{display:block;font-weight:600;font-size:13.5px}
+.task .t small{color:#5A6482;font-size:11.5px}
+.task .stones{display:flex;gap:2px}
+.pill{font-size:10.5px;font-weight:600;border-radius:999px;padding:3px 8px;white-space:nowrap}
+.pill.ok{background:#E3F1E8;color:#23623A}
+.pill.wait{background:#FBF1D6;color:#7A5800}
+.reward{margin:14px 14px 0;background:#0F1B3D;color:#fff;border-radius:16px;padding:13px 14px;display:grid;gap:8px}
+.reward .row{display:flex;justify-content:space-between;align-items:center;font-size:12.5px}
+.reward .row b{font-size:13.5px}
+.bar{height:7px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden}
+.bar i{display:block;height:100%;width:60%;background:#E9B22B;border-radius:99px}
+.tabbar{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-around;padding:10px 8px 18px;background:#fff;border-top:1px solid #E6E9F0;font-size:10px;color:#5A6482}
+.tabbar span{display:grid;justify-items:center;gap:3px}
+.tabbar span.on{color:#0F1B3D;font-weight:600}
+.tabbar i{width:18px;height:18px;border-radius:6px;background:#E6E9F0;display:block}
+.tabbar span.on i{background:#0F1B3D}
+
+/* Animasyon: görev onaylanır, iki taş sayaca uçar */
+.anim .box-fill{position:absolute;inset:-2px;border-radius:7px;background:#2F7D4A;opacity:0;display:grid;place-items:center}
+.anim .pill.ok{display:none}
+.anim .status-swap{position:relative;display:inline-grid;justify-items:end}
+.anim .status-swap > *{grid-area:1/1}
+.fly{position:absolute;width:16px;height:16px;z-index:4;opacity:0;top:0;left:0}
+@media (prefers-reduced-motion: no-preference){
+  .anim .box-fill{animation:fill 9s infinite}
+  .anim .s-wait{animation:fadeOut 9s infinite}
+  .anim .s-ok{display:inline-block !important;opacity:0;animation:fadeIn 9s infinite}
+  .anim{animation:rowGlow 9s infinite}
+  .fly.f1{animation:fly1 9s infinite cubic-bezier(.45,.05,.3,1)}
+  .fly.f2{animation:fly1 9s infinite cubic-bezier(.45,.05,.3,1);animation-delay:.18s}
+  .counter .n1{animation:numOut 9s infinite}
+  .counter .n2{animation:numIn 9s infinite}
+  .counter{animation:pulse 9s infinite}
+  .bar i{animation:bar 9s infinite}
+}
+@media (prefers-reduced-motion: reduce){
+  .anim .box-fill{opacity:1}
+  .anim .s-wait{opacity:0}
+  .anim .s-ok{display:inline-block !important}
+  .counter .n1{opacity:0}
+  .bar i{width:70%}
+}
+.counter .n2{opacity:0}
+@media (prefers-reduced-motion: reduce){.counter .n2{opacity:1}}
+@keyframes fill{0%,22%{opacity:0;transform:scale(.6)}28%,92%{opacity:1;transform:scale(1)}100%{opacity:0}}
+@keyframes fadeOut{0%,24%{opacity:1}30%,92%{opacity:0}100%{opacity:1}}
+@keyframes fadeIn{0%,24%{opacity:0}30%,92%{opacity:1}100%{opacity:0}}
+@keyframes rowGlow{0%,22%{box-shadow:0 1px 2px rgba(15,27,61,.06)}28%{box-shadow:0 0 0 3px rgba(47,125,74,.18)}40%,100%{box-shadow:0 1px 2px rgba(15,27,61,.06)}}
+@keyframes fly1{
+  0%,32%{opacity:0;transform:translate(var(--sx),var(--sy)) scale(.8)}
+  36%{opacity:1;transform:translate(var(--sx),var(--sy)) scale(1.1)}
+  56%{opacity:1;transform:translate(var(--ex),var(--ey)) scale(.9)}
+  60%,100%{opacity:0;transform:translate(var(--ex),var(--ey)) scale(.6)}
+}
+@keyframes numOut{0%,57%{opacity:1;transform:translateY(0)}61%,94%{opacity:0;transform:translateY(-100%)}100%{opacity:1;transform:translateY(0)}}
+@keyframes numIn{0%,57%{opacity:0;transform:translateY(100%)}61%,94%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(100%)}}
+@keyframes pulse{0%,56%{box-shadow:0 0 0 0 rgba(233,178,43,0)}60%{box-shadow:0 0 0 6px rgba(233,178,43,.35)}70%,100%{box-shadow:0 0 0 0 rgba(233,178,43,0)}}
+@keyframes bar{0%,58%{width:60%}66%,94%{width:70%}100%{width:60%}}
+
+/* Nasıl çalışır */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;list-style:none;margin:0;padding:0;counter-reset:s}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:28px;display:grid;gap:14px;align-content:start;position:relative}
+.step-num{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.06em}
+.step h3{font-size:21px;font-weight:700}
+.step p{color:var(--muted)}
+.step .ill{height:96px;border-radius:var(--r-md);background:var(--surface-2);display:grid;place-items:center}
+.step .ill svg{height:64px;width:auto}
+.stone-scale{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+.stone-scale span{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;background:var(--gold-soft);color:var(--gold-ink);padding:5px 10px;border-radius:999px;font-variant-numeric:tabular-nums}
+@media (max-width:860px){.steps{grid-template-columns:1fr}}
+
+/* Özellikler */
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:26px;display:grid;gap:12px;align-content:start;transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;min-width:0}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lift);border-color:color-mix(in srgb,var(--gold) 40%,var(--line))}
+.card .ic{width:44px;height:44px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;color:var(--fg)}
+.card .ic svg{width:24px;height:24px}
+.card.feature-gold .ic{background:var(--gold-soft);color:var(--gold-ink)}
+.card h3{font-size:19px;font-weight:700}
+.card p{color:var(--muted);font-size:16px}
+.card ul{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:15px;color:var(--muted)}
+.card ul li{display:flex;gap:8px;align-items:flex-start}
+.card ul li::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-top:.6em}
+@media (max-width:980px){.features{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:640px){.features{grid-template-columns:1fr}}
+
+/* Güven bandı */
+.band{background:var(--band);color:var(--band-fg)}
+.band .lead{color:var(--band-muted)}
+.trust-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.trust{background:var(--band-card);border:1px solid rgba(255,255,255,.08);border-radius:var(--r-lg);padding:26px;display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start}
+.trust .ic{width:44px;height:44px;border-radius:12px;background:rgba(233,178,43,.14);color:var(--gold);display:grid;place-items:center}
+.trust .ic svg{width:24px;height:24px}
+.trust h3{font-size:18px;font-weight:700;margin-bottom:6px}
+.trust p{color:var(--band-muted);font-size:16px}
+.trust.key{grid-column:1/-1;border-color:color-mix(in srgb,var(--gold) 45%,transparent)}
+.trust.key h3{font-size:20px}
+@media (max-width:760px){.trust-grid{grid-template-columns:1fr}.trust{grid-template-columns:1fr}}
+
+/* Uzmanlar için */
+.pro{padding-block:clamp(48px,6vw,72px)}
+.pro-box{display:grid;grid-template-columns:1.2fr 1fr;gap:32px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:clamp(24px,4vw,44px)}
+.pro-box h2{font-size:clamp(24px,2.8vw,32px);font-weight:700;margin:10px 0 12px}
+.pro-box p{color:var(--muted)}
+.consent{display:grid;gap:10px;margin:0;padding:0;list-style:none;min-width:0}
+.consent li{display:flex;align-items:center;gap:12px;background:var(--surface-2);border-radius:var(--r-md);padding:12px 14px;font-size:15px;font-weight:500}
+.consent .dot{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);font-size:13px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.consent li.off .dot{border-color:var(--green);color:var(--green)}
+@media (max-width:860px){.pro-box{grid-template-columns:1fr}}
+
+/* Fiyat */
+.price-wrap{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:stretch}
+.plan{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:28px;display:grid;gap:14px;align-content:start}
+.plan h3{font-size:20px;font-weight:700}
+.plan .soon{font-size:15px;color:var(--muted)}
+.plan .tag{justify-self:start;font-size:12.5px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.plan ul{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:15.5px}
+.plan li{display:flex;gap:10px;align-items:flex-start}
+.plan li svg{flex:none;width:18px;height:18px;margin-top:3px;color:var(--green)}
+.trial{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;background:var(--gold-soft);border-radius:var(--r-lg);padding:22px 26px}
+.trial b{font-size:20px;color:var(--fg)}
+.trial p{color:var(--muted);font-size:15.5px}
+.trial .tx{display:grid;gap:4px;min-width:0}
+@media (max-width:760px){.price-wrap{grid-template-columns:1fr}}
+
+/* SSS */
+.faq{display:grid;gap:12px;max-width:820px}
+.faq details{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);transition:border-color .2s ease}
+.faq details[open]{border-color:color-mix(in srgb,var(--gold) 45%,var(--line))}
+.faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 22px;min-height:56px;font-weight:600;font-size:17px;border-radius:var(--r-md)}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary .pm{flex:none;width:28px;height:28px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;transition:transform .25s ease}
+.faq details[open] summary .pm{transform:rotate(45deg)}
+.faq .ans{padding:0 22px 20px;color:var(--muted);max-width:68ch}
+
+/* Son çağrı */
+.final{text-align:left}
+.final-box{background:var(--band);color:var(--band-fg);border-radius:var(--r-lg);padding:clamp(32px,5vw,64px);display:grid;grid-template-columns:1fr auto;gap:28px;align-items:center;position:relative;overflow:hidden}
+.final-box::after{content:"";position:absolute;right:-80px;top:-80px;width:260px;height:260px;border-radius:50%;background:radial-gradient(closest-side,rgba(233,178,43,.28),transparent);pointer-events:none}
+.final-box h2{font-size:clamp(28px,3.4vw,40px);font-weight:800;margin-bottom:10px}
+.final-box p{color:var(--band-muted);max-width:52ch}
+.final-box .btn-store{background:var(--gold);color:#0F1B3D}
+.final-box .cta-col{display:grid;gap:10px;justify-items:start;position:relative;z-index:1}
+.final-box .cta-col small{color:var(--band-muted);font-size:13.5px}
+@media (max-width:760px){.final-box{grid-template-columns:1fr}}
+
+/* Footer */
+footer{padding-block:32px 40px;border-top:1px solid var(--line);color:var(--muted);font-size:14.5px}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:16px}
+footer nav{display:flex;gap:8px}
+footer nav a{text-decoration:none;display:inline-flex;align-items:center;min-height:44px;padding:0 10px;border-radius:8px}
+footer nav a:hover{color:var(--fg);background:var(--surface)}
+
+/* Kaydırınca belirme (yalnız JS varken ve ekran dışındaki öğeler için) */
+@media (prefers-reduced-motion: no-preference){
+  .js .reveal.pending{transform:translateY(14px)}
+  .js .reveal{transition:transform .7s cubic-bezier(.2,.7,.2,1)}
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+}
+</style>
+<a class="skip" href="#icerik">İçeriğe geç</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="stoneG" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F6CF5E"/><stop offset="1" stop-color="#D99A12"/>
+    </linearGradient>
+    <symbol id="stone" viewBox="0 0 24 24">
+      <path d="M12 2.5l7.8 4.5v9L12 20.5 4.2 16V7z" fill="url(#stoneG)"/>
+      <path d="M12 2.5v9l7.8-4.5M12 11.5L4.2 7M12 11.5v9" fill="none" stroke="#FFF3CC" stroke-opacity=".6" stroke-width="1"/>
+    </symbol>
+    <symbol id="sun" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="5" fill="#E9B22B"/>
+      <g stroke="#E9B22B" stroke-width="2" stroke-linecap="round">
+        <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>
+      </g>
+    </symbol>
+    <symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="apple" viewBox="0 0 24 24"><path fill="currentColor" d="M16.4 12.6c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1 1-4 2.4-1.7 3-.4 7.3 1.2 9.7.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8 1.5 0 1.9.8 3.2.8 1.3 0 2.2-1.2 3-2.4.9-1.4 1.3-2.7 1.3-2.8-.1 0-2.5-1-2.5-3.8zM14 5.4c.7-.8 1.1-1.9 1-3-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1.1.1 2.1-.6 2.8-1.4z"/></symbol>
+  </defs>
+</svg>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="#" aria-label="ParentApp ana sayfa">
+      <svg width="26" height="26" aria-hidden="true"><use href="#sun"/></svg>
+      ParentApp
+    </a>
+    <nav class="nav" aria-label="Ana menü">
+      <ul class="nav-links">
+        <li><a href="#nasil">Nasıl çalışır</a></li>
+        <li><a href="#ozellikler">Özellikler</a></li>
+        <li><a href="#guven">Güven</a></li>
+        <li><a href="#fiyat">Fiyat</a></li>
+        <li><a href="#sss">SSS</a></li>
+      </ul>
+      <a class="btn btn-store" href="#indir" aria-label="App Store'da yakında">
+        <svg width="20" height="20" aria-hidden="true"><use href="#apple"/></svg>
+        <span class="txt"><span class="small">iPhone için</span><span class="big">App Store'da yakında</span></span>
+      </a>
+    </nav>
+  </div>
+</header>
+
+<main id="icerik">
+  <!-- HERO -->
+  <section class="hero" aria-labelledby="hero-baslik">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <span class="eyebrow">Ebeveynler için yol arkadaşı</span>
+        <h1 id="hero-baslik">Günlük rutinler, <span class="gold">birlikte</span> kazanılan alışkanlıklara dönüşsün.</h1>
+        <p class="lead">Siz görevi verirsiniz, çocuğunuz kendi oyununda tamamlar, siz onaylarsınız. Her onay bir Güneş Taşı kazandırır ve çocuğunuzun adası büyür.</p>
+        <div class="cta-row">
+          <a class="btn btn-store" href="#indir" aria-label="App Store'da yakında">
+            <svg width="22" height="22" aria-hidden="true"><use href="#apple"/></svg>
+            <span class="txt"><span class="small">iPhone için</span><span class="big">App Store'da yakında</span></span>
+          </a>
+          <a class="btn btn-ghost" href="#nasil">Nasıl çalışır?</a>
+        </div>
+        <p class="trial-note"><svg width="16" height="16" aria-hidden="true" style="color:var(--green)"><use href="#check"/></svg> Kayıttan sonra 7 gün ücretsiz deneyin.</p>
+        <ul class="chips" aria-label="Öne çıkanlar">
+          <li>Reklamsız çocuk oyunu</li>
+          <li>Rızaya bağlı uzman paylaşımı</li>
+          <li>İki ebeveyn birlikte</li>
+        </ul>
+      </div>
+
+      <div class="hero-visual">
+        <div class="phone" role="img" aria-label="ParentApp ekranı örneği: bugünün görevleri listesi. Ödev görevi onaylanıyor ve iki Güneş Taşı sayaca ekleniyor; sayaç 12'den 14'e çıkıyor.">
+          <div class="screen" aria-hidden="true">
+            <div class="notch"></div>
+            <div class="status"><span>09:41</span><span>●●●</span></div>
+            <div class="app-top">
+              <div>
+                <div class="day">Örnek · Salı</div>
+                <h3>Bugünün görevleri</h3>
+              </div>
+              <div class="counter" id="counter">
+                <svg width="18" height="18"><use href="#stone"/></svg>
+                <span class="num"><span class="n1">12</span><span class="n2">14</span></span>
+              </div>
+            </div>
+            <div class="tasks">
+              <div class="task done">
+                <span class="box"><svg style="color:#fff"><use href="#check"/></svg></span>
+                <span class="t"><b>Diş fırçalama</b><small>Kolay · sabah</small></span>
+                <span class="pill ok">Onaylandı</span>
+              </div>
+              <div class="task done">
+                <span class="box"><svg style="color:#fff"><use href="#check"/></svg></span>
+                <span class="t"><b>Oda toplama</b><small>Orta · akşamüstü</small></span>
+                <span class="pill ok">Onaylandı</span>
+              </div>
+              <div class="task anim" id="animTask">
+                <span class="box"><span class="box-fill"><svg style="color:#fff"><use href="#check"/></svg></span></span>
+                <span class="t"><b>Ödev</b><small>Orta · 2 taş</small></span>
+                <span class="status-swap"><span class="pill wait s-wait">Onay bekliyor</span><span class="pill ok s-ok">Onaylandı</span></span>
+              </div>
+              <div class="task">
+                <span class="box"></span>
+                <span class="t"><b>Kitap okuma</b><small>Zor · 3 taş</small></span>
+                <span class="stones"><svg width="12" height="12"><use href="#stone"/></svg><svg width="12" height="12"><use href="#stone"/></svg><svg width="12" height="12"><use href="#stone"/></svg></span>
+              </div>
+            </div>
+            <div class="reward">
+              <div class="row"><b>Film gecesi</b><span>20 taş</span></div>
+              <div class="bar"><i></i></div>
+              <div class="row" style="opacity:.75"><span>Ödül hedefi · oyundan istenebilir</span></div>
+            </div>
+            <svg class="fly f1" id="fly1"><use href="#stone"/></svg>
+            <svg class="fly f2" id="fly2"><use href="#stone"/></svg>
+            <div class="tabbar">
+              <span class="on"><i></i>Bugün</span><span><i></i>Ödüller</span><span><i></i>Gelişim</span><span><i></i>Aile</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NASIL ÇALIŞIR -->
+  <section id="nasil" aria-labelledby="nasil-baslik">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">Nasıl çalışır</span>
+        <h2 class="h2" id="nasil-baslik">Üç adımda bir rutin</h2>
+        <p class="lead">ParentApp sizin telefonunuzda çalışır. Çocuğunuz ise kendi tablet ya da telefonunda Pofi Adası oyununu oynar. İkisi bir kodla bağlanır.</p>
+      </div>
+      <ol class="steps">
+        <li class="step reveal">
+          <div class="ill" aria-hidden="true">
+            <svg viewBox="0 0 120 64"><rect x="18" y="8" width="84" height="48" rx="10" fill="var(--surface)" stroke="var(--line)"/><rect x="28" y="20" width="10" height="10" rx="3" fill="none" stroke="var(--muted)" stroke-width="2"/><rect x="44" y="22" width="44" height="6" rx="3" fill="var(--line)"/><rect x="28" y="36" width="10" height="10" rx="3" fill="none" stroke="var(--muted)" stroke-width="2"/><rect x="44" y="38" width="32" height="6" rx="3" fill="var(--line)"/></svg>
+          </div>
+          <span class="step-num">ADIM 1</span>
+          <h3>Görev verin</h3>
+          <p>Diş fırçalama, oda toplama, ödev gibi günlük görevleri oluşturun. Her görev için zorluk seçin.</p>
+          <div class="stone-scale" aria-label="Zorluğa göre taş sayısı">
+            <span>Kolay · 1</span><span>Orta · 2</span><span>Zor · 3</span>
+          </div>
+        </li>
+        <li class="step reveal">
+          <div class="ill" aria-hidden="true">
+            <svg viewBox="0 0 120 64"><ellipse cx="60" cy="48" rx="40" ry="9" fill="color-mix(in srgb,var(--gold) 30%,transparent)"/><path d="M34 46c4-14 14-22 26-22s22 8 26 22z" fill="var(--green)" opacity=".85"/><path d="M60 24v-12" stroke="var(--fg)" stroke-width="2"/><path d="M60 12l12 4-12 4z" fill="var(--gold)"/></svg>
+          </div>
+          <span class="step-num">ADIM 2</span>
+          <h3>Çocuğunuz oyunda tamamlar</h3>
+          <p>Çocuğunuz görevi yaptığında Pofi Adası'nda işaretler. Bildirim size gelir.</p>
+        </li>
+        <li class="step reveal">
+          <div class="ill" aria-hidden="true">
+            <svg viewBox="0 0 120 64"><circle cx="44" cy="32" r="16" fill="var(--green)"/><path d="M36 32.5l5.5 5.5L52 27" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><use href="#stone" x="70" y="16" width="16" height="16"/><use href="#stone" x="84" y="30" width="16" height="16"/></svg>
+          </div>
+          <span class="step-num">ADIM 3</span>
+          <h3>Onaylayın, taş kazansın</h3>
+          <p>Siz onaylayınca Güneş Taşları eklenir. Taşlar adayı büyütür, ayrıca sizin belirlediğiniz ödüllere harcanabilir.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ÖZELLİKLER -->
+  <section id="ozellikler" aria-labelledby="ozellik-baslik" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">Özellikler</span>
+        <h2 class="h2" id="ozellik-baslik">Ailenizin günlük düzeni için gereken her şey</h2>
+      </div>
+      <div class="features">
+        <article class="card reveal">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></div>
+          <h3>Rutinler</h3>
+          <p>Sabah, akşam ya da hafta sonu görevlerini bir kez kurun. Kolay, orta ve zor olarak ayırın.</p>
+        </article>
+        <article class="card feature-gold reveal">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#stone"/></svg></div>
+          <h3>Güneş Taşı ve ödüller</h3>
+          <p>Onaylanan her görev taş kazandırır. Kazanılan taşlar adadan hiç eksilmez.</p>
+          <ul>
+            <li>Ödülleri siz belirlersiniz: parkta 30 dakika, film gecesi</li>
+            <li>Değiş tokuş: 1 taş = 10 dk ekran süresi ya da harçlık</li>
+            <li>Çocuğunuz ödülü oyundan ister, siz onaylarsınız</li>
+          </ul>
+        </article>
+        <article class="card reveal">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M6 15l4-4 3 3 5-6"/></svg></div>
+          <h3>Gelişim</h3>
+          <p>Rutinlerin haftalar içinde nasıl yerleştiğini görün. Raporlar ebeveynin okuyacağı sade bir dille yazılır.</p>
+        </article>
+        <article class="card reveal">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h9l3 3v13H6z"/><path d="M9 11h6M9 15h4"/></svg></div>
+          <h3>Gözlem notları</h3>
+          <p>Dikkatinizi çeken bir anı hızlıca not edin: öncesinde ne oldu, davranış neydi, sonrasında ne oldu. İsterseniz sesli not bırakın. Zamanla örüntüleri görürsünüz.</p>
+        </article>
+        <article class="card reveal">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v10H9l-5 4z"/></svg></div>
+          <h3>Aile ve mesajlar</h3>
+          <p>İki ebeveyn aynı aileye katılır. Çocuğunuza mesaj gönderin; o da oyundan çıkartma ya da yazıyla yanıt versin.</p>
+        </article>
+        <article class="card reveal">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c.8-3 3-4.5 5.5-4.5s4.7 1.5 5.5 4.5"/><path d="M16 11l2 2 3.5-4"/></svg></div>
+          <h3>Uzmanla paylaşım</h3>
+          <p>Çocuk psikoloğu ya da ergoterapist gibi bir uzmanla, yalnız sizin izninizle paylaşın. İzni istediğiniz an geri alın.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- GÜVEN -->
+  <section id="guven" class="band" aria-labelledby="guven-baslik">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">Güven</span>
+        <h2 class="h2" id="guven-baslik">Çocuğunuzun verisi, sizin kararınız</h2>
+        <p class="lead">Verileriniz yalnız ailenizle ve sizin izin verdiğiniz uzmanla paylaşılır.</p>
+      </div>
+      <div class="trust-grid">
+        <div class="trust key reveal">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5M12 16v.5"/></svg></div>
+          <div>
+            <h3>ParentApp tanı koymaz</h3>
+            <p>Uygulamadaki hiçbir gösterge tanı, zekâ puanı ya da dikkat puanı değildir. Grafikler yalnız rutinlerin ve notların özetidir. Bir endişeniz varsa bir uzmanla görüşün.</p>
+          </div>
+        </div>
+        <div class="trust reveal">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <div><h3>Açık rıza</h3><p>Bir uzman, çocuğunuzun verisini ancak siz açıkça izin verdiğinizde görür.</p></div>
+        </div>
+        <div class="trust reveal">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.3-5.6"/><path d="M4 4v4h4"/></svg></div>
+          <div><h3>Geri alınabilir paylaşım</h3><p>Uzmanla paylaşımı istediğiniz an kapatabilirsiniz. Kapattığınızda erişim sona erer.</p></div>
+        </div>
+        <div class="trust reveal">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 9l6 6M15 9l-6 6"/></svg></div>
+          <div><h3>Reklamsız çocuk oyunu</h3><p>Pofi Adası'nda reklam yoktur. Üçüncü taraf izleme araçları kullanılmaz.</p></div>
+        </div>
+        <div class="trust reveal">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div>
+          <div><h3>Kısa süreli bağlama kodları</h3><p>Eşinizi davet eden kod da çocuğunuzun oyununu bağlayan kod da 15 dakika geçerlidir.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- UZMANLAR İÇİN -->
+  <section class="pro" aria-labelledby="uzman-baslik">
+    <div class="wrap">
+      <div class="pro-box reveal">
+        <div>
+          <span class="eyebrow">Uzmanlar için</span>
+          <h2 id="uzman-baslik">ClinicApp ile aileyle aynı sayfada</h2>
+          <p>Çocuk psikoloğu, ergoterapist gibi uzmanlar ClinicApp'i kullanır. Ebeveyn izin verdiğinde uzman görevleri takip eder ve aileye görev önerebilir. Raporlar uzmanın da okuyacağı biçimde hazırlanır.</p>
+        </div>
+        <ol class="consent" aria-label="Uzman paylaşımı adımları">
+          <li><span class="dot">1</span>Ebeveyn uzmanı davet eder ve izin verir</li>
+          <li><span class="dot">2</span>Uzman görevleri izler, görev önerir</li>
+          <li class="off"><span class="dot">3</span>Ebeveyn izni dilediği an geri alır</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- FİYAT -->
+  <section id="fiyat" aria-labelledby="fiyat-baslik" style="padding-top:clamp(32px,4vw,48px)">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">Fiyat</span>
+        <h2 class="h2" id="fiyat-baslik">Tek abonelik, bütün aile</h2>
+        <p class="lead">Aile aboneliği iki ebeveyni ve çocuğunuzun oyununu kapsar.</p>
+      </div>
+      <div class="price-wrap">
+        <div class="plan reveal">
+          <span class="tag">Aylık plan</span>
+          <h3>Aylık</h3>
+          <p class="soon">Fiyatlar yakında açıklanacak.</p>
+          <ul>
+            <li><svg aria-hidden="true"><use href="#check"/></svg>Görevler, rutinler ve ödüller</li>
+            <li><svg aria-hidden="true"><use href="#check"/></svg>Gelişim raporları ve gözlem notları</li>
+            <li><svg aria-hidden="true"><use href="#check"/></svg>İki ebeveyn, aile mesajları</li>
+          </ul>
+        </div>
+        <div class="plan reveal">
+          <span class="tag">Yıllık plan</span>
+          <h3>Yıllık</h3>
+          <p class="soon">Fiyatlar yakında açıklanacak.</p>
+          <ul>
+            <li><svg aria-hidden="true"><use href="#check"/></svg>Aylık planın tüm özellikleri</li>
+            <li><svg aria-hidden="true"><use href="#check"/></svg>Yıl boyunca tek ödeme</li>
+            <li><svg aria-hidden="true"><use href="#check"/></svg>Aylığa göre daha uygun</li>
+          </ul>
+        </div>
+        <div class="trial reveal">
+          <div class="tx">
+            <b>7 gün ücretsiz deneyin</b>
+            <p>Deneme süresi kayıttan sonra başlar.</p>
+          </div>
+          <a class="btn btn-primary" href="#indir">App Store'da yakında</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SSS -->
+  <section id="sss" aria-labelledby="sss-baslik" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">Sık sorulanlar</span>
+        <h2 class="h2" id="sss-baslik">Merak edilenler</h2>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>Çocuğumun ayrı bir uygulamaya ihtiyacı var mı?<span class="pm" aria-hidden="true">+</span></summary>
+          <p class="ans">Evet. Çocuğunuz kendi tablet ya da telefonunda Pofi Adası oyununu oynar. Oyunu ParentApp'e 15 dakika geçerli bir kodla bağlarsınız.</p>
+        </details>
+        <details>
+          <summary>Taş kesmek adayı küçültür mü?<span class="pm" aria-hidden="true">+</span></summary>
+          <p class="ans">Hayır. Kazanılan taşlar adadan hiç eksilmez. Önceden birlikte konuştuğunuz kurallar için, ölçülü biçimde ödül bakiyesinden taş düşebilirsiniz. Ada bundan etkilenmez.</p>
+        </details>
+        <details>
+          <summary>Eşim de kullanabilir mi?<span class="pm" aria-hidden="true">+</span></summary>
+          <p class="ans">Evet. Uygulamadan bir davet kodu oluşturun. Kod 15 dakika geçerlidir; eşiniz bu sürede aileye katılır.</p>
+        </details>
+        <details>
+          <summary>Uzman çocuğumun verisini nasıl görür?<span class="pm" aria-hidden="true">+</span></summary>
+          <p class="ans">Yalnız siz açıkça izin verirseniz. Uzman ClinicApp üzerinden görevleri izler ve görev önerebilir. Paylaşımı istediğiniz an kapatabilirsiniz.</p>
+        </details>
+        <details>
+          <summary>Raporlar bir tanı ya da puan veriyor mu?<span class="pm" aria-hidden="true">+</span></summary>
+          <p class="ans">Hayır. ParentApp'teki hiçbir gösterge tanı, zekâ ya da dikkat puanı değildir. Raporlar rutinlerin ve notların özetidir.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- SON ÇAĞRI -->
+  <section id="indir" class="final" aria-labelledby="son-baslik" style="padding-top:0">
+    <div class="wrap">
+      <div class="final-box reveal">
+        <div style="position:relative;z-index:1">
+          <h2 id="son-baslik">Küçük adımlar, her gün.</h2>
+          <p>ParentApp önce iPhone için geliyor. Çıktığında 7 gün ücretsiz deneyebilirsiniz.</p>
+        </div>
+        <div class="cta-col">
+          <a class="btn btn-store" href="#indir" aria-label="App Store'da yakında">
+            <svg width="22" height="22" aria-hidden="true"><use href="#apple"/></svg>
+            <span class="txt"><span class="small">iPhone için</span><span class="big">App Store'da yakında</span></span>
+          </a>
+          <small>Aylık / Yıllık plan — fiyatlar yakında</small>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 ParentApp</span>
+    <nav aria-label="Alt menü">
+      <a href="#">Gizlilik</a>
+      <a href="#">İletişim</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  root.classList.add('js');
+
+  // Uçan taşların başlangıç/bitiş noktalarını ölç (telefon boyutu değişse de doğru kalsın).
+  function placeStones(){
+    var screen=document.querySelector('.screen');
+    var row=document.getElementById('animTask');
+    var counter=document.getElementById('counter');
+    if(!screen||!row||!counter)return;
+    var s=screen.getBoundingClientRect(), r=row.getBoundingClientRect(), c=counter.getBoundingClientRect();
+    [['fly1',0],['fly2',14]].forEach(function(p){
+      var el=document.getElementById(p[0]); if(!el)return;
+      el.style.setProperty('--sx',(r.right-s.left-48-p[1])+'px');
+      el.style.setProperty('--sy',(r.top-s.top+r.height/2-8)+'px');
+      el.style.setProperty('--ex',(c.left-s.left+8)+'px');
+      el.style.setProperty('--ey',(c.top-s.top+c.height/2-8)+'px');
+    });
+  }
+  placeStones();
+  window.addEventListener('resize',placeStones);
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(placeStones);
+
+  // Ekranın altında kalan bölümler kaydırınca hafifçe belirsin.
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduce||!('IntersectionObserver' in window))return;
+  var items=[].slice.call(document.querySelectorAll('.reveal'));
+  var vh=window.innerHeight;
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        var el=e.target, sibs=[].slice.call(el.parentNode.children).filter(function(n){return n.classList.contains('reveal')});
+        el.style.transitionDelay=Math.min(sibs.indexOf(el),5)*70+'ms';
+        el.classList.remove('pending');
+        io.unobserve(el);
+      }
+    });
+  },{rootMargin:'0px 0px -8% 0px',threshold:.08});
+  items.forEach(function(el){
+    if(el.getBoundingClientRect().top>vh){el.classList.add('pending');io.observe(el);}
+  });
+})();
+</script>
