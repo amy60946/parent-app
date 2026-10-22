@@ -91,7 +91,7 @@ function Home({ onCode, onAbc, visible }: { onCode: () => void; onAbc: () => voi
       const start = s.startDate && s.startDate > todayISO() ? s.startDate : todayISO();
       if (accept) {
         addTasks([{
-          title: s.title, emoji: s.emoji, skill: s.skill || 'Özel', description: s.description,
+          title: s.title, emoji: s.emoji, skill: s.skill, description: s.description,
           assignments: [{ childId: s.childId, difficulty: s.difficulty, coins: s.coins ?? difficultyMeta[s.difficulty].coins }],
           startDate: start, recurring: s.recurring, repeatKind: s.repeatKind, repeatDays: s.repeatDays,
           endDate: s.endDate && s.endDate >= start ? s.endDate : undefined, reminder: s.reminder, requiresReview: s.requiresReview,

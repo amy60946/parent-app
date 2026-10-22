@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { Alert, AppState } from 'react-native';
-import { Difficulty } from './theme';
-import { Template, Category, templates as baseTemplates, toCategory } from './data/templates';
+import { Difficulty, difficultyMeta } from './theme';
+import { Template, Category, templates as baseTemplates, toCategory, categorySkill, skillLabels } from './data/templates';
 import { fromISO, toISO, todayISO } from './dates';
 import { supabase, MAIL_BUCKET } from './lib/supabase';
 import { uuid } from './lib/uuid';
@@ -45,6 +45,9 @@ export type Task = {
 };
 
 export type RepeatKind = 'daily' | 'weekly' | 'monthly';
+
+// Ebeveynin kendi şablonu: beceri kategoriden gelir
+export type CustomTemplateInput = { title: string; emoji: string; category: Category; difficulty: Difficulty };
 
 // pending: çocuk "yaptım" dedi · approved: onaylandı (coin verilir)
 // declined: çocuk "yapamam" dedi · rejected: ebeveyn notla reddetti
@@ -93,7 +96,7 @@ type Store = {
   toggleCompletion: (task: Task, childId: string, date: string) => void;
   review: (key: string, approve: boolean, note?: string) => void; // ret: not çocuğa oyunda görünür
   toggleSaved: (templateId: string) => void;
-  addCustomTemplate: (t: Omit<Template, 'id' | 'usedBy' | 'custom'>) => string;
+  addCustomTemplate: (t: CustomTemplateInput) => string;
   allTemplates: Template[];
   sendMessage: (childId: string, text: string) => void;
   sendSticker: (childId: string, key: string) => void;
@@ -562,14 +565,14 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     }
   }, [savedRows, run, userId]);
 
-  const addCustomTemplate = useCallback((t: Omit<Template, 'id' | 'usedBy' | 'custom'>) => {
+  const addCustomTemplate = useCallback((t: CustomTemplateInput) => {
     track('template.custom');
     const f = fid.current;
     const id = uuid();
     if (!f) return id;
     const r = {
       id, family_id: f, template_key: id, is_custom: true, saved: true, created_by: userId,
-      title: t.title, emoji: t.emoji, category: t.category, difficulty: t.difficulty, skill: t.skill,
+      title: t.title, emoji: t.emoji, category: t.category, difficulty: t.difficulty, skill: categorySkill[t.category],
     };
     setSavedRows((p) => [...p, r]);
     run(() => supabase.from('saved_templates').insert(r));
@@ -725,7 +728,10 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   const customTemplates = useMemo<Template[]>(
     () => savedRows.filter((r) => r.is_custom).map((r) => ({
       id: r.template_key, title: r.title, emoji: r.emoji ?? '⭐', category: toCategory(r.category),
-      difficulty: r.difficulty as Difficulty, skill: r.skill ?? 'Özel', usedBy: 0, custom: true,
+      categories: [toCategory(r.category)], difficulty: r.difficulty as Difficulty,
+      coins: difficultyMeta[r.difficulty as Difficulty]?.coins ?? 5,
+      // Eski kayıtta serbest metin olabilir; anahtar değilse kategorinin becerisi
+      skill: r.skill && r.skill in skillLabels ? r.skill : categorySkill[toCategory(r.category)], sort: -1, custom: true,
     })),
     [savedRows],
   );

@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { Difficulty } from '../theme';
+import { categorySkill, skillLabels, toCategory } from '../data/templates';
 
 // Uzman (ClinicApp) paylaşımı: sunucu kuralları ortak/supabase/migrations/20261019000000_clinic.sql
 // Uzman yalnızca ebeveynin açık rızasıyla, yalnızca o çocuğun görev ve kayıtlarını okur. Posta ve coin paylaşılmaz.
@@ -58,7 +59,9 @@ export async function pendingSuggestions(familyId: string): Promise<Suggestion[]
     // Paylaşım durdurulduysa eski öneriler gösterilmez
     .filter((r: any) => links.some((l) => l.linkId === r.link_id))
     .map((r: any) => ({
-      id: r.id, childId: r.child_id, title: r.title, emoji: r.emoji, skill: r.skill, difficulty: r.difficulty,
+      // Beceri anahtarı; uzman eski serbest metin yazdıysa kategorinin becerisi
+      id: r.id, childId: r.child_id, title: r.title, emoji: r.emoji, difficulty: r.difficulty,
+      skill: r.skill && r.skill in skillLabels ? r.skill : categorySkill[toCategory(r.category)],
       recurring: r.recurring, note: r.note ?? '', clinic: links.find((l) => l.linkId === r.link_id)?.clinician || links.find((l) => l.linkId === r.link_id)?.clinic || 'Uzman',
       description: r.description ?? '', coins: r.coins ?? undefined, startDate: r.start_date ?? undefined,
       repeatKind: (['daily', 'weekly', 'monthly'].includes(r.repeat_kind) ? r.repeat_kind : 'daily') as RepeatKind,

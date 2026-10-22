@@ -4,13 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
 import { DifficultyBadge, IconButton } from '../components/ui';
-import { categories, Category, TemplateAge, templateAges } from '../data/templates';
+import { categories, Category, TemplateAge, templateAges, categoryLabel, skillLabel } from '../data/templates';
 import { useStore } from '../store';
 
 // Akıllı öneri (smart recommendation) sonra eklenecek: ortak/DURUM.md hatırlatıcı
 type Filter = 'all' | 'saved' | 'popular' | Category;
 
-const POPULAR_COUNT = 10;
+const POPULAR_COUNT = 20;
 
 export default function CreateTaskScreen({ navigation, route }: any) {
   const date: string | undefined = route.params?.date;
@@ -21,23 +21,28 @@ export default function CreateTaskScreen({ navigation, route }: any) {
   const [menu, setMenu] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
   const isCategory = filter !== 'all' && filter !== 'saved' && filter !== 'popular';
+  const showAges = filter === 'all' || isCategory;
 
   const list = useMemo(() => {
     const q = query.trim().toLocaleLowerCase('tr');
     const found = allTemplates.filter((t) => {
       if (filter === 'saved' && !savedIds.includes(t.id)) return false;
-      if (isCategory && t.category !== filter) return false;
-      if (isCategory && age !== 'all' && t.ages && !t.ages.includes(age)) return false;
+      // Bir görev birden çok kategoride çıkabilir (categories etiketleri)
+      if (isCategory && !t.categories.includes(filter as Category)) return false;
+      if (showAges && age !== 'all' && t.ages && !t.ages.includes(age)) return false;
       return !q || t.title.toLocaleLowerCase('tr').includes(q);
     });
-    // Ebeveynlerin en çok kullandıkları: kullanım sayısına göre ilk 10 (kendi görevlerin hariç)
-    if (filter === 'popular') return found.filter((t) => !t.custom).sort((a, b) => b.usedBy - a.usedBy).slice(0, POPULAR_COUNT);
-    return found;
-  }, [allTemplates, savedIds, filter, isCategory, age, query]);
+    // Katalog sırası (kendi görevlerin önce); Önerilenler: katalogdaki ilk 20
+    // Kategoride: ana kategorisi o olanlar önce, etiketle gelenler sonra
+    const main = (t: (typeof found)[number]) => (isCategory && t.category !== filter ? 1 : 0);
+    const sorted = [...found].sort((a, b) => main(a) - main(b) || a.sort - b.sort);
+    if (filter === 'popular') return sorted.filter((t) => !t.custom).slice(0, POPULAR_COUNT);
+    return sorted;
+  }, [allTemplates, savedIds, filter, isCategory, showAges, age, query]);
 
   const options: { id: Filter; label: string; icon?: keyof typeof Ionicons.glyphMap }[] = [
     { id: 'all', label: 'Tüm görevler', icon: 'apps-outline' },
-    { id: 'popular', label: 'Ebeveynlerin en çok kullandıkları', icon: 'flame-outline' },
+    { id: 'popular', label: 'Önerilenler', icon: 'sparkles-outline' },
     { id: 'saved', label: 'Kaydedilenler', icon: 'bookmark-outline' },
     ...categories.map((c) => ({ id: c.id as Filter, label: c.label })),
   ];
@@ -92,8 +97,8 @@ export default function CreateTaskScreen({ navigation, route }: any) {
         )}
       </View>
 
-      {/* Kategori seçilince yaş grubu */}
-      {isCategory && !menu && (
+      {/* Yaş grubu (Tüm görevler ve kategorilerde) */}
+      {showAges && !menu && (
         // Yükseklik sabit: alttaki liste çipleri ezmesin (iOS'ta yatay kaydırma alanı küçülüp üst üste biniyordu)
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0, height: 44, marginTop: 12, marginBottom: 4 }}
           contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20 }}>
@@ -130,13 +135,9 @@ export default function CreateTaskScreen({ navigation, route }: any) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardTitle}>{t.title}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                  <DifficultyBadge d={t.difficulty} coins={{ easy: 5, medium: 10, hard: 20 }[t.difficulty]} />
-                  <Text style={{ fontSize: 12, color: colors.muted }}>{t.skill}</Text>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 }}>
-                  <Ionicons name="people-outline" size={14} color={colors.navy} />
-                  <Text style={styles.used}>
-                    {t.custom ? 'Senin görevin' : `${t.usedBy.toLocaleString('tr-TR')} ebeveyn tarafından kullanıldı`}
+                  <DifficultyBadge d={t.difficulty} coins={t.coins} />
+                  <Text style={{ flexShrink: 1, fontSize: 12, color: colors.muted }} numberOfLines={1}>
+                    {t.custom ? 'Senin görevin' : categoryLabel(t.category)} · {skillLabel(t.skill)}
                   </Text>
                 </View>
               </View>

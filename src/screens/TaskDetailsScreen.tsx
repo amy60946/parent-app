@@ -8,6 +8,7 @@ import DateField from '../components/DateField';
 import { useStore, Assignment, RepeatKind } from '../store';
 import { DAY_SHORT, fromISO, todayISO } from '../dates';
 import { TaskDayPart, dayPartLabel, taskDayPartOf } from '../data/dayParts';
+import { Category, categories, categorySkill, skillLabels } from '../data/templates';
 
 type Row = { on: boolean; difficulty: Difficulty; coins: string };
 
@@ -45,6 +46,7 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
   const pickReminder = (v?: string) => { setReminder(v); if (v) setDayPart(taskDayPartOf(v)); };
   const [requiresReview, setRequiresReview] = useState(editing?.requiresReview ?? true);
   const [saveTemplate, setSaveTemplate] = useState(false);
+  const [category, setCategory] = useState<Category>('home'); // yeni özel görevde beceri buradan gelir
 
   const isPast = startDate < todayISO();
   const isCustom = !!custom;
@@ -96,12 +98,9 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
       updateTask(editing.id, { ...common, title: title.trim() });
     } else if (isCustom) {
       if (saveTemplate) {
-        addCustomTemplate({
-          title: title.trim(), emoji: '⭐', category: 'home',
-          difficulty: assignments[0].difficulty, skill: 'Özel',
-        });
+        addCustomTemplate({ title: title.trim(), emoji: '⭐', category, difficulty: assignments[0].difficulty });
       }
-      addTasks([{ ...common, title: title.trim(), emoji: '⭐', skill: 'Özel' }]);
+      addTasks([{ ...common, title: title.trim(), emoji: '⭐', skill: categorySkill[category] }]);
     } else {
       addTasks(picked.map((t: any) => ({ ...common, title: t.title, emoji: t.emoji, skill: t.skill })));
     }
@@ -147,6 +146,23 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
           <>
             <Label>Görev adı</Label>
             <TextInput value={title} onChangeText={setTitle} placeholder="Örn. Çantanı hazırla" placeholderTextColor={colors.muted} style={styles.input} />
+            {isCustom && !editing && (
+              <>
+                <Label>{`Kategori · ${skillLabels[categorySkill[category]]} becerisini geliştirir`}</Label>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {categories.map((c) => {
+                    const on = c.id === category;
+                    return (
+                      <Pressable key={c.id} onPress={() => setCategory(c.id)} accessibilityState={{ selected: on }}
+                        style={{ height: 38, paddingHorizontal: 14, borderRadius: 19, justifyContent: 'center', borderWidth: 1,
+                          borderColor: on ? colors.navy : colors.line, backgroundColor: on ? colors.navy : '#fff' }}>
+                        <Text style={{ fontSize: 13, fontWeight: '600', color: on ? '#fff' : colors.navy }}>{c.label}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            )}
           </>
         ) : (
           <>
