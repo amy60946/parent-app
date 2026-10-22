@@ -496,6 +496,13 @@ type Mode = 'item' | 'minute' | 'money';
 const prices = [3, 5, 10, 20, 50];
 const rateCosts = [1, 2, 3, 5];
 const rateAmounts: Record<RewardUnit, number[]> = { minute: [5, 10, 15, 30], money: [1, 2, 5, 10] };
+// Addan tür: "ekran süresi", "tablet" → dakika; "harçlık", "TL" → para (değiş tokuş)
+const detectUnit = (t: string): RewardUnit | null => {
+  const s = t.toLocaleLowerCase('tr-TR');
+  if (/ekran|tablet|telefon|televizyon|\btv\b|oyun süresi|bilgisayar/.test(s)) return 'minute';
+  if (/harçlık|para\b|\btl\b|lira/.test(s)) return 'money';
+  return null;
+};
 function RewardEditor({ value, kids, avg, onClose, onSave, onDelete }: {
   value: { reward?: Reward; template?: RewardTemplate } | null; kids: Child[]; avg: number; onClose: () => void;
   onSave: (r: RewardInput) => void; onDelete: (id: string) => void;
@@ -510,6 +517,7 @@ function RewardEditor({ value, kids, avg, onClose, onSave, onDelete }: {
   const [pickIcon, setPickIcon] = useState(false);
   const [other, setOther] = useState(false); // fiyatı elle yaz
   const [typed, setTyped] = useState(false); // ad elle yazıldı mı (öneriler yalnız o zaman)
+  const [suggested, setSuggested] = useState(false); // fiyat öneriden geldi
   useEffect(() => {
     if (!value) return;
     const src = value.reward ?? value.template;
@@ -522,6 +530,7 @@ function RewardEditor({ value, kids, avg, onClose, onSave, onDelete }: {
     setPickIcon(false);
     setTyped(false);
     setOther(!!src && src.kind !== 'exchange' && !prices.includes(src.cost));
+    setSuggested(!!value.template);
   }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const needle = title.trim().toLocaleLowerCase('tr-TR');
@@ -531,16 +540,19 @@ function RewardEditor({ value, kids, avg, onClose, onSave, onDelete }: {
   const useTemplate = (t: RewardTemplate) => {
     setTitle(t.title); setIcon(iconKey(t.icon)); setCost(t.cost); setAmount(t.unitAmount ?? 0);
     setMode(t.kind === 'exchange' ? (t.unit ?? 'minute') : 'item'); setOther(t.kind !== 'exchange' && !prices.includes(t.cost)); setTyped(false);
+    setSuggested(true);
   };
-  const setModeTo = (m: Mode) => {
-    setMode(m);
-    // Ad boşsa ya da bir öneriden geldiyse türe uygun ad ve simge
-    if (!title.trim() || rewardTemplates.some((t) => sameTitle(t.title, title))) {
-      const t = rewardTemplates.find((x) => (m === 'item' ? false : x.unit === m));
-      if (t) { setTitle(t.title); setIcon(iconKey(t.icon)); }
-      else if (m === 'item' && rewardTemplates.some((x) => x.kind === 'exchange' && sameTitle(x.title, title))) { setTitle(''); setIcon('gift'); }
-    }
-    if (m !== 'item') { if (!rateCosts.includes(cost)) setCost(1); if (!amount || !rateAmounts[m].includes(amount)) setAmount(m === 'minute' ? 10 : 5); }
+  // Ad yazılırken tür kendiliğinden: "ekran süresi" / "harçlık" yazınca oran biçimi
+  const typeTitle = (t: string) => {
+    setTitle(t); setTyped(true);
+    const u = detectUnit(t);
+    if (u && mode !== u) setRate(u);
+    else if (!u && mode !== 'item' && !editing) setMode('item');
+  };
+  const setRate = (m: RewardUnit) => {
+    setMode(m); setSuggested(false); setIcon(m === 'minute' ? 'phone-portrait' : 'wallet');
+    if (!rateCosts.includes(cost)) setCost(1);
+    if (!amount || !rateAmounts[m].includes(amount)) setAmount(m === 'minute' ? 10 : 5);
   };
   const toggle = (id: string) => setWho((p) => {
     const cur = p.length ? p : kids.map((k) => k.id);
@@ -593,7 +605,7 @@ function RewardEditor({ value, kids, avg, onClose, onSave, onDelete }: {
               <Pressable onPress={() => setPickIcon(!pickIcon)} style={styles.nameIcon} accessibilityLabel="Simge seç">
                 <Ionicons name={iconOf(icon)} size={20} color={colors.navy} />
               </Pressable>
-              <TextInput value={title} onChangeText={(t) => { setTitle(t); setTyped(true); }} maxLength={60} autoFocus={!value?.reward && !value?.template}
+              <TextInput value={title} onChangeText={typeTitle} maxLength={60} autoFocus={!value?.reward && !value?.template}
                 placeholder="Ödülün adı: dondurma, park…" placeholderTextColor={colors.faint} accessibilityLabel="Ödül adı"
                 style={{ flex: 1, minWidth: 0, fontSize: 17, fontWeight: '600', color: colors.navy, paddingVertical: 12 }} />
             </View>
@@ -620,14 +632,6 @@ function RewardEditor({ value, kids, avg, onClose, onSave, onDelete }: {
             )}
           </View>
 
-          <View style={styles.segment}>
-            {([['item', 'Tek ödül'], ['minute', 'Ekran süresi'], ['money', 'Harçlık']] as [Mode, string][]).map(([m, l]) => (
-              <Pressable key={m} onPress={() => setModeTo(m)} style={[styles.segItem, mode === m && styles.segOn]} accessibilityRole="tab" accessibilityState={{ selected: mode === m }}>
-                <Text style={{ fontSize: 14, fontWeight: mode === m ? '700' : '600', color: mode === m ? colors.navy : '#4A5165' }}>{l}</Text>
-              </Pressable>
-            ))}
-          </View>
-
           {exchange ? (
             <View style={{ gap: 10 }}>
               <View style={styles.rate}>
@@ -635,19 +639,26 @@ function RewardEditor({ value, kids, avg, onClose, onSave, onDelete }: {
                 <Text style={{ fontSize: 30, fontWeight: '800', color: colors.navy }}>{cost} taş = {amount} {unitShort[mode as RewardUnit]}</Text>
                 <Text style={{ fontSize: 12, color: '#4A5165' }}>Verirken kaç kez verileceğini seçersin.</Text>
               </View>
+              <View style={styles.pills}>
+                <Pill on={mode === 'minute'} label="Ekran süresi" onPress={() => setRate('minute')} />
+                <Pill on={mode === 'money'} label="Harçlık" onPress={() => setRate('money')} />
+              </View>
               <Text style={styles.h}>Kaç taş</Text>
               <View style={styles.pills}>{rateCosts.map((c) => <Pill key={c} on={cost === c} label={String(c)} onPress={() => setCost(c)} a11y={`${c} taş`} />)}</View>
               <Text style={styles.h}>Karşılığı</Text>
               <View style={styles.pills}>
                 {rateAmounts[mode as RewardUnit].map((a) => <Pill key={a} on={amount === a} label={`${a} ${unitShort[mode as RewardUnit]}`} onPress={() => setAmount(a)} />)}
               </View>
+              <Pressable onPress={() => { setMode('item'); setOther(!prices.includes(cost)); }} hitSlop={8} style={{ alignSelf: 'flex-start', paddingVertical: 6 }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.navy, textDecorationLine: 'underline' }}>Tek seferlik ödül olarak kaydet</Text>
+              </Pressable>
             </View>
           ) : (
             <View style={{ gap: 10 }}>
-              <Text style={styles.h}>Fiyat <Text style={{ fontWeight: '500', color: colors.muted }}>(Güneş Taşı)</Text></Text>
+              <Text style={styles.h}>Fiyat <Text style={{ fontWeight: '500', color: colors.muted }}>{suggested ? '(öneriden geldi)' : '(Güneş Taşı)'}</Text></Text>
               <View style={styles.pills}>
-                {prices.map((p) => <Pill key={p} on={!other && cost === p} label={String(p)} onPress={() => { setCost(p); setOther(false); }} a11y={`${p} taş`} />)}
-                <Pill on={other} label={other ? `${cost || '…'}` : 'Diğer'} onPress={() => setOther(true)} a11y="Başka fiyat" />
+                {prices.map((p) => <Pill key={p} on={!other && cost === p} label={String(p)} onPress={() => { setCost(p); setOther(false); setSuggested(false); }} a11y={`${p} taş`} />)}
+                <Pill on={other} label={other ? `${cost || '…'}` : 'Diğer'} onPress={() => { setOther(true); setSuggested(false); }} a11y="Başka fiyat" />
               </View>
               {other && (
                 <TextInput value={cost ? String(cost) : ''} onChangeText={(t) => setCost(Math.min(500, Number(t.replace(/\D/g, '')) || 0))} autoFocus
@@ -858,9 +869,6 @@ const styles = StyleSheet.create({
   nameIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F1F2F6', alignItems: 'center', justifyContent: 'center' },
   matches: { borderRadius: 14, backgroundColor: '#F5F6F8', overflow: 'hidden' },
   match: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52, paddingHorizontal: 14 },
-  segment: { flexDirection: 'row', gap: 4, backgroundColor: '#E9EBF1', borderRadius: 22, padding: 4 },
-  segItem: { flex: 1, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
-  segOn: { backgroundColor: '#fff', shadowColor: '#0F1B3D', shadowOpacity: 0.12, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
   rate: { backgroundColor: '#F5F6F8', borderRadius: 18, padding: 16, alignItems: 'center', gap: 4 },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pill: { minWidth: 52, height: 44, paddingHorizontal: 14, borderRadius: 22, borderWidth: 1, borderColor: '#E1E4EB', backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },

@@ -15,6 +15,7 @@ export const rewardTemplates: RewardTemplate[] = [
   { title: 'Harçlık', icon: 'wallet-outline', kind: 'exchange', cost: 2, unit: 'money', unitAmount: 5, group: 'exchange' },
   { title: 'Aileyle özel vakit', icon: 'people-outline', kind: 'item', cost: 4, group: 'activity' },
   { title: 'Sevdiği bir tatlı', icon: 'ice-cream-outline', kind: 'item', cost: 5, group: 'thing' },
+  { title: 'Dondurma (evde)', icon: 'ice-cream-outline', kind: 'item', cost: 5, group: 'thing' },
   { title: 'Çıkartma paketi', icon: 'star-outline', kind: 'item', cost: 8, group: 'thing' },
   { title: 'Yeni bir kitap', icon: 'book-outline', kind: 'item', cost: 25, group: 'thing' },
   { title: 'Arkadaşlarıyla 30 dakika fazladan oyun', icon: 'football-outline', kind: 'item', cost: 8, group: 'activity' },
