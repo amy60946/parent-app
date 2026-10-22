@@ -16,7 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import TrialBanner from '../components/TrialBanner';
 import { useBilling } from '../billing';
 
-const HINT_KEY = 'hint-abc-longpress';
+const HINT_KEY = 'hint-plus-longpress-v2';
 const NEW_REWARD_KEY = 'hint-reward-new';
 
 type PartFilter = 'all' | TaskDayPart | 'any';
@@ -39,8 +39,8 @@ export default function TasksScreen({ navigation }: any) {
   const [selected, setSelected] = useState(todayISO());
   const [childFilter, setChildFilter] = useState<string | 'all'>('all');
   const [part, setPart] = useState<PartFilter>('all');
-  // + düğmesi: kısa bas → "Görev oluştur" ve "Ödül" düğmeleri; uzun bas → "Zor an" (ilk seferde ipucu)
-  const [dial, setDial] = useState<'menu' | 'abc' | null>(null);
+  // + düğmesi: kısa bas → görev oluştur; basılı tut → "Ödül" ve "Gözlem notu" düğmeleri (ilk seferde ipucu)
+  const [dial, setDial] = useState<'menu' | null>(null);
   const [hint, setHint] = useState(false);
   const [newReward, setNewReward] = useState(false);
   React.useEffect(() => {
@@ -220,30 +220,23 @@ export default function TasksScreen({ navigation }: any) {
             <Text style={styles.dialLabel}>Ödül</Text>
             <View style={styles.dialIcon}><Ionicons name="gift-outline" size={20} color={colors.navy} /></View>
           </Pressable>
-          <Pressable style={styles.dialItem} accessibilityLabel="Görev oluştur"
-            onPress={() => { if (allow('task')) go('CreateTask', { date: selected }); else setDial(null); }}>
-            <Text style={styles.dialLabel}>Görev oluştur</Text>
-            <View style={styles.dialIcon}><Ionicons name="list-outline" size={20} color={colors.navy} /></View>
+          <Pressable style={styles.dialItem} accessibilityLabel="Gözlem notu ekle"
+            onPress={() => go('Abc', { new: true })}>
+            <Text style={styles.dialLabel}>Gözlem notu</Text>
+            <View style={styles.dialIcon}><Ionicons name="create-outline" size={20} color={colors.navy} /></View>
           </Pressable>
         </View>
       )}
-      {dial === 'abc' && (
-        <Pressable style={styles.dialBtn} accessibilityLabel="Zor bir anı kaydet"
-          onPress={() => go('Abc', { new: true })}>
-          <Ionicons name="pulse-outline" size={18} color={colors.navy} />
-          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.navy }}>Zor an</Text>
-        </Pressable>
-      )}
       {hint && !dial && (
         <Pressable style={styles.hintBubble} onPress={seenHint} accessibilityLabel="İpucunu kapat">
-          <Text style={{ fontSize: 12, color: '#fff' }}>Zor bir anı kaydetmek için + düğmesini basılı tut</Text>
+          <Text style={{ fontSize: 12, color: '#fff' }}>Ödül ve gözlem notu için + düğmesini basılı tut</Text>
         </Pressable>
       )}
       <Pressable
         style={styles.fab}
-        accessibilityLabel="Görev ya da ödül ekle. Zor an kaydetmek için basılı tut."
-        onPress={() => setDial(dial ? null : 'menu')}
-        onLongPress={() => { setDial('abc'); seenHint(); }}
+        accessibilityLabel="Görev oluştur. Ödül ve gözlem notu için basılı tut."
+        onPress={() => { if (dial) setDial(null); else if (allow('task')) navigation.navigate('CreateTask', { date: selected }); }}
+        onLongPress={() => { setDial('menu'); seenHint(); }}
         delayLongPress={350}
       >
         <Ionicons name={dial ? 'close' : 'add'} size={32} color="#fff" />
@@ -382,11 +375,6 @@ const styles = StyleSheet.create({
   rowTitle: { fontSize: 15, fontWeight: '600', color: colors.navy, flexShrink: 1 },
   rowDesc: { fontSize: 12, color: colors.muted, marginTop: 3 },
   meta: { fontSize: 11, color: colors.muted },
-  dialBtn: {
-    position: 'absolute', right: 20, bottom: 96, flexDirection: 'row', alignItems: 'center', gap: 6, height: 44, paddingHorizontal: 16,
-    borderRadius: 22, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line,
-    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 5,
-  },
   dial: { position: 'absolute', right: 20, bottom: 96, alignItems: 'flex-end', gap: 12 },
   dialItem: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   dialLabel: { fontSize: 14, fontWeight: '700', color: colors.navy, backgroundColor: '#fff', paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.sm, overflow: 'hidden' },

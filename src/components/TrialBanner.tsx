@@ -25,7 +25,7 @@ export default function TrialBanner() {
 }
 
 const styles = StyleSheet.create({
-  bar: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 20, marginTop: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.sm, backgroundColor: colors.today },
+  bar: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 20, marginTop: 6, marginBottom: 12, paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.sm, backgroundColor: colors.today },
   text: { flex: 1, fontSize: 13, fontWeight: '600', color: colors.navy },
   link: { fontSize: 13, fontWeight: '700', color: colors.navy },
 });

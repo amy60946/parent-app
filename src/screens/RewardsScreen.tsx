@@ -236,17 +236,19 @@ export default function RewardsScreen({ navigation }: any) {
           })}
 
           {fresh.length > 0 && (
-            <View style={{ gap: 6 }}>
+            <View style={{ gap: 6, marginTop: 6 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={[styles.cap, { flex: 1, fontWeight: '700', color: '#3D4559', fontSize: 13 }]}>Öneriler · dokun, eklensin</Text>
-                <Pressable onPress={() => { if (allow('reward')) setSuggest(true); }} hitSlop={8} accessibilityLabel="Bütün öneriler">
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: colors.navy }}>Tümü ›</Text>
+                <Pressable onPress={() => { if (allow('reward')) setSuggest(true); }} hitSlop={10} style={styles.allBtn} accessibilityLabel="Bütün öneriler">
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: colors.navy }}>Tümü ›</Text>
                 </Pressable>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                 {fresh.slice(0, 6).map((t) => (
                   <Pressable key={t.title} onPress={() => addTemplate(t)} style={styles.suggest} accessibilityLabel={`${t.title} ekle, ${priceText(t)}`}>
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: colors.navy }}>+ {t.title} · {t.kind === 'exchange' && t.unit ? `${t.cost} = ${t.unitAmount} ${unitShort[t.unit]}` : t.cost}</Text>
+                    <Ionicons name="add" size={16} color={colors.navy} />
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: colors.navy }}>{t.title}</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: colors.muted }}>{t.kind === 'exchange' && t.unit ? `${t.cost} = ${t.unitAmount} ${unitShort[t.unit]}` : t.cost}</Text>
                   </Pressable>
                 ))}
               </ScrollView>
@@ -282,7 +284,7 @@ export default function RewardsScreen({ navigation }: any) {
                           <Pressable key={c.id} onPress={() => tapKid(r, c.id)} disabled={short || loading}
                             style={[styles.letter, short ? styles.letterShort : { backgroundColor: bg }, sel(c.id) && styles.letterOn]}
                             accessibilityLabel={short ? `${c.name}: ${r.cost - (bal[c.id] ?? 0)} taş eksik` : `${r.title}: ${c.name} için ver`}>
-                            <Text style={{ fontSize: 15, fontWeight: '800', color: short ? '#6B7285' : fg }}>{initial(c.name)}</Text>
+                            <Text style={{ fontSize: 15, fontWeight: '800', color: short ? '#B4B9C6' : fg }}>{initial(c.name)}</Text>
                           </Pressable>
                         );
                       })}
@@ -308,7 +310,7 @@ export default function RewardsScreen({ navigation }: any) {
               })}
             </Card>
           )}
-          {rewards.length > 0 && <Text style={styles.cap}>Harfe dokun, sonra onayla. Kesikli harf: taşı yetmiyor. Ada için kazanılan taşlar düşmez.</Text>}
+          {rewards.length > 0 && <Text style={styles.cap}>Harfe dokun, sonra onayla. Soluk harf: taşı yetmiyor.</Text>}
         </ScrollView>
       )}
 
@@ -489,42 +491,71 @@ function SuggestionsModal({ visible, rewards, onClose, onAdd, onCustom, tip }: {
   );
 }
 
-// Ödül oluştur / düzenle
+// Ödül oluştur / düzenle (tek sayfa): adı yaz → öneriye dokun (fiyat, simge, tür gelir) → istersen fiyatı değiştir → Kaydet
+type Mode = 'item' | 'minute' | 'money';
+const prices = [3, 5, 10, 20, 50];
+const rateCosts = [1, 2, 3, 5];
+const rateAmounts: Record<RewardUnit, number[]> = { minute: [5, 10, 15, 30], money: [1, 2, 5, 10] };
 function RewardEditor({ value, kids, avg, onClose, onSave, onDelete }: {
   value: { reward?: Reward; template?: RewardTemplate } | null; kids: Child[]; avg: number; onClose: () => void;
   onSave: (r: RewardInput) => void; onDelete: (id: string) => void;
 }) {
   const editing = value?.reward;
-  const [kind, setKind] = useState<RewardKind>('item');
-  const [unit, setUnit] = useState<RewardUnit>('minute');
+  const [mode, setMode] = useState<Mode>('item');
   const [cost, setCost] = useState(0);
   const [amount, setAmount] = useState(0);
-  const [who, setWho] = useState<string[]>([]);
+  const [who, setWho] = useState<string[]>([]); // boş: herkes
   const [icon, setIcon] = useState('gift');
   const [title, setTitle] = useState('');
   const [pickIcon, setPickIcon] = useState(false);
+  const [other, setOther] = useState(false); // fiyatı elle yaz
+  const [typed, setTyped] = useState(false); // ad elle yazıldı mı (öneriler yalnız o zaman)
   useEffect(() => {
     if (!value) return;
     const src = value.reward ?? value.template;
-    setKind(src?.kind ?? 'item');
-    setUnit(src?.unit ?? 'minute');
+    setMode(src?.kind === 'exchange' ? (src.unit ?? 'minute') : 'item');
     setCost(src?.cost ?? 0);
     setAmount(src?.unitAmount ?? 0);
-    setWho(value.reward?.childIds.length ? value.reward.childIds : kids.map((k) => k.id));
+    setWho(value.reward?.childIds ?? []);
     setIcon(value.reward?.icon ?? (value.template ? iconKey(value.template.icon) : 'gift'));
     setTitle(src?.title ?? '');
     setPickIcon(false);
+    setTyped(false);
+    setOther(!!src && src.kind !== 'exchange' && !prices.includes(src.cost));
   }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const toggle = (id: string) => setWho((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  const needle = title.trim().toLocaleLowerCase('tr-TR');
+  const matches = typed && needle.length >= 2
+    ? rewardTemplates.filter((t) => t.title.toLocaleLowerCase('tr-TR').includes(needle) && !sameTitle(t.title, title)).slice(0, 3)
+    : [];
+  const useTemplate = (t: RewardTemplate) => {
+    setTitle(t.title); setIcon(iconKey(t.icon)); setCost(t.cost); setAmount(t.unitAmount ?? 0);
+    setMode(t.kind === 'exchange' ? (t.unit ?? 'minute') : 'item'); setOther(t.kind !== 'exchange' && !prices.includes(t.cost)); setTyped(false);
+  };
+  const setModeTo = (m: Mode) => {
+    setMode(m);
+    // Ad boşsa ya da bir öneriden geldiyse türe uygun ad ve simge
+    if (!title.trim() || rewardTemplates.some((t) => sameTitle(t.title, title))) {
+      const t = rewardTemplates.find((x) => (m === 'item' ? false : x.unit === m));
+      if (t) { setTitle(t.title); setIcon(iconKey(t.icon)); }
+      else if (m === 'item' && rewardTemplates.some((x) => x.kind === 'exchange' && sameTitle(x.title, title))) { setTitle(''); setIcon('gift'); }
+    }
+    if (m !== 'item') { if (!rateCosts.includes(cost)) setCost(1); if (!amount || !rateAmounts[m].includes(amount)) setAmount(m === 'minute' ? 10 : 5); }
+  };
+  const toggle = (id: string) => setWho((p) => {
+    const cur = p.length ? p : kids.map((k) => k.id);
+    const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
+    return next.length === kids.length ? [] : next;
+  });
+  const exchange = mode !== 'item';
   const save = () => {
     if (!title.trim()) return Alert.alert('Ödülün adını yaz');
     if (cost < 1 || cost > 500) return Alert.alert('Fiyat 1–500 taş olmalı');
-    if (kind === 'exchange' && amount < 1) return Alert.alert(`Kaç ${unitLabel[unit]} karşılığı olduğunu yaz`);
-    if (!who.length) return Alert.alert('En az bir çocuk seç');
+    if (exchange && amount < 1) return Alert.alert(`Kaç ${unitLabel[mode as RewardUnit]} karşılığı olduğunu seç`);
+    if (who.length === 0 && !kids.length) return Alert.alert('Önce bir çocuk ekle');
     onSave({
-      id: editing?.id, title, kind, cost, unit: kind === 'exchange' ? unit : undefined, unitAmount: kind === 'exchange' ? amount : undefined,
-      childIds: who.length === kids.length ? [] : who, icon,
+      id: editing?.id, title, kind: exchange ? 'exchange' : 'item', cost,
+      unit: exchange ? (mode as RewardUnit) : undefined, unitAmount: exchange ? amount : undefined, childIds: who, icon,
     });
     onClose();
   };
@@ -532,93 +563,51 @@ function RewardEditor({ value, kids, avg, onClose, onSave, onDelete }: {
     { text: 'Vazgeç', style: 'cancel' },
     { text: 'Sil', style: 'destructive', onPress: () => { onDelete(editing.id); onClose(); } },
   ]);
-
-  const typeCard = (k: RewardKind, label: string, desc: string, icons: (keyof typeof Ionicons.glyphMap)[]) => (
-    <Pressable onPress={() => setKind(k)} style={[styles.typeCard, kind === k && styles.typeOn]} accessibilityRole="radio" accessibilityState={{ selected: kind === k }}>
-      <Ionicons name={kind === k ? 'radio-button-on' : 'radio-button-off'} size={22} color={colors.navy} />
-      <View style={{ flexDirection: 'row', gap: 6, marginVertical: 6 }}>
-        {icons.map((i) => <Ionicons key={i} name={i} size={22} color={colors.navy} />)}
-      </View>
-      <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy, textAlign: 'center' }}>{label}</Text>
-      <Text style={{ fontSize: 12, color: colors.muted, textAlign: 'center' }}>{desc}</Text>
+  const days = avg > 0 && cost > 0 ? Math.max(1, Math.round((cost / avg) * 7)) : 0;
+  const Pill = ({ on, label, onPress, a11y }: { on: boolean; label: string; onPress: () => void; a11y?: string }) => (
+    <Pressable onPress={onPress} style={[styles.pill, on && styles.pillOn]} accessibilityState={{ selected: on }} accessibilityLabel={a11y}>
+      <Text style={{ fontSize: 15, fontWeight: '700', color: on ? '#fff' : colors.navy }}>{label}</Text>
     </Pressable>
   );
+  const bold = (t: string) => {
+    const i = t.toLocaleLowerCase('tr-TR').indexOf(needle);
+    if (i < 0) return <Text>{t}</Text>;
+    return <Text>{t.slice(0, i)}<Text style={{ fontWeight: '800' }}>{t.slice(i, i + needle.length)}</Text>{t.slice(i + needle.length)}</Text>;
+  };
 
   return (
     <Modal visible={!!value} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'bottom']}>
-        <View style={styles.modalHead}>
-          <View style={{ width: 36 }} />
-          <Text style={styles.modalTitle}>{editing ? 'Ödülü düzenle' : 'Ödül oluştur'}</Text>
-          <IconButton name="close" label="Kapat" onPress={onClose} style={{ backgroundColor: 'transparent' }} />
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }} edges={['top', 'bottom']}>
+        <View style={styles.editorHead}>
+          <Pressable onPress={onClose} hitSlop={8} style={{ minWidth: 72, height: 44, justifyContent: 'center' }}>
+            <Text style={{ fontSize: 15, color: '#3D4559' }}>Vazgeç</Text>
+          </Pressable>
+          <Text style={[styles.modalTitle, { fontSize: 17 }]}>{editing ? 'Ödülü düzenle' : 'Yeni ödül'}</Text>
+          <Pressable onPress={save} style={styles.saveBtn} accessibilityLabel="Kaydet">
+            <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Kaydet</Text>
+          </Pressable>
         </View>
-        <ScrollView contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: 32 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
-          <View style={{ gap: 10 }}>
-            <Text style={styles.h}>Ödül türü</Text>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              {typeCard('item', 'Eşya ya da etkinlik', 'Diğer bütün ödüller için', ['gift-outline', 'film-outline', 'ice-cream-outline'])}
-              {typeCard('exchange', 'Değiş tokuş', 'Ekran süresi ya da harçlık için', ['sunny-outline', 'arrow-forward', 'phone-portrait-outline'])}
-            </View>
-          </View>
-
-          {kind === 'exchange' && (
-            <View style={{ gap: 10 }}>
-              <Text style={styles.h}>Neye çevrilsin?</Text>
-              {([['minute', 'Dakika', 'Taşı ekran süresine çevirir', 'phone-portrait-outline'], ['money', 'TL', 'Taşı harçlığa çevirir', 'wallet-outline']] as const).map(([u, l, d, ic]) => (
-                <Pressable key={u} onPress={() => setUnit(u)} style={[styles.unitRow, unit === u && styles.typeOn]} accessibilityRole="radio" accessibilityState={{ selected: unit === u }}>
-                  <Ionicons name={unit === u ? 'radio-button-on' : 'radio-button-off'} size={22} color={colors.navy} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>{l}</Text>
-                    <Text style={{ fontSize: 12, color: colors.muted }}>{d}</Text>
-                  </View>
-                  <Ionicons name={ic} size={22} color={colors.navy} />
-                </Pressable>
-              ))}
-            </View>
-          )}
-
+        <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 8, gap: 18, paddingBottom: 32 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
           <View style={{ gap: 8 }}>
-            <Text style={styles.h}>{kind === 'exchange' ? 'Değiş tokuş oranı' : 'Fiyat'}</Text>
-            <Text style={styles.reminder}>
-              Hatırlatma: kolay görev 1, orta 2, zor 3 Güneş Taşı kazandırır. Son 7 günde çocuk başına ortalama {avg} taş kazanıldı.
-              {kind === 'exchange' ? ' Değiş tokuş ödülü adet adet alınır.' : ''}
-            </Text>
-            {kind === 'exchange' ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <NumBox value={cost} onChange={setCost} label="Taş" />
-                <Text style={styles.unitText}>taş =</Text>
-                <NumBox value={amount} onChange={setAmount} label={unitLabel[unit]} />
-                <Text style={styles.unitText}>{unitLabel[unit]}</Text>
-              </View>
-            ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <NumBox value={cost} onChange={setCost} label="Fiyat" />
-                <Text style={styles.unitText}>taş</Text>
+            <View style={styles.nameBox}>
+              <Pressable onPress={() => setPickIcon(!pickIcon)} style={styles.nameIcon} accessibilityLabel="Simge seç">
+                <Ionicons name={iconOf(icon)} size={20} color={colors.navy} />
+              </Pressable>
+              <TextInput value={title} onChangeText={(t) => { setTitle(t); setTyped(true); }} maxLength={60} autoFocus={!value?.reward && !value?.template}
+                placeholder="Ödülün adı: dondurma, park…" placeholderTextColor={colors.faint} accessibilityLabel="Ödül adı"
+                style={{ flex: 1, minWidth: 0, fontSize: 17, fontWeight: '600', color: colors.navy, paddingVertical: 12 }} />
+            </View>
+            {matches.length > 0 && (
+              <View style={styles.matches}>
+                {matches.map((t, i) => (
+                  <Pressable key={t.title} onPress={() => useTemplate(t)} style={[styles.match, i > 0 && styles.sep]} accessibilityLabel={`${t.title}, ${priceText(t)}`}>
+                    <Ionicons name={t.icon} size={18} color={colors.navy} />
+                    <Text style={{ flex: 1, fontSize: 15, color: colors.navy }}>{bold(t.title)}</Text>
+                    <Text style={{ fontSize: 13, color: colors.muted }}>{priceText(t)}</Text>
+                  </Pressable>
+                ))}
               </View>
             )}
-          </View>
-
-          <View style={{ gap: 8 }}>
-            <Text style={styles.h}>Kimler için</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {kids.map((k) => {
-                const on = who.includes(k.id);
-                return (
-                  <Pressable key={k.id} onPress={() => toggle(k.id)} style={[styles.check, on && { borderColor: colors.navy }]}
-                    accessibilityRole="checkbox" accessibilityState={{ checked: on }}>
-                    <Ionicons name={on ? 'checkbox' : 'square-outline'} size={20} color={colors.navy} />
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: colors.navy }}>{k.name}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-
-          <View style={{ gap: 8 }}>
-            <Text style={styles.h}>Ödül simgesi</Text>
-            <Pressable onPress={() => setPickIcon(!pickIcon)} style={styles.iconPick} accessibilityLabel="Simge seç">
-              <Ionicons name={iconOf(icon)} size={28} color={colors.navy} />
-            </Pressable>
             {pickIcon && (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {rewardIcons.map((i) => (
@@ -631,25 +620,63 @@ function RewardEditor({ value, kids, avg, onClose, onSave, onDelete }: {
             )}
           </View>
 
-          <View style={{ gap: 6 }}>
-            <Text style={styles.h}>Ödül adı</Text>
-            {kind === 'exchange' && unit === 'minute' && (
-              <Text style={{ fontSize: 12, color: colors.muted }}>Hangi uygulama ya da oyun için olduğunu ada yazabilirsin.</Text>
-            )}
-            <TextInput value={title} onChangeText={setTitle} maxLength={60} style={styles.input} placeholderTextColor={colors.faint}
-              placeholder={kind === 'exchange' ? (unit === 'minute' ? 'Ekran süresi' : 'Harçlık') : 'Parkta 30 dakika'} />
-            <Text style={{ fontSize: 12, color: colors.muted, alignSelf: 'flex-end' }}>{title.length}/60</Text>
+          <View style={styles.segment}>
+            {([['item', 'Tek ödül'], ['minute', 'Ekran süresi'], ['money', 'Harçlık']] as [Mode, string][]).map(([m, l]) => (
+              <Pressable key={m} onPress={() => setModeTo(m)} style={[styles.segItem, mode === m && styles.segOn]} accessibilityRole="tab" accessibilityState={{ selected: mode === m }}>
+                <Text style={{ fontSize: 14, fontWeight: mode === m ? '700' : '600', color: mode === m ? colors.navy : '#4A5165' }}>{l}</Text>
+              </Pressable>
+            ))}
           </View>
 
+          {exchange ? (
+            <View style={{ gap: 10 }}>
+              <View style={styles.rate}>
+                <Text style={{ fontSize: 13, color: '#4A5165' }}>Değiş tokuş oranı</Text>
+                <Text style={{ fontSize: 30, fontWeight: '800', color: colors.navy }}>{cost} taş = {amount} {unitShort[mode as RewardUnit]}</Text>
+                <Text style={{ fontSize: 12, color: '#4A5165' }}>Verirken kaç kez verileceğini seçersin.</Text>
+              </View>
+              <Text style={styles.h}>Kaç taş</Text>
+              <View style={styles.pills}>{rateCosts.map((c) => <Pill key={c} on={cost === c} label={String(c)} onPress={() => setCost(c)} a11y={`${c} taş`} />)}</View>
+              <Text style={styles.h}>Karşılığı</Text>
+              <View style={styles.pills}>
+                {rateAmounts[mode as RewardUnit].map((a) => <Pill key={a} on={amount === a} label={`${a} ${unitShort[mode as RewardUnit]}`} onPress={() => setAmount(a)} />)}
+              </View>
+            </View>
+          ) : (
+            <View style={{ gap: 10 }}>
+              <Text style={styles.h}>Fiyat <Text style={{ fontWeight: '500', color: colors.muted }}>(Güneş Taşı)</Text></Text>
+              <View style={styles.pills}>
+                {prices.map((p) => <Pill key={p} on={!other && cost === p} label={String(p)} onPress={() => { setCost(p); setOther(false); }} a11y={`${p} taş`} />)}
+                <Pill on={other} label={other ? `${cost || '…'}` : 'Diğer'} onPress={() => setOther(true)} a11y="Başka fiyat" />
+              </View>
+              {other && (
+                <TextInput value={cost ? String(cost) : ''} onChangeText={(t) => setCost(Math.min(500, Number(t.replace(/\D/g, '')) || 0))} autoFocus
+                  keyboardType="number-pad" placeholder="1–500 taş" placeholderTextColor={colors.faint} style={styles.input} accessibilityLabel="Fiyat" />
+              )}
+            </View>
+          )}
+          {days > 0 && (
+            <Text style={styles.avgNote}>
+              Çocuklar haftada ortalama {avg} taş kazanıyor: {exchange ? `${cost} taş` : 'bu ödül'} yaklaşık {days} günlük emek.
+            </Text>
+          )}
+
+          {kids.length > 1 && (
+            <View style={{ gap: 10 }}>
+              <Text style={styles.h}>Kimler için</Text>
+              <View style={styles.pills}>
+                <Pill on={who.length === 0} label="Herkes" onPress={() => setWho([])} />
+                {kids.map((k) => <Pill key={k.id} on={who.includes(k.id)} label={k.name} onPress={() => toggle(k.id)} />)}
+              </View>
+            </View>
+          )}
+
           {editing && (
-            <Pressable onPress={remove} style={{ alignSelf: 'center' }} hitSlop={8}>
+            <Pressable onPress={remove} style={{ alignSelf: 'center', padding: 10 }} hitSlop={8}>
               <Text style={{ fontSize: 14, fontWeight: '700', color: colors.danger }}>Ödülü sil</Text>
             </Pressable>
           )}
         </ScrollView>
-        <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
-          <Pressable style={styles.cta} onPress={save}><Text style={styles.ctaText}>Kaydet</Text></Pressable>
-        </View>
       </SafeAreaView>
     </Modal>
   );
@@ -819,11 +846,26 @@ const styles = StyleSheet.create({
   warn: { flexDirection: 'row', gap: 8, padding: 12, borderRadius: radius.sm, backgroundColor: '#FFF6DE' },
   balance: { minWidth: 150, height: 52, borderRadius: radius.md, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 10, paddingRight: 8 },
   letter: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  letterShort: { borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#A5ABBA', backgroundColor: '#fff' },
+  letterShort: { backgroundColor: '#F3F4F7' },
   letterOn: { borderWidth: 3, borderColor: colors.navy },
   request: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFF6DE', borderRadius: radius.md, paddingVertical: 8, paddingLeft: 12, paddingRight: 8 },
   round: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  suggest: { height: 40, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.navy, backgroundColor: '#fff', justifyContent: 'center' },
+  suggest: { height: 40, paddingLeft: 10, paddingRight: 14, borderRadius: 20, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center', gap: 6 },
+  allBtn: { minHeight: 44, paddingHorizontal: 10, justifyContent: 'center', marginRight: -10 },
+  editorHead: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 },
+  saveBtn: { minWidth: 72, height: 40, paddingHorizontal: 16, borderRadius: 20, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
+  nameBox: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, paddingHorizontal: 12, borderRadius: 16, borderWidth: 2, borderColor: colors.navy },
+  nameIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F1F2F6', alignItems: 'center', justifyContent: 'center' },
+  matches: { borderRadius: 14, backgroundColor: '#F5F6F8', overflow: 'hidden' },
+  match: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52, paddingHorizontal: 14 },
+  segment: { flexDirection: 'row', gap: 4, backgroundColor: '#E9EBF1', borderRadius: 22, padding: 4 },
+  segItem: { flex: 1, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  segOn: { backgroundColor: '#fff', shadowColor: '#0F1B3D', shadowOpacity: 0.12, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
+  rate: { backgroundColor: '#F5F6F8', borderRadius: 18, padding: 16, alignItems: 'center', gap: 4 },
+  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  pill: { minWidth: 52, height: 44, paddingHorizontal: 14, borderRadius: 22, borderWidth: 1, borderColor: '#E1E4EB', backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  pillOn: { backgroundColor: colors.navy, borderColor: colors.navy },
+  avgNote: { fontSize: 13, lineHeight: 19, color: '#4A5165', backgroundColor: '#FFF6DE', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   chipLine: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#D5D9E2', minHeight: 40, justifyContent: 'center' },
   amount: { minWidth: 44, alignItems: 'center' },
   fab: { position: 'absolute', right: 20, bottom: 34, height: 56, paddingHorizontal: 22, borderRadius: 28, backgroundColor: colors.navy, flexDirection: 'row', alignItems: 'center', gap: 8, shadowColor: '#0F1B3D', shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 },

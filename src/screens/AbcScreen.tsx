@@ -17,7 +17,7 @@ import { DayPart, dayPartLabel, dayPartOf } from '../data/dayParts';
 import { Voice, mmss } from './ChatScreen';
 import { useBilling } from '../billing';
 
-// Zor anlar: yeni kayıt (çok çocuk, gün bölümü seçimi, sesli kayıt) + geçmiş kayıtlar (arşiv).
+// Gözlem notları (ABC kaydı): yeni kayıt (çok çocuk, gün bölümü seçimi, sesli kayıt) + geçmiş kayıtlar (arşiv).
 // Rızalı paylaşım varsa kayıt o çocuğun uzmanına gider; olmasa da ailenin raporunda kalır.
 export default function AbcScreen({ navigation, route }: any) {
   const { children, familyId } = useStore();
@@ -55,7 +55,7 @@ export default function AbcScreen({ navigation, route }: any) {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
         <IconButton name="chevron-back" onPress={() => (form && events?.length ? setForm(false) : navigation.goBack())} label="Geri" />
-        <Text style={styles.title}>{form ? 'Zor bir anı kaydet' : 'Zor anlar'}</Text>
+        <Text style={styles.title}>{form ? 'Gözlem notu ekle' : 'Gözlem notları'}</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -65,7 +65,7 @@ export default function AbcScreen({ navigation, route }: any) {
         <ScrollView contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }}>
           <Pressable style={styles.cta} onPress={() => setForm(true)}>
             <Ionicons name="add" size={20} color="#fff" />
-            <Text style={styles.ctaText}>Zor bir anı kaydet</Text>
+            <Text style={styles.ctaText}>Gözlem notu ekle</Text>
           </Pressable>
           <Text style={styles.cap}>
             Ne oldu, öncesinde ve sonrasında. Uzmanla paylaştığın çocuklar için uzmanın da görür.

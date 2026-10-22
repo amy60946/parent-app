@@ -24,7 +24,7 @@ export const premiumFeatures = [
   'Sınırsız görev ve çocuk',
   'Ödüller ve Güneş Taşı',
   'Çocuğunla mesajlaşma',
-  'Zor an kaydı (sesli) ve arşiv',
+  'Gözlem notları (sesli) ve arşiv',
   'İki ebeveyn aynı üyelikle',
 ];
 

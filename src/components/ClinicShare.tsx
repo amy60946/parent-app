@@ -14,13 +14,13 @@ import {
 
 type View_ = 'home' | 'code';
 
-// Uzmanla paylaş: kodla bağlan (açık rıza), paylaşımları yönet, uzman önerilerini kabul et, zor anı kaydet
+// Uzmanla paylaş: kodla bağlan (açık rıza), paylaşımları yönet, uzman önerilerini kabul et, gözlem notu ekle
 export default function ClinicShareSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const [view, setView] = useState<View_>('home');
   const navigation = useNavigation<any>();
   const close = () => { setView('home'); onClose(); };
   const title = view === 'code' ? 'Uzmanla paylaş' : 'Uzmanım';
-  // Zor an kaydı artık kendi ekranında (Gelişim'den de açılır)
+  // Gözlem notu artık kendi ekranında (Gelişim'den de açılır)
   const openAbc = () => { close(); navigation.navigate('Abc', { new: true }); };
   return (
     <Sheet visible={visible} title={title} onClose={close}>
@@ -58,7 +58,7 @@ function Home({ onCode, onAbc, visible }: { onCode: () => void; onAbc: () => voi
 
   const add = (first: ClinicLink, childId: string) => Alert.alert(
     `${childName(childId)} da paylaşılsın mı?`,
-    `${first.clinician || first.clinic}, ${childName(childId)} için görevleri, tamamlanma durumunu ve zor an kayıtlarını görebilecek. Mesajlar ve coin paylaşılmaz. İstediğin an durdurabilirsin.`,
+    `${first.clinician || first.clinic}, ${childName(childId)} için görevleri, tamamlanma durumunu ve gözlem notlarını görebilecek. Mesajlar ve coin paylaşılmaz. İstediğin an durdurabilirsin.`,
     [
       { text: 'Vazgeç', style: 'cancel' },
       {
@@ -177,7 +177,7 @@ function Home({ onCode, onAbc, visible }: { onCode: () => void; onAbc: () => voi
         <Pressable style={styles.row} onPress={onAbc}>
           <Ionicons name="pulse-outline" size={20} color={colors.navy} />
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 15, color: colors.navy }}>Zor bir anı kaydet</Text>
+            <Text style={{ fontSize: 15, color: colors.navy }}>Gözlem notu ekle</Text>
             <Text style={styles.cap}>Ne oldu, öncesinde ve sonrasında. Uzmanın görür.</Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color={colors.faint} />
@@ -267,7 +267,7 @@ function CodeFlow({ onDone }: { onDone: () => void }) {
       <View style={{ gap: 8 }}>
         <Bullet ok text="Görevler ve tamamlanma durumu (saatiyle)" />
         <Bullet ok text='"Yapamam" yanıtları ve nedenleri' />
-        <Bullet ok text="Bu uygulamada kaydettiğin zor anlar" />
+        <Bullet ok text="Bu uygulamada eklediğin gözlem notları" />
         <Bullet text="Mesajlar, fotoğraf ve sesler" />
         <Bullet text="Coin bakiyesi ve oyun içi bilgiler" />
       </View>

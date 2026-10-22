@@ -14,14 +14,20 @@ const icon: Record<string, keyof typeof Ionicons.glyphMap> = {
   reward_decided: 'gift-outline', stones_deducted: 'sunny-outline',
 };
 
-// Bildirime dokununca ilgili ekran
-export function openNotification(navigation: any, n: Pick<AppNotification, 'kind' | 'data'>) {
+// Bildirime dokununca ilgili ekran. Gösterilecek bir ekran yoksa hiçbir şey olmaz (false döner):
+// yalnız bilgi veren bildirimler (eşin katılması, cihaz bağlanması, paylaşımın kapanması, görevin yapılamaması) ekran değiştirmez.
+export function notificationTarget(n: Pick<AppNotification, 'kind' | 'data'>): [string, object?] | null {
   const childId = n.data?.child_id;
-  if (n.kind === 'task_done' || n.kind === 'task_declined') navigation.navigate('Tabs', { screen: n.kind === 'task_done' ? 'İnceleme' : 'Görevler' });
-  else if (n.kind === 'message' && childId) navigation.navigate('Chat', { childId });
-  else if (n.kind === 'clinic_suggestion') navigation.navigate('Tabs', { screen: 'Görevler' });
-  else if (n.kind.startsWith('reward_') || n.kind === 'stones_deducted') navigation.navigate('Rewards', { childId });
-  else navigation.navigate('Tabs', { screen: 'Aile' });
+  if (n.kind === 'task_done') return ['Tabs', { screen: 'İnceleme' }];
+  if (n.kind === 'message' && childId) return ['Chat', { childId }];
+  if (n.kind === 'clinic_suggestion') return ['Tabs', { screen: 'Görevler' }];
+  if (n.kind === 'reward_request') return ['Rewards', { childId }];
+  return null;
+}
+export function openNotification(navigation: any, n: Pick<AppNotification, 'kind' | 'data'>) {
+  const t = notificationTarget(n);
+  if (t) navigation.navigate(...t);
+  return !!t;
 }
 
 const ago = (iso: string) => {
@@ -46,8 +52,10 @@ export default function NotificationsScreen({ navigation }: any) {
     }
   };
 
+  // Ekranı olan bildirim: bildirimler kapanır ve o ekran açılır. Olmayan: yalnız okundu sayılır, ekran değişmez.
   const open = (n: AppNotification) => {
     if (!n.readAt) markRead([n.id]);
+    if (!notificationTarget(n)) return;
     navigation.goBack();
     openNotification(navigation, n);
   };
@@ -80,7 +88,7 @@ export default function NotificationsScreen({ navigation }: any) {
         ListEmptyComponent={<Text style={styles.empty}>Henüz bildirim yok. Çocuğun görev yaptığında, mesaj gönderdiğinde ya da uzmanın görev önerdiğinde burada görünür.</Text>}
         renderItem={({ item: n }) => (
           <Pressable onPress={() => open(n)} onLongPress={() => remove(n.id)} style={[styles.row, !n.readAt && styles.unread]}
-            accessibilityHint="Uzun basınca silinir">
+            accessibilityHint={notificationTarget(n) ? 'Açmak için dokun. Uzun basınca silinir' : 'Uzun basınca silinir'}>
             <Ionicons name={icon[n.kind] ?? 'notifications-outline'} size={20} color={colors.navy} />
             <View style={{ flex: 1 }}>
               <Text style={[styles.h, !n.readAt && { fontWeight: '700' }]}>{n.title}</Text>
@@ -88,6 +96,7 @@ export default function NotificationsScreen({ navigation }: any) {
             </View>
             <Text style={styles.cap}>{ago(n.createdAt)}</Text>
             {!n.readAt && <View style={styles.dot} />}
+            {notificationTarget(n) && <Ionicons name="chevron-forward" size={16} color={colors.faint} />}
           </Pressable>
         )}
       />
