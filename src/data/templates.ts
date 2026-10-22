@@ -30,10 +30,10 @@ export type Template = {
 // Şablon süzgecinin yaş grupları (yalnız ParentApp'te; oyunun yaş bandı ayrıdır: ageBands.ts)
 export type TemplateAge = 'U' | 'A' | 'B' | 'T';
 export const templateAges: { id: TemplateAge; label: string }[] = [
-  { id: 'U', label: '6 ve altı' },
+  { id: 'U', label: '5 ve altı' },
   { id: 'A', label: '6–8' },
   { id: 'B', label: '9–12' },
-  { id: 'T', label: '12 ve üzeri' },
+  { id: 'T', label: '13 ve üstü' },
 ];
 
 const ALL: TemplateAge[] = ['U', 'A', 'B', 'T'];
