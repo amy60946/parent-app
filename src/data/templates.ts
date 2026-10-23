@@ -28,7 +28,7 @@ export const skillLabels: Record<Skill, string> = {
 export const skillLabel = (s?: string | null) => (s && s in skillLabels ? skillLabels[s as Skill] : s || '');
 export const categoryLabel = (c: Category) => categories.find((x) => x.id === c)?.label ?? '';
 
-// Yaş grupları = oyunun yaş bandı (durumlar.md 9): K 5 ve altı, A 6–8, B 9–12, C 13 ve üstü
+// Yaş grupları = oyunun yaş bandı (durumlar.md §4): K 5 ve altı, A 6–8, B 9–12, C 13 ve üstü
 export type TemplateAge = 'K' | 'A' | 'B' | 'C';
 export const templateAges: { id: TemplateAge; label: string }[] = [
   { id: 'K', label: '5 ve altı' },

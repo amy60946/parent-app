@@ -14,7 +14,7 @@ import Sheet from '../components/Sheet';
 import ClinicShareSheet from '../components/ClinicShare';
 import { messagePreview } from './ChatScreen';
 import { childAvatars, parentAvatars } from '../data/avatars';
-import { AgeBand, ageBands, suggestAgeBand } from '../data/ageBands';
+import { AgeBand, ageBands, ageBandLabel, suggestAgeBand } from '../data/ageBands';
 import { useStore } from '../store';
 import { useAuth } from '../lib/auth';
 import { formatTR, toISO, todayISO } from '../dates';
@@ -176,11 +176,7 @@ function ChildInfo({ id }: { id: string }) {
         <Text style={{ fontSize: 13, color: colors.muted }}>
           Pofi Adası oyununun dili ve zorluğu buna göre ayarlanır.
         </Text>
-        <Segmented<AgeBand>
-          options={ageBands}
-          value={c.ageBand ?? suggestAgeBand(c.birthday)}
-          onChange={(b) => setChildAgeBand(c.id, b)}
-        />
+        <AgeBandPicker value={c.ageBand} birthday={c.birthday} onChange={(b) => setChildAgeBand(c.id, b)} />
       </Card>
       <Card style={{ gap: 12 }}>
         <Text style={styles.h}>Giriş kodu</Text>
@@ -487,7 +483,7 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
   const [name, setName] = useState('');
   const [gender, setGender] = useState<'kız' | 'erkek'>('kız');
   const [birthday, setBirthday] = useState<string | undefined>();
-  const [band, setBand] = useState<AgeBand>('A');
+  const [band, setBand] = useState<AgeBand | null>(null); // null: otomatik
   const [avatar, setAvatar] = useState(childAvatars[1].id);
   const [code, setCode] = useState<IssuedCode | undefined>();
   const [busy, setBusy] = useState(false);
@@ -517,7 +513,7 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
       catch (e) { setBusy(false); return Alert.alert('Fotoğraf yüklenemedi', (e as Error).message); }
       setBusy(false);
     }
-    addChild({ name: name.trim(), avatar: av, gender, birthday, ageBand: band });
+    addChild({ name: name.trim(), avatar: av, gender, birthday, ageBand: band ?? undefined });
     close();
   };
 
@@ -559,7 +555,7 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
             <DateField
               mode="date"
               value={birthday}
-              onChange={(d) => { setBirthday(d); if (d) setBand(suggestAgeBand(d)); }}
+              onChange={setBirthday}
               placeholder="Tarih seç"
               clearable
               maximumDate={new Date()}
@@ -567,7 +563,7 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
           </View>
           <View>
             <Text style={[styles.cap, { marginBottom: 6 }]}>Oyundaki yaş grubu</Text>
-            <Segmented<AgeBand> options={ageBands} value={band} onChange={setBand} />
+            <AgeBandPicker value={band ?? undefined} birthday={birthday} onChange={setBand} />
           </View>
           <Pressable style={[styles.cta, busy && { opacity: 0.6 }]} disabled={busy} onPress={save}><Text style={styles.ctaText}>Çocuğu ekle</Text></Pressable>
         </>
@@ -590,6 +586,29 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
         </>
       )}
     </Sheet>
+  );
+}
+
+// Oyun yaş grubu: "Otomatik" (doğum gününden, çocuk büyüdükçe değişir) ya da bilerek seçilen grup
+function AgeBandPicker({ value, birthday, onChange }: { value?: AgeBand; birthday?: string; onChange: (b: AgeBand | null) => void }) {
+  const auto = suggestAgeBand(birthday);
+  const chip = (on: boolean, label: string, onPress: () => void) => (
+    <Pressable key={label} onPress={onPress} accessibilityState={{ selected: on }}
+      style={{ height: 38, paddingHorizontal: 14, borderRadius: 19, justifyContent: 'center', borderWidth: 1,
+        borderColor: on ? colors.navy : colors.line, backgroundColor: on ? colors.navy : '#fff' }}>
+      <Text style={{ fontSize: 13, fontWeight: '600', color: on ? '#fff' : colors.navy }}>{label}</Text>
+    </Pressable>
+  );
+  return (
+    <View style={{ gap: 6 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {chip(!value, `Otomatik · ${ageBandLabel(auto)}`, () => onChange(null))}
+        {ageBands.map((b) => chip(value === b.id, b.label, () => onChange(b.id)))}
+      </View>
+      <Text style={{ fontSize: 12, color: colors.muted }}>
+        {!value ? (birthday ? 'Doğum gününden; çocuk büyüdükçe kendiliğinden değişir.' : 'Doğum günü girilmediği için 6–8 sayılır.') : 'Elle seçildi; doğum günü değişse de bu grup kalır.'}
+      </Text>
+    </View>
   );
 }
 

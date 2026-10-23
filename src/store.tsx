@@ -8,7 +8,7 @@ import { uuid } from './lib/uuid';
 import { track } from './lib/track';
 import { readFileBytes } from './lib/files';
 import { TaskDayPart } from './data/dayParts';
-import { AgeBand } from './data/ageBands';
+import { AgeBand, toAgeBand } from './data/ageBands';
 import { toAppError } from './lib/errors';
 import { requestPremium } from './lib/billing';
 
@@ -18,7 +18,7 @@ export type Child = {
   avatar: string;
   gender?: 'kız' | 'erkek';
   birthday?: string; // ISO
-  ageBand?: AgeBand; // Pofi Adası oyunu: A 6–8, B 9–12
+  ageBand?: AgeBand; // ebeveynin bilerek seçtiği oyun yaş grubu (K/A/B/C); yoksa otomatik (doğum gününden)
   linked: boolean; // çocuk oyuna giriş kodunu kullandı (cihaz bağlı)
 };
 
@@ -85,7 +85,7 @@ type Store = {
   customTemplates: Template[];
   inviteCodes: InviteCode[];
   addChild: (c: Omit<Child, 'id' | 'linked'>) => void;
-  setChildAgeBand: (childId: string, band: AgeBand) => void;
+  setChildAgeBand: (childId: string, band: AgeBand | null) => void;
   childBalance: (childId: string) => Promise<number>;
   unlinkChildDevice: (childId: string) => Promise<void>;
   updateParent: (p: Partial<Parent>) => void;
@@ -145,7 +145,7 @@ const toChild = (r: Row): Child => ({
   avatar: r.avatar,
   gender: r.gender ?? undefined,
   birthday: r.birthday ?? undefined,
-  ageBand: r.age_band === 'C' ? 'B' : r.age_band ?? undefined, // eski C bandı (13–15) artık B
+  ageBand: toAgeBand(r.age_band),
   linked: !!r.user_id,
 });
 
@@ -403,8 +403,9 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     });
   }, [run]);
 
-  const setChildAgeBand = useCallback((childId: string, band: AgeBand) => {
-    setChildren((p) => p.map((c) => (c.id === childId ? { ...c, ageBand: band } : c)));
+  // null: otomatik (doğum gününden; durumlar.md §4)
+  const setChildAgeBand = useCallback((childId: string, band: AgeBand | null) => {
+    setChildren((p) => p.map((c) => (c.id === childId ? { ...c, ageBand: band ?? undefined } : c)));
     run(() => supabase.rpc('set_child_age_band', { p_child_id: childId, p_band: band }));
   }, [run]);
 
