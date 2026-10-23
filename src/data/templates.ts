@@ -38,7 +38,7 @@ export const templateAges: { id: TemplateAge; label: string }[] = [
 ];
 
 export type Template = {
-  id: string; // katalogda `jt_…`, ebeveynin kendi görevinde `c_…`
+  id: string; // katalogda `gs_<kategori>_<sıra>`, ebeveynin kendi görevinde rastgele kimlik
   title: string;
   emoji: string;
   category: Category; // ana kategori

@@ -41,7 +41,7 @@ Son güncelleme: 13 Ekim 2026 (akşam).
 - M0 iskeleti + CI orada. Unity lisansı (GitHub Secrets) kullanıcıdan bekleniyor: `docs/UNITY_LISANS.md`. 0A/0B konsept çalışması `docs/art/` altında.
 - Bu ortamda Unity indirilemiyor (ağ politikası). Plan: GitHub Actions + GameCI. Blender `bpy` PyPI'dan kurulabiliyor.
 
-## Sistem (kullanıcının anlattığı hedef, Joon benzeri)
+## Sistem (kullanıcının anlattığı hedef)
 - Bu uygulama **ebeveyn paneli**: ebeveyn çocuklara gerçek hayat görevi atar.
 - Çocuk ayrı bir **oyun** tarafında görevleri görür, "tamamladım" işaretler; oyunda coin harcayarak daha zengin içeriğe erişir.
 - Ebeveyn **İnceleme**'de tamamlanan/diğer durumdaki görevleri görüp onaylar → çocuk coin kazanır. (Çocuk tarafı henüz yok; İnceleme bu yüzden boş.)
