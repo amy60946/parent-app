@@ -289,8 +289,8 @@ function TaskRow({ item, date, kids, completions, active, onDrag, onEdit, onDele
           </Pressable>
         )}
       >
+        {/* Satıra dokunmak düzenleme açmaz (kaydırırken yanlışlıkla açılıyordu); yalnız düzenle tuşu açar */}
         <Pressable
-          onPress={onEdit}
           onLongPress={onDrag}
           delayLongPress={250}
           disabled={active}
