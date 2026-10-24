@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import './src/lib/webAlert';
 import { NavigationContainer, DefaultTheme, createNavigationContainerRef } from '@react-navigation/native';
 import { startTracking, trackScreen } from './src/lib/track';
+import { ClientConfigProvider } from './src/clientConfig';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -155,6 +156,7 @@ function Root() {
   if (recovery && session) return <NewPasswordScreen />;
   if (!session) return <AuthFlow />;
   return (
+    <ClientConfigProvider>
     <StoreProvider userId={session?.user.id ?? null}>
       <NotificationsProvider userId={session.user.id}>
         <NavigationContainer theme={navTheme} ref={navRef}
@@ -166,6 +168,7 @@ function Root() {
         </NavigationContainer>
       </NotificationsProvider>
     </StoreProvider>
+    </ClientConfigProvider>
   );
 }
 

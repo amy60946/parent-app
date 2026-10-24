@@ -392,6 +392,12 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
   const me = myProfile();
   const uid = sess()?.user.id;
   if (!uid) return { data: null, error: { message: 'Önce giriş yapmalısın' } };
+  // Uzaktan ayar: önizlemede localStorage 'demo-client-config' ile denenir
+  if (name === 'client_config') {
+    let cfg: any = { app: {}, flags: {} };
+    try { cfg = JSON.parse(localStorage.getItem('demo-client-config') || 'null') ?? cfg; } catch {}
+    return { data: cfg, error: null };
+  }
   if (name === 'create_invite_code') {
     if (!me?.family_id) return { data: null, error: { message: 'Önce giriş yapmalısın' } };
     if (args.p_kind === 'child') db.invite_codes.forEach((i: Row) => { if (i.child_id === args.p_child_id && !i.used_at && i.expires_at > now()) i.expires_at = now(); });
