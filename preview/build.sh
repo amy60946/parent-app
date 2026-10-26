@@ -19,8 +19,9 @@ if [ ! -d "$WORK/node_modules/expo-notifications" ]; then
       "expo-linking","expo-image-picker","expo-audio","expo-file-system","react-dom","react-native-web","@expo/metro-runtime",
       "react-native-gesture-handler","react-native-reanimated","react-native-worklets","react-native-svg","expo-notifications"];
     console.log(w.map((x) => x + "@" + (b[x] || "latest")).join(" "))')
-  (cd "$WORK" && npm install $PKGS @supabase/supabase-js react-native-draggable-flatlist >/dev/null)
+  (cd "$WORK" && npm install $PKGS @supabase/supabase-js react-native-draggable-flatlist qrcode-generator >/dev/null)
 fi
+[ -d "$WORK/node_modules/qrcode-generator" ] || (cd "$WORK" && npm install qrcode-generator >/dev/null)
 
 echo "› Kaynaklar kopyalanıyor"
 rm -rf "$WORK/src" "$WORK/App.tsx" "$WORK/assets/avatars"

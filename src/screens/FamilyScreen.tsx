@@ -11,6 +11,8 @@ import { colors, radius } from '../theme';
 import { Avatar, IconButton, Segmented, Card } from '../components/ui';
 import DateField from '../components/DateField';
 import Sheet from '../components/Sheet';
+import { QrCode } from '../components/QrCode';
+import Onboarding from '../components/Onboarding';
 import ClinicShareSheet from '../components/ClinicShare';
 import { messagePreview } from './ChatScreen';
 import { childAvatars, parentAvatars } from '../data/avatars';
@@ -181,10 +183,11 @@ function ChildInfo({ id }: { id: string }) {
       <Card style={{ gap: 12 }}>
         <Text style={styles.h}>Giriş kodu</Text>
         <Text style={{ fontSize: 13, color: colors.muted }}>
-          {c.name}, Pofi Adası oyununa bu kodla giriş yapar. Kod 15 dakika geçerlidir; yeni kod üretince eskisi geçersiz olur.
+          {c.name}, Pofi Adası oyununa bu kodla ya da QR ile giriş yapar. Kod 15 dakika geçerlidir; yeni kod üretince eskisi geçersiz olur.
         </Text>
         {code ? (
-          <CodeBox code={code} busy={busy} onRenew={issue} shareText={`${c.name} için Pofi Adası giriş kodu: ${code.code} (15 dakika geçerli)`} />
+          <CodeBox code={code} busy={busy} onRenew={issue} qr={`pofiadasi://baglan?kod=${code.code}`}
+            shareText={`${c.name} için Pofi Adası giriş kodu: ${code.code} (15 dakika geçerli)`} />
         ) : (
           <Pressable style={[styles.cta, busy && { opacity: 0.6 }]} disabled={busy} onPress={issue}>
             <Text style={styles.ctaText}>Giriş kodu üret</Text>
@@ -213,7 +216,8 @@ function useSecondsLeft(expiresAt: string) {
 }
 
 // Kod + kalan süre + kopyala/paylaş. Süre bitince kod soluklaşır, "Yeni kod al" çıkar (kodlar 15 dakika geçerli).
-function CodeBox({ code, shareText, onRenew, busy }: { code: IssuedCode; shareText: string; onRenew: () => void; busy?: boolean }) {
+// qr verilirse (çocuk giriş kodu) kodun altında QR; süre dolunca QR de kalkar (ortak/sozlesme/akislar.md 2.0).
+function CodeBox({ code, shareText, onRenew, busy, qr }: { code: IssuedCode; shareText: string; onRenew: () => void; busy?: boolean; qr?: string }) {
   const left = useSecondsLeft(code.expiresAt);
   const expired = left <= 0;
   return (
@@ -237,9 +241,17 @@ function CodeBox({ code, shareText, onRenew, busy }: { code: IssuedCode; shareTe
           </Pressable>
         </View>
       ) : (
-        <Text style={styles.cap} accessibilityLabel={`Kalan süre ${Math.floor(left / 60)} dakika ${left % 60} saniye`}>
-          Tek kullanımlık · {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')} içinde geçerliliğini yitirir
-        </Text>
+        <>
+          <Text style={styles.cap} accessibilityLabel={`Kalan süre ${Math.floor(left / 60)} dakika ${left % 60} saniye`}>
+            Tek kullanımlık · {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')} içinde geçerliliğini yitirir
+          </Text>
+          {qr && (
+            <View style={styles.qrWrap}>
+              <QrCode value={qr} size={220} label="Giriş kodunun QR'ı" />
+              <Text style={[styles.cap, { textAlign: 'center' }]}>Tabletteki oyunda "QR okut"a dokun ve bu kareyi göster</Text>
+            </View>
+          )}
+        </>
       )}
     </View>
   );
@@ -311,7 +323,7 @@ function Mail() {
 
 /* ---------- Hesap ---------- */
 
-type AccountRow = 'manage' | 'join' | 'clinic' | 'notifications' | 'membership' | 'other';
+type AccountRow = 'manage' | 'join' | 'clinic' | 'notifications' | 'membership' | 'guide' | 'other';
 
 const accountRows: { icon: keyof typeof Ionicons.glyphMap; label: string; id?: AccountRow }[] = [
   { icon: 'sunny-outline', label: 'Üyelik', id: 'membership' },
@@ -319,6 +331,7 @@ const accountRows: { icon: keyof typeof Ionicons.glyphMap; label: string; id?: A
   { icon: 'person-add-outline', label: 'Aileye katıl', id: 'join' },
   { icon: 'notifications-outline', label: 'Bildirimler', id: 'notifications' },
   { icon: 'medkit-outline', label: 'Uzmanım', id: 'clinic' },
+  { icon: 'compass-outline', label: 'Nasıl kullanılır?', id: 'guide' },
   { icon: 'create-outline', label: 'Geri bildirim gönder' },
   { icon: 'star-outline', label: 'Uygulamayı puanla' },
   { icon: 'book-outline', label: 'Ebeveyn kaynakları' },
@@ -359,6 +372,7 @@ function Account({ onLogout }: { onLogout?: () => void }) {
       <ManageSheet visible={open === 'manage'} onClose={() => setOpen(null)} />
       <JoinSheet visible={open === 'join'} onClose={() => setOpen(null)} />
       <ClinicShareSheet visible={open === 'clinic'} onClose={() => setOpen(null)} />
+      <Onboarding visible={open === 'guide'} onClose={() => setOpen(null)} />
     </ScrollView>
   );
 }
@@ -631,5 +645,6 @@ const styles = StyleSheet.create({
   coinDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.gold },
   count: { minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
   countText: { fontSize: 11, fontWeight: '800', color: colors.navy },
+  qrWrap: { alignItems: 'center', gap: 8, backgroundColor: '#fff', borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, paddingVertical: 16, paddingHorizontal: 12 },
   codeBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#F3F4F8', borderRadius: radius.md, padding: 14 },
 });

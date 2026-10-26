@@ -26,6 +26,7 @@ import AbcScreen from './src/screens/AbcScreen';
 import PaywallScreen from './src/screens/PaywallScreen';
 import RewardsScreen from './src/screens/RewardsScreen';
 import { BillingProvider } from './src/billing';
+import Onboarding, { markOnboardingSeen, shouldShowOnboarding } from './src/components/Onboarding';
 import { NotificationsProvider } from './src/notifications';
 import { onNotificationTap } from './src/lib/notifications';
 import { clearPendingInvite, getPendingInvite } from './src/lib/pendingInvite';
@@ -87,7 +88,17 @@ function Loading() {
 }
 
 function Main() {
-  const { ready, joinFamily } = useStore();
+  const { ready, joinFamily, children } = useStore();
+  // İlk kullanım rehberi: yalnız yeni aileye (henüz çocuk yok), bu cihazda bir kez. Aile › Hesap › Nasıl kullanılır? ile yeniden açılır.
+  const [guide, setGuide] = React.useState(false);
+  const hasChildren = children.length > 0;
+  React.useEffect(() => {
+    if (!ready) return;
+    shouldShowOnboarding().then((show) => {
+      if (!show) return;
+      if (hasChildren) markOnboardingSeen(); else setGuide(true);
+    });
+  }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
   // Giriş ekranında davet kodu girildiyse: kayıt/giriş sonrası aileye otomatik katıl
   React.useEffect(() => {
     if (!ready) return;
@@ -125,6 +136,7 @@ function Main() {
       <Stack.Screen name="Rewards" component={RewardsScreen} />
       <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
     </Stack.Navigator>
+    <Onboarding visible={guide} onClose={() => setGuide(false)} />
     </BillingProvider>
   );
 }
