@@ -23,6 +23,9 @@ export function notificationTarget(n: Pick<AppNotification, 'kind' | 'data'>): [
   if (n.kind === 'message' && childId) return ['Chat', { childId }];
   if (n.kind === 'clinic_suggestion') return ['Tabs', { screen: 'Görevler' }];
   if (n.kind === 'reward_request') return ['Rewards', { childId }];
+  // Uzmanın takip planı (akislar.md 12): tek paylaşım ya da davetle açılan ilk paylaşım
+  const linkId = n.data?.link_id ?? (Array.isArray(n.data?.link_ids) ? n.data.link_ids[0] : undefined);
+  if (n.kind === 'care_plan_shared' && linkId) return ['CarePlan', { linkId }];
   return null;
 }
 export function openNotification(navigation: any, n: Pick<AppNotification, 'kind' | 'data'>) {

@@ -14,7 +14,7 @@ type Auth = {
   loading: boolean;
   recovery: boolean; // şifre yenileme bağlantısıyla gelindi: yeni şifre ekranı gösterilir
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name: string) => Promise<{ needsConfirmation: boolean }>;
+  signUp: (email: string, password: string, name: string, clinicInvite?: string) => Promise<{ needsConfirmation: boolean }>;
   resendConfirmation: (email: string) => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
@@ -164,11 +164,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string, name: string) => {
+  // clinicInvite: uzman davet bağlantısı anahtarı ya da kodu; sunucu kayıtta daveti aileye bağlar (akislar.md 10 adım 5)
+  const signUp = useCallback(async (email: string, password: string, name: string, clinicInvite?: string) => {
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
-      options: { data: { name: name.trim() }, emailRedirectTo: authRedirectUrl() },
+      options: { data: { name: name.trim(), ...(clinicInvite ? { clinic_invite: clinicInvite } : {}) }, emailRedirectTo: authRedirectUrl() },
     });
     if (error) throw error;
     // E-posta onayı açıkken (önerilen) oturum, hoş geldin e-postasındaki bağlantıyla açılır.

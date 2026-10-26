@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, Share, Alert, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, Alert, StyleSheet, ActivityIndicator, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import NotificationBell from '../components/NotificationBell';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as Clipboard from 'expo-clipboard';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadChildPhoto } from '../lib/avatarPhoto';
 import { colors, radius } from '../theme';
-import { Avatar, IconButton, Segmented, Card } from '../components/ui';
+import { Avatar, Segmented, Card } from '../components/ui';
 import DateField from '../components/DateField';
 import Sheet from '../components/Sheet';
-import { QrCode } from '../components/QrCode';
+import { CodeBox } from '../components/CodeBox';
 import Onboarding from '../components/Onboarding';
 import ClinicShareSheet from '../components/ClinicShare';
 import { messagePreview } from './ChatScreen';
@@ -22,6 +21,7 @@ import { useAuth } from '../lib/auth';
 import { formatTR, toISO, todayISO } from '../dates';
 import { useBilling } from '../billing';
 import { IssuedCode } from '../store';
+import { PendingInvite, pendingInvites } from '../lib/clinic';
 
 type Tab = 'general' | 'mail' | 'account';
 const soon = () => Alert.alert('Yakında', 'Bu özellik sonraki sürümde.');
@@ -200,60 +200,6 @@ function ChildInfo({ id }: { id: string }) {
         )}
       </Card>
     </ScrollView>
-  );
-}
-
-// Kalan süre (saniye); her saniye güncellenir
-function useSecondsLeft(expiresAt: string) {
-  const left = () => Math.max(0, Math.round((new Date(expiresAt).getTime() - Date.now()) / 1000));
-  const [s, setS] = useState(left);
-  React.useEffect(() => {
-    setS(left());
-    const t = setInterval(() => setS(left()), 1000);
-    return () => clearInterval(t);
-  }, [expiresAt]); // eslint-disable-line react-hooks/exhaustive-deps
-  return s;
-}
-
-// Kod + kalan süre + kopyala/paylaş. Süre bitince kod soluklaşır, "Yeni kod al" çıkar (kodlar 15 dakika geçerli).
-// qr verilirse (çocuk giriş kodu) kodun altında QR; süre dolunca QR de kalkar (ortak/sozlesme/akislar.md 2.0).
-function CodeBox({ code, shareText, onRenew, busy, qr }: { code: IssuedCode; shareText: string; onRenew: () => void; busy?: boolean; qr?: string }) {
-  const left = useSecondsLeft(code.expiresAt);
-  const expired = left <= 0;
-  return (
-    <View style={{ gap: 8 }}>
-      <View style={[styles.codeBox, expired && { opacity: 0.5 }]}>
-        <Text style={{ flex: 1, fontSize: 28, fontWeight: '800', letterSpacing: 6, color: colors.navy, textDecorationLine: expired ? 'line-through' : 'none' }}>{code.code}</Text>
-        {!expired && (
-          <>
-            <IconButton name="copy-outline" label="Kopyala" style={{ backgroundColor: '#fff' }}
-              onPress={async () => { await Clipboard.setStringAsync(code.code); Alert.alert('Kod kopyalandı'); }} />
-            <IconButton name="share-outline" label="Paylaş" style={{ backgroundColor: '#fff' }}
-              onPress={() => Share.share({ message: shareText })} />
-          </>
-        )}
-      </View>
-      {expired ? (
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.danger }}>Kodun süresi doldu. Kullanmak için yeni kod al.</Text>
-          <Pressable style={[styles.cta, busy && { opacity: 0.6 }]} disabled={busy} onPress={onRenew} accessibilityLabel="Yeni kod al">
-            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Yeni kod al</Text>}
-          </Pressable>
-        </View>
-      ) : (
-        <>
-          <Text style={styles.cap} accessibilityLabel={`Kalan süre ${Math.floor(left / 60)} dakika ${left % 60} saniye`}>
-            Tek kullanımlık · {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')} içinde geçerliliğini yitirir
-          </Text>
-          {qr && (
-            <View style={styles.qrWrap}>
-              <QrCode value={qr} size={220} label="Giriş kodunun QR'ı" />
-              <Text style={[styles.cap, { textAlign: 'center' }]}>Tabletteki oyunda "QR okut"a dokun ve bu kareyi göster</Text>
-            </View>
-          )}
-        </>
-      )}
-    </View>
   );
 }
 
@@ -490,8 +436,9 @@ function ManageSheet({ visible, onClose }: { visible: boolean; onClose: () => vo
 /* ---------- Ekle (alttan açılan tek sayfa) ---------- */
 
 function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const { addChild, createInviteCode, familyId } = useStore();
+  const { addChild, createInviteCode, familyId, children } = useStore();
   const { allow } = useBilling();
+  const navigation = useNavigation<any>();
   const [photo, setPhoto] = useState<{ uri: string; mime?: string } | null>(null);
   const [kind, setKind] = useState<'child' | 'parent'>('child');
   const [name, setName] = useState('');
@@ -517,8 +464,31 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
     setPhoto({ uri: r.assets[0].uri, mime: r.assets[0].mimeType ?? undefined });
   };
 
+  // Aynı ad uyarısı (akislar.md 10 adım 6c): uzmanın bekleyen davetinde ya da ailede bu adda çocuk varsa önce sor
   const save = async () => {
-    if (!name.trim()) return Alert.alert('İsim gerekli');
+    const nm = name.trim();
+    if (!nm) return Alert.alert('İsim gerekli');
+    const same = (x?: string) => !!x && x.trim().toLocaleLowerCase('tr') === nm.toLocaleLowerCase('tr');
+    const inv = (await pendingInvites().catch(() => [] as PendingInvite[])).find((i) => same(i.childName));
+    if (inv) {
+      return Alert.alert(`Uzmanının davetinde ${inv.childName} zaten var`,
+        `${inv.clinician || inv.clinic} ${inv.childName} için davet gönderdi. Bilgileri davette kontrol edip tek adımda ekleyebilirsin.`, [
+          { text: 'Vazgeç', style: 'cancel' },
+          { text: 'Yine de ekle', onPress: () => { doSave(); } },
+          { text: 'Davete git', onPress: () => { close(); navigation.navigate('Invite', { invite: inv }); } },
+        ]);
+    }
+    const dup = children.find((c) => same(c.name));
+    if (dup) {
+      return Alert.alert(`Kayıtlarında ${dup.name} adında bir çocuk var`, 'Aynı çocuğu iki kez eklemek istemiyorsan vazgeç.', [
+        { text: 'Vazgeç', style: 'cancel' },
+        { text: 'Yine de ekle', onPress: () => { doSave(); } },
+      ]);
+    }
+    doSave();
+  };
+
+  const doSave = async () => {
     if (!allow('child')) return close();
     let av = avatar;
     if (photo && familyId) {
@@ -645,6 +615,4 @@ const styles = StyleSheet.create({
   coinDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.gold },
   count: { minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
   countText: { fontSize: 11, fontWeight: '800', color: colors.navy },
-  qrWrap: { alignItems: 'center', gap: 8, backgroundColor: '#fff', borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, paddingVertical: 16, paddingHorizontal: 12 },
-  codeBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#F3F4F8', borderRadius: radius.md, padding: 14 },
 });

@@ -11,6 +11,8 @@ import { colors, radius } from '../theme';
 import { IconButton } from '../components/ui';
 import { useAuth, authErrorText } from '../lib/auth';
 import { clearPendingInvite, getPendingInvite, normalizeCode, setPendingInvite } from '../lib/pendingInvite';
+import { getPendingClinicInvite, isInviteToken, setPendingClinicInvite } from '../lib/clinicInvite';
+import { InviteInfo, inviteInfo } from '../lib/clinic';
 
 const MIN_PASSWORD = 8;
 const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
@@ -195,14 +197,30 @@ export function SignUpScreen({ navigation, route }: any) {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [sentTo, setSentTo] = useState<string | undefined>();
+  // Uzman daveti: bağlantıdan gelen anahtar (bant) ya da elle yazılan uzman kodu (akislar.md 10 adım 5)
+  const [clinicKey, setClinicKey] = useState<string | undefined>();
+  const [clinic, setClinic] = useState<InviteInfo | null>(null);
+  const [codeOpen, setCodeOpen] = useState(false);
+  const [clinicCode, setClinicCode] = useState('');
+  useEffect(() => {
+    getPendingClinicInvite().then(async (k) => {
+      if (!k) return;
+      setClinicKey(k);
+      if (isInviteToken(k)) setClinic(await inviteInfo(k));
+    });
+  }, []);
 
   const submit = async () => {
     if (!name.trim()) return Alert.alert('Adını yaz.');
     if (!isEmail(email)) return Alert.alert('Geçerli bir e-posta adresi yaz.');
     if (password.length < MIN_PASSWORD) return Alert.alert(`Şifre en az ${MIN_PASSWORD} karakter olmalı.`);
+    if (codeOpen && clinicCode && clinicCode.length !== 6) return Alert.alert('Uzman kodu 6 karakter olmalı.');
+    const key = clinicKey ?? (clinicCode.length === 6 ? clinicCode : undefined);
     setBusy(true);
     try {
-      const { needsConfirmation } = await signUp(email, password, name);
+      // Kayıttan sonra uygulama daveti yeniden bağlamayı dener (aynı aile için zararsız), sonra davet ekranını açar
+      if (key) await setPendingClinicInvite(key);
+      const { needsConfirmation } = await signUp(email, password, name, key);
       if (needsConfirmation) setSentTo(email.trim());
     } catch (e) {
       Alert.alert('Kayıt olunamadı', authErrorText(e));
@@ -228,6 +246,22 @@ export function SignUpScreen({ navigation, route }: any) {
 
   return (
     <Layout title="Kayıt ol" subtitle="Çocuklarına görev ata, gelişimlerini birlikte izleyin." onBack={() => navigation.goBack()}>
+      {clinic?.status === 'open' && (
+        <View style={styles.inviteBand} accessibilityRole="summary">
+          <Ionicons name="medkit-outline" size={20} color={colors.navy} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.navy }}>{clinic.clinician || clinic.clinic} seni davet etti</Text>
+            <Text style={styles.small}>{[clinic.title, clinic.clinic].filter(Boolean).join(' · ') || 'Kayıt olunca davet hazır olacak.'}</Text>
+          </View>
+        </View>
+      )}
+      {!!clinic && clinic.status !== 'open' && clinic.status !== 'error' && (
+        <Text style={[styles.small, { color: colors.danger }]}>
+          {clinic.status === 'expired' ? 'Davetin süresi doldu (48 saat). Kayıt olabilirsin; uzmanından yeni davet iste.'
+            : clinic.status === 'not_found' ? 'Davet bulunamadı. Kayıt olabilirsin; uzmanından yeni davet iste.'
+            : 'Bu davet kullanılmış. Kayıt olabilirsin; uzmanından yeni davet iste.'}
+        </Text>
+      )}
       <Input value={name} onChangeText={setName} placeholder="Adın" autoComplete="name" textContentType="name" />
       <Input value={email} onChangeText={setEmail} placeholder="E-posta" keyboardType="email-address"
         autoCapitalize="none" autoComplete="email" textContentType="emailAddress" />
@@ -241,6 +275,12 @@ export function SignUpScreen({ navigation, route }: any) {
           </Pressable>
         </View>
       )}
+      {!clinicKey && (codeOpen ? (
+        <Input value={clinicCode} onChangeText={(v) => setClinicCode(normalizeCode(v))} placeholder="Uzman kodu (6 karakter)"
+          autoCapitalize="characters" autoCorrect={false} accessibilityLabel="Uzman kodu" />
+      ) : (
+        <LinkText onPress={() => setCodeOpen(true)}>Uzman kodum var</LinkText>
+      ))}
       <Cta label="Kayıt ol" onPress={submit} busy={busy} />
       <LinkText onPress={() => navigation.navigate('Login')}>Zaten hesabın var mı? Giriş yap</LinkText>
     </Layout>
@@ -346,6 +386,7 @@ const fairy = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
+  inviteBand: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: radius.md, padding: 14, borderWidth: 1, borderColor: colors.gold },
   codeInput: { width: 130, height: 38, borderRadius: radius.sm, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line, paddingHorizontal: 10, fontSize: 15, fontWeight: '700', color: colors.navy, letterSpacing: 0, textAlign: 'center' },
   safe: { flex: 1, backgroundColor: colors.bg },
   scroll: { padding: 24, paddingTop: 8, flexGrow: 1 },

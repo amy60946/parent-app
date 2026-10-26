@@ -14,6 +14,7 @@ import NotificationBell from '../components/NotificationBell';
 import { TaskDayPart, dayPartLabel, taskDayPartOf } from '../data/dayParts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TrialBanner from '../components/TrialBanner';
+import PendingInviteBanner from '../components/PendingInviteBanner';
 import { useBilling } from '../billing';
 
 const HINT_KEY = 'hint-plus-longpress-v2';
@@ -111,6 +112,7 @@ export default function TasksScreen({ navigation }: any) {
         <NotificationBell />
       </View>
       <TrialBanner />
+      <PendingInviteBanner />
       {suggested > 0 && (
         <Pressable onPress={() => setClinicOpen(true)} style={styles.suggest} accessibilityLabel="Uzman önerilerini gör">
           <Ionicons name="medkit-outline" size={16} color={colors.navy} />

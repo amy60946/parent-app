@@ -25,6 +25,12 @@ import NotificationsScreen, { openNotification } from './src/screens/Notificatio
 import AbcScreen from './src/screens/AbcScreen';
 import PaywallScreen from './src/screens/PaywallScreen';
 import RewardsScreen from './src/screens/RewardsScreen';
+import InviteScreen from './src/screens/InviteScreen';
+import CarePlanScreen from './src/screens/CarePlanScreen';
+import * as Linking from 'expo-linking';
+import { claimInvite } from './src/lib/clinic';
+import { hintOf } from './src/lib/errors';
+import { clearPendingClinicInvite, getPendingClinicInvite, onClinicInvite, parseInviteUrl, setPendingClinicInvite } from './src/lib/clinicInvite';
 import { BillingProvider } from './src/billing';
 import Onboarding, { markOnboardingSeen, shouldShowOnboarding } from './src/components/Onboarding';
 import { NotificationsProvider } from './src/notifications';
@@ -94,11 +100,34 @@ function Main() {
   const hasChildren = children.length > 0;
   React.useEffect(() => {
     if (!ready) return;
-    shouldShowOnboarding().then((show) => {
-      if (!show) return;
+    Promise.all([shouldShowOnboarding(), getPendingClinicInvite()]).then(([show, invite]) => {
+      if (!show || invite) return; // uzman davetiyle gelen önce daveti görür
       if (hasChildren) markOnboardingSeen(); else setGuide(true);
     });
   }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Uzman davet bağlantısı: daveti bu aileye bağla ve davet ekranını aç (akislar.md 10 adım 5b)
+  React.useEffect(() => {
+    if (!ready) return;
+    let busy = false;
+    const claim = async () => {
+      const key = await getPendingClinicInvite();
+      if (!key || busy) return;
+      busy = true;
+      try {
+        const invite = await claimInvite(key);
+        await clearPendingClinicInvite();
+        if (invite && navRef.isReady()) navRef.navigate('Invite', { invite });
+      } catch (e) {
+        const hint = hintOf(e);
+        if (hint === 'expired' || hint === 'used' || hint === 'not_found') await clearPendingClinicInvite();
+        Alert.alert('Davet açılamadı', (e as Error).message);
+      } finally {
+        busy = false;
+      }
+    };
+    claim();
+    return onClinicInvite(() => { claim(); });
+  }, [ready]);
   // Giriş ekranında davet kodu girildiyse: kayıt/giriş sonrası aileye otomatik katıl
   React.useEffect(() => {
     if (!ready) return;
@@ -135,6 +164,8 @@ function Main() {
       <Stack.Screen name="Abc" component={AbcScreen} />
       <Stack.Screen name="Rewards" component={RewardsScreen} />
       <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
+      <Stack.Screen name="Invite" component={InviteScreen} options={{ presentation: 'modal', gestureEnabled: false }} />
+      <Stack.Screen name="CarePlan" component={CarePlanScreen} />
     </Stack.Navigator>
     <Onboarding visible={guide} onClose={() => setGuide(false)} />
     </BillingProvider>
@@ -185,6 +216,13 @@ function Root() {
 }
 
 export default function App() {
+  // Uzman davet bağlantısı oturumdan bağımsız yakalanır: kayıt/giriş bitince Main bağlar
+  React.useEffect(() => {
+    const take = (url: string | null) => { const k = parseInviteUrl(url); if (k) setPendingClinicInvite(k); };
+    Linking.getInitialURL().then(take);
+    const sub = Linking.addEventListener('url', ({ url }) => take(url));
+    return () => sub.remove();
+  }, []);
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>

@@ -7,9 +7,11 @@ import { Avatar, Card } from './ui';
 import Sheet from './Sheet';
 import { useStore } from '../store';
 import { formatTR, todayISO } from '../dates';
+import VerifiedBadge from './VerifiedBadge';
+import { Toggle } from './ui';
 import {
-  ClinicLink, InvitePreview, Suggestion, listLinks, previewInvite, shareWithClinic, stopSharing, addChildToClinic,
-  pendingSuggestions, decideSuggestion, linkSuggestionTask,
+  ClinicLink, InvitePreview, Suggestion, PendingInvite, listLinks, previewInvite, shareWithClinic, stopSharing, addChildToClinic,
+  pendingSuggestions, decideSuggestion, linkSuggestionTask, pendingInvites, claimInvite, setHistoryShared,
 } from '../lib/clinic';
 
 type View_ = 'home' | 'code';
@@ -24,22 +26,26 @@ export default function ClinicShareSheet({ visible, onClose }: { visible: boolea
   const openAbc = () => { close(); navigation.navigate('Abc', { new: true }); };
   return (
     <Sheet visible={visible} title={title} onClose={close}>
-      {view === 'home' && <Home onCode={() => setView('code')} onAbc={openAbc} visible={visible} />}
-      {view === 'code' && <CodeFlow onDone={() => setView('home')} />}
+      {view === 'home' && <Home onCode={() => setView('code')} onAbc={openAbc} visible={visible} onOpen={(to, params) => { close(); navigation.navigate(to, params); }} />}
+      {view === 'code' && <CodeFlow onDone={() => setView('home')} onInvite={(invite) => { close(); navigation.navigate('Invite', { invite }); }} />}
     </Sheet>
   );
 }
 
 /* ---------- Ana görünüm ---------- */
 
-function Home({ onCode, onAbc, visible }: { onCode: () => void; onAbc: () => void; visible: boolean }) {
+function Home({ onCode, onAbc, visible, onOpen }: {
+  onCode: () => void; onAbc: () => void; visible: boolean; onOpen: (to: string, params: object) => void;
+}) {
   const { children, familyId, addTasks } = useStore();
   const [links, setLinks] = useState<ClinicLink[] | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [invites, setInvites] = useState<PendingInvite[]>([]);
 
   const load = useCallback(async () => {
     try {
       setLinks(await listLinks());
+      setInvites(await pendingInvites().catch(() => []));
       if (familyId) setSuggestions(await pendingSuggestions(familyId));
     } catch (e) {
       setLinks([]);
@@ -84,6 +90,22 @@ function Home({ onCode, onAbc, visible }: { onCode: () => void; onAbc: () => voi
     ],
   );
 
+  // Önceki uzman kayıtlarının bu uzmana aktarımı: açarken açık rıza metni (uzman-gecis-v1), kapatınca erişim hemen biter
+  const history = (l: ClinicLink, on: boolean) => {
+    const name = childName(l.childId);
+    const who = l.clinician || l.clinic;
+    const apply = async () => {
+      try { await setHistoryShared(l.linkId, on); load(); } catch (e) { Alert.alert('Kaydedilemedi', (e as Error).message); }
+    };
+    if (!on) {
+      return Alert.alert('Önceki kayıtların paylaşımı durdurulsun mu?', `${who}, ${name} için önceki uzmanların kayıtlarını artık göremez.`,
+        [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Durdur', style: 'destructive', onPress: apply }]);
+    }
+    Alert.alert('Önceki uzmanın kayıtlarını da paylaş (adı gizlenir)',
+      `Çocuğum ${name} için daha önce çalıştığım uzman(lar)ın ClinicApp'e girdiği notların, hedeflerin, haftalık değerlendirmelerin, görev önerilerinin, aile programının ve benim uygulama kayıtlarımın, takibin kesintisiz sürmesi amacıyla yeni uzmanım ${who} ile yalnız okunur olarak paylaşılmasına açık rıza veriyorum. Önceki uzmanın adı ve bilgileri yeni uzmana gösterilmez. Bu izni Uzmanım bölümünden istediğim an geri alabilirim; geri aldığımda erişim hemen sona erer.`,
+      [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Onaylıyorum', onPress: apply }]);
+  };
+
   const decide = async (s: Suggestion, accept: boolean) => {
     try {
       await decideSuggestion(s.id, accept);
@@ -108,6 +130,18 @@ function Home({ onCode, onAbc, visible }: { onCode: () => void; onAbc: () => voi
 
   return (
     <View style={{ gap: 14 }}>
+      {/* Uzmanın daveti bağlandı ama çocuk henüz paylaşılmadı (akislar.md 10 adım 6) */}
+      {invites.map((inv) => (
+        <Pressable key={inv.code} onPress={() => onOpen('Invite', { invite: inv })} style={styles.invite}
+          accessibilityLabel={`${inv.clinician || inv.clinic} seni bekliyor, çocuğunu paylaş`}>
+          <Ionicons name="mail-unread-outline" size={20} color={colors.navy} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.h}>{inv.clinician || inv.clinic} seni bekliyor</Text>
+            <Text style={styles.cap}>{inv.childName ? `${inv.childName} için bilgileri kontrol et ve paylaş` : 'Çocuğunu seç ve paylaş'}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.navy} />
+        </Pressable>
+      ))}
       {links.length === 0 ? (
         <Text style={styles.body}>
           Çocuğunla çalışan bir uzman (psikolog, ergoterapist, öğretmen) varsa, görev ilerlemesini onunla paylaşabilirsin.
@@ -119,14 +153,16 @@ function Home({ onCode, onAbc, visible }: { onCode: () => void; onAbc: () => voi
             const first = group[0];
             return (
               <Card key={first.clinicId} style={{ gap: 10, backgroundColor: '#F7F8FB' }}>
-                <View>
+                <View style={{ gap: 3 }}>
                   <Text style={styles.h}>{first.clinician || first.clinic}</Text>
                   <Text style={styles.cap}>{[first.title, first.clinic].filter(Boolean).join(' · ')}</Text>
+                  <VerifiedBadge verifiedAs={first.verifiedAs} />
                 </View>
                 {children.map((c) => {
                   const l = group.find((x) => x.childId === c.id);
                   return (
-                    <View key={c.id} style={styles.childRow}>
+                    <View key={c.id} style={[styles.childRow, { flexDirection: 'column', alignItems: 'stretch' }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                       <Avatar id={c.avatar} size={36} />
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: 14, fontWeight: '600', color: colors.navy }}>{c.name}</Text>
@@ -141,6 +177,24 @@ function Home({ onCode, onAbc, visible }: { onCode: () => void; onAbc: () => voi
                           <Text style={{ color: colors.navy, fontSize: 13, fontWeight: '700' }}>Ekle</Text>
                         </Pressable>
                       )}
+                    </View>
+                    {l?.planReady && (
+                      <Pressable style={styles.sub} onPress={() => onOpen('CarePlan', { linkId: l.linkId, childName: c.name, clinician: first.clinician || first.clinic })}
+                        accessibilityLabel={`${c.name} takip planı`}>
+                        <Ionicons name="clipboard-outline" size={16} color={colors.navy} />
+                        <Text style={{ flex: 1, fontSize: 13, fontWeight: '600', color: colors.navy }}>Takip planı</Text>
+                        <Ionicons name="chevron-forward" size={14} color={colors.faint} />
+                      </Pressable>
+                    )}
+                    {l?.historyAvailable && (
+                      <View style={styles.sub}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.navy }}>Önceki uzmanın kayıtları</Text>
+                          <Text style={styles.cap}>{l.historyShared ? 'Paylaşılıyor · önceki uzmanın adı gizli' : 'Paylaşılmıyor'}</Text>
+                        </View>
+                        <Toggle value={l.historyShared} onChange={(on) => history(l, on)} />
+                      </View>
+                    )}
                     </View>
                   );
                 })}
@@ -198,7 +252,7 @@ function Home({ onCode, onAbc, visible }: { onCode: () => void; onAbc: () => voi
 
 /* ---------- Kod + açık rıza ---------- */
 
-function CodeFlow({ onDone }: { onDone: () => void }) {
+function CodeFlow({ onDone, onInvite }: { onDone: () => void; onInvite: (invite: PendingInvite) => void }) {
   const { children } = useStore();
   const [code, setCode] = useState('');
   const [preview, setPreview] = useState<InvitePreview | null>(null);
@@ -209,9 +263,14 @@ function CodeFlow({ onDone }: { onDone: () => void }) {
   const check = async () => {
     if (code.length !== 6) return Alert.alert('Kod 6 karakter olmalı');
     setBusy(true);
-    try { setPreview(await previewInvite(code)); }
-    catch (e) { Alert.alert('Kod kullanılamadı', (e as Error).message); }
-    finally { setBusy(false); }
+    try {
+      // Yeni sunucu: kod daveti bu aileye bağlar, davet ekranı açılır (uyarı + veli beyanı). Eski sunucu: eski önizleme + onay.
+      const invite = await claimInvite(code);
+      if (invite) return onInvite(invite);
+      setPreview(await previewInvite(code));
+    } catch (e) {
+      Alert.alert('Kod kullanılamadı', (e as Error).message);
+    } finally { setBusy(false); }
   };
 
   const consent = async () => {
@@ -325,5 +384,7 @@ const styles = StyleSheet.create({
   cta: { height: 52, borderRadius: radius.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
   ctaText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   ghost: { height: 44, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },
+  invite: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#FFF6DE', borderRadius: radius.md, padding: 14, borderWidth: 1, borderColor: '#F3DFA2' },
+  sub: { flexDirection: 'row', alignItems: 'center', gap: 8, marginLeft: 46, paddingVertical: 6 },
   dot: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F3F4F8', alignItems: 'center', justifyContent: 'center' },
 });
