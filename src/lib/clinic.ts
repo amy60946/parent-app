@@ -54,9 +54,14 @@ export async function shareWithClinic(code: string, childIds: string[]) {
 }
 
 // Aynı uzmanla etkin paylaşım varsa yeni kod gerekmeden başka bir çocuğu da ekle
+// Onay metninin sürümü kaydedilir (20261026300000); eski sunucuda 3 argümanlı işlev yoksa 2 argümanla
 export async function addChildToClinic(clinicId: string, childId: string) {
-  const { error } = await supabase.rpc('clinic_share_child', { p_clinic_id: clinicId, p_child_id: childId });
-  fail(error);
+  const r = await supabase.rpc('clinic_share_child', { p_clinic_id: clinicId, p_child_id: childId, p_consent_version: 'uzman-paylasim-v1' });
+  if (r.error && isMissingRpc(r.error)) {
+    const { error } = await supabase.rpc('clinic_share_child', { p_clinic_id: clinicId, p_child_id: childId });
+    return fail(error);
+  }
+  fail(r.error);
 }
 
 export async function stopSharing(linkId: string) {
