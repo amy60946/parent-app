@@ -28,7 +28,7 @@ import RewardsScreen from './src/screens/RewardsScreen';
 import InviteScreen from './src/screens/InviteScreen';
 import CarePlanScreen from './src/screens/CarePlanScreen';
 import * as Linking from 'expo-linking';
-import { openInvite } from './src/lib/clinic';
+import { INVITE_FINAL, inviteErrorTitle, openInvite } from './src/lib/clinic';
 import { hintOf } from './src/lib/errors';
 import { clearPendingClinicInvite, getPendingClinicInvite, onClinicInvite, parseInviteUrl, setPendingClinicInvite } from './src/lib/clinicInvite';
 import { BillingProvider } from './src/billing';
@@ -124,8 +124,8 @@ function Main() {
         }
       } catch (e) {
         const hint = hintOf(e);
-        if (hint === 'expired' || hint === 'used' || hint === 'not_found') await clearPendingClinicInvite();
-        Alert.alert('Davet açılamadı', (e as Error).message);
+        if (hint && INVITE_FINAL.includes(hint)) await clearPendingClinicInvite();
+        Alert.alert(hint ? inviteErrorTitle(hint) : 'Davet açılamadı', (e as Error).message);
       } finally {
         busy = false;
       }

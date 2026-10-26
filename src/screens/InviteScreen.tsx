@@ -13,7 +13,7 @@ import { ageBands, AgeBand } from '../data/ageBands';
 import { hintOf } from '../lib/errors';
 import { requestPremium } from '../lib/billing';
 import { track } from '../lib/track';
-import { PendingInvite, NewChild, acceptInvite, declineInvite } from '../lib/clinic';
+import { PendingInvite, NewChild, acceptInvite, declineInvite, INVITE_FINAL, inviteErrorTitle } from '../lib/clinic';
 
 // Uzman daveti (ortak/sozlesme/akislar.md 10 adım 6–6d): uzmanın önerdiği çocuğu ebeveyn kontrol eder, düzeltir, onaylar.
 // Paylaşım yalnız ebeveynin onayıyla; onay metinlerinin sürümü sunucuda kaydedilir (hukuk_notlari.md 3B, 3F).
@@ -72,8 +72,8 @@ export default function InviteScreen({ navigation, route }: any) {
     } catch (e) {
       const hint = hintOf(e);
       if (hint === 'premium_required') requestPremium((e as Error).message);
-      else if (hint === 'expired' || hint === 'used' || hint === 'not_found') {
-        Alert.alert('Davet kullanılamadı', (e as Error).message, [{ text: 'Tamam', onPress: () => navigation.goBack() }]);
+      else if (hint && INVITE_FINAL.includes(hint)) {
+        Alert.alert(inviteErrorTitle(hint), (e as Error).message, [{ text: 'Tamam', onPress: () => navigation.goBack() }]);
       } else Alert.alert('Paylaşılamadı', (e as Error).message);
     } finally {
       setBusy(false);

@@ -114,6 +114,10 @@ const toInvite = (r: any): PendingInvite => ({
   hasPlan: !!r.has_plan, verifiedAs: r.verified_as ?? undefined,
 });
 
+// Davet artık kullanılamaz (sunucu reason → hint; 20261026300000 ile accepted / declined / revoked da gelir): bekleyen bağlantı silinir
+export const INVITE_FINAL = ['expired', 'used', 'not_found', 'accepted', 'declined', 'revoked'];
+export const inviteErrorTitle = (hint?: string) => (hint === 'accepted' ? 'Bu daveti zaten kabul ettin' : 'Davet kullanılamadı');
+
 // Davet hatası: sunucu nedeni (reason → hint) ve açık metni taşır
 function inviteError(e: { message: string; hint?: string | null }) {
   return new AppError(e.message || 'Davet bulunamadı. Kodu kontrol et ya da uzmanından yeni davet iste.', e.hint);

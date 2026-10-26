@@ -8,10 +8,11 @@ import Sheet from './Sheet';
 import { useStore } from '../store';
 import { formatTR, todayISO } from '../dates';
 import VerifiedBadge from './VerifiedBadge';
+import { hintOf } from '../lib/errors';
 import { Toggle } from './ui';
 import {
   ClinicLink, InvitePreview, Suggestion, PendingInvite, listLinks, previewInvite, shareWithClinic, stopSharing, addChildToClinic,
-  pendingSuggestions, decideSuggestion, linkSuggestionTask, pendingInvites, openInvite, setHistoryShared,
+  pendingSuggestions, decideSuggestion, linkSuggestionTask, pendingInvites, openInvite, setHistoryShared, inviteErrorTitle,
 } from '../lib/clinic';
 
 type View_ = 'home' | 'code';
@@ -273,7 +274,8 @@ function CodeFlow({ onDone, onInvite }: { onDone: () => void; onInvite: (invite:
       }
       setPreview(await previewInvite(code));
     } catch (e) {
-      Alert.alert('Kod kullanılamadı', (e as Error).message);
+      const hint = hintOf(e);
+      Alert.alert(hint === 'accepted' ? inviteErrorTitle(hint) : 'Kod kullanılamadı', (e as Error).message);
     } finally { setBusy(false); }
   };
 
