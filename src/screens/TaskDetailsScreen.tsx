@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import Info from '../components/Info';
 import { View, Text, TextInput, Pressable, ScrollView, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -268,16 +269,16 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
           </View>
         )}
 
-        <Label>Hatırlatma saati (isteğe bağlı)</Label>
-        <Text style={[styles.sub, { marginTop: -2, marginBottom: 8 }]}>
-          Bir saat seçersen görev günü o saatte çocuğuna hatırlatma gider. Boş bırakırsan hatırlatma gönderilmez.
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 20, marginBottom: 8 }}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.muted }}>Hatırlatma saati (isteğe bağlı)</Text>
+          <Info title="Hatırlatma saati" text="Bir saat seçersen görev günü o saatte çocuğuna hatırlatma gider. Boş bırakırsan hatırlatma gönderilmez." />
+        </View>
         <DateField mode="time" value={reminder} onChange={pickReminder} placeholder="Saat seç (ör. 19:00)" clearable />
 
-        <Label>Günün bölümü</Label>
-        <Text style={[styles.sub, { marginTop: -2, marginBottom: 8 }]}>
-          Görevler ekranında Sabah / Öğlen / Akşam süzgeci için. Belli bir saati yoksa "Herhangi" kalsın.
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 20, marginBottom: 8 }}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.muted }}>Günün bölümü</Text>
+          <Info title="Günün bölümü" text={'Görevler ekranındaki Sabah / Öğlen / Akşam süzgeci için. Belli bir saati yoksa "Herhangi" kalsın.'} />
+        </View>
         <Segmented<TaskDayPart | 'any'>
           options={[
             { id: 'morning', label: dayPartLabel.morning }, { id: 'noon', label: dayPartLabel.noon },

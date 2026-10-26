@@ -135,7 +135,7 @@ export default function ChatScreen({ navigation, route }: any) {
           <Avatar id={child.avatar} size={64} />
           <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>{child.name} ile sohbet</Text>
           <Text style={{ fontSize: 13, color: colors.muted, textAlign: 'center' }}>
-            Yazı, fotoğraf, sesli mesaj ya da çıkartma gönder. {child.name} Pofi Adası'nda okuyup yanıtlayabilir.
+            Yazı, fotoğraf, ses ya da çıkartma gönder.
           </Text>
         </View>
       ) : (

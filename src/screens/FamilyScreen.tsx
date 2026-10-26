@@ -12,6 +12,7 @@ import DateField from '../components/DateField';
 import Sheet from '../components/Sheet';
 import { CodeBox } from '../components/CodeBox';
 import Onboarding from '../components/Onboarding';
+import Info, { InfoTitle } from '../components/Info';
 import ClinicShareSheet from '../components/ClinicShare';
 import { messagePreview } from './ChatScreen';
 import { childAvatars, parentAvatars } from '../data/avatars';
@@ -174,17 +175,11 @@ function ChildInfo({ id }: { id: string }) {
         </Pressable>
       </Pressable>
       <Card style={{ gap: 10 }}>
-        <Text style={styles.h}>Oyundaki yaş grubu</Text>
-        <Text style={{ fontSize: 13, color: colors.muted }}>
-          Pofi Adası oyununun dili ve zorluğu buna göre ayarlanır.
-        </Text>
+        <InfoTitle title="Oyundaki yaş grubu" style={styles.h} info="Pofi Adası oyununun dili ve zorluğu buna göre ayarlanır. Otomatik seçilirse doğum gününden hesaplanır ve çocuk büyüdükçe kendiliğinden değişir." />
         <AgeBandPicker value={c.ageBand} birthday={c.birthday} onChange={(b) => setChildAgeBand(c.id, b)} />
       </Card>
       <Card style={{ gap: 12 }}>
-        <Text style={styles.h}>Giriş kodu</Text>
-        <Text style={{ fontSize: 13, color: colors.muted }}>
-          {c.name}, Pofi Adası oyununa bu kodla ya da QR ile giriş yapar. Kod 15 dakika geçerlidir; yeni kod üretince eskisi geçersiz olur.
-        </Text>
+        <InfoTitle title="Giriş kodu" style={styles.h} info={`${c.name}, Pofi Adası oyununa bu kodla ya da QR ile giriş yapar. Tabletteki oyunda "QR okut"a dokunması yeterli; bilgisayarda kodu yazar. Kod 15 dakika geçerlidir; yeni kod üretince eskisi geçersiz olur.`} />
         {code ? (
           <CodeBox code={code} busy={busy} onRenew={issue} qr={`pofiadasi://baglan?kod=${code.code}`}
             shareText={`${c.name} için Pofi Adası giriş kodu: ${code.code} (15 dakika geçerli)`} />
@@ -359,9 +354,10 @@ function JoinSheet({ visible, onClose }: { visible: boolean; onClose: () => void
   return (
     <Sheet visible={visible} title="Aileye katıl" onClose={close}>
       <View style={{ gap: 14 }}>
-        <Text style={{ fontSize: 13, color: colors.muted }}>
-          Diğer ebeveynin Aile {'>'} + {'>'} Ebeveyn bölümünden ürettiği 6 haneli kodu yaz. Kod 15 dakika geçerlidir.
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Text style={{ flex: 1, fontSize: 13, color: colors.muted }}>Diğer ebeveynin verdiği 6 haneli kod</Text>
+          <Info title="Aileye katıl" text="Kodu diğer ebeveyn Aile › + › Ebeveyn bölümünden üretir. Kod 15 dakika geçerlidir." />
+        </View>
         <TextInput
           value={code}
           onChangeText={(v) => setCode(v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6))}
@@ -553,9 +549,10 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
         </>
       ) : (
         <>
-          <Text style={{ fontSize: 13, color: colors.muted }}>
-            Her yeni ebeveyn için size özel bir kod üretilir. Diğer ebeveyn bu kodla aileye katılır.
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={{ flex: 1, fontSize: 13, color: colors.muted }}>Diğer ebeveyn bu kodla aileye katılır.</Text>
+            <Info title="Ebeveyn daveti" text="Her yeni ebeveyn için ayrı bir kod üretilir. Diğer ebeveyn kodu Aile › Hesap › Aileye katıl bölümüne yazar. Kod 15 dakika geçerlidir." />
+          </View>
           {code ? (
             <CodeBox code={code} busy={busy} onRenew={invite} shareText={`ParentApp'e katılmak için davet kodun: ${code.code}\nUygulamada Aile > Hesap > Aileye katıl bölümüne yaz. Kod 15 dakika geçerli.`} />
           ) : (

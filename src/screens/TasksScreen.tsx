@@ -214,7 +214,7 @@ export default function TasksScreen({ navigation }: any) {
           {newReward && (
             <Pressable onPress={seenNewReward} style={styles.newTip} accessibilityLabel="İpucunu kapat">
               <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Yeni: Ödüller</Text>
-              <Text style={{ fontSize: 12, color: '#D6DBEA' }}>Görevlerden Güneş Taşı kazanılır; ödülü sen belirlersin, gerektiğinde taş düşürebilirsin.</Text>
+              <Text style={{ fontSize: 12, color: '#D6DBEA' }}>Görevlerden taş kazanılır; ödülü sen belirlersin.</Text>
             </Pressable>
           )}
           <Pressable style={styles.dialItem} accessibilityLabel="Ödüller ve Güneş Taşı"

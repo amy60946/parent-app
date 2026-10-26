@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Alert, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Info from '../components/Info';
 import {
   useAudioRecorder, useAudioRecorderState, RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync,
 } from 'expo-audio';
@@ -67,9 +68,10 @@ export default function AbcScreen({ navigation, route }: any) {
             <Ionicons name="add" size={20} color="#fff" />
             <Text style={styles.ctaText}>Gözlem notu ekle</Text>
           </Pressable>
-          <Text style={styles.cap}>
-            Ne oldu, öncesinde ve sonrasında. Uzmanla paylaştığın çocuklar için uzmanın da görür.
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={[styles.cap, { flex: 1 }]}>Uzmanla paylaştığın çocuklarda uzmanın da görür.</Text>
+            <Info title="Gözlem notu" text="Ne oldu, öncesinde ne vardı, sonrasında ne oldu: kısaca yaz. Uzmanla paylaştığın çocuklar için uzmanın da görür; paylaşmadıkların yalnız ailede kalır. Gözlem notu tanı ya da puan değildir." />
+          </View>
 
           {children.length > 1 && (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>

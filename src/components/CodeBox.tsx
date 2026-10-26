@@ -51,7 +51,7 @@ export function CodeBox({ code, shareText, onRenew, busy, qr }: { code: IssuedCo
           {qr && (
             <View style={styles.qrWrap}>
               <QrCode value={qr} size={220} label="Giriş kodunun QR'ı" />
-              <Text style={[styles.cap, { textAlign: 'center' }]}>Tabletteki oyunda "QR okut"a dokun ve bu kareyi göster</Text>
+              <Text style={[styles.cap, { textAlign: 'center' }]}>Tabletteki oyunda "QR okut"a dokun</Text>
             </View>
           )}
         </>

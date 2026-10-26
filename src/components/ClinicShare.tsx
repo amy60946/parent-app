@@ -8,6 +8,8 @@ import Sheet from './Sheet';
 import { useStore } from '../store';
 import { formatTR, todayISO } from '../dates';
 import VerifiedBadge from './VerifiedBadge';
+import Info from './Info';
+import { SCOPE_FULL, SCOPE_SHORT } from '../data/clinicTexts';
 import { hintOf } from '../lib/errors';
 import { Toggle } from './ui';
 import {
@@ -144,10 +146,10 @@ function Home({ onCode, onAbc, visible, onOpen }: {
         </Pressable>
       ))}
       {links.length === 0 ? (
-        <Text style={styles.body}>
-          Çocuğunla çalışan bir uzman (psikolog, ergoterapist, öğretmen) varsa, görev ilerlemesini onunla paylaşabilirsin.
-          Uzman sana 6 haneli bir kod verir.
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={[styles.body, { flex: 1 }]}>Görev ilerlemesini uzmanınla paylaş.</Text>
+          <Info title="Uzmanla paylaşım" text="Çocuğunla çalışan bir uzman (psikolog, ergoterapist, öğretmen) varsa görev ilerlemesini onunla paylaşabilirsin. Uzman sana bir davet bağlantısı ya da 6 haneli kod gönderir. Paylaşım yalnız senin onayınla başlar ve istediğin an durur." />
+        </View>
       ) : (
         <View style={{ gap: 8 }}>
           {clinics.map((group) => {
@@ -296,7 +298,10 @@ function CodeFlow({ onDone, onInvite }: { onDone: () => void; onInvite: (invite:
   if (!preview) {
     return (
       <View style={{ gap: 14 }}>
-        <Text style={styles.body}>Uzmanının sana verdiği 6 haneli kodu yaz. Onaylamadan önce kimin istediğini göreceksin.</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={[styles.body, { flex: 1 }]}>Uzmanının verdiği 6 haneli kod</Text>
+          <Info title="Uzman kodu" text="Onaylamadan önce kimin istediğini ve neyin paylaşılacağını göreceksin. Kod tek kullanımlıktır." />
+        </View>
         <TextInput
           value={code}
           onChangeText={(v) => setCode(v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6))}
@@ -333,32 +338,15 @@ function CodeFlow({ onDone, onInvite }: { onDone: () => void; onInvite: (invite:
         ))}
       </View>
 
-      <Text style={styles.section}>Uzmanın görecekleri</Text>
-      <View style={{ gap: 8 }}>
-        <Bullet ok text="Görevler ve tamamlanma durumu (saatiyle)" />
-        <Bullet ok text='"Yapamam" yanıtları ve nedenleri' />
-        <Bullet ok text="Bu uygulamada eklediğin gözlem notları" />
-        <Bullet text="Mesajlar, fotoğraf ve sesler" />
-        <Bullet text="Coin bakiyesi ve oyun içi bilgiler" />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Text style={[styles.cap, { flex: 1 }]}>{SCOPE_SHORT}</Text>
+        <Info title="Uzman ne görür?" text={SCOPE_FULL} />
       </View>
-      <Text style={styles.cap}>
-        Uzman verileri yalnızca okur ve sana görev önerebilir; görev eklemek senin kararındır.
-        Paylaşımı istediğin an durdurabilirsin.
-      </Text>
 
       <Pressable style={[styles.cta, (busy || !childIds.length) && { opacity: 0.6 }]} disabled={busy} onPress={consent}>
         {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Onaylıyorum, paylaş</Text>}
       </Pressable>
       <Pressable style={styles.ghost} onPress={onDone}><Text style={{ color: colors.navy, fontWeight: '600' }}>Vazgeç</Text></Pressable>
-    </View>
-  );
-}
-
-function Bullet({ ok, text }: { ok?: boolean; text: string }) {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-      <Ionicons name={ok ? 'checkmark-circle' : 'close-circle-outline'} size={18} color={ok ? colors.easy.fg : colors.faint} />
-      <Text style={[styles.body, !ok && { color: colors.muted }]}>{text}{ok ? '' : ' paylaşılmaz'}</Text>
     </View>
   );
 }

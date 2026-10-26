@@ -90,7 +90,7 @@ export default function NotificationsScreen({ navigation }: any) {
         data={items}
         keyExtractor={(n) => String(n.id)}
         contentContainerStyle={{ padding: 16, gap: 8 }}
-        ListEmptyComponent={<Text style={styles.empty}>Henüz bildirim yok. Çocuğun görev yaptığında, mesaj gönderdiğinde ya da uzmanın görev önerdiğinde burada görünür.</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>Henüz bildirim yok.</Text>}
         renderItem={({ item: n }) => (
           <Pressable onPress={() => open(n)} onLongPress={() => remove(n.id)} style={[styles.row, !n.readAt && styles.unread]}
             accessibilityHint={notificationTarget(n) ? 'Açmak için dokun. Uzun basınca silinir' : 'Uzun basınca silinir'}>

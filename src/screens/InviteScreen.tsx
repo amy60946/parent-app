@@ -7,6 +7,8 @@ import { Avatar, Card, IconButton } from '../components/ui';
 import DateField from '../components/DateField';
 import VerifiedBadge from '../components/VerifiedBadge';
 import { CodeBox } from '../components/CodeBox';
+import Info from '../components/Info';
+import { SCOPE_FULL, SCOPE_SHORT, SHARE_WARNING, SHARE_WARNING_SHORT, historyConsent } from '../data/clinicTexts';
 import { useStore, IssuedCode } from '../store';
 import { childAvatars } from '../data/avatars';
 import { ageBands, AgeBand } from '../data/ageBands';
@@ -17,11 +19,6 @@ import { PendingInvite, NewChild, acceptInvite, declineInvite, INVITE_FINAL, inv
 
 // Uzman daveti (ortak/sozlesme/akislar.md 10 adım 6–6d): uzmanın önerdiği çocuğu ebeveyn kontrol eder, düzeltir, onaylar.
 // Paylaşım yalnız ebeveynin onayıyla; onay metinlerinin sürümü sunucuda kaydedilir (hukuk_notlari.md 3B, 3F).
-const WARNING = 'ClinicApp uzmanların kimliğini ve mesleki belgelerini doğrulamaz. Çocuğunun bilgilerini paylaşmadan önce bu uzmanı gerçek hayatta tanıdığından ve davetin ondan geldiğinden emin ol. Emin değilsen paylaşma; uzmanını bildiğin bir yoldan arayıp sor. Paylaşımı istediğin an Uzmanım bölümünden durdurabilirsin.';
-
-const historyConsent = (children: string, clinician: string) =>
-  `Çocuğum ${children} için daha önce çalıştığım uzman(lar)ın ClinicApp'e girdiği notların, hedeflerin, haftalık değerlendirmelerin, görev önerilerinin, aile programının ve benim uygulama kayıtlarımın, takibin kesintisiz sürmesi amacıyla yeni uzmanım ${clinician} ile yalnız okunur olarak paylaşılmasına açık rıza veriyorum. Önceki uzmanın adı ve bilgileri yeni uzmana gösterilmez. Bu izni Uzmanım bölümünden istediğim an geri alabilirim; geri aldığımda erişim hemen sona erer.`;
-
 export default function InviteScreen({ navigation, route }: any) {
   const invite: PendingInvite = route.params.invite;
   const { children, refresh, createChildCode } = useStore();
@@ -117,8 +114,8 @@ export default function InviteScreen({ navigation, route }: any) {
 
           <Text style={styles.lead}>
             {suggested
-              ? `${who}, ${invite.childName}${label ? ` (${label})` : ''} için seni davet etti. Bilgiler doğru mu?`
-              : `${who} seni davet etti. Hangi çocuğun için?`}
+              ? `${invite.childName}${label ? ` (${label})` : ''} için davet. Bilgiler doğru mu?`
+              : 'Hangi çocuğun için?'}
           </Text>
 
           {/* Yeni çocuk: önerilen bilgiler dolu ve düzenlenebilir */}
@@ -197,26 +194,22 @@ export default function InviteScreen({ navigation, route }: any) {
               <Pressable style={styles.checkRow} onPress={() => setHistory(!history)} accessibilityRole="checkbox" accessibilityState={{ checked: history }}>
                 <Check on={history} />
                 <Text style={[styles.h, { flex: 1 }]}>Önceki uzmanın kayıtlarını da paylaş (adı gizlenir)</Text>
+                <Info title="Önceki uzmanın kayıtları" text={`${historyConsent(pickedNames.join(', '), who)}\n\nDaha önce başka bir uzmanla paylaşmadıysan aktarılacak kayıt yoktur.`} />
               </Pressable>
-              {history && <Text style={styles.small}>{historyConsent(pickedNames.join(', '), who)}</Text>}
-              <Text style={styles.cap}>Daha önce başka bir uzmanla paylaşmadıysan aktarılacak kayıt yoktur.</Text>
             </Card>
           )}
 
-          <View style={{ gap: 8 }}>
-            <Text style={styles.section}>Uzmanın görecekleri</Text>
-            <Bullet ok text="Görevler ve tamamlanma durumu (saatiyle)" />
-            <Bullet ok text='"Yapamam" yanıtları ve nedenleri' />
-            <Bullet ok text="Bu uygulamada eklediğin gözlem notları" />
-            <Bullet text="Mesajlar, fotoğraf ve sesler" />
-            <Bullet text="Coin bakiyesi ve oyun içi bilgiler" />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={[styles.cap, { flex: 1 }]}>{SCOPE_SHORT}</Text>
+            <Info title="Uzman ne görür?" text={SCOPE_FULL} />
           </View>
 
           {/* Zorunlu uyarı + veli beyanı (uzman-paylasim-v1); rozet olsa da kalır */}
           <View style={styles.warn}>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <Ionicons name="alert-circle-outline" size={20} color="#6B5300" />
-              <Text style={[styles.small, { flex: 1, color: '#4A3B00' }]}>{WARNING}</Text>
+              <Text style={[styles.h, { flex: 1, color: '#4A3B00' }]}>{SHARE_WARNING_SHORT}</Text>
+              <Info title="Paylaşmadan önce" text={SHARE_WARNING} color="#6B5300" />
             </View>
             <Pressable style={styles.checkRow} onPress={() => setAgreed(!agreed)} accessibilityRole="checkbox" accessibilityState={{ checked: agreed }}>
               <Check on={agreed} />
@@ -266,17 +259,17 @@ function Done({ invite, who, done, onClose, createChildCode }: {
         <View style={{ alignItems: 'center', gap: 8, paddingVertical: 8 }}>
           <Ionicons name="checkmark-circle" size={48} color={colors.easy.fg} />
           <Text style={[styles.lead, { textAlign: 'center' }]}>Paylaşım başladı</Text>
-          <Text style={[styles.small, { textAlign: 'center' }]}>
-            {who}, {shared.map((c) => c.name).join(', ') || 'çocuğun'} için görevleri ve gözlem notlarını görebilir.
-            {invite.hasPlan ? ' Takip planı Uzmanım bölümünde.' : ''} Paylaşımı istediğin an Aile › Hesap › Uzmanım bölümünden durdurabilirsin.
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={[styles.small, { textAlign: 'center' }]}>İstediğin an Uzmanım'dan durdurabilirsin.</Text>
+            <Info title="Paylaşım" text={`${who}, ${shared.map((c) => c.name).join(', ') || 'çocuğun'} için görevleri ve gözlem notlarını görebilir.${invite.hasPlan ? ' Takip planı Uzmanım bölümünde.' : ''} Paylaşımı istediğin an Aile › Hesap › Uzmanım bölümünden durdurabilirsin.`} />
+          </View>
         </View>
         {target && !target.linked && (
           <Card style={{ gap: 12 }}>
-            <Text style={styles.h}>{target.name} için tableti bağla</Text>
-            <Text style={styles.small}>
-              Çocuğunun tabletinde Pofi Adası oyununu aç, "QR okut"a dokun ve bu kareyi göster. Bilgisayarda kodu yazması yeterli. Kod 15 dakika geçerli.
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.h}>{target.name} için tableti bağla</Text>
+              <Info title="Tableti bağla" text={'Çocuğunun tabletinde Pofi Adası oyununu aç, "QR okut"a dokun ve kareyi göster. Bilgisayarda kodu yazması yeterli. Kod 15 dakika geçerli ve tek kullanımlık.'} />
+            </View>
             {code ? (
               <CodeBox code={code} busy={busy} onRenew={issue} qr={`pofiadasi://baglan?kod=${code.code}`}
                 shareText={`${target.name} için Pofi Adası giriş kodu: ${code.code} (15 dakika geçerli)`} />
@@ -299,15 +292,6 @@ function Check({ on }: { on: boolean }) {
   return (
     <View style={[styles.box, on && { backgroundColor: colors.navy, borderColor: colors.navy }]}>
       {on && <Ionicons name="checkmark" size={15} color="#fff" />}
-    </View>
-  );
-}
-
-function Bullet({ ok, text }: { ok?: boolean; text: string }) {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-      <Ionicons name={ok ? 'checkmark-circle' : 'close-circle-outline'} size={18} color={ok ? colors.easy.fg : colors.faint} />
-      <Text style={[styles.small, !ok && { color: colors.muted }]}>{text}{ok ? '' : ' paylaşılmaz'}</Text>
     </View>
   );
 }

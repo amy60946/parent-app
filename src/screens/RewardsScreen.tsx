@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors, radius } from '../theme';
 import { Avatar, IconButton, Card } from '../components/ui';
 import Sheet from '../components/Sheet';
+import Info, { InfoTitle } from '../components/Info';
 import { useFirstTip } from '../components/FirstTip';
 import { rewardTips } from '../data/rewardTips';
 import { useStore, Child } from '../store';
@@ -195,9 +196,8 @@ export default function RewardsScreen({ navigation }: any) {
           {missing && !loading && (
             <View style={styles.warn}>
               <Ionicons name="cloud-offline-outline" size={18} color="#6B5300" />
-              <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: '#6B5300' }}>
-                Sunucu güncellemesi bekleniyor. Ekranı görebilirsin; ödül verme, ekleme ve taş düşürme güncellemeden sonra çalışır.
-              </Text>
+              <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: '#6B5300' }}>Sunucu güncellemesi bekleniyor.</Text>
+              <Info title="Sunucu güncellemesi" color="#6B5300" text="Ekranı görebilirsin; ödül verme, ekleme ve taş düşürme sunucu güncellendikten sonra çalışır." />
             </View>
           )}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, flexGrow: 1 }}>
@@ -263,9 +263,9 @@ export default function RewardsScreen({ navigation }: any) {
             </View>
           )}
 
-          <Text style={styles.h}>Ödüller</Text>
+          <InfoTitle title="Ödüller" style={styles.h} info="Vermek için ödülün yanındaki çocuk harfine dokun, sonra onayla. Soluk harf: o çocuğun taşı yetmiyor (dokununca eksik taşı gösterir). Silmek için ödülü sola kaydır." />
           {!loading && rewards.length === 0 ? (
-            <Card><Text style={{ fontSize: 14, lineHeight: 20, color: colors.muted }}>Henüz ödül yok. Yukarıdaki önerilerden birine dokun ya da "Yeni ödül" ile kendin oluştur.</Text></Card>
+            <Card><Text style={{ fontSize: 14, lineHeight: 20, color: colors.muted }}>Henüz ödül yok. Önerilerden ekle ya da "Yeni ödül"e dokun.</Text></Card>
           ) : (
             <Card style={{ padding: 0, overflow: 'hidden' }}>
               {rewards.map((r, i) => {
@@ -321,7 +321,6 @@ export default function RewardsScreen({ navigation }: any) {
               })}
             </Card>
           )}
-          {rewards.length > 0 && <Text style={styles.cap}>Harfe dokun, sonra onayla. Soluk harf: taşı yetmiyor. Silmek için ödülü sola kaydır.</Text>}
         </ScrollView>
       )}
 
@@ -511,7 +510,10 @@ function SuggestionsModal({ visible, rewards, onClose, onAdd, onCustom, tip }: {
           <Pressable onPress={onCustom} style={[styles.secondary, { marginTop: 8 }]}>
             <Text style={styles.secondaryText}>Kendi ödülümü oluştur</Text>
           </Pressable>
-          <Text style={[styles.cap, { marginTop: 4 }]}>Ekle: önerilen fiyatla bütün çocuklar için eklenir. Fiyatı ya da çocukları ödülün satırına dokunarak değiştirirsin.</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+            <Text style={[styles.cap, { flex: 1 }]}>Önerilen fiyatla bütün çocuklara eklenir.</Text>
+            <Info title="Öneri ekleme" text="Fiyatı ya da çocukları sonra ödülün satırına dokunarak değiştirirsin." />
+          </View>
         </ScrollView>
         {tip}
       </SafeAreaView>
@@ -797,8 +799,9 @@ function DeductSheet({ childId, kids, balances: bal, moves, onClose, onDeduct }:
           <View style={styles.warn}>
             <Ionicons name="alert-circle-outline" size={18} color="#6B5300" />
             <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: '#6B5300' }}>
-              {name}: bu hafta düşürülen taş, kazanılanın dörtte birini geçiyor. Önce kazandırmaya ve övmeye ağırlık vermek daha iyi sonuç verir.
+              {name}: bu hafta düşürülen taş, kazanılanın dörtte birini geçti.
             </Text>
+            <Info title="Taş düşürme" color="#6B5300" text="Önce kazandırmaya ve övmeye ağırlık vermek daha iyi sonuç verir. Taş düşürmeyi yalnız önceden konuşulan kurallar için ve seyrek kullan; çocuk nedenini görür." />
           </View>
         )}
         <View style={{ flexDirection: 'row', gap: 10 }}>

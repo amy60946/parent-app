@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Info from '../components/Info';
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
 import NotificationBell from '../components/NotificationBell';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -46,7 +47,7 @@ export default function ReviewScreen() {
         {pending.length === 0 ? (
           <View style={styles.empty}>
             <Text style={{ color: colors.muted, textAlign: 'center', fontSize: 13 }}>
-              Onay bekleyen görev yok. Çocuğunuz bir görevi tamamladığında burada görünecek.
+              Onay bekleyen görev yok.
             </Text>
           </View>
         ) : (
@@ -87,9 +88,10 @@ function RejectSheet({ visible, onClose, onReject }: { visible: boolean; onClose
   return (
     <Sheet visible={visible} title="Reddet" onClose={close}>
       <View style={{ gap: 14 }}>
-        <Text style={{ fontSize: 13, color: colors.muted }}>
-          Çocuğuna kısa bir not yazabilirsin (isteğe bağlı). Not oyunda görünür; coin verilmez.
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Text style={{ flex: 1, fontSize: 13, color: colors.muted }}>Kısa not (isteğe bağlı)</Text>
+          <Info title="Reddetme notu" text="Not çocuğun oyununda görünür. Reddedilen görev için coin verilmez." />
+        </View>
         <TextInput
           value={note}
           onChangeText={(v) => setNote(v.slice(0, 300))}

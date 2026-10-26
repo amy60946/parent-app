@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, Alert, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Info from '../components/Info';
 import { colors, radius } from '../theme';
 import { Card, IconButton } from '../components/ui';
 import { useAuth } from '../lib/auth';
@@ -77,7 +78,10 @@ export default function CarePlanScreen({ navigation, route }: any) {
       <View style={styles.header}>
         <IconButton name="chevron-back" label="Geri" onPress={() => navigation.goBack()} />
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Takip planı</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={styles.title}>Takip planı</Text>
+            <Info title="Takip planı" text={'Uzmanının seninle paylaştığı hedefler ve evde uygulama. Uyguladığın gün "Bugün uyguladım"a dokun; nasıl geçtiğini ya da engeli isteğe bağlı seç. Uzmanın bu kayıtları görür.\n\nBu bilgiler tanı ya da puan değildir. Uzmanın yalnız senin paylaştığın çocuk için görür.'} />
+          </View>
           {!!(childName || clinician) && <Text style={styles.cap}>{[childName, clinician].filter(Boolean).join(' · ')}</Text>}
         </View>
       </View>
@@ -113,7 +117,6 @@ export default function CarePlanScreen({ navigation, route }: any) {
               ))}
             </View>
           )}
-          <Text style={styles.cap}>Bu bilgiler tanı ya da puan değildir. Uzmanın yalnız senin paylaştığın çocuk için görür.</Text>
         </ScrollView>
       )}
     </SafeAreaView>
