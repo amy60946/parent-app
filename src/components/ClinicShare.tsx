@@ -11,7 +11,7 @@ import VerifiedBadge from './VerifiedBadge';
 import { Toggle } from './ui';
 import {
   ClinicLink, InvitePreview, Suggestion, PendingInvite, listLinks, previewInvite, shareWithClinic, stopSharing, addChildToClinic,
-  pendingSuggestions, decideSuggestion, linkSuggestionTask, pendingInvites, claimInvite, setHistoryShared,
+  pendingSuggestions, decideSuggestion, linkSuggestionTask, pendingInvites, openInvite, setHistoryShared,
 } from '../lib/clinic';
 
 type View_ = 'home' | 'code';
@@ -265,8 +265,12 @@ function CodeFlow({ onDone, onInvite }: { onDone: () => void; onInvite: (invite:
     setBusy(true);
     try {
       // Yeni sunucu: kod daveti bu aileye bağlar, davet ekranı açılır (uyarı + veli beyanı). Eski sunucu: eski önizleme + onay.
-      const invite = await claimInvite(code);
-      if (invite) return onInvite(invite);
+      const r = await openInvite(code);
+      if (r.kind === 'pending') return onInvite(r.invite);
+      if (r.kind === 'done') {
+        Alert.alert('Bu daveti zaten kabul ettin', `${r.invite.clinician || r.invite.clinic} ile paylaşım bu ekranda görünüyor.`);
+        return onDone();
+      }
       setPreview(await previewInvite(code));
     } catch (e) {
       Alert.alert('Kod kullanılamadı', (e as Error).message);

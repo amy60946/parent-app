@@ -134,6 +134,15 @@ export async function claimInvite(key: string): Promise<PendingInvite | null> {
   return toInvite(data);
 }
 
+// Bağlantı/kod: daveti bağla, hâlâ bekliyorsa davet ekranı için döndür. Sunucu aynı ailenin daha önce kabul ettiği daveti de
+// başarıyla bağlar (bekleyen listede yer almaz): o zaman 'done' — ekran yeniden açılmaz, ebeveyne Uzmanım gösterilir.
+export async function openInvite(key: string): Promise<{ kind: 'old' } | { kind: 'pending' | 'done'; invite: PendingInvite }> {
+  const invite = await claimInvite(key);
+  if (!invite) return { kind: 'old' };
+  const pending = (await pendingInvites()).find((i) => i.code === invite.code);
+  return pending ? { kind: 'pending', invite: pending } : { kind: 'done', invite };
+}
+
 export type NewChild = {
   name: string; age_group?: InviteAgeGroup; birthday?: string; gender?: 'kız' | 'erkek'; avatar?: string; allow_duplicate?: boolean;
 };

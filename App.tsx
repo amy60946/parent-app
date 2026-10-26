@@ -28,7 +28,7 @@ import RewardsScreen from './src/screens/RewardsScreen';
 import InviteScreen from './src/screens/InviteScreen';
 import CarePlanScreen from './src/screens/CarePlanScreen';
 import * as Linking from 'expo-linking';
-import { claimInvite } from './src/lib/clinic';
+import { openInvite } from './src/lib/clinic';
 import { hintOf } from './src/lib/errors';
 import { clearPendingClinicInvite, getPendingClinicInvite, onClinicInvite, parseInviteUrl, setPendingClinicInvite } from './src/lib/clinicInvite';
 import { BillingProvider } from './src/billing';
@@ -114,9 +114,14 @@ function Main() {
       if (!key || busy) return;
       busy = true;
       try {
-        const invite = await claimInvite(key);
+        const r = await openInvite(key);
         await clearPendingClinicInvite();
-        if (invite && navRef.isReady()) navRef.navigate('Invite', { invite });
+        // Gezinme hazır olana kadar bekle (açılışta bağlantıyla gelindiyse); hazır olmazsa Görevler'deki bant hatırlatır
+        for (let i = 0; i < 20 && !navRef.isReady(); i++) await new Promise((res) => setTimeout(res, 150));
+        if (r.kind === 'pending' && navRef.isReady()) navRef.navigate('Invite', { invite: r.invite });
+        if (r.kind === 'done') {
+          Alert.alert('Bu daveti zaten kabul ettin', `${r.invite.clinician || r.invite.clinic} ile paylaşım Aile › Hesap › Uzmanım bölümünde.`);
+        }
       } catch (e) {
         const hint = hintOf(e);
         if (hint === 'expired' || hint === 'used' || hint === 'not_found') await clearPendingClinicInvite();

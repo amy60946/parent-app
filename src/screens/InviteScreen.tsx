@@ -61,7 +61,8 @@ export default function InviteScreen({ navigation, route }: any) {
         Alert.alert(`Kayıtlarında ${d.name} adında bir çocuk var`, 'Aynı çocuksa onu seç; değilse yine de yeni ekleyebilirsin.', [
           { text: 'Vazgeç', style: 'cancel' },
           { text: 'Yine de yeni ekle', onPress: () => send(child(true), ids) },
-          { text: `Bu ${d.name}`, onPress: () => { setNewOn(false); setPicked((p) => [...new Set([...p, d.childId])]); send(null, [...new Set([...ids, d.childId])]); } },
+          // Mevcut çocuk seçilir, gönderilmez: önceki uzman kayıtları seçeneği ve rıza metni ekranda görünsün, ebeveyn yeniden onaylasın
+          { text: `Bu ${d.name}`, onPress: () => { setNewOn(false); setPicked((p) => [...new Set([...p, d.childId])]); } },
         ]);
         return;
       }

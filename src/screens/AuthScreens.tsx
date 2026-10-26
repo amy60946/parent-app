@@ -11,7 +11,7 @@ import { colors, radius } from '../theme';
 import { IconButton } from '../components/ui';
 import { useAuth, authErrorText } from '../lib/auth';
 import { clearPendingInvite, getPendingInvite, normalizeCode, setPendingInvite } from '../lib/pendingInvite';
-import { getPendingClinicInvite, isInviteToken, setPendingClinicInvite } from '../lib/clinicInvite';
+import { clearPendingClinicInvite, getPendingClinicInvite, isInviteToken, setPendingClinicInvite } from '../lib/clinicInvite';
 import { InviteInfo, inviteInfo } from '../lib/clinic';
 
 const MIN_PASSWORD = 8;
@@ -215,11 +215,14 @@ export function SignUpScreen({ navigation, route }: any) {
     if (!isEmail(email)) return Alert.alert('Geçerli bir e-posta adresi yaz.');
     if (password.length < MIN_PASSWORD) return Alert.alert(`Şifre en az ${MIN_PASSWORD} karakter olmalı.`);
     if (codeOpen && clinicCode && clinicCode.length !== 6) return Alert.alert('Uzman kodu 6 karakter olmalı.');
-    const key = clinicKey ?? (clinicCode.length === 6 ? clinicCode : undefined);
+    // Bağlantıdaki davet artık geçerli değilse (süresi doldu / kullanıldı) yerine yazılan kod gönderilir
+    const linkOk = clinicKey && (!clinic || clinic.status === 'open' || clinic.status === 'error');
+    const key = (linkOk ? clinicKey : undefined) ?? (clinicCode.length === 6 ? clinicCode : undefined);
     setBusy(true);
     try {
       // Kayıttan sonra uygulama daveti yeniden bağlamayı dener (aynı aile için zararsız), sonra davet ekranını açar
       if (key) await setPendingClinicInvite(key);
+      else if (clinicKey) await clearPendingClinicInvite();
       const { needsConfirmation } = await signUp(email, password, name, key);
       if (needsConfirmation) setSentTo(email.trim());
     } catch (e) {
@@ -275,7 +278,7 @@ export function SignUpScreen({ navigation, route }: any) {
           </Pressable>
         </View>
       )}
-      {!clinicKey && (codeOpen ? (
+      {(!clinicKey || (!!clinic && clinic.status !== 'open' && clinic.status !== 'error')) && (codeOpen ? (
         <Input value={clinicCode} onChangeText={(v) => setClinicCode(normalizeCode(v))} placeholder="Uzman kodu (6 karakter)"
           autoCapitalize="characters" autoCorrect={false} accessibilityLabel="Uzman kodu" />
       ) : (
