@@ -624,7 +624,7 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
   // Uzman daveti (20261026100000_family_invite_links.sql)
   const famInvite = (key: string) => db.clinic_invites.find((i: Row) => i.kind === 'family'
     && (i.code === String(key ?? '').trim().toUpperCase() || i.token === String(key ?? '').trim().toLowerCase()));
-  const rejected = (reason: string) => ({ data: null, error: { message: reason === 'expired' ? 'Davetin süresi doldu (davetler 48 saat geçerli). Uzmanından yeni davet iste.'
+  const rejected = (reason: string) => ({ data: null, error: { message: reason === 'expired' ? 'Davetin süresi doldu (davetler 3 gün geçerli). Uzmanından yeni davet iste.'
     : reason === 'used' ? 'Bu davet başka bir ailede kullanıldı. Uzmanından yeni davet iste.' : 'Davet bulunamadı. Kodu kontrol et ya da uzmanından yeni davet iste.', hint: reason } as any });
   const inviteRow = (i: Row) => {
     const m = db.clinicians.find((x: Row) => x.id === i.clinician_id);

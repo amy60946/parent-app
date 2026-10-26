@@ -225,7 +225,7 @@ export function SignUpScreen({ navigation, route }: any) {
       )}
       {!!clinic && clinic.status !== 'open' && clinic.status !== 'error' && (
         <Text style={[styles.small, { color: colors.danger }]}>
-          {clinic.status === 'expired' ? 'Davetin süresi doldu (48 saat). Kayıttan sonra uzmanının yeni kodunu yazabilirsin.'
+          {clinic.status === 'expired' ? 'Davetin süresi doldu (davetler 3 gün geçerli). Kayıttan sonra uzmanının yeni kodunu yazabilirsin.'
             : clinic.status === 'not_found' ? 'Davet bulunamadı. Kayıttan sonra uzmanının yeni kodunu yazabilirsin.'
             : 'Bu davet kullanılmış. Kayıttan sonra uzmanının yeni kodunu yazabilirsin.'}
         </Text>
