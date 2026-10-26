@@ -10,7 +10,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
 import { IconButton } from '../components/ui';
 import { useAuth, authErrorText } from '../lib/auth';
-import { clearPendingInvite, getPendingInvite, normalizeCode, setPendingInvite } from '../lib/pendingInvite';
 import { clearPendingClinicInvite, getPendingClinicInvite, isInviteToken, setPendingClinicInvite } from '../lib/clinicInvite';
 import { InviteInfo, inviteInfo } from '../lib/clinic';
 
@@ -154,35 +153,7 @@ export function LoginScreen({ navigation }: any) {
       </Pressable>
       <Cta label="Giriş yap" onPress={submit} busy={busy} />
       <LinkText onPress={() => navigation.navigate('SignUp')}>Hesabın yok mu? Kayıt ol</LinkText>
-      <InviteCode onSaved={(code) => navigation.navigate('SignUp', { code })} />
     </Layout>
-  );
-}
-
-// Davet kodu: küçük bir bağlantı; dokununca tek satırlık kod kutusu açılır. Kod saklanır, kayıt ya da girişten sonra
-// aileye otomatik katılınır (App.tsx → Main).
-function InviteCode({ onSaved }: { onSaved: (code: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const [code, setCode] = useState('');
-  useEffect(() => { getPendingInvite().then((c) => { if (c) setCode(c); }); }, []);
-  if (!open) {
-    return (
-      <Pressable onPress={() => setOpen(true)} hitSlop={8} style={{ alignSelf: 'center', paddingVertical: 4 }}>
-        <Text style={styles.small}>Davet kodum var</Text>
-      </Pressable>
-    );
-  }
-  const save = async () => {
-    if (code.length !== 6) return Alert.alert('Kod 6 karakter olmalı');
-    await setPendingInvite(code);
-    onSaved(code);
-  };
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'center' }}>
-      <TextInput value={code} onChangeText={(v) => setCode(normalizeCode(v))} placeholder="Davet kodu" autoCapitalize="characters"
-        autoCorrect={false} placeholderTextColor={colors.muted} style={styles.codeInput} onSubmitEditing={save} />
-      <Pressable onPress={save} hitSlop={8}><Text style={styles.link}>Devam</Text></Pressable>
-    </View>
   );
 }
 
@@ -190,18 +161,14 @@ function InviteCode({ onSaved }: { onSaved: (code: string) => void }) {
 
 export function SignUpScreen({ navigation, route }: any) {
   const { signUp, resendConfirmation } = useAuth();
-  const [invite, setInvite] = useState<string | undefined>(route.params?.code);
-  useEffect(() => { if (!invite) getPendingInvite().then((c) => c && setInvite(c)); }, [invite]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [sentTo, setSentTo] = useState<string | undefined>();
-  // Uzman daveti: bağlantıdan gelen anahtar (bant) ya da elle yazılan uzman kodu (akislar.md 10 adım 5)
+  // Uzman davet bağlantısıyla gelindiyse bant + kayıtta meta (akislar.md 10 adım 5). Kod, kayıttan sonraki "Kodun var mı?" ekranında.
   const [clinicKey, setClinicKey] = useState<string | undefined>();
   const [clinic, setClinic] = useState<InviteInfo | null>(null);
-  const [codeOpen, setCodeOpen] = useState(false);
-  const [clinicCode, setClinicCode] = useState('');
   useEffect(() => {
     getPendingClinicInvite().then(async (k) => {
       if (!k) return;
@@ -214,10 +181,8 @@ export function SignUpScreen({ navigation, route }: any) {
     if (!name.trim()) return Alert.alert('Adını yaz.');
     if (!isEmail(email)) return Alert.alert('Geçerli bir e-posta adresi yaz.');
     if (password.length < MIN_PASSWORD) return Alert.alert(`Şifre en az ${MIN_PASSWORD} karakter olmalı.`);
-    if (codeOpen && clinicCode && clinicCode.length !== 6) return Alert.alert('Uzman kodu 6 karakter olmalı.');
-    // Bağlantıdaki davet artık geçerli değilse (süresi doldu / kullanıldı) yerine yazılan kod gönderilir
-    const linkOk = clinicKey && (!clinic || clinic.status === 'open' || clinic.status === 'error');
-    const key = (linkOk ? clinicKey : undefined) ?? (clinicCode.length === 6 ? clinicCode : undefined);
+    // Bağlantıdaki davet artık geçerli değilse (süresi doldu / kullanıldı) gönderilmez
+    const key = clinicKey && (!clinic || clinic.status === 'open' || clinic.status === 'error') ? clinicKey : undefined;
     setBusy(true);
     try {
       // Kayıttan sonra uygulama daveti yeniden bağlamayı dener (aynı aile için zararsız), sonra davet ekranını açar
@@ -260,9 +225,9 @@ export function SignUpScreen({ navigation, route }: any) {
       )}
       {!!clinic && clinic.status !== 'open' && clinic.status !== 'error' && (
         <Text style={[styles.small, { color: colors.danger }]}>
-          {clinic.status === 'expired' ? 'Davetin süresi doldu (48 saat). Kayıt olabilirsin; uzmanından yeni davet iste.'
-            : clinic.status === 'not_found' ? 'Davet bulunamadı. Kayıt olabilirsin; uzmanından yeni davet iste.'
-            : 'Bu davet kullanılmış. Kayıt olabilirsin; uzmanından yeni davet iste.'}
+          {clinic.status === 'expired' ? 'Davetin süresi doldu (48 saat). Kayıttan sonra uzmanının yeni kodunu yazabilirsin.'
+            : clinic.status === 'not_found' ? 'Davet bulunamadı. Kayıttan sonra uzmanının yeni kodunu yazabilirsin.'
+            : 'Bu davet kullanılmış. Kayıttan sonra uzmanının yeni kodunu yazabilirsin.'}
         </Text>
       )}
       <Input value={name} onChangeText={setName} placeholder="Adın" autoComplete="name" textContentType="name" />
@@ -270,20 +235,6 @@ export function SignUpScreen({ navigation, route }: any) {
         autoCapitalize="none" autoComplete="email" textContentType="emailAddress" />
       <Input value={password} onChangeText={setPassword} placeholder={`Şifre (en az ${MIN_PASSWORD} karakter)`} secure
         autoComplete="new-password" textContentType="newPassword" onSubmitEditing={submit} />
-      {!!invite && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center' }}>
-          <Text style={styles.small}>Davet kodu {invite} · kayıttan sonra aileye katılacaksın</Text>
-          <Pressable onPress={() => { clearPendingInvite(); setInvite(undefined); }} hitSlop={8} accessibilityLabel="Davet kodunu kaldır">
-            <Ionicons name="close-circle" size={16} color={colors.muted} />
-          </Pressable>
-        </View>
-      )}
-      {(!clinicKey || (!!clinic && clinic.status !== 'open' && clinic.status !== 'error')) && (codeOpen ? (
-        <Input value={clinicCode} onChangeText={(v) => setClinicCode(normalizeCode(v))} placeholder="Uzman kodu (6 karakter)"
-          autoCapitalize="characters" autoCorrect={false} accessibilityLabel="Uzman kodu" />
-      ) : (
-        <LinkText onPress={() => setCodeOpen(true)}>Uzman kodum var</LinkText>
-      ))}
       <Cta label="Kayıt ol" onPress={submit} busy={busy} />
       <LinkText onPress={() => navigation.navigate('Login')}>Zaten hesabın var mı? Giriş yap</LinkText>
     </Layout>
@@ -390,7 +341,6 @@ const fairy = StyleSheet.create({
 
 const styles = StyleSheet.create({
   inviteBand: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: radius.md, padding: 14, borderWidth: 1, borderColor: colors.gold },
-  codeInput: { width: 130, height: 38, borderRadius: radius.sm, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line, paddingHorizontal: 10, fontSize: 15, fontWeight: '700', color: colors.navy, letterSpacing: 0, textAlign: 'center' },
   safe: { flex: 1, backgroundColor: colors.bg },
   scroll: { padding: 24, paddingTop: 8, flexGrow: 1 },
   brand: { fontSize: 13, fontWeight: '700', color: colors.muted, letterSpacing: 1, marginTop: 28 },

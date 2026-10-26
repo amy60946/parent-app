@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import * as Linking from 'expo-linking';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session, EmailOtpType } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './supabase';
 import { unregisterPush } from './notifications';
@@ -8,6 +9,17 @@ import { unregisterPush } from './notifications';
 // E-postadaki bağlantılar uygulamayı bu adresle açar:
 // geliştirmede exp://…/--/auth (Expo Go), derlenmiş uygulamada parentapp://auth
 export const authRedirectUrl = () => Linking.createURL('auth');
+
+// Yeni kayıt işareti: ilk oturumda bir kez okunur ve silinir
+const SIGNUP_KEY = 'after-signup';
+const markJustSignedUp = () => AsyncStorage.setItem(SIGNUP_KEY, '1').catch(() => {});
+export async function takeJustSignedUp(): Promise<boolean> {
+  try {
+    const v = await AsyncStorage.getItem(SIGNUP_KEY);
+    if (v) await AsyncStorage.removeItem(SIGNUP_KEY);
+    return v === '1';
+  } catch { return false; }
+}
 
 type Auth = {
   session: Session | null;
@@ -172,6 +184,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       options: { data: { name: name.trim(), ...(clinicInvite ? { clinic_invite: clinicInvite } : {}) }, emailRedirectTo: authRedirectUrl() },
     });
     if (error) throw error;
+    // Kayıttan hemen sonra "Kodun var mı?" ekranı açılır (App.tsx → Main); onaylı e-postada bağlantıyla açılan ilk oturumda
+    await markJustSignedUp();
     // E-posta onayı açıkken (önerilen) oturum, hoş geldin e-postasındaki bağlantıyla açılır.
     return { needsConfirmation: !data.session };
   }, []);

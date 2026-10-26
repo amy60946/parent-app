@@ -13,6 +13,7 @@ import Sheet from '../components/Sheet';
 import { CodeBox } from '../components/CodeBox';
 import Onboarding from '../components/Onboarding';
 import Info, { InfoTitle } from '../components/Info';
+import CodeEntry, { CodeResult } from '../components/CodeEntry';
 import ClinicShareSheet from '../components/ClinicShare';
 import { messagePreview } from './ChatScreen';
 import { childAvatars, parentAvatars } from '../data/avatars';
@@ -269,7 +270,7 @@ type AccountRow = 'manage' | 'join' | 'clinic' | 'notifications' | 'membership' 
 const accountRows: { icon: keyof typeof Ionicons.glyphMap; label: string; id?: AccountRow }[] = [
   { icon: 'sunny-outline', label: 'Üyelik', id: 'membership' },
   { icon: 'person-outline', label: 'Hesabı yönet', id: 'manage' },
-  { icon: 'person-add-outline', label: 'Aileye katıl', id: 'join' },
+  { icon: 'keypad-outline', label: 'Kod gir', id: 'join' },
   { icon: 'notifications-outline', label: 'Bildirimler', id: 'notifications' },
   { icon: 'medkit-outline', label: 'Uzmanım', id: 'clinic' },
   { icon: 'compass-outline', label: 'Nasıl kullanılır?', id: 'guide' },
@@ -311,65 +312,31 @@ function Account({ onLogout }: { onLogout?: () => void }) {
         <Text style={{ color: colors.danger, fontWeight: '700' }}>Çıkış Yap</Text>
       </Pressable>
       <ManageSheet visible={open === 'manage'} onClose={() => setOpen(null)} />
-      <JoinSheet visible={open === 'join'} onClose={() => setOpen(null)} />
+      <CodeSheet visible={open === 'join'} onClose={() => setOpen(null)} />
       <ClinicShareSheet visible={open === 'clinic'} onClose={() => setOpen(null)} />
       <Onboarding visible={open === 'guide'} onClose={() => setOpen(null)} />
     </ScrollView>
   );
 }
 
-/* ---------- Aileye katıl (ikinci ebeveyn) ---------- */
+/* ---------- Kod gir (uzman kodu ya da eşin aile kodu; tür kendiliğinden anlaşılır) ---------- */
 
-function JoinSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const { joinFamily, isOnlyParent, children, tasks } = useStore();
-  const [code, setCode] = useState('');
-  const [busy, setBusy] = useState(false);
-  const close = () => { setCode(''); onClose(); };
-
-  const join = async () => {
-    setBusy(true);
-    try {
-      await joinFamily(code);
-      close();
-      Alert.alert('Aileye katıldın');
-    } catch (e) {
-      Alert.alert('Katılınamadı', (e as Error).message);
-    } finally {
-      setBusy(false);
-    }
+function CodeSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const navigation = useNavigation<any>();
+  const done = (r: CodeResult) => {
+    onClose();
+    if (r.kind === 'invite') setTimeout(() => navigation.navigate('Invite', { invite: r.invite }), 350);
+    else if (r.kind === 'family') Alert.alert('Aileye katıldın', 'Ailenin çocuklarını, görevlerini ve bildirimlerini artık görüyorsun.');
+    else Alert.alert('Bu daveti zaten kabul ettin', `${r.invite.clinician || r.invite.clinic} ile paylaşım Uzmanım bölümünde.`);
   };
-
-  const submit = async () => {
-    if (code.trim().length !== 6) return Alert.alert('Kod 6 karakter olmalı');
-    let loses = false;
-    try { loses = (children.length > 0 || tasks.length > 0) && (await isOnlyParent()); } catch { /* sunucu yine kontrol eder */ }
-    if (!loses) return join();
-    Alert.alert(
-      'Mevcut aileden ayrılınsın mı?',
-      'Yeni aileye katılınca şu anki ailendeki çocuklar, görevler ve mesajlar silinir.',
-      [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Katıl', style: 'destructive', onPress: join }],
-    );
-  };
-
   return (
-    <Sheet visible={visible} title="Aileye katıl" onClose={close}>
+    <Sheet visible={visible} title="Kod gir" onClose={onClose}>
       <View style={{ gap: 14 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Text style={{ flex: 1, fontSize: 13, color: colors.muted }}>Diğer ebeveynin verdiği 6 haneli kod</Text>
-          <Info title="Aileye katıl" text="Kodu diğer ebeveyn Aile › + › Ebeveyn bölümünden üretir. Kod 15 dakika geçerlidir." />
+          <Text style={{ flex: 1, fontSize: 13, color: colors.muted }}>Uzmanından ya da eşinden aldığın 6 haneli kod</Text>
+          <Info title="Hangi kod?" text={'Uygulama kodun kimden geldiğini kendisi anlar.\n\n• Uzman kodu: uzmanın davet ekranı açılır; onaylarsan çocuğunun görevleri onunla paylaşılır.\n• Eşinin kodu: aynı aileye katılırsın. Eşin kodu Aile › + › Ebeveyn bölümünden üretir; kod 15 dakika geçerlidir.'} />
         </View>
-        <TextInput
-          value={code}
-          onChangeText={(v) => setCode(v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6))}
-          placeholder="KOD"
-          placeholderTextColor={colors.faint}
-          autoCapitalize="characters"
-          autoCorrect={false}
-          style={[styles.input, { fontSize: 24, fontWeight: '800', letterSpacing: 6, textAlign: 'center' }]}
-        />
-        <Pressable style={[styles.cta, busy && { opacity: 0.6 }]} disabled={busy} onPress={submit}>
-          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Katıl</Text>}
-        </Pressable>
+        <CodeEntry onResult={done} />
       </View>
     </Sheet>
   );
@@ -551,10 +518,10 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
         <>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text style={{ flex: 1, fontSize: 13, color: colors.muted }}>Diğer ebeveyn bu kodla aileye katılır.</Text>
-            <Info title="Ebeveyn daveti" text="Her yeni ebeveyn için ayrı bir kod üretilir. Diğer ebeveyn kodu Aile › Hesap › Aileye katıl bölümüne yazar. Kod 15 dakika geçerlidir." />
+            <Info title="Ebeveyn daveti" text="Her yeni ebeveyn için ayrı bir kod üretilir. Diğer ebeveyn kodu kayıttan sonra açılan “Kodun var mı?” ekranına ya da Aile › Hesap › Kod gir bölümüne yazar. Kod 15 dakika geçerlidir." />
           </View>
           {code ? (
-            <CodeBox code={code} busy={busy} onRenew={invite} shareText={`ParentApp'e katılmak için davet kodun: ${code.code}\nUygulamada Aile > Hesap > Aileye katıl bölümüne yaz. Kod 15 dakika geçerli.`} />
+            <CodeBox code={code} busy={busy} onRenew={invite} shareText={`ParentApp'e katılmak için davet kodun: ${code.code}\nKayıttan sonra açılan "Kodun var mı?" ekranına ya da Aile > Hesap > Kod gir bölümüne yaz. Kod 15 dakika geçerli.`} />
           ) : (
             <Pressable
               style={[styles.cta, busy && { opacity: 0.6 }]}

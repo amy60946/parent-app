@@ -12,7 +12,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { StoreProvider, useStore } from './src/store';
-import { AuthProvider, useAuth } from './src/lib/auth';
+import { AuthProvider, useAuth, takeJustSignedUp } from './src/lib/auth';
 import { colors } from './src/theme';
 import TasksScreen from './src/screens/TasksScreen';
 import ReviewScreen from './src/screens/ReviewScreen';
@@ -33,9 +33,11 @@ import { hintOf } from './src/lib/errors';
 import { clearPendingClinicInvite, getPendingClinicInvite, onClinicInvite, parseInviteUrl, setPendingClinicInvite } from './src/lib/clinicInvite';
 import { BillingProvider } from './src/billing';
 import Onboarding, { markOnboardingSeen, shouldShowOnboarding } from './src/components/Onboarding';
+import CodeStep from './src/components/CodeStep';
+import type { CodeResult } from './src/components/CodeEntry';
 import { NotificationsProvider } from './src/notifications';
 import { onNotificationTap } from './src/lib/notifications';
-import { clearPendingInvite, getPendingInvite } from './src/lib/pendingInvite';
+import { clearPendingInvite } from './src/lib/pendingInvite';
 import {
   LoginScreen, SignUpScreen, ForgotPasswordScreen, NewPasswordScreen, ChildHomeScreen,
 } from './src/screens/AuthScreens';
@@ -94,31 +96,29 @@ function Loading() {
 }
 
 function Main() {
-  const { ready, joinFamily, children } = useStore();
-  // İlk kullanım rehberi: yalnız yeni aileye (henüz çocuk yok), bu cihazda bir kez. Aile › Hesap › Nasıl kullanılır? ile yeniden açılır.
-  const [guide, setGuide] = React.useState(false);
-  const hasChildren = children.length > 0;
-  React.useEffect(() => {
-    if (!ready) return;
-    Promise.all([shouldShowOnboarding(), getPendingClinicInvite()]).then(([show, invite]) => {
-      if (!show || invite) return; // uzman davetiyle gelen önce daveti görür
-      if (hasChildren) markOnboardingSeen(); else setGuide(true);
-    });
-  }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Uzman davet bağlantısı: daveti bu aileye bağla ve davet ekranını aç (akislar.md 10 adım 5b)
+  const { ready, children } = useStore();
+  // Yeni aile (bu cihazda ilk kez, henüz çocuk yok): önce "Kodun var mı?" (kullanıcı kararı 26 Ekim 2026, "B"),
+  // sonra ilk kullanım rehberi. Uzman davetiyle gelen davetten dönünce kısa rehberi görür (oyun kodu · görev · onay);
+  // eşinin ailesine katılan rehber görmez. Rehber Aile › Hesap › Nasıl kullanılır? ile yeniden açılır.
+  const [guide, setGuide] = React.useState<false | 'full' | 'clinic'>(false);
+  const [codeStep, setCodeStep] = React.useState(false);
+  const afterInvite = React.useRef(false);
+  const childCount = React.useRef(children.length);
+  childCount.current = children.length;
   React.useEffect(() => {
     if (!ready) return;
     let busy = false;
-    const claim = async () => {
+    // Uzman davet bağlantısı: daveti bu aileye bağla, hâlâ bekliyorsa davet ekranını aç (akislar.md 10 adım 5b)
+    const claim = async (): Promise<boolean> => {
       const key = await getPendingClinicInvite();
-      if (!key || busy) return;
+      if (!key || busy) return false;
       busy = true;
       try {
         const r = await openInvite(key);
         await clearPendingClinicInvite();
         // Gezinme hazır olana kadar bekle (açılışta bağlantıyla gelindiyse); hazır olmazsa Görevler'deki bant hatırlatır
         for (let i = 0; i < 20 && !navRef.isReady(); i++) await new Promise((res) => setTimeout(res, 150));
-        if (r.kind === 'pending' && navRef.isReady()) navRef.navigate('Invite', { invite: r.invite });
+        if (r.kind === 'pending' && navRef.isReady()) { navRef.navigate('Invite', { invite: r.invite }); return true; }
         if (r.kind === 'done') {
           Alert.alert('Bu daveti zaten kabul ettin', `${r.invite.clinician || r.invite.clinic} ile paylaşım Aile › Hesap › Uzmanım bölümünde.`);
         }
@@ -129,24 +129,43 @@ function Main() {
       } finally {
         busy = false;
       }
+      return false;
     };
-    claim();
-    return onClinicInvite(() => { claim(); });
-  }, [ready]);
-  // Giriş ekranında davet kodu girildiyse: kayıt/giriş sonrası aileye otomatik katıl
-  React.useEffect(() => {
-    if (!ready) return;
-    getPendingInvite().then(async (code) => {
-      if (!code) return;
-      await clearPendingInvite();
-      try {
-        await joinFamily(code);
-        Alert.alert('Aileye katıldın', 'Artık ailenin görevlerini, çocuklarını ve bildirimlerini görüyorsun.');
-      } catch (e) {
-        Alert.alert('Aileye katılınamadı', `${(e as Error).message}\n\nAile > Hesap > Aileye katıl bölümünden tekrar deneyebilirsin.`);
-      }
-    });
-  }, [ready, joinFamily]);
+    let fresh = false;
+    (async () => {
+      clearPendingInvite(); // eski sürümün giriş ekranındaki kod kutusu kalktı; kod artık "Kodun var mı?" ekranında
+      const [signedUp, show] = await Promise.all([takeJustSignedUp(), shouldShowOnboarding()]);
+      fresh = (signedUp || show) && childCount.current === 0;
+      if (show && childCount.current > 0) markOnboardingSeen();
+      const opened = await claim();
+      if (!fresh) return;
+      if (opened) afterInvite.current = true;
+      else if (signedUp) setCodeStep(true); // kayıttan hemen sonra: "Kodun var mı?"
+      else setGuide('full'); // kayıtlı hesap, bu cihazda ilk kez ve henüz çocuk yok
+    })();
+    return onClinicInvite(() => { claim().then((opened) => { if (opened && fresh) afterInvite.current = true; }); });
+  }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Davet ekranından dönünce: çocuk eklendiyse kısa rehber, davet reddedildiyse tam rehber
+  React.useEffect(() => navRef.addListener('state', () => {
+    if (!afterInvite.current) return;
+    const route = navRef.getCurrentRoute()?.name;
+    if (!route || route === 'Invite') return;
+    afterInvite.current = false;
+    setGuide(childCount.current > 0 ? 'clinic' : 'full');
+  }), []);
+  const onCode = (r: CodeResult) => {
+    setCodeStep(false);
+    if (r.kind === 'invite') {
+      afterInvite.current = true;
+      setTimeout(() => { if (navRef.isReady()) navRef.navigate('Invite', { invite: r.invite }); }, 350);
+    } else if (r.kind === 'family') {
+      markOnboardingSeen();
+      Alert.alert('Aileye katıldın', 'Ailenin çocuklarını, görevlerini ve bildirimlerini artık görüyorsun.');
+    } else {
+      Alert.alert('Bu daveti zaten kabul ettin', `${r.invite.clinician || r.invite.clinic} ile paylaşım Aile › Hesap › Uzmanım bölümünde.`);
+      setGuide('full');
+    }
+  };
   // Telefon bildirimine dokununca ilgili ekranı aç (uygulama kapalıyken açıldıysa da)
   React.useEffect(() => {
     if (!ready) return;
@@ -172,7 +191,8 @@ function Main() {
       <Stack.Screen name="Invite" component={InviteScreen} options={{ presentation: 'modal', gestureEnabled: false }} />
       <Stack.Screen name="CarePlan" component={CarePlanScreen} />
     </Stack.Navigator>
-    <Onboarding visible={guide} onClose={() => setGuide(false)} />
+    <CodeStep visible={codeStep} onResult={onCode} onSkip={() => { setCodeStep(false); setGuide('full'); }} />
+    <Onboarding visible={!!guide} steps={guide === 'clinic' ? [1, 2, 3] : undefined} onClose={() => setGuide(false)} />
     </BillingProvider>
   );
 }

@@ -13,7 +13,7 @@ type Db = { users: Row[]; blobs: Record<string, string>; sessions: Record<string
 // ParentApp ve ClinicApp önizlemeleri aynı sayfada (aynı tarayıcı deposunda) birlikte çalışabilir:
 // veri ortak, oturum her uygulamaya ayrı. Uygulama adını paketleyici yazar (window.__PREVIEW_APP__).
 const APP: string = (globalThis as any).__PREVIEW_APP__ ?? 'parent';
-const KEY = 'pofi-onizleme-v9';
+const KEY = 'pofi-onizleme-v10';
 const TABLES = ['profiles', 'families', 'children', 'tasks', 'task_assignments', 'completions', 'messages', 'saved_templates', 'invite_codes',
   'clinics', 'clinicians', 'clinic_invites', 'clinic_links', 'clinic_notes', 'clinic_goals', 'goal_ratings', 'abc_events',
   'clinic_task_suggestions', 'family_subscriptions', 'notifications', 'push_tokens', 'rewards', 'reward_requests', 'sun_stone_ledger',
@@ -122,6 +122,10 @@ function seed(): Db {
   db.clinic_links.push({ id: 'demo-link-0', clinic_id: K0, clinician_id: 'demo-clinician-0', family_id: F, child_id: 'c-nazli', label: '', status: 'revoked', consent_by: U, consent_at: ago(200 * 1440), revoked_at: ago(60 * 1440), created_at: ago(200 * 1440) });
   db.clinic_invites.push({ code: 'DVT7K2', token: '0123456789abcdef0123456789abcdef', kind: 'family', clinic_id: K2, clinician_id: D2, label: '', child_name: 'Efe', child_age_group: 'A',
     created_at: ago(60), expires_at: new Date(Date.now() + 47 * 3600e3).toISOString(), used_at: null, used_by: null, claimed_at: ago(30), claimed_family: F, revoked_at: null });
+  // "Kodun var mı?" önizlemesi: bağlanmamış uzman daveti (UZM4N8) ve eşin aile kodu (ESIM42)
+  db.clinic_invites.push({ code: 'UZM4N8', token: 'fedcba9876543210fedcba9876543210', kind: 'family', clinic_id: K2, clinician_id: D2, label: '', child_name: 'Deniz', child_age_group: 'K',
+    created_at: now(), expires_at: new Date(Date.now() + 48 * 3600e3).toISOString(), used_at: null, used_by: null, claimed_at: null, claimed_family: null, revoked_at: null });
+  db.invite_codes.push({ code: 'ESIM42', family_id: F, kind: 'parent', child_id: null, created_by: U, created_at: now(), expires_at: new Date(Date.now() + 24 * 3600e3).toISOString(), used_at: null });
   db.care_modules.push(
     { id: 'm-rutin', link_id: L, clinic_id: K, title: 'Görsel sabah rutini', aim: 'Sabah adımlarını hatırlatmasız başlatmak.', practice: 'Kartları sırayla göster, her adımdan sonra kısaca öv.', checklist: ['Kartları göz hizasına astım', 'Yalnız kartı gösterdim, sözle tekrar etmedim', 'Bitince birlikte kutladık'], status: 'active', position: 0, created_at: ago(30 * 1440) },
     { id: 'm-gecis', link_id: L, clinic_id: K, title: 'Ekran kapatma geçişi', aim: 'Ekran sonrası geçişi sakin yapmak.', practice: '5 dakika önce haber ver, zamanlayıcıyı birlikte kurun.', checklist: ['5 dakika önce haber verdim', 'Zamanlayıcıyı birlikte kurduk'], status: 'active', position: 1, created_at: ago(30 * 1440) },
@@ -428,10 +432,10 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
   }
   // Kod hataları sunucudaki gibi: süresi doldu / kullanıldı / bulunamadı (ortak/sozlesme/durumlar.md 11)
   const codeErr = (inv: Row | undefined) => {
-    const hint = !inv ? 'code_invalid' : inv.used_at ? 'code_used' : inv.expires_at <= now() ? 'code_expired' : null;
+    const hint = !inv ? 'not_found' : inv.used_at ? 'used' : inv.expires_at <= now() ? 'expired' : null;
     if (!hint) return null;
-    const message = hint === 'code_expired' ? 'Kodun süresi doldu (kodlar 15 dakika geçerli). Yeni kod iste.'
-      : hint === 'code_used' ? 'Bu kod daha önce kullanıldı. Yeni kod iste.' : 'Kod bulunamadı. Harfleri kontrol et ya da yeni kod iste.';
+    const message = hint === 'expired' ? 'Kodun süresi doldu (kodlar 15 dakika geçerli). Yeni kod iste.'
+      : hint === 'used' ? 'Bu kod daha önce kullanıldı. Yeni kod iste.' : 'Kod bulunamadı. Harfleri kontrol et ya da yeni kod iste.';
     return { data: null, error: { message, hint, code: 'P0001' } };
   };
   if (name === 'redeem_child_code') {

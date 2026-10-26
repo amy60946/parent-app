@@ -18,7 +18,7 @@ const HALO = 'rgba(233,178,43,0.3)';
 const DIM = 'rgba(15,27,61,0.62)';
 // Açık zemin (#F5F6F8) üstünde karartmanın görünen rengi: ölçeklenen sahnenin dışındaki boşluk
 const DIM_SOLID = '#666E84';
-const STEPS = 5;
+const ALL = [0, 1, 2, 3, 4];
 
 export async function shouldShowOnboarding(): Promise<boolean> {
   try { return (await AsyncStorage.getItem(KEY)) !== '1'; } catch { return false; }
@@ -28,7 +28,9 @@ export async function markOnboardingSeen() {
   try { await AsyncStorage.setItem(KEY, '1'); } catch { /* yalnız bu cihazda hatırlanır */ }
 }
 
-export default function Onboarding({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+// steps: gösterilecek adımlar (0 çocuk ekle · 1 oyun kodu · 2 görev ver · 3 onayla · 4 uzmanını ekle).
+// Uzman davetiyle gelen için [1, 2, 3]: çocuk ve uzman davette eklendi.
+export default function Onboarding({ visible, onClose, steps = ALL }: { visible: boolean; onClose: () => void; steps?: number[] }) {
   const [step, setStep] = useState(0);
   const { width, height } = useWindowDimensions();
   const s = Math.min(width / W, height / H);
@@ -39,15 +41,16 @@ export default function Onboarding({ visible, onClose }: { visible: boolean; onC
     markOnboardingSeen();
     onClose();
   };
-  const next = () => (step < STEPS - 1 ? setStep(step + 1) : finish(true));
-  const Step = [Step1, Step2, Step3, Step4, Step5][step];
+  const total = steps.length;
+  const next = () => (step < total - 1 ? setStep(step + 1) : finish(true));
+  const Step = [Step1, Step2, Step3, Step4, Step5][steps[step] ?? 0];
 
   return (
     <Modal visible={visible} animationType="fade" presentationStyle="overFullScreen" transparent onRequestClose={() => finish(false)}>
       <View style={{ flex: 1, backgroundColor: DIM_SOLID, justifyContent: 'flex-end', alignItems: 'center' }}>
         <View style={{ width: W * s, height: H * s }}>
           <View style={{ position: 'absolute', left: (W * s - W) / 2, top: (H * s - H) / 2, width: W, height: H, transform: [{ scale: s }], overflow: 'hidden', backgroundColor: '#F5F6F8' }}>
-            <Step step={step} onNext={next} onSkip={() => finish(false)} />
+            <Step step={step} total={total} onNext={next} onSkip={() => finish(false)} />
           </View>
         </View>
       </View>
@@ -55,7 +58,7 @@ export default function Onboarding({ visible, onClose }: { visible: boolean; onC
   );
 }
 
-type StepProps = { step: number; onNext: () => void; onSkip: () => void };
+type StepProps = { step: number; total: number; onNext: () => void; onSkip: () => void };
 
 /* ---------- ortak parçalar ---------- */
 
@@ -148,11 +151,11 @@ function Block({ top, height, left = 20, right = 20, children, style }: { top: n
 }
 
 // Açıklama kartı: "n / 5", Atla, başlık, tek satır, noktalar + ileri.
-function Coach({ step, title, text, onNext, onSkip, style }: StepProps & { title: string; text: string; style: ViewStyle }) {
+function Coach({ step, total, title, text, onNext, onSkip, style }: StepProps & { title: string; text: string; style: ViewStyle }) {
   return (
     <View style={[st.card, style]}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={st.counter}>{step + 1} / {STEPS}</Text>
+        <Text style={st.counter}>{step + 1} / {total}</Text>
         <Pressable onPress={onSkip} hitSlop={10} accessibilityRole="button" style={{ height: 32, justifyContent: 'center', paddingHorizontal: 4 }}>
           <Text style={{ fontSize: 14, fontWeight: '600', color: '#5B6274' }}>Atla</Text>
         </Pressable>
@@ -160,8 +163,8 @@ function Coach({ step, title, text, onNext, onSkip, style }: StepProps & { title
       <Text style={st.title} accessibilityRole="header">{title}</Text>
       <Text style={st.text}>{text}</Text>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-        <View style={{ flexDirection: 'row', gap: 5 }} accessible accessibilityLabel={`Adım ${step + 1} / ${STEPS}`}>
-          {Array.from({ length: STEPS }, (_, i) => (
+        <View style={{ flexDirection: 'row', gap: 5 }} accessible accessibilityLabel={`Adım ${step + 1} / ${total}`}>
+          {Array.from({ length: total }, (_, i) => (
             <View key={i} style={{ width: i === step ? 18 : 7, height: 7, borderRadius: 4, backgroundColor: i === step ? colors.navy : '#D5D9E2' }} />
           ))}
         </View>
@@ -320,9 +323,9 @@ function Step4(p: StepProps) {
 
 /* ---------- 5 · Uzmanını ekle (isteğe bağlı): Aile → Hesap → Uzmanım ---------- */
 
-const ACCOUNT = ['Üyelik', 'Hesabı yönet', 'Aileye katıl', 'Bildirimler', '', 'Geri bildirim gönder'];
+const ACCOUNT = ['Üyelik', 'Hesabı yönet', 'Kod gir', 'Bildirimler', '', 'Geri bildirim gönder'];
 
-function Step5({ onNext }: StepProps) {
+function Step5({ onNext, step, total }: StepProps) {
   return (
     <>
       <Avatar x={20} letter="A" label="Anne" tint={ANNE} />
@@ -350,7 +353,7 @@ function Step5({ onNext }: StepProps) {
       </Ring>
       <TabRing index={3} left={302} width={78} />
       <View style={[st.card, { left: 20, width: 300, top: 490 }]}>
-        <Text style={[st.counter, { alignSelf: 'flex-start' }]}>{STEPS} / {STEPS} · isteğe bağlı</Text>
+        <Text style={[st.counter, { alignSelf: 'flex-start' }]}>{step + 1} / {total} · isteğe bağlı</Text>
         <Text style={st.title} accessibilityRole="header">Uzmanını ekle</Text>
         <Text style={st.text}>Kodla bağlan, istediğinde kapat</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
