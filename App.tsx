@@ -20,6 +20,7 @@ import ProgressScreen from './src/screens/ProgressScreen';
 import FamilyScreen from './src/screens/FamilyScreen';
 import CreateTaskScreen from './src/screens/CreateTaskScreen';
 import TaskDetailsScreen from './src/screens/TaskDetailsScreen';
+import RoutineScreen from './src/screens/RoutineScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import NotificationsScreen, { openNotification } from './src/screens/NotificationsScreen';
 import AbcScreen from './src/screens/AbcScreen';
@@ -224,6 +225,7 @@ function Main() {
       <Stack.Screen name="Tabs" component={Tabs} />
       <Stack.Screen name="CreateTask" component={CreateTaskScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="TaskDetails" component={TaskDetailsScreen} options={{ presentation: 'modal' }} />
+      <Stack.Screen name="Routine" component={RoutineScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="Abc" component={AbcScreen} />

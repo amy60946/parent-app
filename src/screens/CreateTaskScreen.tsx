@@ -6,6 +6,7 @@ import { colors, radius } from '../theme';
 import { DifficultyBadge, IconButton } from '../components/ui';
 import { categories, Category, TemplateAge, templateAges, categoryLabel, skillLabel } from '../data/templates';
 import { useStore } from '../store';
+import { routines, routineTasks } from '../data/routines';
 
 // Akıllı öneri (smart recommendation) sonra eklenecek: ortak/DURUM.md hatırlatıcı
 type Filter = 'all' | 'saved' | 'popular' | Category;
@@ -72,6 +73,24 @@ export default function CreateTaskScreen({ navigation, route }: any) {
           style={{ flex: 1, fontSize: 15, color: colors.navy, letterSpacing: 0 }}
         />
       </View>
+
+      {/* Hazır rutinler: birkaç görevi tek seferde ekler (kullanıcı isteği 27 Ekim 2026). Aramada ve menü açıkken gizli. */}
+      {!query.trim() && !menu && (
+        <View style={{ marginTop: 14 }}>
+          <Text style={styles.section}>Hazır rutinler</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }}
+            contentContainerStyle={{ gap: 10, paddingHorizontal: 20, paddingTop: 8 }}>
+            {routines.map((r) => (
+              <Pressable key={r.id} onPress={() => navigation.navigate('Routine', { id: r.id })} style={[styles.routine, { backgroundColor: r.tint }]}
+                accessibilityRole="button" accessibilityLabel={`Hazır rutin: ${r.title}`}>
+                <Ionicons name={r.icon} size={22} color={colors.navy} />
+                <Text style={styles.routineTitle} numberOfLines={2}>{r.title}</Text>
+                <Text style={styles.routineSub}>{routineTasks(r).length} görev · {r.subtitle}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       {/* Açılır filtre: bütün seçenekler tek bakışta */}
       <View style={{ paddingHorizontal: 20, marginTop: 12, zIndex: 2 }}>
@@ -205,6 +224,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line,
   },
   hint: { fontSize: 12, color: colors.muted, paddingHorizontal: 20, marginTop: 10, marginBottom: 2 },
+  section: { fontSize: 13, fontWeight: '700', color: colors.navy, paddingHorizontal: 20 },
+  routine: { width: 140, height: 104, borderRadius: radius.md, padding: 12, gap: 4, justifyContent: 'space-between' },
+  routineTitle: { fontSize: 14, fontWeight: '700', color: colors.navy },
+  routineSub: { fontSize: 11, color: '#4A5165' },
   card: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: radius.md, padding: 14, borderWidth: 1.5, borderColor: 'transparent' },
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: colors.faint, alignItems: 'center', justifyContent: 'center' },
   cardTitle: { fontSize: 15, fontWeight: '600', color: colors.navy },

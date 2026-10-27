@@ -16,6 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import TrialBanner from '../components/TrialBanner';
 import PendingInviteBanner from '../components/PendingInviteBanner';
 import { useBilling } from '../billing';
+import { routines } from '../data/routines';
 
 const HINT_KEY = 'hint-plus-longpress-v2';
 const NEW_REWARD_KEY = 'hint-reward-new';
@@ -202,9 +203,26 @@ export default function TasksScreen({ navigation }: any) {
           ) : undefined
         }
         ListEmptyComponent={
-          <Text style={{ color: colors.muted, textAlign: 'center', marginTop: 48 }}>
-            Bu gün için görev yok.{'\n'}Sağ alttaki + ile görev ata.
-          </Text>
+          tasks.length === 0 ? (
+            // Ailenin hiç görevi yok: hazır rutinle başlamak tek dokunuş (kullanıcı isteği 27 Ekim 2026)
+            <View style={styles.starter}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.navy }}>Bir rutinle başla</Text>
+              <Text style={{ fontSize: 13, color: colors.muted }}>Birkaç görevi tek seferde ekle, sonra dilediğin gibi düzenle.</Text>
+              {routines.slice(0, 3).map((r) => (
+                <Pressable key={r.id} onPress={() => { if (allow('task')) navigation.navigate('Routine', { id: r.id }); }}
+                  style={[styles.starterRow, { backgroundColor: r.tint }]} accessibilityRole="button">
+                  <Ionicons name={r.icon} size={20} color={colors.navy} />
+                  <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: colors.navy }}>{r.title}</Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.navy} />
+                </Pressable>
+              ))}
+              <Text style={{ fontSize: 12, color: colors.muted, textAlign: 'center' }}>Ya da sağ alttaki + ile tek görev ata.</Text>
+            </View>
+          ) : (
+            <Text style={{ color: colors.muted, textAlign: 'center', marginTop: 48 }}>
+              Bu gün için görev yok.{'\n'}Sağ alttaki + ile görev ata.
+            </Text>
+          )
         }
       />
 
@@ -354,6 +372,8 @@ function Chip({ label, active, onPress, avatar }: { label: string; active: boole
 }
 
 const styles = StyleSheet.create({
+  starter: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 16, gap: 10, marginTop: 12 },
+  starterRow: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: radius.md, paddingHorizontal: 14, height: 48 },
   suggest: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 20, marginBottom: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.md, backgroundColor: '#FFF6DE' },
   safe: { flex: 1, backgroundColor: colors.bg },
   header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 10 },
