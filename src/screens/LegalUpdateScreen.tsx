@@ -3,7 +3,7 @@ import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Alert
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
-import { LegalDoc, isNotice, legalAccept, openLegal } from '../lib/legal';
+import { LegalDoc, isNotice, legalAccept } from '../lib/legal';
 import { track } from '../lib/track';
 
 // Yeniden onay (hukuk/50 §2): açılışta legal_pending boş değilse. Her onay isteyen metin ayrı kutu (önceden işaretli değil);
@@ -41,7 +41,7 @@ export default function LegalUpdateScreen({ navigation, route }: any) {
             <Text style={styles.text}>{d.summary}</Text>
           </View>
         )}
-        <Pressable onPress={() => openLegal(d.key, d.version)} hitSlop={6} accessibilityRole="link">
+        <Pressable onPress={() => navigation.navigate('LegalText', { key: d.key, version: d.version })} hitSlop={6} accessibilityRole="link">
           <Text style={styles.link}>Tam metni oku</Text>
         </Pressable>
         {isNotice(d.key) ? (

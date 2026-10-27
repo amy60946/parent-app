@@ -25,7 +25,7 @@ import { useBilling } from '../billing';
 import { IssuedCode } from '../store';
 import { PendingInvite, pendingInvites } from '../lib/clinic';
 import { useParentTasks } from '../parentTasks';
-import { useLegal } from '../legal';
+import { useChildConsent } from '../legal';
 import { balances } from '../lib/rewards';
 import { startOfWeek } from '../dates';
 
@@ -149,7 +149,7 @@ function MyProfile() {
 
 function ChildInfo({ id }: { id: string }) {
   const { children, completions, createChildCode, setChildAgeBand, childBalance, unlinkChildDevice } = useStore();
-  const { ensureChildConsent } = useLegal();
+  const { ensureChildConsent, consentUi } = useChildConsent();
   const navigation = useNavigation<any>();
   const [code, setCode] = useState<IssuedCode | undefined>();
   const [busy, setBusy] = useState(false);
@@ -240,6 +240,7 @@ function ChildInfo({ id }: { id: string }) {
           </Pressable>
         )}
       </Card>
+      {consentUi}
     </ScrollView>
   );
 }

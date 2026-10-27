@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
 import { IconButton } from '../components/ui';
 import ClinicShareSheet from '../components/ClinicShare';
-import { LegalDoc, legalDocs, openLegal } from '../lib/legal';
+import { LegalDoc, legalDocs } from '../lib/legal';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { formatTR, toISO } from '../dates';
@@ -55,7 +55,7 @@ export default function LegalDocsScreen({ navigation }: any) {
         ) : (
           <View style={styles.list}>
             {docs.map((d, i) => (
-              <Pressable key={d.key} onPress={() => openLegal(d.key, d.version)} style={[styles.row, i > 0 && styles.sep]} accessibilityRole="link">
+              <Pressable key={d.key} onPress={() => navigation.navigate('LegalText', { key: d.key, version: d.version })} style={[styles.row, i > 0 && styles.sep]} accessibilityRole="link">
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={styles.h}>{d.title}</Text>
                   <Text style={styles.cap}>
@@ -63,7 +63,7 @@ export default function LegalDocsScreen({ navigation }: any) {
                     {d.requires_acceptance && d.accepted_at ? ` · Onayladın: ${formatTR(toISO(new Date(d.accepted_at)))}` : ''}
                   </Text>
                 </View>
-                <Ionicons name="open-outline" size={16} color={colors.muted} />
+                <Ionicons name="chevron-forward" size={16} color={colors.muted} />
               </Pressable>
             ))}
           </View>

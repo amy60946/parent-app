@@ -8,7 +8,6 @@ import { useBilling } from '../billing';
 import { PlanId, plans, premiumFeatures, freeFeatures } from '../data/plans';
 import { purchase, restorePurchases } from '../lib/billing';
 import { formatTR, toISO } from '../dates';
-import { openLegal } from '../lib/legal';
 
 const NOT_CONNECTED = 'Ödeme henüz açık değil. Uygulama App Store\'da yayınlanınca üyelik buradan alınabilecek.';
 
@@ -120,8 +119,8 @@ export default function PaywallScreen({ navigation, route }: any) {
               dönemin sonunda geçerli olur. İade talepleri Apple'ın kurallarına göre Apple'a yapılır.
             </Text>
             <Text style={[styles.legal, { textAlign: 'center' }]}>
-              <Text style={styles.legalLink} onPress={() => openLegal('kosullar-parentapp')}>Kullanım Koşulları</Text>{'  ·  '}
-              <Text style={styles.legalLink} onPress={() => openLegal('gizlilik')}>Gizlilik Politikası</Text>{'  ·  '}
+              <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalText', { key: 'kosullar-parentapp' })}>Kullanım Koşulları</Text>{'  ·  '}
+              <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalText', { key: 'gizlilik' })}>Gizlilik Politikası</Text>{'  ·  '}
               <Text style={styles.legalLink} onPress={() => Linking.openURL('https://apps.apple.com/account/subscriptions')}>Aboneliği yönet</Text>
             </Text>
           </>

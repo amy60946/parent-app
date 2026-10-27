@@ -6,7 +6,7 @@ import { colors, radius } from '../theme';
 import { Avatar, IconButton, Segmented } from '../components/ui';
 import { useStore } from '../store';
 import { useAuth } from '../lib/auth';
-import { KvkkKind, KvkkRequest, kvkkCreate, kvkkKinds, kvkkStatus, myKvkk, openLegal } from '../lib/legal';
+import { KvkkKind, KvkkRequest, kvkkCreate, kvkkKinds, kvkkStatus, myKvkk } from '../lib/legal';
 import { formatTR, toISO } from '../dates';
 import { track } from '../lib/track';
 
@@ -58,7 +58,7 @@ export default function KvkkScreen({ navigation, route }: any) {
         <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
           <Text style={styles.text}>
             Kişisel verilerinle ilgili taleplerini buradan iletebilirsin. En geç 30 gün içinde, ücretsiz yanıt veririz. Yanıt {email} adresine gelir.{' '}
-            <Text style={styles.link} onPress={() => openLegal('kvkk-basvuru')}>Başvuru usulü</Text>
+            <Text style={styles.link} onPress={() => navigation.navigate('LegalText', { key: 'kvkk-basvuru' })}>Başvuru usulü</Text>
           </Text>
           {children.length > 0 && (
             <View style={{ gap: 8 }}>

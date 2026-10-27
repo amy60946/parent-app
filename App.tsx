@@ -27,7 +27,7 @@ import LegalUpdateScreen from './src/screens/LegalUpdateScreen';
 import LegalDocsScreen from './src/screens/LegalDocsScreen';
 import KvkkScreen from './src/screens/KvkkScreen';
 import DeleteAccountScreen from './src/screens/DeleteAccountScreen';
-import { LegalProvider } from './src/legal';
+import LegalTextScreen from './src/screens/LegalTextScreen';
 import { acceptSignupConsent, legalPending } from './src/lib/legal';
 import ChatScreen from './src/screens/ChatScreen';
 import NotificationsScreen, { openNotification } from './src/screens/NotificationsScreen';
@@ -134,7 +134,7 @@ function Main() {
     let live = true;
     const check = async () => {
       await acceptSignupConsent();
-      if (!live || setupRef.current !== 'done' || !navRef.isReady() || navRef.getCurrentRoute()?.name === 'LegalUpdate') return;
+      if (!live || setupRef.current !== 'done' || !navRef.isReady() || navRef.getRootState()?.routes.some((r) => r.name === 'LegalUpdate')) return;
       const linked = kidsRef.current.filter((c) => c.linked);
       try {
         const [parent, child] = await Promise.all([legalPending('parent'), linked.length ? legalPending('child') : Promise.resolve([])]);
@@ -263,6 +263,7 @@ function Main() {
       <Stack.Screen name="GiftShop" component={GiftShopScreen} />
       <Stack.Screen name="LegalUpdate" component={LegalUpdateScreen} options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
       <Stack.Screen name="LegalDocs" component={LegalDocsScreen} />
+      <Stack.Screen name="LegalText" component={LegalTextScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="Kvkk" component={KvkkScreen} />
       <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
       <Stack.Screen name="Chat" component={ChatScreen} />
@@ -292,6 +293,7 @@ function AuthFlow() {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="Forgot" component={ForgotPasswordScreen} />
+        <Stack.Screen name="LegalText" component={LegalTextScreen} options={{ presentation: 'modal' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -314,7 +316,6 @@ function Root() {
     <ClientConfigProvider>
     <StoreProvider userId={session?.user.id ?? null}>
       <ParentTasksProvider>
-      <LegalProvider>
       <NotificationsProvider userId={session.user.id}>
         <NavigationContainer theme={navTheme} ref={navRef}
           onReady={() => trackScreen(navRef.getCurrentRoute()?.name)}
@@ -324,7 +325,6 @@ function Root() {
           <Main />
         </NavigationContainer>
       </NotificationsProvider>
-      </LegalProvider>
       </ParentTasksProvider>
     </StoreProvider>
     </ClientConfigProvider>

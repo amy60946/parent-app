@@ -8,7 +8,7 @@ import Info from '../components/Info';
 import { CodeBox } from '../components/CodeBox';
 import { useStore, IssuedCode, Child } from '../store';
 import { track } from '../lib/track';
-import { useLegal } from '../legal';
+import { useChildConsent } from '../legal';
 
 // Kurulumdan sonra ilk iş: çocuğun cihazını kur (kullanıcı kararı 27 Ekim 2026; ortak/sozlesme/akislar.md 16 adım 13).
 // "Başka cihaz": indirme bağlantısını paylaş + giriş kodu (QR + yazılı). "Bu cihaz": App Store + kod. Çocuk bağlanınca ✓.
@@ -17,7 +17,7 @@ const GAME_URL = process.env.EXPO_PUBLIC_GAME_STORE_URL ?? '';
 
 export default function DeviceSetupScreen({ navigation }: any) {
   const { children } = useStore();
-  const { ensureChildConsent } = useLegal(); // veli onayı: kod/QR'dan önce (hukuk/50 §1.3)
+  const { ensureChildConsent, consentUi } = useChildConsent(); // veli onayı: kod/QR'dan önce (hukuk/50 §1.3)
   const [open, setOpen] = useState<string | undefined>();
   const close = () => navigation.goBack();
   const kid = children.find((c) => c.id === open);
@@ -53,6 +53,7 @@ export default function DeviceSetupScreen({ navigation }: any) {
         </Pressable>
       </ScrollView>
       {kid && <DeviceSheet child={kid} onClose={() => setOpen(undefined)} />}
+      {consentUi}
     </SafeAreaView>
   );
 }

@@ -9,7 +9,7 @@ import VerifiedBadge from '../components/VerifiedBadge';
 import { CodeBox } from '../components/CodeBox';
 import Info from '../components/Info';
 import { SCOPE_FULL, SCOPE_SHORT, SHARE_WARNING, SHARE_WARNING_SHORT, historyConsent } from '../data/clinicTexts';
-import { useLegal } from '../legal';
+import { useChildConsent } from '../legal';
 import { useStore, IssuedCode } from '../store';
 import { childAvatars } from '../data/avatars';
 import { ageBands, AgeBand } from '../data/ageBands';
@@ -248,7 +248,7 @@ function Done({ invite, who, done, onClose, createChildCode }: {
   const target = useMemo(() => shared.find((c) => c.id === done.newId) ?? shared.find((c) => !c.linked), [shared, done.newId]);
   const [code, setCode] = useState<IssuedCode | undefined>();
   const [busy, setBusy] = useState(false);
-  const { ensureChildConsent } = useLegal();
+  const { ensureChildConsent, consentUi } = useChildConsent();
   const issue = async () => {
     if (!target) return;
     if (!(await ensureChildConsent(target.name))) return; // veli onayı: kod/QR'dan önce (hukuk/50 §1.3)
@@ -292,6 +292,7 @@ function Done({ invite, who, done, onClose, createChildCode }: {
           <Text style={{ color: colors.navy, fontWeight: '700' }}>{target && !target.linked && !code ? 'Sonra bağlarım' : 'Bitti'}</Text>
         </Pressable>
       </ScrollView>
+      {consentUi}
     </SafeAreaView>
   );
 }

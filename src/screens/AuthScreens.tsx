@@ -13,7 +13,7 @@ import { useAuth, authErrorText } from '../lib/auth';
 import { clearPendingClinicInvite, getPendingClinicInvite, isInviteToken, setPendingClinicInvite } from '../lib/clinicInvite';
 import { normalizeCode } from '../lib/pendingInvite';
 import { InviteInfo, inviteInfo } from '../lib/clinic';
-import { markSignupConsent, openLegal } from '../lib/legal';
+import { markSignupConsent } from '../lib/legal';
 
 const MIN_PASSWORD = 8;
 const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
@@ -299,13 +299,13 @@ export function SignUpScreen({ navigation, route }: any) {
       <Pressable onPress={() => setTerms(!terms)} style={styles.legalRow} accessibilityRole="checkbox" accessibilityState={{ checked: terms }}>
         <Ionicons name={terms ? 'checkbox' : 'square-outline'} size={22} color={colors.navy} />
         <Text style={styles.legalText}>
-          <Text style={styles.legalLink} onPress={() => openLegal('kosullar-parentapp')}>Kullanım Koşulları</Text>'nı okudum, kabul ediyorum.
+          <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalText', { key: 'kosullar-parentapp' })}>Kullanım Koşulları</Text>'nı okudum, kabul ediyorum.
         </Text>
       </Pressable>
       <Text style={[styles.legalText, { flex: 0 }]}>
-        Kişisel verilerinin nasıl işlendiğini <Text style={styles.legalLink} onPress={() => openLegal('aydinlatma-ebeveyn')}>Aydınlatma Metni</Text>'nde anlatıyoruz.
+        Kişisel verilerinin nasıl işlendiğini <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalText', { key: 'aydinlatma-ebeveyn' })}>Aydınlatma Metni</Text>'nde anlatıyoruz.
       </Text>
-      <Text style={styles.small} onPress={() => openLegal('gizlilik')} accessibilityRole="link">Gizlilik Politikası</Text>
+      <Text style={styles.small} onPress={() => navigation.navigate('LegalText', { key: 'gizlilik' })} accessibilityRole="link">Gizlilik Politikası</Text>
       <Cta label="Kayıt ol" onPress={submit} busy={busy} disabled={!terms} />
       <LinkText onPress={() => navigation.navigate('Login')}>Zaten hesabın var mı? Giriş yap</LinkText>
     </Layout>

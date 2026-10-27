@@ -8,7 +8,6 @@ import { useStore } from '../store';
 import { useAuth } from '../lib/auth';
 import { useBilling } from '../billing';
 import { useParentTasks, memberName } from '../parentTasks';
-import { openLegal } from '../lib/legal';
 import { track } from '../lib/track';
 
 // Hesabımı sil (hukuk/50 §5.1; ortak delete_account()). Etkin App Store aboneliği varsa önce uyarı; ailede tek ebeveynse
@@ -80,7 +79,7 @@ export default function DeleteAccountScreen({ navigation }: any) {
         )}
         <Text style={styles.cap}>
           Kanunen saklamamız gereken ödeme kayıtları ve ekip işlem kaydı, e-posta adresin çıkarılarak süresi dolana kadar tutulur. Ücretsiz deneme hakkının tekrar kullanılmaması için e-posta adresinin geri çevrilemez bir özeti saklanır.{' '}
-          <Text style={styles.link} onPress={() => openLegal('gizlilik')}>Ayrıntı</Text>
+          <Text style={styles.link} onPress={() => navigation.navigate('LegalText', { key: 'gizlilik' })}>Ayrıntı</Text>
         </Text>
         <Text style={styles.h}>Bu işlem geri alınamaz. Onaylamak için SİL yaz:</Text>
         <TextInput value={typed} onChangeText={setTyped} autoCapitalize="characters" placeholder="SİL" placeholderTextColor={colors.faint}

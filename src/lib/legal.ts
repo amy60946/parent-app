@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Linking } from 'react-native';
 import { supabase } from './supabase';
 
 // Yasal metinler, onay kaydı, KVKK başvurusu (ortak proposed/20261027200000_legal.sql; metinler ortak/hukuk/,
@@ -22,7 +21,14 @@ export const isNotice = (key: string) => key.startsWith('aydinlatma-');
 const BASE = (process.env.EXPO_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '');
 export const legalUrl = (key: string, version?: string) =>
   `${BASE}/functions/v1/legal?doc=${encodeURIComponent(key)}${version ? `&v=${encodeURIComponent(version)}` : ''}`;
-export const openLegal = (key: string, version?: string) => Linking.openURL(legalUrl(key, version)).catch(() => {});
+// Metin uygulamanın içinde gösterilir (LegalText ekranı): *.supabase.co, işlevin HTML yanıtını text/plain'e çevirdiği için
+// tarayıcıda ham kod görünür. format=json → { key, version, title, status, published_at, body_md }.
+export type LegalBody = { key: string; version: string; title: string; status: LegalDoc['status']; published_at?: string | null; body_md: string };
+export async function legalJson(key: string, version?: string): Promise<LegalBody> {
+  const r = await fetch(`${legalUrl(key, version)}&format=json`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
 
 export async function legalDocs(app: LegalApp | 'web'): Promise<LegalDoc[] | null> {
   const { data, error } = await supabase.rpc('legal_documents_for', { p_app: app });
