@@ -119,7 +119,7 @@ function MyProfile() {
         <Field label="İsim" value={parent.name} onChange={(v) => updateParent({ name: v })} />
       </Card>
       {pt.ready && pt.me && (
-        // Ebeveynin Güneş Taşı (akislar.md 17): kendine atanan görevlerden; hediye dükkânında harcanır
+        // Ebeveynin Güneş Taşı (akislar.md 18): kendine atanan görevlerden; hediye dükkânında harcanır
         <>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <View style={{ flex: 1 }}><InfoTitle title="Güneş Taşım" style={styles.h} info={'Sana atanan görevlerde "Yaptım" dedikçe taş kazanırsın (Kolay 1, Orta 2, Zor 3). Taşlarla Hediye dükkânından çocuğuna oyunda hediye gönderirsin.'} /></View>

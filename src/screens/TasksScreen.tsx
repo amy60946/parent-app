@@ -28,7 +28,7 @@ const partOf = (t: Task) => t.dayPart ?? (t.reminder ? taskDayPartOf(t.reminder)
 
 const WEEK_RANGE = 52; // bugünden ±52 hafta
 
-type DayItem = { task: Task; assigns: Task['assignments']; parents: ParentAssign[] }; // parents: ebeveyn atamaları (akislar.md 17)
+type DayItem = { task: Task; assigns: Task['assignments']; parents: ParentAssign[] }; // parents: ebeveyn atamaları (akislar.md 18)
 
 export default function TasksScreen({ navigation }: any) {
   const { width } = useWindowDimensions();

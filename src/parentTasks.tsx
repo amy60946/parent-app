@@ -5,7 +5,7 @@ import { useStore } from './store';
 import { Difficulty } from './theme';
 import { track } from './lib/track';
 
-// Ebeveyn görevleri ve ebeveynin Güneş Taşı (ortak/sozlesme/akislar.md 17, öneri 20261027140000_parent_tasks_gifts.sql).
+// Ebeveyn görevleri ve ebeveynin Güneş Taşı (ortak/sozlesme/akislar.md 18, öneri 20261027140000_parent_tasks_gifts.sql).
 // Görev ebeveyne de atanır (kendine ya da eşine); ebeveyn "Yaptım" der, zorluğa göre taş kazanır, taşla çocuğa oyunda hediye yollar.
 // Sunucuda tablo yoksa (öneri uygulanmadı) ready = false: ekranlar bu bölümleri göstermez, bugünkü akış sürer.
 

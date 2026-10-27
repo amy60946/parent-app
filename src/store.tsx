@@ -466,7 +466,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
         created.map((t) => ({ ...taskRow(t), id: t.id, family_id: f, created_by: userId })),
       );
       if (ins.error) return ins;
-      // Yalnız ebeveyne atanan görevde çocuk ataması yok (ortak akislar.md 17)
+      // Yalnız ebeveyne atanan görevde çocuk ataması yok (ortak akislar.md 18)
       const rows = created.flatMap((t) => assignmentRows(f, t.id, t.assignments));
       const a = rows.length ? await supabase.from('task_assignments').insert(rows) : { error: null };
       if (!a.error) onSaved?.(created.map((t) => t.id));

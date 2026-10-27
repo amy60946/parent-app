@@ -38,7 +38,7 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
     });
     return r;
   });
-  // Ebeveyn atamaları (akislar.md 17): kendine ya da eşine; ödül zorluğa göre Güneş Taşı
+  // Ebeveyn atamaları (akislar.md 18): kendine ya da eşine; ödül zorluğa göre Güneş Taşı
   const [prows, setProws] = useState<Record<string, { on: boolean; difficulty: Difficulty }>>(() => {
     const r: Record<string, { on: boolean; difficulty: Difficulty }> = {};
     pt.members.forEach((m) => {

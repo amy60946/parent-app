@@ -12,7 +12,7 @@ import { supabase } from '../lib/supabase';
 import { giftItems, giftKinds, giftName, GiftKind } from '../data/giftItems';
 import { track } from '../lib/track';
 
-// Hediye dükkânı (kullanıcı isteği 27 Ekim 2026; ortak akislar.md 17): ebeveyn görevlerinden kazanılan taşla çocuğa oyunda eşya.
+// Hediye dükkânı (kullanıcı isteği 27 Ekim 2026; ortak akislar.md 18): ebeveyn görevlerinden kazanılan taşla çocuğa oyunda eşya.
 // Liste ve fiyat sunucudan (gift_items), ad ve simge uygulamada (data/giftItems). Gönderilen hediye oyunda posta kutusuna düşer.
 type Item = { id: string; stones: number };
 const NOTE_MAX = 140;
