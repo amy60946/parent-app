@@ -41,7 +41,8 @@ import { completeSetup, setupDone } from './src/lib/intake';
 import { track } from './src/lib/track';
 import type { CodeResult } from './src/components/CodeEntry';
 import { NotificationsProvider } from './src/notifications';
-import { onNotificationTap } from './src/lib/notifications';
+import { onNotificationTap, shouldAskPush } from './src/lib/notifications';
+import PushAsk from './src/components/PushAsk';
 import { clearPendingInvite } from './src/lib/pendingInvite';
 import {
   LoginScreen, SignUpScreen, ForgotPasswordScreen, NewPasswordScreen, ChildHomeScreen, WelcomeScreen, ExpertAskScreen, ExpertCodeScreen,
@@ -129,6 +130,9 @@ function Main() {
   // sonra ilk kullanım rehberi. Uzman davetiyle gelen davetten dönünce kısa rehberi görür (oyun kodu · görev · onay);
   // eşinin ailesine katılan rehber görmez. Rehber Aile › Hesap › Nasıl kullanılır? ile yeniden açılır.
   const [guide, setGuide] = React.useState<false | 'full' | 'clinic' | 'short'>(false);
+  // Rehber bitince bildirim ön sorusu (izin hiç sorulmadıysa); yoksa ilk incelemede sorulur
+  const [pushAsk, setPushAsk] = React.useState(false);
+  const endGuide = () => { setGuide(false); shouldAskPush().then((v) => v && setTimeout(() => setPushAsk(true), 400)); };
   const [codeStep, setCodeStep] = React.useState(false);
   const afterInvite = React.useRef(false);
   const childCount = React.useRef(children.length);
@@ -229,7 +233,8 @@ function Main() {
       <Stack.Screen name="CarePlan" component={CarePlanScreen} />
     </Stack.Navigator>
     <CodeStep visible={codeStep} onResult={onCode} onSkip={() => { setCodeStep(false); setGuide('full'); }} />
-    <Onboarding visible={!!guide} steps={guide === 'clinic' ? [1, 2, 3] : guide === 'short' ? [2, 3] : undefined} onClose={() => setGuide(false)} />
+    <Onboarding visible={!!guide} steps={guide === 'clinic' ? [1, 2, 3] : guide === 'short' ? [2, 3] : undefined} onClose={endGuide} />
+    <PushAsk visible={pushAsk} onDone={() => setPushAsk(false)} />
     </SetupCtx.Provider>
     </BillingProvider>
   );

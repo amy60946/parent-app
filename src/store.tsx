@@ -50,8 +50,11 @@ export type RepeatKind = 'daily' | 'weekly' | 'monthly';
 export type CustomTemplateInput = { title: string; emoji: string; category: Category; difficulty: Difficulty };
 
 // pending: çocuk "yaptım" dedi · approved: onaylandı (coin verilir)
-// declined: çocuk "yapamam" dedi · rejected: ebeveyn notla reddetti
-export type CompletionStatus = 'pending' | 'approved' | 'declined' | 'rejected';
+// declined: çocuk "yapamam" dedi · rejected: ebeveyn notla reddetti · retry: ebeveyn "tekrar dene" dedi (çocuk yeniden yapar)
+export type CompletionStatus = 'pending' | 'approved' | 'declined' | 'rejected' | 'retry';
+export type ReviewDecision = 'approved' | 'rejected' | 'retry';
+// İnceleme ayrıntısı (ortak/sozlesme/akislar.md 3, 9c): motivasyon 1–5 (uzmana akar), taş 0–6 (boş = zorluğa göre), not oyunda görünür
+export type ReviewExtra = { note?: string; motivation?: number | null; stones?: number | null };
 // anahtar: `${taskId}|${childId}|${date}`
 export type Completions = Record<string, CompletionStatus>;
 
@@ -95,7 +98,7 @@ type Store = {
   updateTask: (id: string, patch: Partial<Task>) => void; // tekrarlayan görevde tek kayıt => tüm günlere yansır
   deleteTask: (id: string) => void;
   toggleCompletion: (task: Task, childId: string, date: string) => void;
-  review: (key: string, approve: boolean, note?: string) => void; // ret: not çocuğa oyunda görünür
+  review: (key: string, decision: ReviewDecision, extra?: ReviewExtra) => Promise<boolean>; // not çocuğa oyunda görünür
   toggleSaved: (templateId: string) => void;
   addCustomTemplate: (t: CustomTemplateInput) => string;
   allTemplates: Template[];
@@ -548,16 +551,26 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     }
   }, [run]);
 
-  const review = useCallback((key: string, approve: boolean, note?: string) => {
-    track('task.review', { approve });
+  const review = useCallback(async (key: string, decision: ReviewDecision, extra: ReviewExtra = {}) => {
+    track('task.review', { approve: decision === 'approved', decision, ...(extra.motivation ? { motivation: extra.motivation } : {}) });
     const [taskId, childId, date] = key.split('|');
-    setCompletions((p) => ({ ...p, [key]: approve ? 'approved' : 'rejected' }));
+    const prev = completionsRef.current[key];
+    setCompletions((p) => ({ ...p, [key]: decision }));
     // Onay da ret de aynı RPC ile (ortak/sozlesme/durumlar.md D2). Ret kaydı silinmez: çocuk oyunda "reddedildi" ve notu görür.
-    run(() => supabase.rpc('review_completion', {
-      p_task_id: taskId, p_child_id: childId, p_date: date,
-      p_status: approve ? 'approved' : 'rejected', p_note: approve ? null : note?.trim() || null,
-    }));
-  }, [run]);
+    const base = { p_task_id: taskId, p_child_id: childId, p_date: date, p_status: decision, p_note: extra.note?.trim() || null };
+    const more = extra.motivation != null || extra.stones != null;
+    let { error } = await supabase.rpc('review_completion', more
+      ? { ...base, p_motivation: extra.motivation ?? null, p_stones: decision === 'approved' ? extra.stones ?? null : null }
+      : base);
+    // Sunucu henüz eski (öneri 20261027130000 uygulanmadı): motivasyon/taş olmadan yeniden dene; "Tekrar dene" yok
+    if (error && more && decision !== 'retry' && error.code === 'PGRST202') ({ error } = await supabase.rpc('review_completion', base));
+    if (!error) return true;
+    setCompletions((p) => { const n = { ...p }; if (prev) n[key] = prev; else delete n[key]; return n; });
+    const old = decision === 'retry' && (error.code === 'PGRST202' || /Geçersiz durum|completions_status_check/.test(error.message));
+    Alert.alert(old ? 'Sunucu güncellemesi bekleniyor' : 'Kaydedilemedi',
+      old ? '"Tekrar dene", ortak SQL dosyası Supabase\'de çalıştırılınca açılır. Şimdilik onaylayabilir ya da reddedebilirsin.' : error.message);
+    return false;
+  }, []);
 
   const toggleSaved = useCallback((templateId: string) => {
     const f = fid.current;

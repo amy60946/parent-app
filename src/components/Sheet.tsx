@@ -7,13 +7,14 @@ import { useKeyboardHeight } from '../lib/useKeyboardHeight';
 
 // Alttan açılan sayfa. Klavye açılınca sayfa klavyenin üstüne çıkar ve içerik
 // kaydırılabilir kalır; yazılan alan her zaman görünür.
-export default function Sheet({ visible, title, onClose, children, header }: {
+export default function Sheet({ visible, title, onClose, children, header, footer }: {
   visible: boolean; title: string; onClose: () => void; children: React.ReactNode; header?: React.ReactNode;
+  footer?: React.ReactNode; // kaydırılan içeriğin altında sabit (ör. karar düğmeleri)
 }) {
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const kb = useKeyboardHeight();
-  const maxScroll = Math.max(160, height - kb - insets.top - 190);
+  const maxScroll = Math.max(160, height - kb - insets.top - (footer ? 270 : 190));
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -33,6 +34,7 @@ export default function Sheet({ visible, title, onClose, children, header }: {
           >
             {children}
           </ScrollView>
+          {footer}
         </View>
       </View>
     </Modal>

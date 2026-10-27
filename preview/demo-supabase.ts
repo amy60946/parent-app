@@ -13,7 +13,7 @@ type Db = { users: Row[]; blobs: Record<string, string>; sessions: Record<string
 // ParentApp ve ClinicApp önizlemeleri aynı sayfada (aynı tarayıcı deposunda) birlikte çalışabilir:
 // veri ortak, oturum her uygulamaya ayrı. Uygulama adını paketleyici yazar (window.__PREVIEW_APP__).
 const APP: string = (globalThis as any).__PREVIEW_APP__ ?? 'parent';
-const KEY = 'pofi-onizleme-v11';
+const KEY = 'pofi-onizleme-v12';
 const TABLES = ['profiles', 'families', 'children', 'tasks', 'task_assignments', 'completions', 'messages', 'saved_templates', 'invite_codes',
   'clinics', 'clinicians', 'clinic_invites', 'clinic_links', 'clinic_notes', 'clinic_goals', 'goal_ratings', 'abc_events',
   'clinic_task_suggestions', 'family_subscriptions', 'notifications', 'push_tokens', 'rewards', 'reward_requests', 'sun_stone_ledger',
@@ -465,7 +465,10 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
     const key = { task_id: args.p_task_id, child_id: args.p_child_id, date: args.p_date };
     let row = db.completions.find((r: Row) => r.task_id === key.task_id && r.child_id === key.child_id && r.date === key.date);
     if (!row) { row = { id: uuid(), family_id: me.family_id, ...key, created_at: now() }; db.completions.push(row); }
-    Object.assign(row, { status: args.p_status, parent_note: args.p_note ?? null, reviewed_at: now(), reviewed_by: uid });
+    // ortak proposed/20261027130000_review_detail.sql: + retry, motivasyon 1–5, taş 0–6 (yalnız onayda)
+    if (!['approved', 'rejected', 'pending', 'retry'].includes(args.p_status)) return { data: null, error: { message: 'Geçersiz durum' } };
+    Object.assign(row, { status: args.p_status, parent_note: args.p_note ?? null, reviewed_at: now(), reviewed_by: uid,
+      motivation: args.p_motivation ?? null, stones: args.p_status === 'approved' ? args.p_stones ?? null : null });
     save();
     return { data: null, error: null };
   }

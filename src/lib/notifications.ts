@@ -32,14 +32,23 @@ export async function pushEnabled() {
   return (await AsyncStorage.getItem(OFF_KEY)) !== '1';
 }
 
-// Girişten sonra çağrılır: izin ister, anahtarı sunucuya kaydeder. Hata uygulamayı durdurmaz.
-export async function registerForPush(): Promise<'ok' | 'denied' | 'off' | 'unavailable'> {
+export type PushPermission = 'granted' | 'denied' | 'undetermined' | 'unavailable';
+
+// Telefonun bildirim izni. Web'de (yalnız önizleme) sistem izni yok: ön soru görünsün diye 'undetermined' sayılır.
+export async function pushPermission(): Promise<PushPermission> {
+  if (Platform.OS === 'web') return 'undetermined';
+  try { return (await Notifications.getPermissionsAsync()).status as PushPermission; } catch { return 'unavailable'; }
+}
+
+// Girişten sonra çağrılır: izin verilmişse anahtarı sunucuya kaydeder. Sistem izin penceresini yalnız ask=true açar
+// (ön sorudan "Evet" ya da ayarlardan açma); ilk açılışta bağlamsız izin sorulmaz. Hata uygulamayı durdurmaz.
+export async function registerForPush(ask = false): Promise<'ok' | 'denied' | 'undetermined' | 'off' | 'unavailable'> {
   if (Platform.OS === 'web') return 'unavailable';
   if (!(await pushEnabled())) return 'off';
   try {
     let { status } = await Notifications.getPermissionsAsync();
-    if (status !== 'granted') ({ status } = await Notifications.requestPermissionsAsync());
-    if (status !== 'granted') return 'denied';
+    if (status !== 'granted' && ask) ({ status } = await Notifications.requestPermissionsAsync());
+    if (status !== 'granted') return status === 'undetermined' ? 'undetermined' : 'denied';
     const { data: token } = await Notifications.getDevicePushTokenAsync();
     if (typeof token !== 'string' || !token) return 'unavailable';
     const { error } = await supabase.rpc('register_push_token', { p_token: token, p_app: 'parent', p_platform: Platform.OS });
@@ -50,6 +59,21 @@ export async function registerForPush(): Promise<'ok' | 'denied' | 'off' | 'unav
     console.warn('Push kaydı yapılamadı', e);
     return 'unavailable';
   }
+}
+
+// Ön soru ("Bir dahaki sefere haber verelim mi?"): izin hiç sorulmadıysa; "Şimdi değil" denince 3 gün sonra bir kez daha.
+const ASK_KEY = 'push-ask';
+export async function shouldAskPush(): Promise<boolean> {
+  if (!(await pushEnabled()) || (await pushPermission()) !== 'undetermined') return false;
+  const v = await AsyncStorage.getItem(ASK_KEY);
+  if (!v) return true;
+  const [n, at] = v.split(':').map(Number);
+  return n < 2 && Date.now() - at > 3 * 864e5;
+}
+export async function notePushAsked() {
+  const v = await AsyncStorage.getItem(ASK_KEY);
+  const n = v ? Number(v.split(':')[0]) || 0 : 0;
+  await AsyncStorage.setItem(ASK_KEY, `${n + 1}:${Date.now()}`);
 }
 
 // Çıkışta ya da kullanıcı kapatınca: bu telefona artık push gitmez (uygulama içi liste sürer)
@@ -63,7 +87,7 @@ export async function unregisterPush() {
 export async function setPushEnabled(on: boolean) {
   if (on) {
     await AsyncStorage.removeItem(OFF_KEY);
-    return registerForPush();
+    return registerForPush(true);
   }
   await AsyncStorage.setItem(OFF_KEY, '1');
   await unregisterPush();

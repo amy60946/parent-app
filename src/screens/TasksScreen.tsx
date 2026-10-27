@@ -252,6 +252,7 @@ const statusMeta: Record<CompletionStatus, { label: string; bg: string; fg: stri
   approved: { label: 'Tamamlandı', bg: colors.easy.bg, fg: colors.easy.fg, icon: 'checkmark-circle' },
   declined: { label: 'Yapamadı', bg: '#ECEEF3', fg: colors.muted, icon: 'remove-circle-outline' },
   rejected: { label: 'Reddedildi', bg: colors.hard.bg, fg: colors.hard.fg, icon: 'close-circle-outline' },
+  retry: { label: 'Tekrar denesin', bg: colors.medium.bg, fg: colors.medium.fg, icon: 'refresh' },
 };
 
 function TaskRow({ item, date, kids, completions, active, onDrag, onEdit, onDelete }: {
@@ -268,6 +269,7 @@ function TaskRow({ item, date, kids, completions, active, onDrag, onEdit, onDele
     .filter(Boolean) as CompletionStatus[];
   const status: CompletionStatus | undefined =
     statuses.includes('pending') ? 'pending'
+      : statuses.includes('retry') ? 'retry'
       : statuses.length === item.assigns.length && statuses.every((x) => x === 'approved') ? 'approved'
       : statuses.includes('rejected') ? 'rejected'
       : statuses.includes('declined') ? 'declined' : undefined;
