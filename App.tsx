@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React from 'react';
-import { View, ActivityIndicator, Alert } from 'react-native';
+import { View, ActivityIndicator, Alert, AppState } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import './src/lib/webAlert';
 import { NavigationContainer, DefaultTheme, createNavigationContainerRef } from '@react-navigation/native';
@@ -23,6 +23,12 @@ import TaskDetailsScreen from './src/screens/TaskDetailsScreen';
 import RoutineScreen from './src/screens/RoutineScreen';
 import StonesScreen from './src/screens/StonesScreen';
 import GiftShopScreen from './src/screens/GiftShopScreen';
+import LegalUpdateScreen from './src/screens/LegalUpdateScreen';
+import LegalDocsScreen from './src/screens/LegalDocsScreen';
+import KvkkScreen from './src/screens/KvkkScreen';
+import DeleteAccountScreen from './src/screens/DeleteAccountScreen';
+import { LegalProvider } from './src/legal';
+import { acceptSignupConsent, legalPending } from './src/lib/legal';
 import ChatScreen from './src/screens/ChatScreen';
 import NotificationsScreen, { openNotification } from './src/screens/NotificationsScreen';
 import AbcScreen from './src/screens/AbcScreen';
@@ -116,6 +122,30 @@ function Main() {
     if (!ready || !session) return;
     setupDone(session.user.id).then((d) => setSetup(d ? 'done' : 'needed')).catch(() => setSetup('done'));
   }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Yasal metinler (hukuk/50 §1.1, §2; ortak proposed/20261027200000_legal.sql): kayıtta işaretlenen koşullar oturum açılınca
+  // yazılır; ilk kurulum bittiyse açılışta ve öne gelişte güncellenen metin varsa yeniden onay ekranı. Pofi Adası metinleri
+  // yalnız oyuna bağlı çocuğu olan veliye sorulur. Sunucuda işlev yoksa (null) hiçbir şey olmaz.
+  const setupRef = React.useRef(setup);
+  setupRef.current = setup;
+  const kidsRef = React.useRef(children);
+  kidsRef.current = children;
+  React.useEffect(() => {
+    if (!ready || !session) return;
+    let live = true;
+    const check = async () => {
+      await acceptSignupConsent();
+      if (!live || setupRef.current !== 'done' || !navRef.isReady() || navRef.getCurrentRoute()?.name === 'LegalUpdate') return;
+      const linked = kidsRef.current.filter((c) => c.linked);
+      try {
+        const [parent, child] = await Promise.all([legalPending('parent'), linked.length ? legalPending('child') : Promise.resolve([])]);
+        if (!live || (!parent?.length && !child?.length)) return;
+        navRef.navigate('LegalUpdate', { parent: parent ?? [], child: child ?? [], kids: linked.map((c) => c.name).join(', ') });
+      } catch { /* ağ: bir sonraki açılışta */ }
+    };
+    check();
+    const sub = AppState.addEventListener('change', (st) => { if (st === 'active') check(); });
+    return () => { live = false; sub.remove(); };
+  }, [ready, setup]); // eslint-disable-line react-hooks/exhaustive-deps
   const finishSetup = React.useCallback(async (how: SetupEnd) => {
     try { await completeSetup(); } catch (e) { Alert.alert('Kaydedilemedi', (e as Error).message); return; }
     await takeJustSignedUp(); // kurulum bitti: "Kodun var mı?" artık gösterilmez
@@ -231,6 +261,10 @@ function Main() {
       <Stack.Screen name="Routine" component={RoutineScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="Stones" component={StonesScreen} />
       <Stack.Screen name="GiftShop" component={GiftShopScreen} />
+      <Stack.Screen name="LegalUpdate" component={LegalUpdateScreen} options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
+      <Stack.Screen name="LegalDocs" component={LegalDocsScreen} />
+      <Stack.Screen name="Kvkk" component={KvkkScreen} />
+      <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="Abc" component={AbcScreen} />
@@ -280,6 +314,7 @@ function Root() {
     <ClientConfigProvider>
     <StoreProvider userId={session?.user.id ?? null}>
       <ParentTasksProvider>
+      <LegalProvider>
       <NotificationsProvider userId={session.user.id}>
         <NavigationContainer theme={navTheme} ref={navRef}
           onReady={() => trackScreen(navRef.getCurrentRoute()?.name)}
@@ -289,6 +324,7 @@ function Root() {
           <Main />
         </NavigationContainer>
       </NotificationsProvider>
+      </LegalProvider>
       </ParentTasksProvider>
     </StoreProvider>
     </ClientConfigProvider>

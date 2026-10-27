@@ -8,6 +8,7 @@ import { useBilling } from '../billing';
 import { PlanId, plans, premiumFeatures, freeFeatures } from '../data/plans';
 import { purchase, restorePurchases } from '../lib/billing';
 import { formatTR, toISO } from '../dates';
+import { openLegal } from '../lib/legal';
 
 const NOT_CONNECTED = 'Ödeme henüz açık değil. Uygulama App Store\'da yayınlanınca üyelik buradan alınabilecek.';
 
@@ -39,10 +40,13 @@ export default function PaywallScreen({ navigation, route }: any) {
   };
 
   const title = member ? 'Üyeliğin' : state === 'expired' ? 'Ücretsiz deneme süren bitti' : 'Premium\'a geç';
+  // Deneme kartsız ve kendiliğinden ücretlenmez (hukuk/50 §7)
   const sub = reason
     ?? (state === 'trial' && access?.daysLeft !== undefined
-      ? `Ücretsiz denemende ${access.daysLeft} gün kaldı. Deneme bitince üyelikle devam edebilirsin.`
-      : 'Ailenin bütün özellikleri tek üyelikte. İki ebeveyn birlikte kullanır.');
+      ? `Ücretsiz denemende ${access.daysLeft} gün kaldı. Bittiğinde ücretsiz planla devam edersin; senden kendiliğinden ücret alınmaz.`
+      : state === 'expired'
+        ? 'Ücretsiz planda 1 çocuk ve 3 etkin görevle devam edebilirsin; ödüller, mesajlar ve gözlem notları kapanır. Verilerin silinmez.'
+        : 'Ailenin bütün özellikleri tek üyelikte. İki ebeveyn birlikte kullanır.');
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -108,10 +112,17 @@ export default function PaywallScreen({ navigation, route }: any) {
                 <Text style={{ fontSize: 12, color: colors.muted, textAlign: 'center' }}>{freeFeatures}</Text>
               </Pressable>
             )}
+            {/* hukuk/50 §6.1 (Apple 3.1.2) */}
             <Text style={styles.legal}>
-              Ödeme App Store hesabından alınır. Abonelik, dönem bitmeden en az 24 saat önce iptal edilmezse aynı süre ve
-              fiyatla kendiliğinden yenilenir. İptal: iPhone Ayarlar › Apple Kimliği › Abonelikler. Satın alarak Kullanım
-              Koşulları'nı ve Gizlilik Politikası'nı kabul etmiş olursun.
+              Ödeme, satın almayı onayladığında Apple hesabından alınır. Abonelik, dönem bitmeden en az 24 saat önce iptal edilmezse
+              aynı süre ve fiyatla kendiliğinden yenilenir; yenileme ücreti dönemin son 24 saati içinde alınır. Aboneliğini iPhone
+              Ayarlar › [adın] › Abonelikler'den ya da aşağıdaki "Aboneliği yönet" ile istediğin an iptal edebilirsin; iptal, ödenmiş
+              dönemin sonunda geçerli olur. İade talepleri Apple'ın kurallarına göre Apple'a yapılır.
+            </Text>
+            <Text style={[styles.legal, { textAlign: 'center' }]}>
+              <Text style={styles.legalLink} onPress={() => openLegal('kosullar-parentapp')}>Kullanım Koşulları</Text>{'  ·  '}
+              <Text style={styles.legalLink} onPress={() => openLegal('gizlilik')}>Gizlilik Politikası</Text>{'  ·  '}
+              <Text style={styles.legalLink} onPress={() => Linking.openURL('https://apps.apple.com/account/subscriptions')}>Aboneliği yönet</Text>
             </Text>
           </>
         )}
@@ -143,4 +154,5 @@ const styles = StyleSheet.create({
   secondary: { height: 50, borderRadius: radius.md, borderWidth: 1, borderColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
   secondaryText: { color: colors.navy, fontSize: 15, fontWeight: '700' },
   legal: { fontSize: 11, lineHeight: 16, color: colors.muted, textAlign: 'center' },
+  legalLink: { color: colors.navy, fontWeight: '700', textDecorationLine: 'underline' },
 });

@@ -843,6 +843,8 @@ function Intro({ visible, onClose }: { visible: boolean; onClose: () => void }) 
     ['gift-outline', 'Ödülü sen belirlersin', 'Önerilere dokunarak ekle ya da kendin oluştur. Vermek için ödülün yanındaki çocuk harfine dokun, sonra onayla.'],
     ['hand-left-outline', 'Çocuğun da isteyebilir', 'Taşı yetince oyundan ister; istek en üstte çıkar, onayı sen verirsin.'],
     ['remove-circle-outline', 'Gerektiğinde taş düşür', 'Çocuğun bakiyesindeki − ile. Yalnız önceden konuşulan kurallar için ve seyrek; çocuk nedenini görür.'],
+    // hukuk/50 §8: sanal değer para değildir; ödül ebeveyn–çocuk arasında
+    ['information-circle-outline', 'Parasal değeri yok', 'Coin yalnız Pofi Adası eşyalarına harcanır; satın alınamaz, paraya çevrilemez. Güneş Taşı senin verdiğin ödüllerin sayacıdır; ödülün sözünü sen verirsin, biz bu ödüllerin tarafı değiliz.'],
   ];
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>

@@ -298,6 +298,8 @@ function AbcForm({ onDone, defaultChild, links }: { onDone: () => void; defaultC
       <Pressable style={[styles.cta, busy && { opacity: 0.6 }]} disabled={busy} onPress={save}>
         {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Kaydet</Text>}
       </Pressable>
+      {/* Acil durum notu (hukuk/50 §9) */}
+      <Text style={[styles.cap, { textAlign: 'center' }]}>ParentApp bir acil yardım hizmeti değildir. Çocuğunun ya da başka birinin güvenliği tehlikedeyse hemen 112'yi ara. Gözlem notun uzmanına anında ulaşmayabilir.</Text>
     </ScrollView>
   );
 }

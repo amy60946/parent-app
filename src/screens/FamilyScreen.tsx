@@ -25,6 +25,7 @@ import { useBilling } from '../billing';
 import { IssuedCode } from '../store';
 import { PendingInvite, pendingInvites } from '../lib/clinic';
 import { useParentTasks } from '../parentTasks';
+import { useLegal } from '../legal';
 import { balances } from '../lib/rewards';
 import { startOfWeek } from '../dates';
 
@@ -148,6 +149,7 @@ function MyProfile() {
 
 function ChildInfo({ id }: { id: string }) {
   const { children, completions, createChildCode, setChildAgeBand, childBalance, unlinkChildDevice } = useStore();
+  const { ensureChildConsent } = useLegal();
   const navigation = useNavigation<any>();
   const [code, setCode] = useState<IssuedCode | undefined>();
   const [busy, setBusy] = useState(false);
@@ -180,6 +182,7 @@ function ChildInfo({ id }: { id: string }) {
   );
 
   const issue = async () => {
+    if (!(await ensureChildConsent(c.name))) return; // veli onayı: kod/QR'dan önce (hukuk/50 §1.3)
     setBusy(true);
     try { setCode(await createChildCode(c.id)); }
     catch (e) { Alert.alert('Kod üretilemedi', (e as Error).message); }
@@ -307,7 +310,7 @@ function Mail() {
 
 /* ---------- Hesap ---------- */
 
-type AccountRow = 'manage' | 'join' | 'clinic' | 'notifications' | 'membership' | 'guide' | 'other';
+type AccountRow = 'manage' | 'join' | 'clinic' | 'notifications' | 'membership' | 'guide' | 'legal' | 'kvkk' | 'other';
 
 const accountRows: { icon: keyof typeof Ionicons.glyphMap; label: string; id?: AccountRow }[] = [
   { icon: 'sunny-outline', label: 'Üyelik', id: 'membership' },
@@ -316,6 +319,8 @@ const accountRows: { icon: keyof typeof Ionicons.glyphMap; label: string; id?: A
   { icon: 'notifications-outline', label: 'Bildirimler', id: 'notifications' },
   { icon: 'medkit-outline', label: 'Uzmanım', id: 'clinic' },
   { icon: 'compass-outline', label: 'Nasıl kullanılır?', id: 'guide' },
+  { icon: 'document-text-outline', label: 'Yasal metinler', id: 'legal' },
+  { icon: 'shield-outline', label: 'KVKK başvurusu', id: 'kvkk' },
   { icon: 'create-outline', label: 'Geri bildirim gönder' },
   { icon: 'star-outline', label: 'Uygulamayı puanla' },
   { icon: 'book-outline', label: 'Ebeveyn kaynakları' },
@@ -328,7 +333,9 @@ function Account({ onLogout }: { onLogout?: () => void }) {
   const navigation = useNavigation<any>();
   const { access } = useBilling();
   const pick = (id: AccountRow) => (id === 'notifications' ? navigation.navigate('Notifications')
-    : id === 'membership' ? navigation.navigate('Paywall') : setOpen(id));
+    : id === 'membership' ? navigation.navigate('Paywall')
+    : id === 'legal' ? navigation.navigate('LegalDocs')
+    : id === 'kvkk' ? navigation.navigate('Kvkk') : setOpen(id));
   const memberText = !access ? '' : access.state === 'premium' ? (access.plan === 'yearly' ? 'Yıllık' : 'Aylık')
     : access.state === 'clinic' ? 'Klinik' : access.state === 'trial' ? `Deneme · ${access.daysLeft ?? 0} gün`
     : access.state === 'expired' ? 'Ücretsiz' : '';
@@ -387,39 +394,10 @@ function CodeSheet({ visible, onClose }: { visible: boolean; onClose: () => void
 /* ---------- Hesabı yönet ---------- */
 
 function ManageSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const { session, signOutLocal } = useAuth();
-  const { isOnlyParent, deleteAccount } = useStore();
-  const [busy, setBusy] = useState(false);
-
-  const doDelete = async () => {
-    setBusy(true);
-    try {
-      await deleteAccount();
-      onClose();
-      await signOutLocal();
-      Alert.alert('Hesabın silindi');
-    } catch (e) {
-      Alert.alert('Hesap silinemedi', (e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const confirm = async () => {
-    let only = true;
-    try { only = await isOnlyParent(); } catch { /* emin değilsek en kapsamlı uyarıyı göster */ }
-    Alert.alert(
-      'Hesap kalıcı olarak silinsin mi?',
-      only
-        ? 'Hesabınla birlikte ailenin tüm verisi (çocuklar, görevler, tamamlananlar, mesajlar, fotoğraf ve sesler) kalıcı olarak silinir. Bu işlem geri alınamaz.'
-        : 'Hesabın ve profilin kalıcı olarak silinir. Aile verisi diğer ebeveynde kalmaya devam eder. Bu işlem geri alınamaz.',
-      [
-        { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Hesabı sil', style: 'destructive', onPress: doDelete },
-      ],
-    );
-  };
-
+  const { session } = useAuth();
+  const navigation = useNavigation<any>();
+  // Silme ayrı ekranda (hukuk/50 §5.1: abonelik uyarısı, aile durumuna göre metin, "SİL" yazarak onay)
+  const toDelete = () => { onClose(); setTimeout(() => navigation.navigate('DeleteAccount'), 350); };
   return (
     <Sheet visible={visible} title="Hesabı yönet" onClose={onClose}>
       <View style={{ gap: 14 }}>
@@ -427,8 +405,8 @@ function ManageSheet({ visible, onClose }: { visible: boolean; onClose: () => vo
           <Text style={styles.cap}>E-posta</Text>
           <Text style={{ fontSize: 15, color: colors.navy, marginTop: 4 }}>{session?.user.email}</Text>
         </View>
-        <Pressable onPress={confirm} disabled={busy} style={[styles.logout, busy && { opacity: 0.6 }]} accessibilityLabel="Hesabı sil">
-          {busy ? <ActivityIndicator color={colors.danger} /> : <Text style={{ color: colors.danger, fontWeight: '700' }}>Hesabı sil</Text>}
+        <Pressable onPress={toDelete} style={styles.logout} accessibilityLabel="Hesabımı sil">
+          <Text style={{ color: colors.danger, fontWeight: '700' }}>Hesabımı sil</Text>
         </Pressable>
         <Text style={{ fontSize: 11, color: colors.muted, textAlign: 'center' }}>
           Hesabı silmek tüm kişisel verini kalıcı olarak kaldırır.
@@ -555,6 +533,8 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
             <AgeBandPicker value={band ?? undefined} birthday={birthday} onChange={setBand} />
           </View>
           <Pressable style={[styles.cta, busy && { opacity: 0.6 }]} disabled={busy} onPress={save}><Text style={styles.ctaText}>Çocuğu ekle</Text></Pressable>
+          {/* veli beyanı (hukuk/50 §1.4) */}
+          <Text style={{ fontSize: 11, lineHeight: 16, color: colors.muted, textAlign: 'center' }}>Çocuğu ekleyerek velisi ya da yasal temsilcisi olduğunu beyan edersin. Doğum günü ve cinsiyet isteğe bağlıdır.</Text>
         </>
       ) : (
         <>

@@ -31,6 +31,8 @@ export default function ClinicShareSheet({ visible, onClose }: { visible: boolea
     <Sheet visible={visible} title={title} onClose={close}>
       {view === 'home' && <Home onCode={() => setView('code')} onAbc={openAbc} visible={visible} onOpen={(to, params) => { close(); navigation.navigate(to, params); }} />}
       {view === 'code' && <CodeFlow onDone={() => setView('home')} onInvite={(invite) => { close(); navigation.navigate('Invite', { invite }); }} />}
+      {/* Acil durum notu (hukuk/50 §9) */}
+      {view === 'home' && <Text style={{ fontSize: 11, lineHeight: 16, color: colors.muted, textAlign: 'center' }}>ParentApp bir acil yardım hizmeti değildir. Çocuğunun ya da başka birinin güvenliği tehlikedeyse hemen 112'yi ara.</Text>}
     </Sheet>
   );
 }

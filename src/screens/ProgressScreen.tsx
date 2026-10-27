@@ -153,6 +153,8 @@ export default function ProgressScreen({ navigation }: any) {
             );
           })}
         </Card>
+        {/* hukuk/50 §13 */}
+        <Text style={{ fontSize: 11, lineHeight: 16, color: colors.muted, textAlign: 'center' }}>Bu sayılar çocuğunun uygulamadaki görevlerini özetler; tanı, zekâ ya da dikkat puanı değildir.</Text>
       </ScrollView>
     </SafeAreaView>
   );

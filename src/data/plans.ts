@@ -28,4 +28,5 @@ export const premiumFeatures = [
   'İki ebeveyn aynı üyelikle',
 ];
 
-export const freeFeatures = 'Ücretsiz planda: görev onayları, en çok 3 etkin görev ve 1 çocuk. Oyun ve uzman paylaşımı çalışmaya devam eder.';
+// hukuk/50 §6.1 "Şimdilik ücretsiz devam et" notu
+export const freeFeatures = 'Ücretsiz planda 1 çocuk ve 3 etkin görevle devam edersin; ödüller, mesajlar ve gözlem notları kapalıdır. Oyun ve uzman paylaşımı çalışmaya devam eder.';

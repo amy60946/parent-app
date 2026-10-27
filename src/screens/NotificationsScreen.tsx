@@ -26,6 +26,7 @@ export function notificationTarget(n: Pick<AppNotification, 'kind' | 'data'>): [
   // Uzmanın takip planı (akislar.md 12): tek paylaşım ya da davetle açılan ilk paylaşım
   const linkId = n.data?.link_id ?? (Array.isArray(n.data?.link_ids) ? n.data.link_ids[0] : undefined);
   if (n.kind === 'care_plan_shared' && linkId) return ['CarePlan', { linkId }];
+  if (n.kind === 'kvkk_answered') return ['Kvkk', { tab: 'list' }]; // KVKK başvurusu yanıtlandı (ortak P17)
   return null;
 }
 export function openNotification(navigation: any, n: Pick<AppNotification, 'kind' | 'data'>) {

@@ -9,6 +9,7 @@ import VerifiedBadge from '../components/VerifiedBadge';
 import { CodeBox } from '../components/CodeBox';
 import Info from '../components/Info';
 import { SCOPE_FULL, SCOPE_SHORT, SHARE_WARNING, SHARE_WARNING_SHORT, historyConsent } from '../data/clinicTexts';
+import { useLegal } from '../legal';
 import { useStore, IssuedCode } from '../store';
 import { childAvatars } from '../data/avatars';
 import { ageBands, AgeBand } from '../data/ageBands';
@@ -34,7 +35,7 @@ export default function InviteScreen({ navigation, route }: any) {
   const [gender, setGender] = useState<'kız' | 'erkek' | undefined>();
   const [avatar, setAvatar] = useState('kedi');
   const [picked, setPicked] = useState<string[]>([]);
-  const [history, setHistory] = useState(true);
+  const [history, setHistory] = useState(false); // açık rıza önceden işaretli olamaz (ortak hukuk/README.md sorun 1)
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<{ childIds: string[]; newId?: string } | null>(null);
@@ -247,8 +248,10 @@ function Done({ invite, who, done, onClose, createChildCode }: {
   const target = useMemo(() => shared.find((c) => c.id === done.newId) ?? shared.find((c) => !c.linked), [shared, done.newId]);
   const [code, setCode] = useState<IssuedCode | undefined>();
   const [busy, setBusy] = useState(false);
+  const { ensureChildConsent } = useLegal();
   const issue = async () => {
     if (!target) return;
+    if (!(await ensureChildConsent(target.name))) return; // veli onayı: kod/QR'dan önce (hukuk/50 §1.3)
     setBusy(true);
     try { setCode(await createChildCode(target.id)); }
     catch (e) { Alert.alert('Kod üretilemedi', (e as Error).message); }

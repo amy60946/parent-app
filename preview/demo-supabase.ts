@@ -13,12 +13,13 @@ type Db = { users: Row[]; blobs: Record<string, string>; sessions: Record<string
 // ParentApp ve ClinicApp önizlemeleri aynı sayfada (aynı tarayıcı deposunda) birlikte çalışabilir:
 // veri ortak, oturum her uygulamaya ayrı. Uygulama adını paketleyici yazar (window.__PREVIEW_APP__).
 const APP: string = (globalThis as any).__PREVIEW_APP__ ?? 'parent';
-const KEY = 'pofi-onizleme-v13';
+const KEY = 'pofi-onizleme-v14';
 const TABLES = ['profiles', 'families', 'children', 'tasks', 'task_assignments', 'completions', 'messages', 'saved_templates', 'invite_codes',
   'clinics', 'clinicians', 'clinic_invites', 'clinic_links', 'clinic_notes', 'clinic_goals', 'goal_ratings', 'abc_events',
   'clinic_task_suggestions', 'family_subscriptions', 'notifications', 'push_tokens', 'rewards', 'reward_requests', 'sun_stone_ledger',
   'care_modules', 'care_module_logs', 'clinic_link_history', 'intake_answers',
-  'parent_assignments', 'parent_completions', 'parent_stone_ledger', 'gift_items', 'child_gifts'];
+  'parent_assignments', 'parent_completions', 'parent_stone_ledger', 'gift_items', 'child_gifts',
+  'legal_documents', 'legal_acceptances', 'kvkk_requests'];
 
 const uuid = () =>
   'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -84,6 +85,17 @@ function seed(): Db {
   ([['glasses_round', 2], ['glasses_sun', 2], ['hat_cap', 2], ['hat_straw', 3], ['hat_crown', 4], ['headphones', 4], ['shirt_stripes', 3],
     ['hoodie_soft', 5], ['cape_hero', 5], ['backpack_small', 3], ['home_bed', 6], ['home_lamp', 5], ['home_aquarium', 10],
     ['decor_sandcastle', 3], ['decor_palm', 5]] as [string, number][]).forEach(([item_id, stones], sort) => db.gift_items.push({ item_id, stones, sort }));
+  // Yasal metinler (ortak 20261027200000_legal.sql; taslaklar). Demo ebeveyn henüz onaylamadı: açılışta onay ekranı görünür.
+  ([
+    ['kosullar-parentapp', 'ParentApp Kullanım Koşulları', ['parent'], true],
+    ['aydinlatma-ebeveyn', 'Ebeveyn Aydınlatma Metni', ['parent'], true],
+    ['kosullar-gameapp', 'Pofi Adası Koşulları', ['child'], true],
+    ['aydinlatma-cocuk', 'Pofi Adası Çocuk ve Veli Aydınlatma Metni', ['child'], true],
+    ['gizlilik', 'Gizlilik Politikası', ['parent', 'child', 'web'], false],
+    ['alt-isleyenler', 'Hizmet Sağlayıcılar', ['parent', 'web'], false],
+    ['kvkk-basvuru', 'KVKK Başvuru Usulü', ['parent', 'child', 'web'], false],
+  ] as [string, string, string[], boolean][]).forEach(([key, title, apps, requires_acceptance]) =>
+    db.legal_documents.push({ key, version: 'v1', title, apps, requires_acceptance, status: 'draft', summary: null, published_at: null }));
   // Nazlı: ilk haftalarda düzensiz, son haftalarda belirgin şekilde daha düzenli (uzman paneli grafikleri için)
   for (let n = 1; n <= 56; n++) {
     const early = n > 28;
@@ -284,8 +296,9 @@ class Query implements PromiseLike<{ data: any; error: Err; count?: number }> {
   gte(k: string, v: any) { this.filters.push((r) => String(r[k] ?? '') >= String(v)); return this; }
   lte(k: string, v: any) { this.filters.push((r) => String(r[k] ?? '') <= String(v)); return this; }
   limit() { return this; }
-  not(k: string, _op: string, list: string) {
-    const vals = list.replace(/[()]/g, '').split(',');
+  not(k: string, op: string, list: string | null) {
+    if (op === 'is') { this.filters.push((r) => r[k] != null); return this; } // .not(k, 'is', null)
+    const vals = String(list).replace(/[()]/g, '').split(',');
     this.filters.push((r) => !vals.includes(String(r[k])));
     return this;
   }
@@ -777,6 +790,31 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
     db.sun_stone_ledger.push({ id: db.sun_stone_ledger.length + 1, family_id: me.family_id, child_id: cid, amount: -amount, reason, ref: uuid(), note, created_by: uid, created_at: now() });
     return null;
   };
+  // Yasal metinler ve KVKK başvurusu (ortak 20261027200000_legal.sql)
+  const legalFor = (app: string) => db.legal_documents.filter((d: Row) => d.apps.includes(app)).map((d: Row) => ({
+    ...d, accepted_at: db.legal_acceptances.find((a: Row) => a.user_id === uid && a.doc_key === d.key && a.version === d.version)?.accepted_at ?? null,
+  }));
+  const legalPend = (app: string) => legalFor(app).filter((d: Row) => d.requires_acceptance && !d.accepted_at);
+  if (name === 'legal_documents_for') return { data: legalFor(args.p_app), error: null };
+  if (name === 'legal_pending') return { data: legalPend(args.p_app), error: null };
+  if (name === 'legal_accept') {
+    if (args.p_app === 'child' && !me) return err('GameApp koşullarını veli ParentApp\'te onaylar');
+    for (const x of args.p_docs ?? []) {
+      if (!db.legal_acceptances.some((a: Row) => a.user_id === uid && a.doc_key === x.key && a.version === x.version))
+        db.legal_acceptances.push({ user_id: uid, doc_key: x.key, version: x.version, app: args.p_app, accepted_at: now() });
+    }
+    save();
+    return { data: legalPend(args.p_app), error: null };
+  }
+  if (name === 'kvkk_request_create') {
+    if (['correct', 'object', 'damages', 'other'].includes(args.p_kind) && String(args.p_detail ?? '').trim().length < 5) return err('Talebini kısaca yaz');
+    const r = { id: uuid(), user_id: uid, app: args.p_app, kind: args.p_kind, detail: args.p_detail ?? '', child_id: args.p_child ?? null,
+      status: 'received', received_at: now(), due_at: new Date(Date.now() + 30 * 864e5).toISOString(), answered_at: null };
+    db.kvkk_requests.push(r);
+    save();
+    return { data: { id: r.id, status: r.status, received_at: r.received_at, due_at: r.due_at }, error: null };
+  }
+  if (name === 'my_kvkk_requests') return { data: db.kvkk_requests.filter((r: Row) => r.user_id === uid).reverse(), error: null };
   // Ebeveyn görevi işareti ve hediye (ortak 20261027140000_parent_tasks_gifts.sql)
   const pbal = () => Math.max(0, db.parent_stone_ledger.filter((l: Row) => l.user_id === uid).reduce((a: number, l: Row) => a + l.amount, 0));
   if (name === 'parent_task_done') {

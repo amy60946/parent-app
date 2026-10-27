@@ -13,6 +13,7 @@ import { useAuth, authErrorText } from '../lib/auth';
 import { clearPendingClinicInvite, getPendingClinicInvite, isInviteToken, setPendingClinicInvite } from '../lib/clinicInvite';
 import { normalizeCode } from '../lib/pendingInvite';
 import { InviteInfo, inviteInfo } from '../lib/clinic';
+import { markSignupConsent, openLegal } from '../lib/legal';
 
 const MIN_PASSWORD = 8;
 const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
@@ -59,9 +60,10 @@ function Input({ secure, ...props }: TextInputProps & { secure?: boolean }) {
   );
 }
 
-function Cta({ label, onPress, busy }: { label: string; onPress: () => void; busy?: boolean }) {
+function Cta({ label, onPress, busy, disabled }: { label: string; onPress: () => void; busy?: boolean; disabled?: boolean }) {
   return (
-    <Pressable style={[styles.cta, busy && { opacity: 0.7 }]} onPress={onPress} disabled={busy}>
+    <Pressable style={[styles.cta, (busy || disabled) && { opacity: busy ? 0.7 : 0.45 }]} onPress={onPress} disabled={busy || disabled}
+      accessibilityRole="button" accessibilityState={{ disabled: !!(busy || disabled) }}>
       {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>{label}</Text>}
     </Pressable>
   );
@@ -221,6 +223,7 @@ export function SignUpScreen({ navigation, route }: any) {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [sentTo, setSentTo] = useState<string | undefined>();
+  const [terms, setTerms] = useState(false); // Kullanım Koşulları (önceden işaretli değil; hukuk/50 §1.1)
   // Uzman davet bağlantısıyla gelindiyse bant + kayıtta meta (akislar.md 10 adım 5). Kod, kayıttan sonraki "Kodun var mı?" ekranında.
   const [clinicKey, setClinicKey] = useState<string | undefined>();
   const [clinic, setClinic] = useState<InviteInfo | null>(null);
@@ -236,6 +239,7 @@ export function SignUpScreen({ navigation, route }: any) {
     if (!name.trim()) return Alert.alert('Adını yaz.');
     if (!isEmail(email)) return Alert.alert('Geçerli bir e-posta adresi yaz.');
     if (password.length < MIN_PASSWORD) return Alert.alert(`Şifre en az ${MIN_PASSWORD} karakter olmalı.`);
+    if (!terms) return Alert.alert('Kullanım Koşulları', 'Hesap açmak için Kullanım Koşulları\'nı okuyup kabul etmelisin.');
     // Bağlantıdaki davet artık geçerli değilse (süresi doldu / kullanıldı) gönderilmez
     const key = clinicKey && (!clinic || clinic.status === 'open' || clinic.status === 'error') ? clinicKey : undefined;
     setBusy(true);
@@ -243,6 +247,7 @@ export function SignUpScreen({ navigation, route }: any) {
       // Kayıttan sonra uygulama daveti yeniden bağlamayı dener (aynı aile için zararsız), sonra davet ekranını açar
       if (key) await setPendingClinicInvite(key);
       else if (clinicKey) await clearPendingClinicInvite();
+      await markSignupConsent(); // oturum açılınca legal_accept('parent', …) ile yazılır (koşullar + aydınlatma gösterildi)
       const { needsConfirmation } = await signUp(email, password, name, key);
       if (needsConfirmation) setSentTo(email.trim());
     } catch (e) {
@@ -290,7 +295,18 @@ export function SignUpScreen({ navigation, route }: any) {
         autoCapitalize="none" autoComplete="email" textContentType="emailAddress" />
       <Input value={password} onChangeText={setPassword} placeholder={`Şifre (en az ${MIN_PASSWORD} karakter)`} secure
         autoComplete="new-password" textContentType="newPassword" onSubmitEditing={submit} />
-      <Cta label="Kayıt ol" onPress={submit} busy={busy} />
+      {/* Hukuki satırlar (hukuk/50 §1.1): koşullar kutulu; aydınlatma kutusuz bilgilendirme; açık rıza bu ekranda yok */}
+      <Pressable onPress={() => setTerms(!terms)} style={styles.legalRow} accessibilityRole="checkbox" accessibilityState={{ checked: terms }}>
+        <Ionicons name={terms ? 'checkbox' : 'square-outline'} size={22} color={colors.navy} />
+        <Text style={styles.legalText}>
+          <Text style={styles.legalLink} onPress={() => openLegal('kosullar-parentapp')}>Kullanım Koşulları</Text>'nı okudum, kabul ediyorum.
+        </Text>
+      </Pressable>
+      <Text style={[styles.legalText, { flex: 0 }]}>
+        Kişisel verilerinin nasıl işlendiğini <Text style={styles.legalLink} onPress={() => openLegal('aydinlatma-ebeveyn')}>Aydınlatma Metni</Text>'nde anlatıyoruz.
+      </Text>
+      <Text style={styles.small} onPress={() => openLegal('gizlilik')} accessibilityRole="link">Gizlilik Politikası</Text>
+      <Cta label="Kayıt ol" onPress={submit} busy={busy} disabled={!terms} />
       <LinkText onPress={() => navigation.navigate('Login')}>Zaten hesabın var mı? Giriş yap</LinkText>
     </Layout>
   );
@@ -414,5 +430,8 @@ const styles = StyleSheet.create({
   ctaText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   link: { fontSize: 13, fontWeight: '600', color: colors.navy },
   small: { fontSize: 12, color: colors.muted },
+  legalRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  legalText: { flex: 1, fontSize: 13, lineHeight: 19, color: '#4A5165' },
+  legalLink: { color: colors.navy, fontWeight: '700', textDecorationLine: 'underline' },
   sent: { flexDirection: 'row', gap: 12, backgroundColor: '#fff', borderRadius: radius.md, padding: 16, alignItems: 'center' },
 });

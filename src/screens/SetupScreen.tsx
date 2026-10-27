@@ -303,6 +303,8 @@ function ChildForm({ first, onSaved, onBack }: { first: boolean; onSaved: (id: s
         </View>
       </ScrollView>
       <Cta label="Kaydet" onPress={save} busy={busy} disabled={!name.trim()} />
+      {/* veli beyanı (hukuk/50 §1.4) */}
+      <Text style={{ fontSize: 11, lineHeight: 16, color: colors.muted, textAlign: 'center' }}>Çocuğu ekleyerek velisi ya da yasal temsilcisi olduğunu beyan edersin. Doğum günü ve cinsiyet isteğe bağlıdır.</Text>
     </Shell>
   );
 }

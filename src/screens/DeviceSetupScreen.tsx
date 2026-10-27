@@ -8,6 +8,7 @@ import Info from '../components/Info';
 import { CodeBox } from '../components/CodeBox';
 import { useStore, IssuedCode, Child } from '../store';
 import { track } from '../lib/track';
+import { useLegal } from '../legal';
 
 // Kurulumdan sonra ilk iş: çocuğun cihazını kur (kullanıcı kararı 27 Ekim 2026; ortak/sozlesme/akislar.md 16 adım 13).
 // "Başka cihaz": indirme bağlantısını paylaş + giriş kodu (QR + yazılı). "Bu cihaz": App Store + kod. Çocuk bağlanınca ✓.
@@ -16,6 +17,7 @@ const GAME_URL = process.env.EXPO_PUBLIC_GAME_STORE_URL ?? '';
 
 export default function DeviceSetupScreen({ navigation }: any) {
   const { children } = useStore();
+  const { ensureChildConsent } = useLegal(); // veli onayı: kod/QR'dan önce (hukuk/50 §1.3)
   const [open, setOpen] = useState<string | undefined>();
   const close = () => navigation.goBack();
   const kid = children.find((c) => c.id === open);
@@ -38,7 +40,7 @@ export default function DeviceSetupScreen({ navigation }: any) {
             {c.linked ? (
               <View style={styles.done}><Ionicons name="checkmark" size={14} color={colors.easy.fg} /><Text style={styles.doneText}>Bağlandı</Text></View>
             ) : (
-              <Pressable onPress={() => { setOpen(c.id); track('device.setup_open'); }} style={styles.start} accessibilityRole="button" accessibilityLabel={`${c.name} için başla`}>
+              <Pressable onPress={async () => { if (!(await ensureChildConsent(c.name))) return; setOpen(c.id); track('device.setup_open'); }} style={styles.start} accessibilityRole="button" accessibilityLabel={`${c.name} için başla`}>
                 <Text style={{ color: '#fff', fontWeight: '700' }}>Başla</Text>
                 <Ionicons name="chevron-forward" size={14} color="#fff" />
               </Pressable>
