@@ -89,6 +89,7 @@ type Store = {
   inviteCodes: InviteCode[];
   addChild: (c: Omit<Child, 'id' | 'linked'>) => Promise<string | null>; // sunucuya yazılınca çocuğun kimliği
   renameChild: (id: string, name: string) => void;
+  setChildAvatar: (id: string, avatar: string) => void; // hazır simge ya da 'photo:<yol>'
   setChildAgeBand: (childId: string, band: AgeBand | null) => void;
   childBalance: (childId: string) => Promise<number>;
   unlinkChildDevice: (childId: string) => Promise<void>;
@@ -415,6 +416,11 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     if (!nm) return;
     setChildren((p) => p.map((c) => (c.id === id ? { ...c, name: nm } : c)));
     run(() => supabase.from('children').update({ name: nm }).eq('id', id));
+  }, [run]);
+
+  const setChildAvatar = useCallback((id: string, avatar: string) => {
+    setChildren((p) => p.map((c) => (c.id === id ? { ...c, avatar } : c)));
+    run(() => supabase.from('children').update({ avatar }).eq('id', id));
   }, [run]);
 
   // null: otomatik (doğum gününden; durumlar.md §4)
@@ -768,7 +774,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   const value: Store = {
     ready, familyId,
     parent, children, tasks, completions, messages, savedIds, customTemplates, inviteCodes,
-    addChild, renameChild, setChildAgeBand, childBalance, unlinkChildDevice, updateParent, addTasks, reorderTasks, updateTask, deleteTask, toggleCompletion, review,
+    addChild, renameChild, setChildAvatar, setChildAgeBand, childBalance, unlinkChildDevice, updateParent, addTasks, reorderTasks, updateTask, deleteTask, toggleCompletion, review,
     toggleSaved, addCustomTemplate, allTemplates, sendMessage, sendSticker, markThreadRead, sendPhoto, sendVoice, createInviteCode, createChildCode, joinFamily, refresh,
     isOnlyParent, deleteAccount,
   };

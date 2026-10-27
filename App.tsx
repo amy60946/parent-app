@@ -28,6 +28,7 @@ import LegalDocsScreen from './src/screens/LegalDocsScreen';
 import KvkkScreen from './src/screens/KvkkScreen';
 import DeleteAccountScreen from './src/screens/DeleteAccountScreen';
 import LegalTextScreen from './src/screens/LegalTextScreen';
+import { afterModal, SCREEN_MODAL_GAP } from './src/lib/modal';
 import { acceptSignupConsent, legalPending } from './src/lib/legal';
 import ChatScreen from './src/screens/ChatScreen';
 import NotificationsScreen, { openNotification } from './src/screens/NotificationsScreen';
@@ -166,7 +167,7 @@ function Main() {
   const [guide, setGuide] = React.useState<false | 'full' | 'clinic' | 'short'>(false);
   // Rehber bitince bildirim ön sorusu (izin hiç sorulmadıysa); yoksa ilk incelemede sorulur
   const [pushAsk, setPushAsk] = React.useState(false);
-  const endGuide = () => { setGuide(false); shouldAskPush().then((v) => v && setTimeout(() => setPushAsk(true), 400)); };
+  const endGuide = () => { setGuide(false); shouldAskPush().then((v) => v && afterModal(() => setPushAsk(true))); };
   const [codeStep, setCodeStep] = React.useState(false);
   const afterInvite = React.useRef(false);
   const childCount = React.useRef(children.length);
@@ -214,28 +215,29 @@ function Main() {
   // Davet ekranından dönünce: çocuk eklendiyse kısa rehber, davet reddedildiyse tam rehber
   React.useEffect(() => navRef.addListener('state', () => {
     // Kurulumdan sonra cihaz ekranı kapanınca kısa rehber: görev ver · onayla
+    // Rehber modal ekran kapanma animasyonu bitince açılır: kapanırken açılan pencere iOS'ta dokunuşları kilitleyebilir
     if (afterDevice.current && navRef.getCurrentRoute()?.name === 'Görevler') {
       afterDevice.current = false;
-      setGuide('short');
+      afterModal(() => setGuide('short'), SCREEN_MODAL_GAP);
       return;
     }
     if (!afterInvite.current) return;
     const route = navRef.getCurrentRoute()?.name;
     if (!route || route === 'Invite') return;
     afterInvite.current = false;
-    setGuide(childCount.current > 0 ? 'clinic' : 'full');
+    afterModal(() => setGuide(childCount.current > 0 ? 'clinic' : 'full'), SCREEN_MODAL_GAP);
   }), []);
   const onCode = (r: CodeResult) => {
     setCodeStep(false);
     if (r.kind === 'invite') {
       afterInvite.current = true;
-      setTimeout(() => { if (navRef.isReady()) navRef.navigate('Invite', { invite: r.invite }); }, 350);
+      afterModal(() => { if (navRef.isReady()) navRef.navigate('Invite', { invite: r.invite }); });
     } else if (r.kind === 'family') {
       markOnboardingSeen();
       Alert.alert('Aileye katıldın', 'Ailenin çocuklarını, görevlerini ve bildirimlerini artık görüyorsun.');
     } else {
       Alert.alert('Bu daveti zaten kabul ettin', `${r.invite.clinician || r.invite.clinic} ile paylaşım Aile › Hesap › Uzmanım bölümünde.`);
-      setGuide('full');
+      afterModal(() => setGuide('full'));
     }
   };
   // Telefon bildirimine dokununca ilgili ekranı aç (uygulama kapalıyken açıldıysa da)
@@ -274,7 +276,7 @@ function Main() {
       <Stack.Screen name="Invite" component={InviteScreen} options={{ presentation: 'modal', gestureEnabled: false }} />
       <Stack.Screen name="CarePlan" component={CarePlanScreen} />
     </Stack.Navigator>
-    <CodeStep visible={codeStep} onResult={onCode} onSkip={() => { setCodeStep(false); setGuide('full'); }} />
+    <CodeStep visible={codeStep} onResult={onCode} onSkip={() => { setCodeStep(false); afterModal(() => setGuide('full')); }} />
     <Onboarding visible={!!guide} steps={guide === 'clinic' ? [1, 2, 3] : guide === 'short' ? [2, 3] : undefined} onClose={endGuide} />
     <PushAsk visible={pushAsk} onDone={() => setPushAsk(false)} />
     </SetupCtx.Provider>

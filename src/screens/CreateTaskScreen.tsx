@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, FlatList, Pressable, ScrollView, StyleSheet } from 'react-native';
+import React, { useMemo, useRef, useState } from 'react';
+import { View, Text, TextInput, FlatList, Pressable, ScrollView, StyleSheet, LayoutAnimation, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
@@ -55,6 +55,33 @@ export default function CreateTaskScreen({ navigation, route }: any) {
   const toggle = (id: string) =>
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
+  // Kaydırınca üst bölüm daralır (kullanıcı isteği 27 Ekim 2026; "quick return" düzeni, ör. Safari/Instagram üst çubuğu):
+  // listede aşağı inerken rutin kartları yalnız başlığa iner, süzgeç ve yaş satırı gizlenir; yukarı doğru kaydırınca ya da
+  // en üste dönünce geri açılır. Daralma/açılma sırasında liste yüksekliği değiştiği için kısa bir süre olaylar yok sayılır.
+  const [compact, setCompactState] = useState(false);
+  const compactRef = useRef(false);
+  const lastY = useRef(0);
+  const lockUntil = useRef(0);
+  const setCompact = (v: boolean) => {
+    if (compactRef.current === v) return;
+    compactRef.current = v;
+    lockUntil.current = Date.now() + 320;
+    LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'));
+    setCompactState(v);
+  };
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+    const y = contentOffset.y;
+    const dy = y - lastY.current;
+    lastY.current = y;
+    if (Date.now() < lockUntil.current) return;
+    if (y <= 8) return setCompact(false);
+    const atBottom = y + layoutMeasurement.height >= contentSize.height - 4; // sonda geri sekme açmasın
+    if (dy > 6 && y > 48) setCompact(true);
+    else if (dy < -12 && !atBottom) setCompact(false);
+  };
+  const full = !compact || menu;
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.top}>
@@ -76,24 +103,25 @@ export default function CreateTaskScreen({ navigation, route }: any) {
 
       {/* Hazır rutinler: birkaç görevi tek seferde ekler (kullanıcı isteği 27 Ekim 2026). Aramada ve menü açıkken gizli. */}
       {!query.trim() && !menu && (
-        <View style={{ marginTop: 14 }}>
-          <Text style={styles.section}>Hazır rutinler</Text>
+        <View style={{ marginTop: full ? 14 : 10 }}>
+          {full && <Text style={styles.section}>Hazır rutinler</Text>}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }}
-            contentContainerStyle={{ gap: 10, paddingHorizontal: 20, paddingTop: 8 }}>
+            contentContainerStyle={{ gap: full ? 10 : 8, paddingHorizontal: 20, paddingTop: full ? 8 : 0 }}>
             {routines.map((r) => (
-              <Pressable key={r.id} onPress={() => navigation.navigate('Routine', { id: r.id })} style={[styles.routine, { backgroundColor: r.tint }]}
+              <Pressable key={r.id} onPress={() => navigation.navigate('Routine', { id: r.id })}
+                style={[full ? styles.routine : styles.routineMini, { backgroundColor: r.tint }]}
                 accessibilityRole="button" accessibilityLabel={`Hazır rutin: ${r.title}`}>
-                <Ionicons name={r.icon} size={22} color={colors.navy} />
-                <Text style={styles.routineTitle} numberOfLines={2}>{r.title}</Text>
-                <Text style={styles.routineSub}>{routineTasks(r).length} görev · {r.subtitle}</Text>
+                <Ionicons name={r.icon} size={full ? 22 : 15} color={colors.navy} />
+                <Text style={full ? styles.routineTitle : styles.routineMiniTitle} numberOfLines={full ? 2 : 1}>{r.title}</Text>
+                {full && <Text style={styles.routineSub}>{routineTasks(r).length} görev · {r.subtitle}</Text>}
               </Pressable>
             ))}
           </ScrollView>
         </View>
       )}
 
-      {/* Açılır filtre: bütün seçenekler tek bakışta */}
-      <View style={{ paddingHorizontal: 20, marginTop: 12, zIndex: 2 }}>
+      {/* Açılır filtre: bütün seçenekler tek bakışta (daralınca gizli) */}
+      {full && <View style={{ paddingHorizontal: 20, marginTop: 12, zIndex: 2 }}>
         <Pressable onPress={() => setMenu((m) => !m)} style={styles.dropdown} accessibilityRole="button"
           accessibilityState={{ expanded: menu }} accessibilityLabel={`Filtre: ${current.label}`}>
           {current.icon && <Ionicons name={current.icon} size={18} color={colors.navy} />}
@@ -114,10 +142,10 @@ export default function CreateTaskScreen({ navigation, route }: any) {
             ))}
           </View>
         )}
-      </View>
+      </View>}
 
       {/* Yaş grubu (Tüm görevler ve kategorilerde) */}
-      {showAges && !menu && (
+      {full && showAges && !menu && (
         // Yükseklik sabit: alttaki liste çipleri ezmesin (iOS'ta yatay kaydırma alanı küçülüp üst üste biniyordu)
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0, height: 44, marginTop: 12, marginBottom: 4 }}
           contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20 }}>
@@ -128,11 +156,13 @@ export default function CreateTaskScreen({ navigation, route }: any) {
         </ScrollView>
       )}
 
-      <Text style={styles.hint}>Birden fazla görev seçip tek seferde atayabilirsiniz.</Text>
+      {full ? <Text style={styles.hint}>Birden fazla görev seçip tek seferde atayabilirsiniz.</Text> : <View style={{ height: 8 }} />}
 
       <FlatList
         data={list}
         keyExtractor={(t) => t.id}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={{ padding: 20, paddingBottom: 200, gap: 10 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
@@ -228,6 +258,8 @@ const styles = StyleSheet.create({
   routine: { width: 140, height: 104, borderRadius: radius.md, padding: 12, gap: 4, justifyContent: 'space-between' },
   routineTitle: { fontSize: 14, fontWeight: '700', color: colors.navy },
   routineSub: { fontSize: 11, color: '#4A5165' },
+  routineMini: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, borderRadius: radius.pill, paddingHorizontal: 12 },
+  routineMiniTitle: { fontSize: 13, fontWeight: '700', color: colors.navy },
   card: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: radius.md, padding: 14, borderWidth: 1.5, borderColor: 'transparent' },
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: colors.faint, alignItems: 'center', justifyContent: 'center' },
   cardTitle: { fontSize: 15, fontWeight: '600', color: colors.navy },

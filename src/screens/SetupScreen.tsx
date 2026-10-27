@@ -19,6 +19,8 @@ import { openInvite, pendingInvites } from '../lib/clinic';
 import { clearPendingClinicInvite, getPendingClinicInvite } from '../lib/clinicInvite';
 import { hintOf } from '../lib/errors';
 import { useSetup } from '../setupContext';
+import ChildAvatarPicker, { LocalPhoto } from '../components/ChildAvatarPicker';
+import { uploadChildPhoto } from '../lib/avatarPhoto';
 
 // İlk kurulum (kullanıcı kararları 27 Ekim 2026; ortak/sozlesme/akislar.md 16):
 // aile soruları → sıradaki (çocuğunu ekle / kodla katıl) → çocuk (uzman daveti ya da form) → çocuk soruları → çocukların
@@ -209,6 +211,8 @@ function Questionnaire({ steps, childId, onDone, onBackFirst }: {
       onBack={back} progress={qIndex / qCount} />;
   }
   const chosen = step.multi ? multi : answers[step.key] ?? [];
+  const skip = step.exclude ? answers[step.exclude] ?? [] : [];
+  const options = step.options.filter((o) => !skip.includes(o.key));
   const toggle = (key: string, exclusive?: boolean) => setMulti((p) => {
     if (exclusive) return p.includes(key) ? [] : [key];
     const base = p.filter((k) => !step.options.find((o) => o.key === k)?.exclusive);
@@ -220,7 +224,7 @@ function Questionnaire({ steps, childId, onDone, onBackFirst }: {
         {!!step.prefix && <Text style={[styles.text, { textAlign: 'center' }]}>{step.prefix}</Text>}
         <Text style={[styles.title, { textAlign: 'center', marginBottom: 8 }]} accessibilityRole="header">{step.title}</Text>
         {step.multi && <Text style={[styles.cap, { textAlign: 'center' }]}>Uyanların hepsini seç</Text>}
-        {step.options.map((o) => {
+        {options.map((o) => {
           const on = chosen.includes(o.key);
           return (
             <Pressable key={o.key} onPress={() => (step.multi ? toggle(o.key, o.exclusive) : answer([o.key]))}
@@ -239,7 +243,7 @@ function Questionnaire({ steps, childId, onDone, onBackFirst }: {
         )}
       </ScrollView>
       <View style={{ gap: 8 }}>
-        {step.multi && <Cta label="İleri" onPress={() => answer(multi)} disabled={!multi.length} />}
+        {step.multi && <Cta label="İleri" onPress={() => answer(multi.filter((k) => !skip.includes(k)))} disabled={!multi.some((k) => !skip.includes(k))} />}
         {step.health && <Pressable onPress={next} hitSlop={8} style={{ alignSelf: 'center', paddingVertical: 6 }}>
           <Text style={styles.link}>Bu soruyu atla</Text>
         </Pressable>}
@@ -251,12 +255,15 @@ function Questionnaire({ steps, childId, onDone, onBackFirst }: {
 /* ---------- çocuk formu ---------- */
 
 function ChildForm({ first, onSaved, onBack }: { first: boolean; onSaved: (id: string) => void; onBack: () => void }) {
-  const { addChild, children } = useStore();
+  const { addChild, children, familyId } = useStore();
+  const [photo, setPhoto] = useState<LocalPhoto | null>(null);
   const [name, setName] = useState('');
   const [gender, setGender] = useState<'kız' | 'erkek' | undefined>();
   const [birthday, setBirthday] = useState<string | undefined>();
   const [avatar, setAvatar] = useState(childAvatars[1].id);
   const [busy, setBusy] = useState(false);
+  const [picking, setPicking] = useState(false); // doğum günü seçicisi açıkken Kaydet gizli, seçici görünür kaydırılır
+  const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const save = async () => {
     const nm = name.trim();
     if (!nm) return Alert.alert('Çocuğunun adını yaz');
@@ -264,13 +271,18 @@ function ChildForm({ first, onSaved, onBack }: { first: boolean; onSaved: (id: s
     if (same && !(await new Promise<boolean>((res) => Alert.alert(`Kayıtlarında ${same.name} adında bir çocuk var`, 'Aynı çocuğu iki kez eklemek istemiyorsan vazgeç.',
       [{ text: 'Vazgeç', style: 'cancel', onPress: () => res(false) }, { text: 'Yine de ekle', onPress: () => res(true) }])))) return;
     setBusy(true);
-    const id = await addChild({ name: nm, avatar, gender, birthday });
+    let av = avatar;
+    if (photo && familyId) {
+      try { av = await uploadChildPhoto(familyId, photo.uri, photo.mime); }
+      catch (e) { setBusy(false); return Alert.alert('Fotoğraf yüklenemedi', (e as Error).message); }
+    }
+    const id = await addChild({ name: nm, avatar: av, gender, birthday });
     setBusy(false);
     if (id) onSaved(id);
   };
   return (
     <Shell onBack={onBack}>
-      <ScrollView contentContainerStyle={{ gap: 14, paddingBottom: 16 }} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scroll} contentContainerStyle={{ gap: 14, paddingBottom: 16 }} keyboardShouldPersistTaps="handled">
         <Text style={[styles.title, { textAlign: 'center' }]} accessibilityRole="header">{first ? 'İlk çocuğunu ekle' : 'Çocuk ekle'}</Text>
         <View>
           <Text style={styles.label}>Adı</Text>
@@ -289,22 +301,23 @@ function ChildForm({ first, onSaved, onBack }: { first: boolean; onSaved: (id: s
             <Text style={styles.label}>Doğum günü (isteğe bağlı)</Text>
             <Info title="Doğum günü" text="Yaşına uygun görev ve rutin önermek ve oyunun dilini ayarlamak için kullanılır." />
           </View>
-          <DateField mode="date" value={birthday} onChange={setBirthday} placeholder="Tarih seç" clearable maximumDate={new Date()} />
+          <DateField mode="date" value={birthday} onChange={setBirthday} placeholder="Tarih seç" clearable maximumDate={new Date()}
+            onOpenChange={(o) => { setPicking(o); if (o) setTimeout(() => scroll.current?.scrollTo({ y: 180, animated: true }), 60); }} />
         </View>
         <View>
-          <Text style={styles.label}>Simgesi</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingVertical: 4 }}>
-            {childAvatars.map((a) => (
-              <Pressable key={a.id} onPress={() => setAvatar(a.id)} accessibilityLabel={a.name} accessibilityState={{ selected: avatar === a.id }}>
-                <Avatar id={a.id} size={52} ring={avatar === a.id} />
-              </Pressable>
-            ))}
-          </ScrollView>
+          <Text style={styles.label}>Avatar: fotoğraflarından seç ya da bir simge</Text>
+          <View style={{ paddingVertical: 4 }}>
+            <ChildAvatarPicker avatar={avatar} photo={photo} onAvatar={setAvatar} onPhoto={setPhoto} />
+          </View>
         </View>
       </ScrollView>
-      <Cta label="Kaydet" onPress={save} busy={busy} disabled={!name.trim()} />
-      {/* veli beyanı (hukuk/50 §1.4) */}
-      <Text style={{ fontSize: 11, lineHeight: 16, color: colors.muted, textAlign: 'center' }}>Çocuğu ekleyerek velisi ya da yasal temsilcisi olduğunu beyan edersin. Doğum günü ve cinsiyet isteğe bağlıdır.</Text>
+      {!picking && (
+        <>
+          <Cta label="Kaydet" onPress={save} busy={busy} disabled={!name.trim()} />
+          {/* veli beyanı (hukuk/50 §1.4) */}
+          <Text style={{ fontSize: 11, lineHeight: 16, color: colors.muted, textAlign: 'center' }}>Çocuğu ekleyerek velisi ya da yasal temsilcisi olduğunu beyan edersin. Doğum günü ve cinsiyet isteğe bağlıdır.</Text>
+        </>
+      )}
     </Shell>
   );
 }

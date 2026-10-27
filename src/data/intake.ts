@@ -11,7 +11,8 @@ export type Option = { key: string; label: string; exclusive?: boolean };
 export type Step =
   | { kind: 'intro'; icon: string; title: string; text: string }
   | { kind: 'note'; icon: string; title: string; text: string }
-  | { kind: 'question'; key: string; title: string; prefix?: string; multi?: boolean; health?: boolean; options: Option[] };
+  | { kind: 'question'; key: string; title: string; prefix?: string; multi?: boolean; health?: boolean; options: Option[];
+      exclude?: string }; // exclude: bu sorunun yanıtları seçeneklerden çıkarılır (ana hedef, "başka neler" sorusunda tekrar edilmez)
 
 const FREQ: Option[] = [
   { key: 'every_day', label: 'Her gün' },
@@ -31,8 +32,10 @@ const GOALS: Option[] = [
 
 // Kayıttan sonra her ebeveyne (aile/ebeveyn soruları, child_id boş)
 export const familySteps: Step[] = [
+  { kind: 'intro', icon: 'chatbubbles-outline', title: 'Seni ve aileni tanıyalım',
+    text: 'Birkaç kısa soru, iki üç dakika sürer. Yanıtların görev ve rutin önerilerini ailene göre ayarlamamıza yardım eder; hiçbiri not ya da puan değildir.' },
   { kind: 'question', key: 'main_goal', title: 'Şu sıralar en çok neye ihtiyacın var?', options: GOALS },
-  { kind: 'question', key: 'other_goals', title: 'Bunların yanında başka neler önemli?', multi: true,
+  { kind: 'question', key: 'other_goals', title: 'Bunların yanında başka neler önemli?', multi: true, exclude: 'main_goal',
     options: [...GOALS, { key: 'other', label: 'Başka bir şey' }] },
   { kind: 'question', key: 'heard_from', title: 'Bizi nereden duydun?', options: [
     { key: 'expert', label: 'Uzman, öğretmen ya da doktor' },

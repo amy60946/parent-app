@@ -9,6 +9,7 @@ import { CodeBox } from '../components/CodeBox';
 import { useStore, IssuedCode, Child } from '../store';
 import { track } from '../lib/track';
 import { useChildConsent } from '../legal';
+import { genitive, joinNames } from '../lib/tr';
 
 // Kurulumdan sonra ilk iş: çocuğun cihazını kur (kullanıcı kararı 27 Ekim 2026; ortak/sozlesme/akislar.md 16 adım 13).
 // "Başka cihaz": indirme bağlantısını paylaş + giriş kodu (QR + yazılı). "Bu cihaz": App Store + kod. Çocuk bağlanınca ✓.
@@ -19,17 +20,32 @@ export default function DeviceSetupScreen({ navigation }: any) {
   const { children } = useStore();
   const { ensureChildConsent, consentUi } = useChildConsent(); // veli onayı: kod/QR'dan önce (hukuk/50 §1.3)
   const [open, setOpen] = useState<string | undefined>();
+  const [starting, setStarting] = useState<string | null>(null); // onay sorgulanırken Başla'da gösterge
   const close = () => navigation.goBack();
   const kid = children.find((c) => c.id === open);
+  const names = children.map((c) => c.name);
+  const title = names.length
+    ? `${joinNames([...names.slice(0, -1), genitive(names[names.length - 1])])} ${names.length > 1 ? 'cihazlarını' : 'cihazını'} kuralım`
+    : 'Çocuğunun cihazını kuralım';
+  const who = names.length === 1 ? names[0] : 'Çocuğun';
+  const start = async (c: Child) => {
+    if (starting) return;
+    setStarting(c.id);
+    try {
+      if (!(await ensureChildConsent(c.name))) return;
+      setOpen(c.id);
+      track('device.setup_open');
+    } finally { setStarting(null); }
+  };
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 14, flexGrow: 1 }}>
-        <View style={{ alignItems: 'center', gap: 8, paddingTop: 12 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 40, gap: 14, flexGrow: 1 }}>
+        <View style={{ alignItems: 'center', gap: 8 }}>
           <View style={styles.icon}><Ionicons name="tablet-portrait-outline" size={40} color={colors.navy} /></View>
-          <Text style={styles.title} accessibilityRole="header">Çocuğunun cihazını kuralım</Text>
+          <Text style={styles.title} accessibilityRole="header">{title}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text style={styles.text}>Son adım: Pofi Adası'na giriş</Text>
-            <Info title="Çocuğun cihazı" text="Çocuğun Pofi Adası oyununu kendi tabletinde ya da telefonunda oynar. Oyunu indirip açınca giriş ekranında 'QR okut'a dokunur ya da 6 haneli kodu yazar. Kod 15 dakika geçerli ve tek kullanımlıktır; istediğin an Aile › çocuk › Giriş kodu bölümünden yenisini alırsın." />
+            <Info title="Hangi cihaz?" text={`${who} Pofi Adası'nı bir tablette ya da telefonda oynar; senin telefonun da olur. Oyunu indirip açınca giriş ekranında 'QR okut'a dokunur ya da 6 haneli kodu yazar. Kod 15 dakika geçerli ve tek kullanımlıktır; istediğin an Aile › çocuk › Giriş kodu bölümünden yenisini alırsın.`} />
           </View>
         </View>
         <Text style={styles.section}>Hangi çocukla başlayalım?</Text>
@@ -40,9 +56,13 @@ export default function DeviceSetupScreen({ navigation }: any) {
             {c.linked ? (
               <View style={styles.done}><Ionicons name="checkmark" size={14} color={colors.easy.fg} /><Text style={styles.doneText}>Bağlandı</Text></View>
             ) : (
-              <Pressable onPress={async () => { if (!(await ensureChildConsent(c.name))) return; setOpen(c.id); track('device.setup_open'); }} style={styles.start} accessibilityRole="button" accessibilityLabel={`${c.name} için başla`}>
-                <Text style={{ color: '#fff', fontWeight: '700' }}>Başla</Text>
-                <Ionicons name="chevron-forward" size={14} color="#fff" />
+              <Pressable onPress={() => start(c)} disabled={!!starting} style={styles.start} accessibilityRole="button" accessibilityLabel={`${c.name} için başla`}>
+                {starting === c.id ? <ActivityIndicator color="#fff" size="small" /> : (
+                  <>
+                    <Text style={{ color: '#fff', fontWeight: '700' }}>Başla</Text>
+                    <Ionicons name="chevron-forward" size={14} color="#fff" />
+                  </>
+                )}
               </Pressable>
             )}
           </View>
@@ -90,7 +110,7 @@ function DeviceSheet({ child, onClose }: { child: Child; onClose: () => void }) 
           ) : (
             <ScrollView style={{ maxHeight: 520 }} contentContainerStyle={{ gap: 12 }}>
               <View style={styles.store}>
-                <Text style={styles.text}>{where === 'other' ? 'Pofi Adası\'nı çocuğunun cihazına indir' : 'Pofi Adası\'nı bu cihaza indir'}</Text>
+                <Text style={styles.text}>{where === 'other' ? `Pofi Adası'nı ${genitive(child.name)} oynayacağı cihaza indir` : 'Pofi Adası\'nı bu cihaza indir'}</Text>
                 {where === 'other' ? (
                   <Pressable onPress={shareLink} style={styles.storeBtn} accessibilityRole="button">
                     <Ionicons name="share-outline" size={16} color={colors.navy} />

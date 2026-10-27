@@ -14,6 +14,7 @@ import { formatTR, todayISO } from '../dates';
 import { supabase } from '../lib/supabase';
 import { shouldAskPush } from '../lib/notifications';
 import { isFirstApproval } from '../lib/firsts';
+import { afterModal } from '../lib/modal';
 
 type Item = { key: string; task: Task; child: Child; date: string };
 
@@ -47,7 +48,7 @@ export default function ReviewScreen() {
     if (!ok) return false;
     setOpen(null);
     // Sayfa kapanırken ikinci pencere açılamaz (iOS): kapanış bitince kutlama
-    if (decision === 'approved' && (await isFirstApproval())) setTimeout(() => setParty(x.child.name), 450);
+    if (decision === 'approved' && (await isFirstApproval())) afterModal(() => setParty(x.child.name));
     return true;
   };
 
@@ -102,7 +103,7 @@ export default function ReviewScreen() {
         )}
       </ScrollView>
       {open && <ReviewSheet item={open} onClose={() => setOpen(null)} onDecide={(d, e) => decide(open, d, e)} />}
-      <PushAsk visible={!!ask} childName={ask?.child.name} onDone={() => { const x = ask; setAsk(null); if (x) setTimeout(() => setOpen(x), 350); }} />
+      <PushAsk visible={!!ask} childName={ask?.child.name} onDone={() => { const x = ask; setAsk(null); if (x) afterModal(() => setOpen(x)); }} />
       <Dialog
         visible={!!party}
         icon="trophy-outline"

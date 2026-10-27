@@ -23,6 +23,7 @@ import {
   RewardTemplate, RewardKind, RewardUnit, RewardGroup, rewardTemplates, rewardIcons, iconKey, iconOf, unitLabel, unitShort, groupLabel,
 } from '../data/rewardTemplates';
 import { formatTR, toISO } from '../dates';
+import { afterModal } from '../lib/modal';
 
 const INTRO_KEY = 'intro-rewards';
 const reasons = ['Söz tutmadı', 'Kurala uymadı', 'Kardeşiyle kavga', 'Saygısız davrandı'];
@@ -133,7 +134,7 @@ export default function RewardsScreen({ navigation }: any) {
     const open = () => setEditor(x);
     if (x.reward) return open();
     // iOS: Öneriler sayfası açıkken başka pencere açılamaz; önce kapanmasını bekle
-    if (suggest) { setSuggest(false); setTimeout(() => tips.gate('create', rewardTips.create, open), 450); }
+    if (suggest) { setSuggest(false); afterModal(() => tips.gate('create', rewardTips.create, open)); }
     else tips.gate('create', rewardTips.create, open);
   };
   // Öneriye dokun: önerilen fiyatla, bütün çocuklar için eklenir (taş düşmez; satırdan düzenlenir/silinir)

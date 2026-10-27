@@ -1,11 +1,12 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { View, Text, Pressable, Modal, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Pressable, Modal, StyleSheet, ActivityIndicator, Alert, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from './theme';
 import { LegalDoc, legalAccept, legalPending } from './lib/legal';
 import { LegalTextView } from './components/LegalText';
 import { track } from './lib/track';
+import { MODAL_GAP } from './lib/modal';
 
 // Veli onayı (hukuk/50 §1.3): Pofi Adası'nı bağlamadan önce (giriş kodu ya da QR gösterilmeden) GameApp koşulları
 // veli tarafından çocuk adına kabul edilir; aydınlatma kutusuz satır. Sunucuda işlev yoksa ya da onay güncelse hemen geçer.
@@ -13,21 +14,39 @@ import { track } from './lib/track';
 // davet) üstünde görünmez.
 export function useChildConsent() {
   const [ask, setAsk] = useState<{ name: string; docs: LegalDoc[] } | null>(null);
+  const [shown, setShown] = useState(false);
   const resolver = useRef<((ok: boolean) => void) | null>(null);
+  const result = useRef(false);
 
   const ensureChildConsent = useCallback(async (childName: string) => {
+    if (resolver.current) return false; // pencere zaten açık (çift dokunuş)
     let docs: LegalDoc[] | null = null;
     try { docs = await legalPending('child'); } catch { return true; } // ağ hatası kodu engellemesin; bir sonraki seferde sorulur
     if (!docs || docs.length === 0) return true;
-    return new Promise<boolean>((resolve) => { resolver.current = resolve; setAsk({ name: childName, docs: docs! }); });
+    return new Promise<boolean>((resolve) => { resolver.current = resolve; setAsk({ name: childName, docs: docs! }); setShown(true); });
   }, []);
 
-  const finish = (ok: boolean) => { setAsk(null); resolver.current?.(ok); resolver.current = null; };
-  const consentUi = ask ? <ChildConsent name={ask.name} docs={ask.docs} onDone={finish} /> : null;
+  // Sonuç pencere tamamen kapanınca verilir: ardından açılan pencere (cihaz kurulumu sayfası) kapanışla çakışırsa iOS'ta
+  // açılmaz ya da dokunuşlar kilitlenir. onDismiss gelmezse (Android, eski sürüm) süre dolunca.
+  const settle = () => {
+    const r = resolver.current;
+    if (!r) return;
+    resolver.current = null;
+    setAsk(null);
+    r(result.current);
+  };
+  const finish = (ok: boolean) => {
+    result.current = ok;
+    setShown(false);
+    setTimeout(settle, Platform.OS === 'ios' ? MODAL_GAP + 300 : 0);
+  };
+  const consentUi = ask ? <ChildConsent visible={shown} name={ask.name} docs={ask.docs} onDone={finish} onDismiss={settle} /> : null;
   return { ensureChildConsent, consentUi };
 }
 
-function ChildConsent({ name, docs, onDone }: { name: string; docs: LegalDoc[]; onDone: (ok: boolean) => void }) {
+function ChildConsent({ visible, name, docs, onDone, onDismiss }: {
+  visible: boolean; name: string; docs: LegalDoc[]; onDone: (ok: boolean) => void; onDismiss: () => void;
+}) {
   const [on, setOn] = useState(false);
   const [busy, setBusy] = useState(false);
   const [doc, setDoc] = useState<string | null>(null); // açık metin: aynı pencerede tam ekran
@@ -43,7 +62,7 @@ function ChildConsent({ name, docs, onDone }: { name: string; docs: LegalDoc[]; 
     } finally { setBusy(false); }
   };
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={() => (doc ? setDoc(null) : onDone(false))}>
+    <Modal visible={visible} transparent animationType="fade" onDismiss={onDismiss} onRequestClose={() => (doc ? setDoc(null) : onDone(false))}>
       {doc ? (
         <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: insets.top, paddingBottom: insets.bottom }}>
           <LegalTextView docKey={doc} onClose={() => setDoc(null)} />

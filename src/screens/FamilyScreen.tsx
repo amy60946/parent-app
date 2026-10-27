@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, Alert, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, Alert, StyleSheet, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import NotificationBell from '../components/NotificationBell';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { uploadChildPhoto } from '../lib/avatarPhoto';
+import ChildAvatarPicker, { LocalPhoto } from '../components/ChildAvatarPicker';
 import { colors, radius } from '../theme';
 import { Avatar, Segmented, Card } from '../components/ui';
 import DateField from '../components/DateField';
@@ -28,6 +28,7 @@ import { useParentTasks } from '../parentTasks';
 import { useChildConsent } from '../legal';
 import { balances } from '../lib/rewards';
 import { startOfWeek } from '../dates';
+import { afterModal } from '../lib/modal';
 
 type Tab = 'general' | 'mail' | 'account';
 const soon = () => Alert.alert('Yakında', 'Bu özellik sonraki sürümde.');
@@ -92,6 +93,14 @@ function Person({ label, avatar, active, onPress }: { label: string; avatar: str
 
 function MyProfile() {
   const { parent, updateParent } = useStore();
+  // Profil önce görünür; değiştirmek için sağ üstteki kalem (kullanıcı geri bildirimi 27 Ekim 2026)
+  const [edit, setEdit] = useState(false);
+  const [draft, setDraft] = useState({ avatar: parent.avatar, nickname: parent.nickname, name: parent.name });
+  const startEdit = () => { setDraft({ avatar: parent.avatar, nickname: parent.nickname, name: parent.name }); setEdit(true); };
+  const save = () => {
+    updateParent({ avatar: draft.avatar, nickname: draft.nickname.trim(), name: draft.name.trim() });
+    setEdit(false);
+  };
   const pt = useParentTasks();
   const navigation = useNavigation<any>();
   const week = toISO(startOfWeek(new Date()));
@@ -106,19 +115,32 @@ function MyProfile() {
       automaticallyAdjustKeyboardInsets
     >
       <Text style={styles.h}>Profilim</Text>
-      <Card style={{ gap: 14 }}>
-        <Text style={styles.cap}>Avatar</Text>
-        <View style={{ flexDirection: 'row', gap: 16 }}>
-          {parentAvatars.map((a) => (
-            <Pressable key={a.id} onPress={() => updateParent({ avatar: a.id })} style={{ alignItems: 'center', gap: 4 }}>
-              <Avatar id={a.id} size={60} ring={parent.avatar === a.id} />
-              <Text style={styles.cap}>{a.name}</Text>
-            </Pressable>
-          ))}
-        </View>
-        <Field label="Takma ad" value={parent.nickname} onChange={(v) => updateParent({ nickname: v })} />
-        <Field label="İsim" value={parent.name} onChange={(v) => updateParent({ name: v })} />
-      </Card>
+      {edit ? (
+        <Card style={{ gap: 14 }}>
+          <Text style={styles.cap}>Avatar</Text>
+          <View style={{ flexDirection: 'row', gap: 16 }}>
+            {parentAvatars.map((a) => (
+              <Pressable key={a.id} onPress={() => setDraft((d) => ({ ...d, avatar: a.id }))} style={{ alignItems: 'center', gap: 4 }}
+                accessibilityState={{ selected: draft.avatar === a.id }}>
+                <Avatar id={a.id} size={60} ring={draft.avatar === a.id} />
+                <Text style={styles.cap}>{a.name}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Field label="Takma ad" value={draft.nickname} onChange={(v) => setDraft((d) => ({ ...d, nickname: v }))} placeholder="Çocuğunun sana seslendiği ad" />
+          <Field label="İsim" value={draft.name} onChange={(v) => setDraft((d) => ({ ...d, name: v }))} />
+          <EditButtons onCancel={() => setEdit(false)} onSave={save} />
+        </Card>
+      ) : (
+        <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <Avatar id={parent.avatar} size={64} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={styles.h}>{parent.nickname || parent.name || 'Ben'}</Text>
+            {!!parent.nickname && !!parent.name && <Text style={styles.cap}>{parent.name}</Text>}
+          </View>
+          <EditPencil label="Profili düzenle" onPress={startEdit} />
+        </Card>
+      )}
       {pt.ready && pt.me && (
         // Ebeveynin Güneş Taşı (akislar.md 18): kendine atanan görevlerden; hediye dükkânında harcanır
         <>
@@ -148,7 +170,10 @@ function MyProfile() {
 }
 
 function ChildInfo({ id }: { id: string }) {
-  const { children, completions, createChildCode, setChildAgeBand, childBalance, unlinkChildDevice } = useStore();
+  const { children, completions, createChildCode, setChildAgeBand, childBalance, unlinkChildDevice, renameChild, setChildAvatar, familyId } = useStore();
+  const [edit, setEdit] = useState(false);
+  const [draft, setDraft] = useState<{ name: string; avatar: string; photo: LocalPhoto | null }>({ name: '', avatar: '', photo: null });
+  const [saving, setSaving] = useState(false);
   const { ensureChildConsent, consentUi } = useChildConsent();
   const navigation = useNavigation<any>();
   const [code, setCode] = useState<IssuedCode | undefined>();
@@ -156,7 +181,7 @@ function ChildInfo({ id }: { id: string }) {
   const [balance, setBalance] = useState<number | undefined>();
   const [stones, setStones] = useState<number | undefined>();
   const c = children.find((x) => x.id === id);
-  React.useEffect(() => setCode(undefined), [id]);
+  React.useEffect(() => { setCode(undefined); setEdit(false); }, [id]);
   // Bakiye onay/harcama ile değişir: tamamlamalar değişince yeniden oku.
   React.useEffect(() => {
     let live = true;
@@ -181,6 +206,22 @@ function ChildInfo({ id }: { id: string }) {
     ],
   );
 
+  const startEdit = () => { setDraft({ name: c.name, avatar: c.avatar, photo: null }); setEdit(true); };
+  const saveEdit = async () => {
+    const nm = draft.name.trim();
+    if (!nm) return;
+    let av = draft.avatar;
+    if (draft.photo && familyId) {
+      setSaving(true);
+      try { av = await uploadChildPhoto(familyId, draft.photo.uri, draft.photo.mime); }
+      catch (e) { setSaving(false); return Alert.alert('Fotoğraf yüklenemedi', (e as Error).message); }
+      setSaving(false);
+    }
+    if (nm !== c.name) renameChild(c.id, nm);
+    if (av !== c.avatar) setChildAvatar(c.id, av);
+    setEdit(false);
+  };
+
   const issue = async () => {
     if (!(await ensureChildConsent(c.name))) return; // veli onayı: kod/QR'dan önce (hukuk/50 §1.3)
     setBusy(true);
@@ -192,18 +233,30 @@ function ChildInfo({ id }: { id: string }) {
   return (
     <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }}>
       <Card style={{ gap: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Avatar id={c.avatar} size={56} />
-          <View>
-            <Text style={styles.h}>{c.name}</Text>
-            <Text style={styles.cap}>{c.gender === 'kız' ? 'Kız' : c.gender === 'erkek' ? 'Erkek' : ''}{c.birthday ? ` · ${formatTR(c.birthday)}` : ''}</Text>
+        {edit ? (
+          <View style={{ gap: 14 }}>
+            <Text style={styles.cap}>Avatar: fotoğraflarından seç ya da bir simge</Text>
+            <ChildAvatarPicker avatar={draft.avatar} photo={draft.photo}
+              onAvatar={(a) => setDraft((d) => ({ ...d, avatar: a }))} onPhoto={(p) => setDraft((d) => ({ ...d, photo: p }))} />
+            <Field label="İsim" value={draft.name} onChange={(v) => setDraft((d) => ({ ...d, name: v }))} />
+            <EditButtons onCancel={() => setEdit(false)} onSave={saveEdit} busy={saving} disabled={!draft.name.trim()} />
           </View>
-          <View style={{ flex: 1 }} />
-          <View style={styles.coins} accessibilityLabel={`Coin bakiyesi ${balance ?? 'bilinmiyor'}`}>
-            <View style={styles.coinDot} />
-            <Text style={{ fontSize: 15, fontWeight: '800', color: colors.navy }}>{balance ?? '–'}</Text>
+        ) : (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Pressable onPress={startEdit} accessibilityRole="button" accessibilityLabel={`${c.name} avatarını değiştir`}>
+              <Avatar id={c.avatar} size={56} />
+            </Pressable>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.h}>{c.name}</Text>
+              <Text style={styles.cap}>{c.gender === 'kız' ? 'Kız' : c.gender === 'erkek' ? 'Erkek' : ''}{c.birthday ? ` · ${formatTR(c.birthday)}` : ''}</Text>
+            </View>
+            <View style={styles.coins} accessibilityLabel={`Coin bakiyesi ${balance ?? 'bilinmiyor'}`}>
+              <View style={styles.coinDot} />
+              <Text style={{ fontSize: 15, fontWeight: '800', color: colors.navy }}>{balance ?? '–'}</Text>
+            </View>
+            <EditPencil label={`${c.name} profilini düzenle`} onPress={startEdit} />
           </View>
-        </View>
+        )}
       </Card>
       {/* Çocuğun Güneş Taşı hesabı (kullanıcı isteği 27 Ekim 2026): kazanılan, ödül ve düşülen taşlar */}
       <Pressable onPress={() => navigation.navigate('Stones', { childId: c.id })} style={styles.abcRow} accessibilityRole="button"
@@ -252,6 +305,28 @@ function Field({ label, value, onChange, placeholder }: {
     <View>
       <Text style={styles.cap}>{label}</Text>
       <TextInput value={value} onChangeText={onChange} placeholder={placeholder} style={styles.input} placeholderTextColor={colors.muted} />
+    </View>
+  );
+}
+
+// Kartın sağ üstündeki kalem ve düzenleme altındaki Vazgeç / Kaydet
+function EditPencil({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} hitSlop={8} style={styles.pencil} accessibilityRole="button" accessibilityLabel={label}>
+      <Ionicons name="pencil" size={16} color={colors.navy} />
+    </Pressable>
+  );
+}
+
+function EditButtons({ onCancel, onSave, busy, disabled }: { onCancel: () => void; onSave: () => void; busy?: boolean; disabled?: boolean }) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 10 }}>
+      <Pressable onPress={onCancel} style={[styles.editBtn, { backgroundColor: '#F1F2F6' }]} accessibilityRole="button">
+        <Text style={{ fontSize: 15, fontWeight: '600', color: colors.navy }}>Vazgeç</Text>
+      </Pressable>
+      <Pressable onPress={onSave} disabled={busy || disabled} style={[styles.editBtn, { backgroundColor: colors.navy }, (busy || disabled) && { opacity: 0.45 }]} accessibilityRole="button">
+        {busy ? <ActivityIndicator color="#fff" /> : <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Kaydet</Text>}
+      </Pressable>
     </View>
   );
 }
@@ -375,7 +450,7 @@ function CodeSheet({ visible, onClose }: { visible: boolean; onClose: () => void
   const navigation = useNavigation<any>();
   const done = (r: CodeResult) => {
     onClose();
-    if (r.kind === 'invite') setTimeout(() => navigation.navigate('Invite', { invite: r.invite }), 350);
+    if (r.kind === 'invite') afterModal(() => navigation.navigate('Invite', { invite: r.invite }));
     else if (r.kind === 'family') Alert.alert('Aileye katıldın', 'Ailenin çocuklarını, görevlerini ve bildirimlerini artık görüyorsun.');
     else Alert.alert('Bu daveti zaten kabul ettin', `${r.invite.clinician || r.invite.clinic} ile paylaşım Uzmanım bölümünde.`);
   };
@@ -398,7 +473,7 @@ function ManageSheet({ visible, onClose }: { visible: boolean; onClose: () => vo
   const { session } = useAuth();
   const navigation = useNavigation<any>();
   // Silme ayrı ekranda (hukuk/50 §5.1: abonelik uyarısı, aile durumuna göre metin, "SİL" yazarak onay)
-  const toDelete = () => { onClose(); setTimeout(() => navigation.navigate('DeleteAccount'), 350); };
+  const toDelete = () => { onClose(); afterModal(() => navigation.navigate('DeleteAccount')); };
   return (
     <Sheet visible={visible} title="Hesabı yönet" onClose={onClose}>
       <View style={{ gap: 14 }}>
@@ -423,7 +498,7 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
   const { addChild, createInviteCode, familyId, children } = useStore();
   const { allow } = useBilling();
   const navigation = useNavigation<any>();
-  const [photo, setPhoto] = useState<{ uri: string; mime?: string } | null>(null);
+  const [photo, setPhoto] = useState<LocalPhoto | null>(null);
   const [kind, setKind] = useState<'child' | 'parent'>('child');
   const [name, setName] = useState('');
   const [gender, setGender] = useState<'kız' | 'erkek'>('kız');
@@ -441,13 +516,6 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
 
   const close = () => { setName(''); setBirthday(undefined); setBand('A'); setCode(undefined); setKind('child'); setPhoto(null); onClose(); };
 
-  // Ebeveynin fotoğraflarından çocuğun fotoğrafı (kare kırpılır)
-  const pickPhoto = async () => {
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.6 });
-    if (r.canceled || !r.assets?.[0]) return;
-    setPhoto({ uri: r.assets[0].uri, mime: r.assets[0].mimeType ?? undefined });
-  };
-
   // Aynı ad uyarısı (akislar.md 10 adım 6c): uzmanın bekleyen davetinde ya da ailede bu adda çocuk varsa önce sor
   const save = async () => {
     const nm = name.trim();
@@ -459,7 +527,7 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
         `${inv.clinician || inv.clinic} ${inv.childName} için davet gönderdi. Bilgileri davette kontrol edip tek adımda ekleyebilirsin.`, [
           { text: 'Vazgeç', style: 'cancel' },
           { text: 'Yine de ekle', onPress: () => { doSave(); } },
-          { text: 'Davete git', onPress: () => { close(); navigation.navigate('Invite', { invite: inv }); } },
+          { text: 'Davete git', onPress: () => { close(); afterModal(() => navigation.navigate('Invite', { invite: inv })); } },
         ]);
     }
     const dup = children.find((c) => same(c.name));
@@ -501,18 +569,7 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
       {kind === 'child' ? (
         <>
           <Text style={styles.cap}>Avatar</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-            <Pressable onPress={pickPhoto} accessibilityLabel="Fotoğraflarından seç"
-              style={[styles.photoPick, photo && { borderWidth: 2, borderColor: colors.navy, borderStyle: 'solid' }]}>
-              {photo ? <Image source={{ uri: photo.uri }} style={{ width: '100%', height: '100%' }} />
-                : <Ionicons name="camera-outline" size={22} color={colors.navy} />}
-            </Pressable>
-            {childAvatars.map((a) => (
-              <Pressable key={a.id} onPress={() => { setAvatar(a.id); setPhoto(null); }} accessibilityLabel={a.name}>
-                <Avatar id={a.id} size={48} ring={!photo && avatar === a.id} />
-              </Pressable>
-            ))}
-          </View>
+          <ChildAvatarPicker avatar={avatar} photo={photo} onAvatar={setAvatar} onPhoto={setPhoto} />
           <Field label="İsim" value={name} onChange={setName} placeholder="Çocuğunun adı" />
           <View>
             <Text style={[styles.cap, { marginBottom: 6 }]}>Cinsiyet</Text>
@@ -584,7 +641,8 @@ function AgeBandPicker({ value, birthday, onChange }: { value?: AgeBand; birthda
 }
 
 const styles = StyleSheet.create({
-  photoPick: { width: 48, height: 48, borderRadius: 24, overflow: 'hidden', backgroundColor: '#EEF0F5', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.faint, borderStyle: 'dashed' },
+  pencil: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#F1F2F6', alignItems: 'center', justifyContent: 'center' },
+  editBtn: { flex: 1, height: 46, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   link: { fontSize: 13, fontWeight: '600', color: colors.navy },
   stoneDot: { width: 16, height: 16, borderRadius: 8, backgroundColor: colors.gold, borderWidth: 3, borderColor: '#F6D77A' },
   shopBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 36, borderRadius: radius.pill, backgroundColor: '#FFF6DF' },

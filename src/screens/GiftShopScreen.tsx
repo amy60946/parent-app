@@ -66,6 +66,24 @@ export default function GiftShopScreen({ navigation }: any) {
           <Text style={{ fontSize: 15, fontWeight: '800', color: colors.navy }}>{bal}</Text>
         </View>
       </View>
+      {/* Kime: hediye kimin posta kutusuna düşecek; seçili çocuk sarı (kullanıcı geri bildirimi 27 Ekim 2026). Liste kayınca da görünür. */}
+      {children.length > 0 && (
+        <View style={styles.kids}>
+          <Text style={styles.kidsLabel}>Kime?</Text>
+          <FlatList horizontal data={children} keyExtractor={(c) => c.id} showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}
+            renderItem={({ item: c }) => {
+              const on = kid === c.id;
+              return (
+                <Pressable onPress={() => setKid(c.id)} disabled={children.length < 2} style={[styles.kid, on && styles.kidOn]}
+                  accessibilityRole="radio" accessibilityState={{ selected: on }} accessibilityLabel={`${c.name} için`}>
+                  <Avatar id={c.avatar} size={28} />
+                  <Text style={{ fontSize: 14, fontWeight: on ? '800' : '600', color: colors.navy }}>{c.name}</Text>
+                  {on && children.length > 1 && <Ionicons name="checkmark-circle" size={16} color={colors.navy} />}
+                </Pressable>
+              );
+            }} />
+        </View>
+      )}
       <FlatList
         data={list}
         keyExtractor={(i) => i.id}
@@ -77,16 +95,6 @@ export default function GiftShopScreen({ navigation }: any) {
               <Text style={[styles.cap, { flex: 1, fontSize: 13 }]}>Görevlerinden kazandığın taşla çocuğuna oyunda hediye gönder.</Text>
               <Info title="Hediye dükkânı" text="Kendine ya da ailece görev ata (Görev ayrıntıları › Ebeveynler), 'Yaptım' de: Kolay 1, Orta 2, Zor 3 taş. Seçtiğin eşya çocuğunun Pofi Adası posta kutusuna düşer; notun da yanında görünür." />
             </View>
-            {children.length > 1 && (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {children.map((c) => (
-                  <Pressable key={c.id} onPress={() => setKid(c.id)} style={[styles.kid, kid === c.id && styles.kidOn]} accessibilityRole="radio" accessibilityState={{ selected: kid === c.id }}>
-                    <Avatar id={c.avatar} size={24} />
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: kid === c.id ? '#fff' : colors.navy }}>{c.name}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
             <Segmented options={giftKinds} value={kind} onChange={setKind} />
             {items === null && <ActivityIndicator color={colors.navy} />}
             {failed && <Text style={styles.cap}>Dükkân, ortak SQL dosyası Supabase'de çalıştırılınca açılır.</Text>}
@@ -132,8 +140,10 @@ const styles = StyleSheet.create({
   bal: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fff', borderRadius: radius.pill, paddingHorizontal: 12, height: 36 },
   stone: { width: 14, height: 14, borderRadius: 7, backgroundColor: colors.gold, borderWidth: 2, borderColor: '#F6D77A' },
   stoneSm: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.gold, borderWidth: 2, borderColor: '#F6D77A' },
-  kid: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 4, paddingRight: 12, height: 34, borderRadius: radius.pill, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line },
-  kidOn: { backgroundColor: colors.navy, borderColor: colors.navy },
+  kids: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingTop: 6, paddingBottom: 4 },
+  kidsLabel: { fontSize: 13, fontWeight: '700', color: colors.muted },
+  kid: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 4, paddingRight: 12, height: 38, borderRadius: radius.pill, backgroundColor: '#fff', borderWidth: 1.5, borderColor: colors.line },
+  kidOn: { backgroundColor: '#FFF4D6', borderColor: colors.gold },
   item: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: radius.md, padding: 12, borderWidth: 1.5, borderColor: 'transparent' },
   icon: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.today, alignItems: 'center', justifyContent: 'center' },
   price: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#FFF6DF', borderRadius: radius.pill, paddingHorizontal: 10, height: 28 },

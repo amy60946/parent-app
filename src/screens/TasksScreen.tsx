@@ -34,7 +34,8 @@ export default function TasksScreen({ navigation }: any) {
   const { width } = useWindowDimensions();
   const { tasks, children, completions, reorderTasks, deleteTask, familyId, parent } = useStore();
   const pt = useParentTasks();
-  const mine = !!pt.me && Object.values(pt.assigns).some((l) => l.some((x) => x.userId === pt.me));
+  // Ebeveyn kendini her zaman görür (görevi olmasa da): kendine görev atayabileceğini fark etsin (kullanıcı geri bildirimi 27 Ekim 2026)
+  const showMe = pt.ready && !!pt.me;
   // Uzmandan bekleyen görev önerisi varsa üstte kısa bir bildirim
   const [suggested, setSuggested] = useState(0);
   const [clinicOpen, setClinicOpen] = useState(false);
@@ -191,7 +192,7 @@ export default function TasksScreen({ navigation }: any) {
           {children.map((c) => (
             <Chip key={c.id} label={c.name} avatar={c.avatar} active={childFilter === c.id} onPress={() => setChildFilter(c.id)} />
           ))}
-          {mine && <Chip label="Ben" avatar={parent.avatar} active={childFilter === 'me'} onPress={() => setChildFilter('me')} />}
+          {showMe && <Chip label="Ben" avatar={parent.avatar} active={childFilter === 'me'} onPress={() => setChildFilter('me')} />}
         </ScrollView>
       </View>
 
@@ -214,7 +215,14 @@ export default function TasksScreen({ navigation }: any) {
           ) : undefined
         }
         ListEmptyComponent={
-          tasks.length === 0 ? (
+          childFilter === 'me' ? (
+            <View style={{ alignItems: 'center', gap: 6, marginTop: 40, paddingHorizontal: 12 }}>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>Bu gün sana atanmış görev yok</Text>
+              <Text style={{ fontSize: 13, color: colors.muted, textAlign: 'center' }}>
+                Bir görevi açıp Ebeveynler bölümünden kendine de atayabilirsin. "Yaptım" dedikçe Güneş Taşı kazanır, çocuğuna oyunda hediye gönderirsin.
+              </Text>
+            </View>
+          ) : tasks.length === 0 ? (
             // Ailenin hiç görevi yok: hazır rutinle başlamak tek dokunuş (kullanıcı isteği 27 Ekim 2026)
             <View style={styles.starter}>
               <Text style={{ fontSize: 16, fontWeight: '700', color: colors.navy }}>Bir rutinle başla</Text>

@@ -9,7 +9,7 @@ import Info from '../components/Info';
 import { useStore, RepeatKind } from '../store';
 import { DAY_SHORT, todayISO } from '../dates';
 import { taskDayPartOf } from '../data/dayParts';
-import { routineById, routineTasks, WEEKDAYS } from '../data/routines';
+import { routineById, routineTasks, WEEKDAYS, WEEKEND } from '../data/routines';
 import { track } from '../lib/track';
 
 type Row = { on: boolean; title: string; time: string };
@@ -21,7 +21,8 @@ export default function RoutineScreen({ navigation, route }: any) {
   const items = useMemo(() => (r ? routineTasks(r) : []), [r]);
   const [rows, setRows] = useState<Row[]>(() => items.map((t) => ({ on: true, title: t.title, time: t.time })));
   const [kids, setKids] = useState<string[]>(() => children.map((c) => c.id));
-  const [when, setWhen] = useState<'weekdays' | 'daily'>(r?.repeat === 'daily' ? 'daily' : 'weekdays');
+  // Hızlı atama: üç seçenek; gün gün seçim yok, eklendikten sonra görev düzenlemesinden değişir (kullanıcı kararı 27 Ekim 2026)
+  const [when, setWhen] = useState<'weekdays' | 'weekend' | 'daily'>(r?.repeat === 'daily' ? 'daily' : 'weekdays');
   const [timed, setTimed] = useState(true);
   if (!r) return null;
 
@@ -35,12 +36,12 @@ export default function RoutineScreen({ navigation, route }: any) {
     const list = items.flatMap((t, i) => {
       const row = rows[i];
       if (!row.on || !row.title.trim()) return [];
-      const kind: RepeatKind = r.repeat === 'weekly' || when === 'weekdays' ? 'weekly' : 'daily';
+      const kind: RepeatKind = r.repeat === 'weekly' || when !== 'daily' ? 'weekly' : 'daily';
       return [{
         title: row.title.trim(), emoji: t.emoji, skill: t.skill, description: '',
         assignments: kids.map((childId) => ({ childId, difficulty: t.difficulty, coins: t.coins })),
         startDate: todayISO(), recurring: true, repeatKind: kind,
-        repeatDays: r.repeat === 'weekly' ? t.days ?? [] : when === 'weekdays' ? WEEKDAYS : [],
+        repeatDays: r.repeat === 'weekly' ? t.days ?? [] : when === 'weekdays' ? WEEKDAYS : when === 'weekend' ? WEEKEND : [],
         reminder: timed ? row.time : undefined, dayPart: taskDayPartOf(row.time), requiresReview: true,
       }];
     });
@@ -88,7 +89,7 @@ export default function RoutineScreen({ navigation, route }: any) {
         {r.repeat !== 'weekly' && (
           <View style={{ gap: 8 }}>
             <Text style={styles.h}>Hangi günler?</Text>
-            <Segmented options={[{ id: 'weekdays', label: 'Hafta içi' }, { id: 'daily', label: 'Her gün' }]} value={when} onChange={setWhen} />
+            <Segmented options={[{ id: 'weekdays', label: 'Hafta içi' }, { id: 'weekend', label: 'Hafta sonu' }, { id: 'daily', label: 'Her gün' }]} value={when} onChange={setWhen} />
           </View>
         )}
 
@@ -108,7 +109,9 @@ export default function RoutineScreen({ navigation, route }: any) {
                   {row.on && <Ionicons name="checkmark" size={14} color="#fff" />}
                 </Pressable>
                 <View style={{ flex: 1 }}>
-                  <TextInput value={row.title} onChangeText={(v) => set(i, { title: v.slice(0, 80) })} editable={row.on}
+                  {/* Uzun ad alt satıra geçer: rutin tek bakışta okunur */}
+                  <TextInput value={row.title} onChangeText={(v) => set(i, { title: v.replace(/\n/g, ' ').slice(0, 80) })} editable={row.on}
+                    multiline scrollEnabled={false} submitBehavior="blurAndSubmit" returnKeyType="done"
                     style={styles.itemTitle} accessibilityLabel="Görev adı" />
                   {t.days && <Text style={styles.cap}>{t.days.map((d) => DAY_SHORT[d - 1]).join(', ')}</Text>}
                 </View>
@@ -165,7 +168,7 @@ const styles = StyleSheet.create({
   item: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 10 },
   check: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: colors.faint, alignItems: 'center', justifyContent: 'center' },
   checkOn: { backgroundColor: colors.navy, borderColor: colors.navy },
-  itemTitle: { fontSize: 15, fontWeight: '600', color: colors.navy, padding: 0, letterSpacing: 0 },
+  itemTitle: { fontSize: 15, lineHeight: 20, fontWeight: '600', color: colors.navy, padding: 0, paddingTop: 0, letterSpacing: 0, textAlignVertical: 'top' },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F1F2F6', borderRadius: radius.pill, paddingHorizontal: 10, height: 30 },
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#fff', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 28 },
   cta: { height: 52, borderRadius: radius.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },

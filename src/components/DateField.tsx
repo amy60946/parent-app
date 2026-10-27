@@ -12,6 +12,7 @@ type Props = {
   placeholder: string;
   clearable?: boolean;
   maximumDate?: Date;
+  onOpenChange?: (open: boolean) => void; // seçici açılınca ekran ana düğmeyi gizleyip seçiciye kaydırabilir
 };
 
 const box = {
@@ -38,11 +39,12 @@ const fromDate = (mode: Props['mode'], d: Date) =>
     ? toISO(d)
     : `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
-// iOS: alanın altında açılan seçici + Vazgeç / Kaydet. Telefon karanlık moddaysa
+// iOS: alanın altında açılan seçici + Vazgeç / Tamam (formun Kaydet düğmesiyle karışmasın). Telefon karanlık moddaysa
 // yazılar beyaz kalıp boş görünmesin diye seçici her zaman açık temada çizilir.
 // Android: sistemin kendi tarih/saat penceresi (Tamam/İptal içinde).
-export default function DateField({ mode, value, onChange, placeholder, clearable, maximumDate }: Props) {
-  const [open, setOpen] = useState(false);
+export default function DateField({ mode, value, onChange, placeholder, clearable, maximumDate, onOpenChange }: Props) {
+  const [open, setOpenState] = useState(false);
+  const setOpen = (v: boolean) => { setOpenState(v); onOpenChange?.(v); };
   const [draft, setDraft] = useState<Date>(() => toDate(mode, value));
 
   const label = value ? (mode === 'date' ? formatTR(value) : value) : placeholder;
@@ -104,7 +106,7 @@ export default function DateField({ mode, value, onChange, placeholder, clearabl
               onPress={() => { onChange(fromDate(mode, draft)); setOpen(false); }}
               style={{ flex: 1, height: 44, borderRadius: radius.sm, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' }}
             >
-              <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Kaydet</Text>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Tamam</Text>
             </Pressable>
           </View>
         </View>

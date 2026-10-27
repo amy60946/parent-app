@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors, radius } from '../theme';
 import { Tip } from '../data/rewardTips';
+import { afterModal } from '../lib/modal';
 
 const KEY = (k: string) => `tip-${k}`;
 
@@ -28,7 +29,7 @@ export function useFirstTip() {
     setTip(null);
     if (!p) return;
     AsyncStorage.setItem(KEY(p.key), '1').catch(() => {});
-    p.run();
+    afterModal(p.run); // işlem çoğu kez bir sayfa açar: ipucu penceresi kapanınca
   };
   const dismiss = () => { pending.current = null; setTip(null); };
 

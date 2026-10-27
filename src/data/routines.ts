@@ -20,6 +20,7 @@ export type Routine = {
 export type RoutineTask = Template & { time: string; days?: number[] };
 
 export const WEEKDAYS = [1, 2, 3, 4, 5];
+export const WEEKEND = [6, 7];
 
 // Tek kaynak: ortak/veri/hazir_rutinler.json (ClinicApp "Günlük rutin önerisi" de bunu kullanır). Buradaki kopya:
 // bash tools/sync_routines.sh ../ortak/veri/hazir_rutinler.json — rutin değişince önce ortakta değiştir, sonra eşitle.

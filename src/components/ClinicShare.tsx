@@ -12,6 +12,7 @@ import Info from './Info';
 import { SCOPE_FULL, SCOPE_SHORT } from '../data/clinicTexts';
 import { hintOf } from '../lib/errors';
 import { Toggle } from './ui';
+import { afterModal } from '../lib/modal';
 import {
   ClinicLink, InvitePreview, Suggestion, PendingInvite, listLinks, previewInvite, shareWithClinic, stopSharing, addChildToClinic,
   pendingSuggestions, decideSuggestion, linkSuggestionTask, pendingInvites, openInvite, setHistoryShared, inviteErrorTitle,
@@ -26,11 +27,11 @@ export default function ClinicShareSheet({ visible, onClose }: { visible: boolea
   const close = () => { setView('home'); onClose(); };
   const title = view === 'code' ? 'Uzmanla paylaş' : 'Uzmanım';
   // Gözlem notu artık kendi ekranında (Gelişim'den de açılır)
-  const openAbc = () => { close(); navigation.navigate('Abc', { new: true }); };
+  const openAbc = () => { close(); afterModal(() => navigation.navigate('Abc', { new: true })); };
   return (
     <Sheet visible={visible} title={title} onClose={close}>
-      {view === 'home' && <Home onCode={() => setView('code')} onAbc={openAbc} visible={visible} onOpen={(to, params) => { close(); navigation.navigate(to, params); }} />}
-      {view === 'code' && <CodeFlow onDone={() => setView('home')} onInvite={(invite) => { close(); navigation.navigate('Invite', { invite }); }} />}
+      {view === 'home' && <Home onCode={() => setView('code')} onAbc={openAbc} visible={visible} onOpen={(to, params) => { close(); afterModal(() => navigation.navigate(to, params)); }} />}
+      {view === 'code' && <CodeFlow onDone={() => setView('home')} onInvite={(invite) => { close(); afterModal(() => navigation.navigate('Invite', { invite })); }} />}
       {/* Acil durum notu (hukuk/50 §9) */}
       {view === 'home' && <Text style={{ fontSize: 11, lineHeight: 16, color: colors.muted, textAlign: 'center' }}>ParentApp bir acil yardım hizmeti değildir. Çocuğunun ya da başka birinin güvenliği tehlikedeyse hemen 112'yi ara.</Text>}
     </Sheet>
