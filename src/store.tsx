@@ -84,7 +84,8 @@ type Store = {
   savedIds: string[];
   customTemplates: Template[];
   inviteCodes: InviteCode[];
-  addChild: (c: Omit<Child, 'id' | 'linked'>) => void;
+  addChild: (c: Omit<Child, 'id' | 'linked'>) => Promise<string | null>; // sunucuya yazılınca çocuğun kimliği
+  renameChild: (id: string, name: string) => void;
   setChildAgeBand: (childId: string, band: AgeBand | null) => void;
   childBalance: (childId: string) => Promise<number>;
   unlinkChildDevice: (childId: string) => Promise<void>;
@@ -388,19 +389,29 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     [refresh],
   );
 
-  const addChild = useCallback((c: Omit<Child, 'id' | 'linked'>) => {
+  const addChild = useCallback(async (c: Omit<Child, 'id' | 'linked'>): Promise<string | null> => {
     track('child.add');
     const f = fid.current;
-    if (!f) return;
+    if (!f) return null;
     const child: Child = { ...c, id: uuid(), linked: false };
     setChildren((p) => [...p, child]);
-    run(async () => {
+    let ok = false;
+    await run(async () => {
       const ins = await supabase.from('children').insert({
         id: child.id, family_id: f, name: c.name, avatar: c.avatar, gender: c.gender ?? null, birthday: c.birthday ?? null,
       });
+      ok = !ins.error;
       if (ins.error || !c.ageBand) return ins;
       return supabase.rpc('set_child_age_band', { p_child_id: child.id, p_band: c.ageBand });
     });
+    return ok ? child.id : null;
+  }, [run]);
+
+  const renameChild = useCallback((id: string, name: string) => {
+    const nm = name.trim();
+    if (!nm) return;
+    setChildren((p) => p.map((c) => (c.id === id ? { ...c, name: nm } : c)));
+    run(() => supabase.from('children').update({ name: nm }).eq('id', id));
   }, [run]);
 
   // null: otomatik (doğum gününden; durumlar.md §4)
@@ -742,7 +753,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   const value: Store = {
     ready, familyId,
     parent, children, tasks, completions, messages, savedIds, customTemplates, inviteCodes,
-    addChild, setChildAgeBand, childBalance, unlinkChildDevice, updateParent, addTasks, reorderTasks, updateTask, deleteTask, toggleCompletion, review,
+    addChild, renameChild, setChildAgeBand, childBalance, unlinkChildDevice, updateParent, addTasks, reorderTasks, updateTask, deleteTask, toggleCompletion, review,
     toggleSaved, addCustomTemplate, allTemplates, sendMessage, sendSticker, markThreadRead, sendPhoto, sendVoice, createInviteCode, createChildCode, joinFamily, refresh,
     isOnlyParent, deleteAccount,
   };

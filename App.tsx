@@ -34,12 +34,17 @@ import { clearPendingClinicInvite, getPendingClinicInvite, onClinicInvite, parse
 import { BillingProvider } from './src/billing';
 import Onboarding, { markOnboardingSeen, shouldShowOnboarding } from './src/components/Onboarding';
 import CodeStep from './src/components/CodeStep';
+import SetupScreen from './src/screens/SetupScreen';
+import DeviceSetupScreen from './src/screens/DeviceSetupScreen';
+import { SetupCtx, SetupEnd } from './src/setupContext';
+import { completeSetup, setupDone } from './src/lib/intake';
+import { track } from './src/lib/track';
 import type { CodeResult } from './src/components/CodeEntry';
 import { NotificationsProvider } from './src/notifications';
 import { onNotificationTap } from './src/lib/notifications';
 import { clearPendingInvite } from './src/lib/pendingInvite';
 import {
-  LoginScreen, SignUpScreen, ForgotPasswordScreen, NewPasswordScreen, ChildHomeScreen,
+  LoginScreen, SignUpScreen, ForgotPasswordScreen, NewPasswordScreen, ChildHomeScreen, WelcomeScreen, ExpertAskScreen, ExpertCodeScreen,
 } from './src/screens/AuthScreens';
 
 const Tab = createBottomTabNavigator();
@@ -97,16 +102,39 @@ function Loading() {
 
 function Main() {
   const { ready, children } = useStore();
+  const { session } = useAuth();
+  // İlk kurulum (kullanıcı kararları 27 Ekim 2026; ortak/sozlesme/akislar.md 15): bitmemişse uygulama "Setup" ile açılır.
+  // Sunucuda kurulum alanı yoksa (öneri uygulanmadı) bitmiş sayılır ve aşağıdaki "Kodun var mı?" akışı sürer.
+  const [setup, setSetup] = React.useState<'loading' | 'needed' | 'done'>('loading');
+  const afterDevice = React.useRef(false);
+  React.useEffect(() => {
+    if (!ready || !session) return;
+    setupDone(session.user.id).then((d) => setSetup(d ? 'done' : 'needed')).catch(() => setSetup('done'));
+  }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
+  const finishSetup = React.useCallback(async (how: SetupEnd) => {
+    try { await completeSetup(); } catch (e) { Alert.alert('Kaydedilemedi', (e as Error).message); return; }
+    await takeJustSignedUp(); // kurulum bitti: "Kodun var mı?" artık gösterilmez
+    markOnboardingSeen();
+    track('setup.done', { how });
+    setSetup('done');
+    if (!navRef.isReady()) return;
+    if (how === 'children') {
+      afterDevice.current = true;
+      navRef.reset({ index: 1, routes: [{ name: 'Tabs' }, { name: 'DeviceSetup' }] });
+    } else {
+      navRef.reset({ index: 0, routes: [{ name: 'Tabs' }] });
+    }
+  }, []);
   // Yeni aile (bu cihazda ilk kez, henüz çocuk yok): önce "Kodun var mı?" (kullanıcı kararı 26 Ekim 2026, "B"),
   // sonra ilk kullanım rehberi. Uzman davetiyle gelen davetten dönünce kısa rehberi görür (oyun kodu · görev · onay);
   // eşinin ailesine katılan rehber görmez. Rehber Aile › Hesap › Nasıl kullanılır? ile yeniden açılır.
-  const [guide, setGuide] = React.useState<false | 'full' | 'clinic'>(false);
+  const [guide, setGuide] = React.useState<false | 'full' | 'clinic' | 'short'>(false);
   const [codeStep, setCodeStep] = React.useState(false);
   const afterInvite = React.useRef(false);
   const childCount = React.useRef(children.length);
   childCount.current = children.length;
   React.useEffect(() => {
-    if (!ready) return;
+    if (!ready || setup !== 'done') return;
     let busy = false;
     // Uzman davet bağlantısı: daveti bu aileye bağla, hâlâ bekliyorsa davet ekranını aç (akislar.md 10 adım 5b)
     const claim = async (): Promise<boolean> => {
@@ -144,9 +172,15 @@ function Main() {
       else setGuide('full'); // kayıtlı hesap, bu cihazda ilk kez ve henüz çocuk yok
     })();
     return onClinicInvite(() => { claim().then((opened) => { if (opened && fresh) afterInvite.current = true; }); });
-  }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ready, setup === 'done']); // eslint-disable-line react-hooks/exhaustive-deps
   // Davet ekranından dönünce: çocuk eklendiyse kısa rehber, davet reddedildiyse tam rehber
   React.useEffect(() => navRef.addListener('state', () => {
+    // Kurulumdan sonra cihaz ekranı kapanınca kısa rehber: görev ver · onayla
+    if (afterDevice.current && navRef.getCurrentRoute()?.name === 'Görevler') {
+      afterDevice.current = false;
+      setGuide('short');
+      return;
+    }
     if (!afterInvite.current) return;
     const route = navRef.getCurrentRoute()?.name;
     if (!route || route === 'Invite') return;
@@ -176,10 +210,13 @@ function Main() {
   const paywall = React.useCallback((reason?: string) => {
     if (navRef.isReady()) navRef.navigate('Paywall', { reason });
   }, []);
-  if (!ready) return <Loading />;
+  if (!ready || setup === 'loading') return <Loading />;
   return (
     <BillingProvider onPaywall={paywall}>
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <SetupCtx.Provider value={{ finish: finishSetup }}>
+    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={setup === 'needed' ? 'Setup' : 'Tabs'}>
+      <Stack.Screen name="Setup" component={SetupScreen} options={{ gestureEnabled: false }} />
+      <Stack.Screen name="DeviceSetup" component={DeviceSetupScreen} options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen name="Tabs" component={Tabs} />
       <Stack.Screen name="CreateTask" component={CreateTaskScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="TaskDetails" component={TaskDetailsScreen} options={{ presentation: 'modal' }} />
@@ -192,7 +229,8 @@ function Main() {
       <Stack.Screen name="CarePlan" component={CarePlanScreen} />
     </Stack.Navigator>
     <CodeStep visible={codeStep} onResult={onCode} onSkip={() => { setCodeStep(false); setGuide('full'); }} />
-    <Onboarding visible={!!guide} steps={guide === 'clinic' ? [1, 2, 3] : undefined} onClose={() => setGuide(false)} />
+    <Onboarding visible={!!guide} steps={guide === 'clinic' ? [1, 2, 3] : guide === 'short' ? [2, 3] : undefined} onClose={() => setGuide(false)} />
+    </SetupCtx.Provider>
     </BillingProvider>
   );
 }
@@ -201,7 +239,10 @@ function AuthFlow() {
   return (
     <NavigationContainer theme={navTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {/* ParentApp yalnızca ebeveyn uygulaması: açılış ekranı ebeveyn girişi (çocuk girişi Pofi Adası oyununda) */}
+        {/* ParentApp yalnızca ebeveyn uygulaması (çocuk girişi Pofi Adası oyununda). Açılış: Başla / Hesabım var (27 Ekim 2026) */}
+        <Stack.Screen name="Welcome" component={WelcomeScreen} />
+        <Stack.Screen name="ExpertAsk" component={ExpertAskScreen} />
+        <Stack.Screen name="ExpertCode" component={ExpertCodeScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="Forgot" component={ForgotPasswordScreen} />

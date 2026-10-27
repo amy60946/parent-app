@@ -11,6 +11,7 @@ import { colors, radius } from '../theme';
 import { IconButton } from '../components/ui';
 import { useAuth, authErrorText } from '../lib/auth';
 import { clearPendingClinicInvite, getPendingClinicInvite, isInviteToken, setPendingClinicInvite } from '../lib/clinicInvite';
+import { normalizeCode } from '../lib/pendingInvite';
 import { InviteInfo, inviteInfo } from '../lib/clinic';
 
 const MIN_PASSWORD = 8;
@@ -152,7 +153,61 @@ export function LoginScreen({ navigation }: any) {
         <Text style={styles.small}>Şifremi unuttum</Text>
       </Pressable>
       <Cta label="Giriş yap" onPress={submit} busy={busy} />
-      <LinkText onPress={() => navigation.navigate('SignUp')}>Hesabın yok mu? Kayıt ol</LinkText>
+      <LinkText onPress={() => navigation.navigate('ExpertAsk')}>Hesabın yok mu? Kayıt ol</LinkText>
+    </Layout>
+  );
+}
+
+/* ---------- Açılış: Başla / Hesabım var (kullanıcı kararı 27 Ekim 2026; marka tasarımı sonra) ---------- */
+
+export function WelcomeScreen({ navigation }: any) {
+  // Uzman davet bağlantısıyla gelindiyse kod sorusu atlanır
+  const start = async () => navigation.navigate((await getPendingClinicInvite()) ? 'SignUp' : 'ExpertAsk');
+  return (
+    <SafeAreaView style={styles.safe}>
+      <StatusBar style="dark" />
+      <View style={{ flex: 1, padding: 24, justifyContent: 'center', alignItems: 'center', gap: 10 }}>
+        <View style={styles.hero}><Ionicons name="sunny-outline" size={48} color={colors.navy} /></View>
+        <Text style={[styles.title, { fontSize: 30, textAlign: 'center' }]}>ParentApp</Text>
+        <Text style={[styles.subtitle, { fontSize: 15, textAlign: 'center', marginTop: 0 }]}>Rutinler kolaylaşsın, evde huzur artsın.</Text>
+      </View>
+      <View style={{ padding: 24, gap: 12 }}>
+        <Cta label="Başla" onPress={start} />
+        <Pressable onPress={() => navigation.navigate('Login')} style={styles.ghost} accessibilityRole="button">
+          <Text style={styles.ghostText}>Hesabım var, giriş yap</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+// Bir uzmandan kod aldın mı? Hayır → kayıt · Evet → kod ekranı → kayıt · Hesabım var → giriş
+export function ExpertAskScreen({ navigation }: any) {
+  return (
+    <Layout title="Bir uzmandan davet kodu aldın mı?" subtitle="Uzmanın seni davet ettiyse e-postada ya da mesajda 6 haneli bir kod vardır." onBack={() => navigation.goBack()}>
+      <Cta label="Hayır" onPress={() => navigation.navigate('SignUp')} />
+      <Pressable onPress={() => navigation.navigate('ExpertCode')} style={styles.ghost} accessibilityRole="button">
+        <Text style={styles.ghostText}>Evet</Text>
+      </Pressable>
+      <LinkText onPress={() => navigation.navigate('Login')}>Hesabın var mı? Giriş yap</LinkText>
+    </Layout>
+  );
+}
+
+export function ExpertCodeScreen({ navigation }: any) {
+  const [code, setCode] = useState('');
+  const next = async () => {
+    if (code.length !== 6) return Alert.alert('Kod 6 karakter olmalı');
+    // Kayıtta sunucu daveti aileye bağlar (meta clinic_invite); kurulumda "Çocuğunu ekle" uzmanın önerisiyle açılır
+    await setPendingClinicInvite(code);
+    navigation.navigate('SignUp');
+  };
+  return (
+    <Layout title="Uzman kodunu yaz" subtitle="Kayıttan sonra uzmanının bilgileri hazır gelir; kontrol edip onaylarsın." onBack={() => navigation.goBack()}>
+      <TextInput value={code} onChangeText={(v) => setCode(normalizeCode(v))} placeholder="KOD" placeholderTextColor={colors.faint}
+        autoCapitalize="characters" autoCorrect={false} autoFocus onSubmitEditing={next} accessibilityLabel="Uzman kodu" style={styles.bigCode} />
+      <Cta label="Devam" onPress={next} />
+      <LinkText onPress={() => navigation.navigate('SignUp')}>Kodsuz devam et</LinkText>
     </Layout>
   );
 }
@@ -352,6 +407,10 @@ const styles = StyleSheet.create({
   },
   input: { letterSpacing: 0, flex: 1, paddingVertical: 14, fontSize: 15, color: colors.navy },
   cta: { height: 52, borderRadius: radius.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  ghost: { height: 52, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  ghostText: { color: colors.navy, fontSize: 15, fontWeight: '700' },
+  hero: { width: 96, height: 96, borderRadius: 48, backgroundColor: colors.today, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  bigCode: { height: 64, borderRadius: radius.sm, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line, fontSize: 28, fontWeight: '800', letterSpacing: 8, textAlign: 'center', color: colors.navy },
   ctaText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   link: { fontSize: 13, fontWeight: '600', color: colors.navy },
   small: { fontSize: 12, color: colors.muted },

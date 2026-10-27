@@ -65,6 +65,11 @@ export default function InviteScreen({ navigation, route }: any) {
       }
       track('invite.accept', { n: r.childIds.length, new: !!newChild, history: history && ids.length > 0 });
       await refresh();
+      // İlk kurulumda: tablet adımı sonra (cihaz kurulumu); eklenen çocuğun sorularına dön
+      if (route.params?.fromSetup) {
+        navigation.navigate('Setup', { childId: r.childIds.find((x) => !ids.includes(x)) ?? r.childIds[0] });
+        return;
+      }
       setDone({ childIds: r.childIds, newId: r.childIds.find((x) => !ids.includes(x)) });
     } catch (e) {
       const hint = hintOf(e);

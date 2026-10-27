@@ -13,11 +13,11 @@ type Db = { users: Row[]; blobs: Record<string, string>; sessions: Record<string
 // ParentApp ve ClinicApp önizlemeleri aynı sayfada (aynı tarayıcı deposunda) birlikte çalışabilir:
 // veri ortak, oturum her uygulamaya ayrı. Uygulama adını paketleyici yazar (window.__PREVIEW_APP__).
 const APP: string = (globalThis as any).__PREVIEW_APP__ ?? 'parent';
-const KEY = 'pofi-onizleme-v10';
+const KEY = 'pofi-onizleme-v11';
 const TABLES = ['profiles', 'families', 'children', 'tasks', 'task_assignments', 'completions', 'messages', 'saved_templates', 'invite_codes',
   'clinics', 'clinicians', 'clinic_invites', 'clinic_links', 'clinic_notes', 'clinic_goals', 'goal_ratings', 'abc_events',
   'clinic_task_suggestions', 'family_subscriptions', 'notifications', 'push_tokens', 'rewards', 'reward_requests', 'sun_stone_ledger',
-  'care_modules', 'care_module_logs', 'clinic_link_history'];
+  'care_modules', 'care_module_logs', 'clinic_link_history', 'intake_answers'];
 
 const uuid = () =>
   'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -39,7 +39,7 @@ function seed(): Db {
   db.families.push({ id: F, name: 'Ailem', created_at: now(), trial_started_at: ago(2 * 1440) });
   // Abonelik anahtarı (sunucuda app_config.billing). Önizlemede tarayıcı konsolundan değiştirilebilir.
   db.billing = { enforce: false, trial_days: 7, free_max_tasks: 3, free_max_children: 1 };
-  db.profiles.push({ id: U, family_id: F, nickname: 'Anne', name: 'Ayşe', avatar: 'kadın', created_at: now() });
+  db.profiles.push({ id: U, family_id: F, nickname: 'Anne', name: 'Ayşe', avatar: 'kadın', created_at: now(), setup_completed_at: now() });
   db.children.push(
     { id: 'c-nazli', family_id: F, name: 'Nazlı', avatar: 'flamingo', gender: 'kız', birthday: '2018-04-12', age_band: 'A', user_id: 'demo-child', coins_spent: 15, created_at: ago(9000) },
     { id: 'c-arven', family_id: F, name: 'Arven', avatar: 'keçi', gender: 'erkek', birthday: '2020-09-03', user_id: null, created_at: ago(8000) },
@@ -262,6 +262,7 @@ class Query implements PromiseLike<{ data: any; error: Err; count?: number }> {
   match(m: Row) { Object.entries(m).forEach(([k, v]) => this.eq(k, v)); return this; }
   neq(k: string, v: any) { this.filters.push((r) => r[k] !== v); return this; }
   in(k: string, vals: any[]) { this.filters.push((r) => vals.includes(r[k])); return this; }
+  is(k: string, v: any) { this.filters.push((r) => (v === null ? r[k] == null : r[k] === v)); return this; }
   gte(k: string, v: any) { this.filters.push((r) => String(r[k] ?? '') >= String(v)); return this; }
   lte(k: string, v: any) { this.filters.push((r) => String(r[k] ?? '') <= String(v)); return this; }
   limit() { return this; }
@@ -297,6 +298,8 @@ class Query implements PromiseLike<{ data: any; error: Err; count?: number }> {
     if (this.op === 'insert' || this.op === 'upsert') {
       const list: Row[] = (Array.isArray(this.payload) ? this.payload : [this.payload]).map((r: Row) => ({
         ...(PK[this.table] ? {} : { id: uuid() }), created_at: now(), ...r,
+        // tanışma yanıtları: kişi ve aile kimliği sunucudan (20261027100000)
+        ...(this.table === 'intake_answers' ? { user_id: sess()?.user.id, family_id: myProfile()?.family_id, child_id: r.child_id ?? null } : {}),
       }));
       const key = this.conflict ?? PK[this.table] ?? ['id'];
       for (const r of list) {
@@ -632,6 +635,12 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
       verified_as: null, child_name: i.child_name, child_age_group: i.child_age_group, claimed_at: i.claimed_at,
       has_plan: db.care_modules.some((x: Row) => x.invite_code === i.code) };
   };
+  if (name === 'parent_setup_complete') {
+    if (!me) return err('Önce ebeveyn olarak giriş yapmalısın');
+    me.setup_completed_at = me.setup_completed_at ?? now();
+    save();
+    return { data: me.setup_completed_at, error: null };
+  }
   if (name === 'family_pending_invites') {
     return { data: db.clinic_invites.filter((i: Row) => i.kind === 'family' && i.claimed_family === me?.family_id && !i.used_at && !i.revoked_at).map(inviteRow), error: null };
   }
