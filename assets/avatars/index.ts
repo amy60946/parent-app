@@ -18,7 +18,12 @@ export const avatarImages: Record<string, number | undefined> = {
   // fil: require('./fil.png'),
   // zebra: require('./zebra.png'),
   // at: require('./at.png'),
-  // Ebeveyn
-  // kadin: require('./kadin.png'),
-  // erkek: require('./erkek.png'),
+  // Ebeveyn: Okti anne/baba (kullanıcı seçimi 27 Ekim 2026; game-app art/parent_avatars, oyundaki Okti modelinden).
+  // Kare, kendi pastel zeminli; yuvarlak kırpılır (avatars.ts full).
+  okti_anne_1: require('./okti_anne_1.jpg'),
+  okti_anne_2: require('./okti_anne_2.jpg'),
+  okti_anne_3: require('./okti_anne_3.jpg'),
+  okti_baba_1: require('./okti_baba_1.jpg'),
+  okti_baba_2: require('./okti_baba_2.jpg'),
+  okti_baba_3: require('./okti_baba_3.jpg'),
 };

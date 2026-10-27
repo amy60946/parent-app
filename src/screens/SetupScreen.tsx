@@ -12,7 +12,8 @@ import CodeEntry, { CodeResult } from '../components/CodeEntry';
 import { useStore } from '../store';
 import { useAuth } from '../lib/auth';
 import { track } from '../lib/track';
-import { childAvatars, parentAvatars } from '../data/avatars';
+import { childAvatars, parentAvatarId } from '../data/avatars';
+import ParentAvatarPicker from '../components/ParentAvatarPicker';
 import { HEALTH_CONSENT_TEXT, Step, childSteps, familySteps, relateSteps } from '../data/intake';
 import { myAnswers, saveAnswer } from '../lib/intake';
 import { openInvite, pendingInvites } from '../lib/clinic';
@@ -382,7 +383,7 @@ function Loading({ onDone }: { onDone: () => void }) {
 function Nickname({ onDone }: { onDone: () => void }) {
   const { parent, updateParent } = useStore();
   const [nick, setNick] = useState(parent.nickname && parent.nickname !== 'Ben' ? parent.nickname : '');
-  const [avatar, setAvatar] = useState(parent.avatar);
+  const [avatar, setAvatar] = useState(parentAvatarId(parent.avatar));
   const save = () => {
     if (!nick.trim()) return Alert.alert('Takma adını yaz', 'Örneğin Anne, Baba, Teyze.');
     updateParent({ nickname: nick.trim(), avatar });
@@ -398,14 +399,8 @@ function Nickname({ onDone }: { onDone: () => void }) {
           <TextInput value={nick} onChangeText={setNick} maxLength={20} placeholder="Örn. Anne" placeholderTextColor={colors.muted} style={styles.input} />
         </View>
         <View>
-          <Text style={styles.label}>Avatarın</Text>
-          <View style={{ flexDirection: 'row', gap: 16 }}>
-            {parentAvatars.map((a) => (
-              <Pressable key={a.id} onPress={() => setAvatar(a.id)} accessibilityLabel={a.name} accessibilityState={{ selected: avatar === a.id }}>
-                <Avatar id={a.id} size={72} ring={avatar === a.id} />
-              </Pressable>
-            ))}
-          </View>
+          <Text style={styles.label}>Oyundaki yüzün: Okti</Text>
+          <ParentAvatarPicker value={avatar} onChange={setAvatar} />
         </View>
       </ScrollView>
       <Cta label="İleri" onPress={save} disabled={!nick.trim()} />

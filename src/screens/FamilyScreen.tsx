@@ -16,7 +16,8 @@ import Info, { InfoTitle } from '../components/Info';
 import CodeEntry, { CodeResult } from '../components/CodeEntry';
 import ClinicShareSheet from '../components/ClinicShare';
 import { messagePreview } from './ChatScreen';
-import { childAvatars, parentAvatars } from '../data/avatars';
+import { childAvatars, parentAvatarId } from '../data/avatars';
+import ParentAvatarPicker from '../components/ParentAvatarPicker';
 import { AgeBand, ageBands, ageBandLabel, suggestAgeBand } from '../data/ageBands';
 import { useStore } from '../store';
 import { useAuth } from '../lib/auth';
@@ -96,7 +97,7 @@ function MyProfile() {
   // Profil önce görünür; değiştirmek için sağ üstteki kalem (kullanıcı geri bildirimi 27 Ekim 2026)
   const [edit, setEdit] = useState(false);
   const [draft, setDraft] = useState({ avatar: parent.avatar, nickname: parent.nickname, name: parent.name });
-  const startEdit = () => { setDraft({ avatar: parent.avatar, nickname: parent.nickname, name: parent.name }); setEdit(true); };
+  const startEdit = () => { setDraft({ avatar: parentAvatarId(parent.avatar), nickname: parent.nickname, name: parent.name }); setEdit(true); };
   const save = () => {
     updateParent({ avatar: draft.avatar, nickname: draft.nickname.trim(), name: draft.name.trim() });
     setEdit(false);
@@ -117,16 +118,8 @@ function MyProfile() {
       <Text style={styles.h}>Profilim</Text>
       {edit ? (
         <Card style={{ gap: 14 }}>
-          <Text style={styles.cap}>Avatar</Text>
-          <View style={{ flexDirection: 'row', gap: 16 }}>
-            {parentAvatars.map((a) => (
-              <Pressable key={a.id} onPress={() => setDraft((d) => ({ ...d, avatar: a.id }))} style={{ alignItems: 'center', gap: 4 }}
-                accessibilityState={{ selected: draft.avatar === a.id }}>
-                <Avatar id={a.id} size={60} ring={draft.avatar === a.id} />
-                <Text style={styles.cap}>{a.name}</Text>
-              </Pressable>
-            ))}
-          </View>
+          <Text style={styles.cap}>Oyundaki yüzün: Okti</Text>
+          <ParentAvatarPicker value={draft.avatar} onChange={(a) => setDraft((d) => ({ ...d, avatar: a }))} size={60} />
           <Field label="Takma ad" value={draft.nickname} onChange={(v) => setDraft((d) => ({ ...d, nickname: v }))} placeholder="Çocuğunun sana seslendiği ad" />
           <Field label="İsim" value={draft.name} onChange={(v) => setDraft((d) => ({ ...d, name: v }))} />
           <EditButtons onCancel={() => setEdit(false)} onSave={save} />

@@ -24,7 +24,9 @@ export function Avatar({ id, size = 44, ring = false }: { id: string; size?: num
         borderWidth: ring ? 2 : 0, borderColor: colors.navy,
       }}
     >
-      {a.image ? (
+      {a.image && a.full ? (
+        <Image source={a.image} style={{ width: '100%', height: '100%', borderRadius: size / 2 }} resizeMode="cover" />
+      ) : a.image ? (
         <Image source={a.image} style={{ width: size * 0.8, height: size * 0.8 }} resizeMode="contain" />
       ) : (
         <Text style={{ fontSize: size * 0.5 }}>{a.emoji}</Text>
