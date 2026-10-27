@@ -103,7 +103,7 @@ function Loading() {
 function Main() {
   const { ready, children } = useStore();
   const { session } = useAuth();
-  // İlk kurulum (kullanıcı kararları 27 Ekim 2026; ortak/sozlesme/akislar.md 15): bitmemişse uygulama "Setup" ile açılır.
+  // İlk kurulum (kullanıcı kararları 27 Ekim 2026; ortak/sozlesme/akislar.md 16): bitmemişse uygulama "Setup" ile açılır.
   // Sunucuda kurulum alanı yoksa (öneri uygulanmadı) bitmiş sayılır ve aşağıdaki "Kodun var mı?" akışı sürer.
   const [setup, setSetup] = React.useState<'loading' | 'needed' | 'done'>('loading');
   const afterDevice = React.useRef(false);

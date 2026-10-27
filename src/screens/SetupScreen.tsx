@@ -20,7 +20,7 @@ import { clearPendingClinicInvite, getPendingClinicInvite } from '../lib/clinicI
 import { hintOf } from '../lib/errors';
 import { useSetup } from '../setupContext';
 
-// İlk kurulum (kullanıcı kararları 27 Ekim 2026; ortak/sozlesme/akislar.md 15):
+// İlk kurulum (kullanıcı kararları 27 Ekim 2026; ortak/sozlesme/akislar.md 16):
 // aile soruları → sıradaki (çocuğunu ekle / kodla katıl) → çocuk (uzman daveti ya da form) → çocuk soruları → çocukların
 // → hazırlanıyor → seni nasıl görsün → tanıdık mı ×3 → uygulama. Eşinin koduyla katılan çocuk adımlarını görmez.
 type Phase = 'family' | 'next' | 'join' | 'childForm' | 'child' | 'children' | 'loading' | 'nickname' | 'relate';

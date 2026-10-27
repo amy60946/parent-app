@@ -9,7 +9,7 @@ import { CodeBox } from '../components/CodeBox';
 import { useStore, IssuedCode, Child } from '../store';
 import { track } from '../lib/track';
 
-// Kurulumdan sonra ilk iş: çocuğun cihazını kur (kullanıcı kararı 27 Ekim 2026; ortak/sozlesme/akislar.md 15 adım 13).
+// Kurulumdan sonra ilk iş: çocuğun cihazını kur (kullanıcı kararı 27 Ekim 2026; ortak/sozlesme/akislar.md 16 adım 13).
 // "Başka cihaz": indirme bağlantısını paylaş + giriş kodu (QR + yazılı). "Bu cihaz": App Store + kod. Çocuk bağlanınca ✓.
 // Pofi Adası App Store adresi yayında EXPO_PUBLIC_GAME_STORE_URL ile verilir (yoksa bağlantısız tarif).
 const GAME_URL = process.env.EXPO_PUBLIC_GAME_STORE_URL ?? '';

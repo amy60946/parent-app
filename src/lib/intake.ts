@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { HEALTH_CONSENT, INTAKE_VERSION } from '../data/intake';
 
-// Tanışma yanıtları (ortak/sozlesme/veritabani.md 16): kişi + çocuk + soru başına tek satır; aile/kişi kimliği sunucudan.
+// Tanışma yanıtları (ortak/sozlesme/veritabani.md 17): kişi + çocuk + soru başına tek satır; aile/kişi kimliği sunucudan.
 export async function saveAnswer(childId: string | null, key: string, values: string[], health = false) {
   const consent = health && !(values.length === 1 && values[0] === 'prefer_not') ? HEALTH_CONSENT : null;
   const { error } = await supabase.from('intake_answers').upsert(
