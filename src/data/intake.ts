@@ -1,5 +1,6 @@
 // Tanışma soruları (kullanıcı kararları 27 Ekim 2026; anahtarlar ortak/sozlesme/durumlar.md P16, sürüm v1).
 // Metinler referans uygulamadan çevrilmedi; ana fikir korunarak yeniden yazıldı. Hiçbir yanıt tanı ya da puan değildir.
+// Değişince ortak/veri/tanisma_sorulari.json yeniden üretilir: bash tools/intake_json.sh ../ortak/veri/tanisma_sorulari.json
 // {ad}: çocuğun adı (eksiz kullanılır: "Efe için", "Efe nelerden…" — Türkçe ek uyumu gerekmesin).
 
 export const INTAKE_VERSION = 'v1';
