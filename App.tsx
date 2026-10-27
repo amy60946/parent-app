@@ -21,6 +21,8 @@ import FamilyScreen from './src/screens/FamilyScreen';
 import CreateTaskScreen from './src/screens/CreateTaskScreen';
 import TaskDetailsScreen from './src/screens/TaskDetailsScreen';
 import RoutineScreen from './src/screens/RoutineScreen';
+import StonesScreen from './src/screens/StonesScreen';
+import GiftShopScreen from './src/screens/GiftShopScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import NotificationsScreen, { openNotification } from './src/screens/NotificationsScreen';
 import AbcScreen from './src/screens/AbcScreen';
@@ -42,6 +44,7 @@ import { completeSetup, setupDone } from './src/lib/intake';
 import { track } from './src/lib/track';
 import type { CodeResult } from './src/components/CodeEntry';
 import { NotificationsProvider } from './src/notifications';
+import { ParentTasksProvider } from './src/parentTasks';
 import { onNotificationTap, shouldAskPush } from './src/lib/notifications';
 import PushAsk from './src/components/PushAsk';
 import { clearPendingInvite } from './src/lib/pendingInvite';
@@ -226,6 +229,8 @@ function Main() {
       <Stack.Screen name="CreateTask" component={CreateTaskScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="TaskDetails" component={TaskDetailsScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="Routine" component={RoutineScreen} options={{ presentation: 'modal' }} />
+      <Stack.Screen name="Stones" component={StonesScreen} />
+      <Stack.Screen name="GiftShop" component={GiftShopScreen} />
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="Abc" component={AbcScreen} />
@@ -274,6 +279,7 @@ function Root() {
   return (
     <ClientConfigProvider>
     <StoreProvider userId={session?.user.id ?? null}>
+      <ParentTasksProvider>
       <NotificationsProvider userId={session.user.id}>
         <NavigationContainer theme={navTheme} ref={navRef}
           onReady={() => trackScreen(navRef.getCurrentRoute()?.name)}
@@ -283,6 +289,7 @@ function Root() {
           <Main />
         </NavigationContainer>
       </NotificationsProvider>
+      </ParentTasksProvider>
     </StoreProvider>
     </ClientConfigProvider>
   );

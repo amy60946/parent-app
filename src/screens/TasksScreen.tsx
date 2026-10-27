@@ -17,6 +17,8 @@ import TrialBanner from '../components/TrialBanner';
 import PendingInviteBanner from '../components/PendingInviteBanner';
 import { useBilling } from '../billing';
 import { routines } from '../data/routines';
+import { useParentTasks, doneKey, ParentAssign, Member } from '../parentTasks';
+import { difficultyMeta } from '../theme';
 
 const HINT_KEY = 'hint-plus-longpress-v2';
 const NEW_REWARD_KEY = 'hint-reward-new';
@@ -26,11 +28,13 @@ const partOf = (t: Task) => t.dayPart ?? (t.reminder ? taskDayPartOf(t.reminder)
 
 const WEEK_RANGE = 52; // bugünden ±52 hafta
 
-type DayItem = { task: Task; assigns: Task['assignments'] };
+type DayItem = { task: Task; assigns: Task['assignments']; parents: ParentAssign[] }; // parents: ebeveyn atamaları (akislar.md 17)
 
 export default function TasksScreen({ navigation }: any) {
   const { width } = useWindowDimensions();
-  const { tasks, children, completions, reorderTasks, deleteTask, familyId } = useStore();
+  const { tasks, children, completions, reorderTasks, deleteTask, familyId, parent } = useStore();
+  const pt = useParentTasks();
+  const mine = !!pt.me && Object.values(pt.assigns).some((l) => l.some((x) => x.userId === pt.me));
   // Uzmandan bekleyen görev önerisi varsa üstte kısa bir bildirim
   const [suggested, setSuggested] = useState(0);
   const [clinicOpen, setClinicOpen] = useState(false);
@@ -69,10 +73,12 @@ export default function TasksScreen({ navigation }: any) {
       .filter((t) => part === 'all' || (part === 'any' ? !partOf(t) : partOf(t) === part))
       .map((t) => ({
         task: t,
-        assigns: t.assignments.filter((a) => childFilter === 'all' || a.childId === childFilter),
+        assigns: childFilter === 'me' ? [] : t.assignments.filter((a) => childFilter === 'all' || a.childId === childFilter),
+        // "Ben" süzgecinde yalnız bana atananlar; çocuk süzgecinde ebeveyn satırı yok
+        parents: (pt.assigns[t.id] ?? []).filter((x) => childFilter === 'all' || (childFilter === 'me' && x.userId === pt.me)),
       }))
-      .filter((x) => x.assigns.length > 0);
-  }, [tasks, selected, childFilter, part]);
+      .filter((x) => x.assigns.length > 0 || x.parents.length > 0);
+  }, [tasks, selected, childFilter, part, pt.assigns, pt.me]);
 
   const edit = (t: Task) => navigation.navigate('TaskDetails', { taskId: t.id });
 
@@ -95,6 +101,10 @@ export default function TasksScreen({ navigation }: any) {
         date={selected}
         kids={children}
         completions={completions}
+        members={pt.members}
+        me={pt.me}
+        done={pt.done}
+        onDone={(on) => pt.markDone(item.task.id, selected, on)}
         active={isActive}
         onDrag={drag}
         onEdit={() => edit(item.task)}
@@ -181,6 +191,7 @@ export default function TasksScreen({ navigation }: any) {
           {children.map((c) => (
             <Chip key={c.id} label={c.name} avatar={c.avatar} active={childFilter === c.id} onPress={() => setChildFilter(c.id)} />
           ))}
+          {mine && <Chip label="Ben" avatar={parent.avatar} active={childFilter === 'me'} onPress={() => setChildFilter('me')} />}
         </ScrollView>
       </View>
 
@@ -273,20 +284,26 @@ const statusMeta: Record<CompletionStatus, { label: string; bg: string; fg: stri
   retry: { label: 'Tekrar denesin', bg: colors.medium.bg, fg: colors.medium.fg, icon: 'refresh' },
 };
 
-function TaskRow({ item, date, kids, completions, active, onDrag, onEdit, onDelete }: {
+function TaskRow({ item, date, kids, completions, members, me, done, onDone, active, onDrag, onEdit, onDelete }: {
   item: DayItem; date: string; kids: ReturnType<typeof useStore>['children'];
-  completions: ReturnType<typeof useStore>['completions']; active: boolean;
+  completions: ReturnType<typeof useStore>['completions']; members: Member[]; me: string | null;
+  done: Record<string, true>; onDone: (on: boolean) => void; active: boolean;
   onDrag: () => void; onEdit: () => void; onDelete: (close: () => void) => void;
 }) {
   const swipe = useRef<SwipeableMethods>(null);
   const t = item.task;
   const first = item.assigns[0];
+  const myPart = item.parents.find((x) => x.userId === me);
+  const myDone = !!me && !!done[doneKey(t.id, me, date)];
+  // Ebeveyn kendi görevini bir hafta geriye kadar işaretler (sunucu kuralı)
+  const markable = date <= addDaysISO(todayISO(), 1) && date >= addDaysISO(todayISO(), -7);
   // Çocuk tarafındaki durum (çocuk uygulaması işaretler; ebeveyn İnceleme'den onaylar)
   const statuses = item.assigns
     .map((a) => completions[completionKey(t.id, a.childId, date)])
     .filter(Boolean) as CompletionStatus[];
-  const status: CompletionStatus | undefined =
-    statuses.includes('pending') ? 'pending'
+  // Yalnız ebeveyne atanan görevde çocuk durumu yok (boş liste "hepsi onaylı" sayılmasın)
+  const status: CompletionStatus | undefined = item.assigns.length === 0 ? undefined
+    : statuses.includes('pending') ? 'pending'
       : statuses.includes('retry') ? 'retry'
       : statuses.length === item.assigns.length && statuses.every((x) => x === 'approved') ? 'approved'
       : statuses.includes('rejected') ? 'rejected'
@@ -327,7 +344,7 @@ function TaskRow({ item, date, kids, completions, active, onDrag, onEdit, onDele
             </View>
             {!!t.description && <Text numberOfLines={1} style={styles.rowDesc}>{t.description}</Text>}
             <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
-              <DifficultyBadge d={first.difficulty} coins={first.coins} />
+              {first ? <DifficultyBadge d={first.difficulty} coins={first.coins} /> : item.parents[0] && <StoneBadge d={item.parents[0].difficulty} />}
               {t.recurring && <Ionicons name="repeat" size={13} color={colors.muted} />}
               {t.reminder && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
@@ -344,15 +361,24 @@ function TaskRow({ item, date, kids, completions, active, onDrag, onEdit, onDele
             </View>
           </View>
           <View style={{ flexDirection: 'row' }}>
-            {item.assigns.slice(0, 3).map((a, i) => {
-              const c = kids.find((k) => k.id === a.childId);
-              return c ? (
-                <View key={a.childId} style={{ marginLeft: i === 0 ? 0 : -10 }}>
-                  <Avatar id={c.avatar} size={28} />
-                </View>
-              ) : null;
-            })}
+            {[
+              ...item.assigns.map((a) => ({ key: a.childId, avatar: kids.find((k) => k.id === a.childId)?.avatar, ok: false })),
+              ...item.parents.map((x) => ({ key: x.userId, avatar: members.find((m) => m.id === x.userId)?.avatar, ok: !!done[doneKey(t.id, x.userId, date)] })),
+            ].filter((x) => x.avatar).slice(0, 4).map((x, i) => (
+              <View key={x.key} style={{ marginLeft: i === 0 ? 0 : -10 }}>
+                <Avatar id={x.avatar!} size={28} />
+                {x.ok && <View style={styles.doneDot}><Ionicons name="checkmark" size={9} color="#fff" /></View>}
+              </View>
+            ))}
           </View>
+          {myPart && (
+            <Pressable onPress={() => markable && onDone(!myDone)} disabled={!markable} hitSlop={8}
+              accessibilityRole="checkbox" accessibilityState={{ checked: myDone, disabled: !markable }}
+              accessibilityLabel={myDone ? 'Yaptım işaretini kaldır' : 'Yaptım'}
+              style={[styles.myDone, myDone && styles.myDoneOn, !markable && { opacity: 0.35 }]}>
+              <Ionicons name="checkmark" size={18} color={myDone ? '#fff' : colors.faint} />
+            </Pressable>
+          )}
           <Pressable onPress={onEdit} hitSlop={8} accessibilityLabel="Görevi düzenle" style={styles.editBtn}>
             <Ionicons name="create-outline" size={18} color={colors.navy} />
           </Pressable>
@@ -361,6 +387,19 @@ function TaskRow({ item, date, kids, completions, active, onDrag, onEdit, onDele
     </View>
   );
 }
+
+// Ebeveyn görevinde ödül: zorluğa göre Güneş Taşı (kolay 1 / orta 2 / zor 3)
+const STONE_BY: Record<string, number> = { easy: 1, medium: 2, hard: 3 };
+function StoneBadge({ d }: { d: ParentAssign['difficulty'] }) {
+  const c = d === 'easy' ? colors.easy : d === 'medium' ? colors.medium : colors.hard;
+  return (
+    <View style={[styles.status, { backgroundColor: c.bg }]}>
+      <Text style={{ fontSize: 11, fontWeight: '600', color: c.fg }}>{difficultyMeta[d].label} · {STONE_BY[d]} taş</Text>
+    </View>
+  );
+}
+
+const addDaysISO = (iso: string, n: number) => toISO(addDays(fromISO(iso), n));
 
 function Chip({ label, active, onPress, avatar }: { label: string; active: boolean; onPress: () => void; avatar?: string }) {
   return (
@@ -391,6 +430,9 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: radius.md, paddingVertical: 14, paddingLeft: 8, paddingRight: 10 },
   rowActive: { shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
   handle: { width: 28, alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch' },
+  doneDot: { position: 'absolute', right: -2, bottom: -2, width: 14, height: 14, borderRadius: 7, backgroundColor: colors.easy.fg, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#fff' },
+  myDone: { width: 34, height: 34, borderRadius: 17, borderWidth: 1.5, borderColor: colors.faint, alignItems: 'center', justifyContent: 'center' },
+  myDoneOn: { backgroundColor: colors.easy.fg, borderColor: colors.easy.fg },
   editBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#F1F2F6', alignItems: 'center', justifyContent: 'center' },
   deleteAction: { width: 84, marginLeft: 10, borderRadius: radius.md, backgroundColor: colors.danger, alignItems: 'center', justifyContent: 'center' },
   status: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill },

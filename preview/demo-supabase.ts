@@ -13,11 +13,12 @@ type Db = { users: Row[]; blobs: Record<string, string>; sessions: Record<string
 // ParentApp ve ClinicApp önizlemeleri aynı sayfada (aynı tarayıcı deposunda) birlikte çalışabilir:
 // veri ortak, oturum her uygulamaya ayrı. Uygulama adını paketleyici yazar (window.__PREVIEW_APP__).
 const APP: string = (globalThis as any).__PREVIEW_APP__ ?? 'parent';
-const KEY = 'pofi-onizleme-v12';
+const KEY = 'pofi-onizleme-v13';
 const TABLES = ['profiles', 'families', 'children', 'tasks', 'task_assignments', 'completions', 'messages', 'saved_templates', 'invite_codes',
   'clinics', 'clinicians', 'clinic_invites', 'clinic_links', 'clinic_notes', 'clinic_goals', 'goal_ratings', 'abc_events',
   'clinic_task_suggestions', 'family_subscriptions', 'notifications', 'push_tokens', 'rewards', 'reward_requests', 'sun_stone_ledger',
-  'care_modules', 'care_module_logs', 'clinic_link_history', 'intake_answers'];
+  'care_modules', 'care_module_logs', 'clinic_link_history', 'intake_answers',
+  'parent_assignments', 'parent_completions', 'parent_stone_ledger', 'gift_items', 'child_gifts'];
 
 const uuid = () =>
   'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -69,6 +70,20 @@ function seed(): Db {
   done('k-dis', 'c-nazli', 0, 'approved', '21:00', -10);
   done('k-yatak', 'c-nazli', 0, 'pending', '08:00', 15);
   done('k-kitap', 'c-nazli', -1, 'pending', '19:00', 0);
+  // Ebeveyn görevleri ve hediye dükkânı (ortak 20261027140000): ailece görev + yalnız Anne'nin görevi, birkaç taş
+  task('k-yuruyus', 'Ailece akşam yürüyüşü', '🚶', 'kindness', -3, true, '19:30', true, [['c-nazli', 'medium', 10]]);
+  task('k-kendime', 'Kendime 15 dakika ayır', '☕', 'stamina', -3, true, null, false, []);
+  db.parent_assignments.push(
+    { task_id: 'k-yuruyus', user_id: U, family_id: F, difficulty: 'medium', created_at: ago(4000) },
+    { task_id: 'k-kendime', user_id: U, family_id: F, difficulty: 'easy', created_at: ago(4000) },
+  );
+  [[-2, 'k-yuruyus', 2], [-1, 'k-yuruyus', 2], [-1, 'k-kendime', 1]].forEach(([d, t, n], i) => {
+    db.parent_completions.push({ task_id: t, user_id: U, date: day(d as number), family_id: F, done_at: ago(1440 * -(d as number)) });
+    db.parent_stone_ledger.push({ id: i + 1, family_id: F, user_id: U, amount: n, reason: 'task', ref: `${t}|${day(d as number)}:${i}`, created_at: ago(1440 * -(d as number)) });
+  });
+  ([['glasses_round', 2], ['glasses_sun', 2], ['hat_cap', 2], ['hat_straw', 3], ['hat_crown', 4], ['headphones', 4], ['shirt_stripes', 3],
+    ['hoodie_soft', 5], ['cape_hero', 5], ['backpack_small', 3], ['home_bed', 6], ['home_lamp', 5], ['home_aquarium', 10],
+    ['decor_sandcastle', 3], ['decor_palm', 5]] as [string, number][]).forEach(([item_id, stones], sort) => db.gift_items.push({ item_id, stones, sort }));
   // Nazlı: ilk haftalarda düzensiz, son haftalarda belirgin şekilde daha düzenli (uzman paneli grafikleri için)
   for (let n = 1; n <= 56; n++) {
     const early = n > 28;
@@ -204,6 +219,9 @@ const save = () => {
 const PK: Record<string, string[]> = {
   task_assignments: ['task_id', 'child_id'],
   completions: ['task_id', 'child_id', 'date'],
+  parent_assignments: ['task_id', 'user_id'],
+  parent_completions: ['task_id', 'user_id', 'date'],
+  gift_items: ['item_id'],
   invite_codes: ['code'],
   clinic_invites: ['code'],
   goal_ratings: ['goal_id', 'week'],
@@ -213,7 +231,7 @@ const PK: Record<string, string[]> = {
 function cascade(table: string, removed: Row[]) {
   const ids = new Set(removed.map((r) => r.id));
   if (table === 'tasks') {
-    ['task_assignments', 'completions'].forEach((t) => { db[t] = db[t].filter((r: Row) => !ids.has(r.task_id)); });
+    ['task_assignments', 'completions', 'parent_assignments', 'parent_completions'].forEach((t) => { db[t] = db[t].filter((r: Row) => !ids.has(r.task_id)); });
   }
   if (table === 'children') {
     ['task_assignments', 'completions', 'messages', 'invite_codes'].forEach((t) => { db[t] = db[t].filter((r: Row) => !ids.has(r.child_id)); });
@@ -759,6 +777,36 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
     db.sun_stone_ledger.push({ id: db.sun_stone_ledger.length + 1, family_id: me.family_id, child_id: cid, amount: -amount, reason, ref: uuid(), note, created_by: uid, created_at: now() });
     return null;
   };
+  // Ebeveyn görevi işareti ve hediye (ortak 20261027140000_parent_tasks_gifts.sql)
+  const pbal = () => Math.max(0, db.parent_stone_ledger.filter((l: Row) => l.user_id === uid).reduce((a: number, l: Row) => a + l.amount, 0));
+  if (name === 'parent_task_done') {
+    const a = db.parent_assignments.find((x: Row) => x.task_id === args.p_task_id && x.user_id === uid);
+    if (!a) return err('Bu görev sana atanmamış');
+    const k = `${args.p_task_id}|${args.p_date}`;
+    const i = db.parent_completions.findIndex((x: Row) => x.task_id === args.p_task_id && x.user_id === uid && x.date === args.p_date);
+    const nextId = () => db.parent_stone_ledger.reduce((m: number, l: Row) => Math.max(m, l.id), 0) + 1;
+    if (args.p_done !== false && i < 0) {
+      db.parent_completions.push({ task_id: args.p_task_id, user_id: uid, date: args.p_date, family_id: me.family_id, done_at: now() });
+      db.parent_stone_ledger.push({ id: nextId(), family_id: me.family_id, user_id: uid, amount: ({ easy: 1, medium: 2, hard: 3 } as Row)[a.difficulty], reason: 'task', ref: `${k}:${Date.now()}`, created_at: now() });
+    } else if (args.p_done === false && i >= 0) {
+      db.parent_completions.splice(i, 1);
+      const n = db.parent_stone_ledger.filter((l: Row) => l.user_id === uid && l.ref.split(':')[0] === k && (l.reason === 'task' || l.reason === 'task_undo')).reduce((s: number, l: Row) => s + l.amount, 0);
+      if (n > 0) db.parent_stone_ledger.push({ id: nextId(), family_id: me.family_id, user_id: uid, amount: -n, reason: 'task_undo', ref: `${k}:${Date.now()}`, created_at: now() });
+    }
+    save();
+    return { data: pbal(), error: null };
+  }
+  if (name === 'send_gift') {
+    if (!myChild(args.p_child_id)) return err('Yetki yok');
+    const g = db.gift_items.find((x: Row) => x.item_id === args.p_item_id);
+    if (!g) return { data: { ok: false, balance: pbal(), gift_id: null, error: 'unknown_item' }, error: null };
+    if (pbal() < g.stones) return { data: { ok: false, balance: pbal(), gift_id: null, error: 'not_enough_stones' }, error: null };
+    const id = uuid();
+    db.child_gifts.push({ id, family_id: me.family_id, child_id: args.p_child_id, item_id: g.item_id, from_user: uid, from_name: me.nickname, note: args.p_note ?? null, stones: g.stones, created_at: now(), claimed_at: null });
+    db.parent_stone_ledger.push({ id: db.parent_stone_ledger.reduce((m: number, l: Row) => Math.max(m, l.id), 0) + 1, family_id: me.family_id, user_id: uid, amount: -g.stones, reason: 'gift', ref: id, item_id: g.item_id, child_id: args.p_child_id, created_at: now() });
+    save();
+    return { data: { ok: true, balance: pbal(), gift_id: id, error: null }, error: null };
+  }
   if (name === 'sun_stones_spendable') {
     if (!myChild(args.p_child_id)) return err('Yetki yok');
     return { data: stones(args.p_child_id), error: null };

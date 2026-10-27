@@ -24,6 +24,9 @@ import { formatTR, toISO, todayISO } from '../dates';
 import { useBilling } from '../billing';
 import { IssuedCode } from '../store';
 import { PendingInvite, pendingInvites } from '../lib/clinic';
+import { useParentTasks } from '../parentTasks';
+import { balances } from '../lib/rewards';
+import { startOfWeek } from '../dates';
 
 type Tab = 'general' | 'mail' | 'account';
 const soon = () => Alert.alert('Yakında', 'Bu özellik sonraki sürümde.');
@@ -88,6 +91,12 @@ function Person({ label, avatar, active, onPress }: { label: string; avatar: str
 
 function MyProfile() {
   const { parent, updateParent } = useStore();
+  const pt = useParentTasks();
+  const navigation = useNavigation<any>();
+  const week = toISO(startOfWeek(new Date()));
+  const mine = pt.ledger.filter((r) => r.userId === pt.me && r.createdAt.slice(0, 10) >= week);
+  const earned = mine.filter((r) => r.amount > 0).reduce((s, r) => s + r.amount, 0);
+  const spent = -mine.filter((r) => r.amount < 0).reduce((s, r) => s + r.amount, 0);
   return (
     <ScrollView
       contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 40 }}
@@ -109,6 +118,30 @@ function MyProfile() {
         <Field label="Takma ad" value={parent.nickname} onChange={(v) => updateParent({ nickname: v })} />
         <Field label="İsim" value={parent.name} onChange={(v) => updateParent({ name: v })} />
       </Card>
+      {pt.ready && pt.me && (
+        // Ebeveynin Güneş Taşı (akislar.md 17): kendine atanan görevlerden; hediye dükkânında harcanır
+        <>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ flex: 1 }}><InfoTitle title="Güneş Taşım" style={styles.h} info={'Sana atanan görevlerde "Yaptım" dedikçe taş kazanırsın (Kolay 1, Orta 2, Zor 3). Taşlarla Hediye dükkânından çocuğuna oyunda hediye gönderirsin.'} /></View>
+            <Pressable onPress={() => navigation.navigate('Stones')} hitSlop={8}><Text style={styles.link}>Geçmiş ›</Text></Pressable>
+          </View>
+          <Card style={{ gap: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={styles.stoneDot} />
+              <Text style={{ fontSize: 24, fontWeight: '800', color: colors.navy }}>{pt.balance(pt.me)}</Text>
+              <Text style={[styles.cap, { flex: 1 }]}>kullanılabilir</Text>
+              <Pressable onPress={() => navigation.navigate('GiftShop')} style={styles.shopBtn} accessibilityRole="button">
+                <Ionicons name="gift-outline" size={16} color={colors.navy} />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.navy }}>Hediye dükkânı</Text>
+              </Pressable>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={[styles.miniBox, { backgroundColor: colors.easy.bg }]}><Text style={[styles.mini, { color: colors.easy.fg }]}>+{earned}</Text><Text style={styles.cap}>Bu hafta kazanılan</Text></View>
+              <View style={[styles.miniBox, { backgroundColor: colors.hard.bg }]}><Text style={[styles.mini, { color: colors.hard.fg }]}>{spent ? `−${spent}` : '0'}</Text><Text style={styles.cap}>Bu hafta hediye</Text></View>
+            </View>
+          </Card>
+        </>
+      )}
     </ScrollView>
   );
 }
@@ -119,12 +152,14 @@ function ChildInfo({ id }: { id: string }) {
   const [code, setCode] = useState<IssuedCode | undefined>();
   const [busy, setBusy] = useState(false);
   const [balance, setBalance] = useState<number | undefined>();
+  const [stones, setStones] = useState<number | undefined>();
   const c = children.find((x) => x.id === id);
   React.useEffect(() => setCode(undefined), [id]);
   // Bakiye onay/harcama ile değişir: tamamlamalar değişince yeniden oku.
   React.useEffect(() => {
     let live = true;
     childBalance(id).then((b) => { if (live) setBalance(b); }).catch(() => { if (live) setBalance(undefined); });
+    balances([id]).then((b) => { if (live) setStones(b[id]); }).catch(() => { if (live) setStones(undefined); });
     return () => { live = false; };
   }, [id, completions, childBalance]);
   if (!c) return null;
@@ -167,6 +202,13 @@ function ChildInfo({ id }: { id: string }) {
           </View>
         </View>
       </Card>
+      {/* Çocuğun Güneş Taşı hesabı (kullanıcı isteği 27 Ekim 2026): kazanılan, ödül ve düşülen taşlar */}
+      <Pressable onPress={() => navigation.navigate('Stones', { childId: c.id })} style={styles.abcRow} accessibilityRole="button"
+        accessibilityLabel={`${c.name} Güneş Taşı hesabı`}>
+        <View style={styles.stoneDot} />
+        <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: colors.navy }}>Güneş Taşı · {stones ?? '–'}</Text>
+        <Text style={{ fontSize: 13, color: colors.muted }}>Hesap ›</Text>
+      </Pressable>
       <Pressable onPress={() => navigation.navigate('Abc', { new: true, childId: c.id })} style={styles.abcRow}
         accessibilityLabel={`${c.name} için gözlem notu ekle`}>
         <Ionicons name="pulse-outline" size={20} color={colors.navy} />
@@ -562,6 +604,11 @@ function AgeBandPicker({ value, birthday, onChange }: { value?: AgeBand; birthda
 
 const styles = StyleSheet.create({
   photoPick: { width: 48, height: 48, borderRadius: 24, overflow: 'hidden', backgroundColor: '#EEF0F5', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.faint, borderStyle: 'dashed' },
+  link: { fontSize: 13, fontWeight: '600', color: colors.navy },
+  stoneDot: { width: 16, height: 16, borderRadius: 8, backgroundColor: colors.gold, borderWidth: 3, borderColor: '#F6D77A' },
+  shopBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 36, borderRadius: radius.pill, backgroundColor: '#FFF6DF' },
+  miniBox: { flex: 1, borderRadius: radius.sm, padding: 10, gap: 2 },
+  mini: { fontSize: 17, fontWeight: '800' },
   abcRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: radius.md, backgroundColor: '#fff' },
   safe: { flex: 1, backgroundColor: colors.bg },
   dot: { position: 'absolute', right: 1, top: 0, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.gold },

@@ -10,12 +10,14 @@ import { useStore, Assignment, RepeatKind } from '../store';
 import { DAY_SHORT, fromISO, todayISO } from '../dates';
 import { TaskDayPart, dayPartLabel, taskDayPartOf } from '../data/dayParts';
 import { Category, categories, categorySkill, skillLabels } from '../data/templates';
+import { useParentTasks, memberName } from '../parentTasks';
 
 type Row = { on: boolean; difficulty: Difficulty; coins: string };
 
 export default function TaskDetailsScreen({ navigation, route }: any) {
   const { taskId, templateIds, custom, date } = route.params ?? {};
   const { tasks, children, allTemplates, addTasks, updateTask, deleteTask, addCustomTemplate } = useStore();
+  const pt = useParentTasks();
 
   const editing = taskId ? tasks.find((t) => t.id === taskId) : undefined;
   const picked = useMemo(
@@ -36,6 +38,17 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
     });
     return r;
   });
+  // Ebeveyn atamaları (akislar.md 17): kendine ya da eşine; ödül zorluğa göre Güneş Taşı
+  const [prows, setProws] = useState<Record<string, { on: boolean; difficulty: Difficulty }>>(() => {
+    const r: Record<string, { on: boolean; difficulty: Difficulty }> = {};
+    pt.members.forEach((m) => {
+      const a = editing ? pt.assigns[editing.id]?.find((x) => x.userId === m.id) : undefined;
+      r[m.id] = { on: !!a, difficulty: a?.difficulty ?? initialDifficulty };
+    });
+    return r;
+  });
+  const setProw = (id: string, patch: Partial<{ on: boolean; difficulty: Difficulty }>) =>
+    setProws((p) => ({ ...p, [id]: { ...(p[id] ?? { on: false, difficulty: initialDifficulty }), ...patch } }));
   const [startDate, setStartDate] = useState<string>(editing?.startDate ?? date ?? todayISO());
   const [recurring, setRecurring] = useState(editing?.recurring ?? false);
   const [repeatKind, setRepeatKind] = useState<RepeatKind>(editing?.repeatKind ?? 'daily');
@@ -74,13 +87,15 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
         difficulty: rows[c.id].difficulty,
         coins: Math.min(MAX_TASK_COINS, Math.max(0, parseInt(rows[c.id].coins || '0', 10) || 0)),
       }));
-    if (assignments.length === 0) return Alert.alert('En az bir çocuk seçin');
+    const parentList = pt.members.filter((m) => prows[m.id]?.on).map((m) => ({ userId: m.id, difficulty: prows[m.id].difficulty }));
+    if (assignments.length === 0 && parentList.length === 0) return Alert.alert('En az bir kişi seçin');
     if (canTitle && !title.trim()) return Alert.alert('Görev adı gerekli');
     if (recurring && endDate && endDate < startDate) return Alert.alert('Son tarih başlangıçtan önce olamaz');
     if (recurring && repeatKind !== 'daily' && repeatDays.length === 0) {
       return Alert.alert(repeatKind === 'weekly' ? 'Haftanın en az bir gününü seç' : 'Ayın en az bir gününü seç');
     }
 
+    const saveParents = parentList.length ? (ids: string[]) => ids.forEach((id) => pt.saveAssigns(id, parentList)) : undefined;
     const common = {
       description: description.trim(),
       assignments,
@@ -97,13 +112,14 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
     if (editing) {
       // Tekrarlayan görevde tek kayıt güncellenir; her güne yansır.
       updateTask(editing.id, { ...common, title: title.trim() });
+      if (pt.ready) pt.saveAssigns(editing.id, parentList);
     } else if (isCustom) {
       if (saveTemplate) {
         addCustomTemplate({ title: title.trim(), emoji: '⭐', category, difficulty: assignments[0].difficulty });
       }
-      addTasks([{ ...common, title: title.trim(), emoji: '⭐', skill: categorySkill[category] }]);
+      addTasks([{ ...common, title: title.trim(), emoji: '⭐', skill: categorySkill[category] }], saveParents);
     } else {
-      addTasks(picked.map((t: any) => ({ ...common, title: t.title, emoji: t.emoji, skill: t.skill })));
+      addTasks(picked.map((t: any) => ({ ...common, title: t.title, emoji: t.emoji, skill: t.skill })), saveParents);
     }
     navigation.popToTop();
   };
@@ -218,6 +234,44 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
             );
           })}
         </View>
+
+        {pt.ready && pt.members.length > 0 && (
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={{ flex: 1 }}><Label>Ebeveynler (isteğe bağlı)</Label></View>
+              <Info title="Ebeveyn görevi" text="Ailece ya da senin yapacağın görevlerde kendini ya da eşini de seç. Ebeveyn görevi 'Yaptım' deyince zorluğa göre Güneş Taşı kazanır (Kolay 1, Orta 2, Zor 3). Taşlarla Aile › Ben › Hediye dükkânından çocuğuna oyunda hediye gönderirsin." />
+            </View>
+            <View style={{ backgroundColor: '#fff', borderRadius: radius.md }}>
+              {pt.members.map((m, i) => {
+                const r = prows[m.id] ?? { on: false, difficulty: initialDifficulty };
+                return (
+                  <View key={m.id} style={[{ padding: 14, gap: 10 }, i > 0 && { borderTopWidth: 1, borderTopColor: colors.line }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <Avatar id={m.avatar} size={36} />
+                      <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: colors.navy }}>{m.id === pt.me ? `${memberName(m)} (ben)` : memberName(m)}</Text>
+                      <Toggle value={r.on} onChange={(v) => setProw(m.id, { on: v })} />
+                    </View>
+                    {r.on && (
+                      <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                        <View style={{ flex: 1 }}>
+                          <Segmented
+                            options={(['easy', 'medium', 'hard'] as Difficulty[]).map((d) => ({ id: d, label: difficultyMeta[d].label }))}
+                            value={r.difficulty}
+                            onChange={(d) => setProw(m.id, { difficulty: d })}
+                          />
+                        </View>
+                        <View style={styles.coinBox}>
+                          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.gold, borderWidth: 2, borderColor: '#F6D77A' }} />
+                          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.navy }}>{({ easy: 1, medium: 2, hard: 3 } as const)[r.difficulty]} taş</Text>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </>
+        )}
 
         <Label>Başlangıç tarihi</Label>
         <DateField mode="date" value={startDate} onChange={(v) => v && setStartDate(v)} placeholder="Tarih seç" />

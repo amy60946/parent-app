@@ -107,7 +107,6 @@ export default function RoutineScreen({ navigation, route }: any) {
                   accessibilityLabel={row.title} style={[styles.check, row.on && styles.checkOn]}>
                   {row.on && <Ionicons name="checkmark" size={14} color="#fff" />}
                 </Pressable>
-                <Text style={{ fontSize: 18 }}>{t.emoji}</Text>
                 <View style={{ flex: 1 }}>
                   <TextInput value={row.title} onChangeText={(v) => set(i, { title: v.slice(0, 80) })} editable={row.on}
                     style={styles.itemTitle} accessibilityLabel="Görev adı" />
