@@ -15,7 +15,7 @@ import { TaskDayPart, dayPartLabel, taskDayPartOf } from '../data/dayParts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TrialBanner from '../components/TrialBanner';
 import { useBilling } from '../billing';
-import { usePlan } from '../lib/plan';
+import { familyAge, usePlan } from '../lib/plan';
 import { useParentTasks, doneKey, ParentAssign, Member } from '../parentTasks';
 import { difficultyMeta } from '../theme';
 
@@ -35,7 +35,7 @@ export default function TasksScreen({ navigation, route }: any) {
   const pt = useParentTasks();
   // Ebeveyn kendini her zaman görür (görevi olmasa da): kendine görev atayabileceğini fark etsin (kullanıcı geri bildirimi 27 Ekim 2026)
   const showMe = pt.ready && !!pt.me;
-  const plan = usePlan(); // tanışma yanıtlarına göre rutin sırası (lib/plan.ts)
+  const plan = usePlan(familyAge(children)); // tanışma yanıtlarına göre rutin sırası, çocukların yaşına uyan sürüm (lib/plan.ts)
   // Uzmandan bekleyen görev önerisi varsa üstte kısa bir bildirim
   const [suggested, setSuggested] = useState(0);
   useFocusEffect(React.useCallback(() => {

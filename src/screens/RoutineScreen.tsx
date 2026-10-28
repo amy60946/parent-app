@@ -10,6 +10,7 @@ import { useStore, RepeatKind } from '../store';
 import { DAY_SHORT, todayISO } from '../dates';
 import { taskDayPartOf } from '../data/dayParts';
 import { routineById, routineTasks, WEEKDAYS, WEEKEND } from '../data/routines';
+import { uuid } from '../lib/uuid';
 import { track } from '../lib/track';
 
 type Row = { on: boolean; title: string; time: string };
@@ -33,6 +34,9 @@ export default function RoutineScreen({ navigation, route }: any) {
   const add = () => {
     if (!kids.length) return Alert.alert('En az bir çocuk seç');
     if (!count) return Alert.alert('En az bir görev seç');
+    // Görevler rutinine bağlanır (ortak akislar.md 5.4 v2 adım 6): onay ve coin yine görev görev
+    const routineId = uuid();
+    let pos = 0;
     const list = items.flatMap((t, i) => {
       const row = rows[i];
       if (!row.on || !row.title.trim()) return [];
@@ -43,6 +47,7 @@ export default function RoutineScreen({ navigation, route }: any) {
         startDate: todayISO(), recurring: true, repeatKind: kind,
         repeatDays: r.repeat === 'weekly' ? t.days ?? [] : when === 'weekdays' ? WEEKDAYS : when === 'weekend' ? WEEKEND : [],
         reminder: timed ? row.time : undefined, dayPart: taskDayPartOf(row.time), requiresReview: true,
+        routine: { id: routineId, title: r.title, icon: r.icon, position: pos++ },
       }];
     });
     track('routine.add', { id: r.id, n: list.length, kids: kids.length, timed });

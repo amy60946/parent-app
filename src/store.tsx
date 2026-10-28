@@ -43,7 +43,11 @@ export type Task = {
   dayPart?: TaskDayPart; // Sabah / Öğlen / Akşam; yoksa herhangi bir saat
   requiresReview: boolean;
   sortOrder: number; // Görevler ekranındaki sıra (küçük olan üstte)
+  // Günlük rutin v2 (ortak akislar.md 5.4 adım 6, öneri 20261028200000_routines_v2): görev bir rutine bağlı olabilir.
+  // Yalnız gruplama etiketi: onay, coin ve "Yaptım" görev görev kalır.
+  routine?: TaskRoutine;
 };
+export type TaskRoutine = { id: string; title: string; icon?: string; position?: number };
 
 export type RepeatKind = 'daily' | 'weekly' | 'monthly';
 
@@ -173,6 +177,7 @@ const toTask = (r: Row): Task => ({
   dayPart: r.day_part ?? undefined,
   requiresReview: r.requires_review,
   sortOrder: r.sort_order ?? new Date(r.created_at).getTime() / 1000,
+  routine: r.routine_id ? { id: r.routine_id, title: r.routine_title ?? '', icon: r.routine_icon ?? undefined, position: r.routine_position ?? undefined } : undefined,
 });
 
 const bySortOrder = (a: Task, b: Task) => a.sortOrder - b.sortOrder;
@@ -192,8 +197,19 @@ const taskRow = (t: Partial<Task>) => {
   if ('reminder' in t) r.reminder = t.reminder ?? null;
   if ('dayPart' in t) r.day_part = t.dayPart ?? null;
   if (t.requiresReview !== undefined) r.requires_review = t.requiresReview;
+  if (t.routine) {
+    r.routine_id = t.routine.id;
+    r.routine_title = t.routine.title.slice(0, 60);
+    r.routine_icon = t.routine.icon ?? null;
+    r.routine_position = t.routine.position ?? null;
+  }
   return r;
 };
+
+// Sunucuda rutin sütunları yoksa (öneri uygulanmadı) yazma bu alanlar olmadan yinelenir
+const missingRoutineColumn = (e: { code?: string; message?: string } | null) =>
+  !!e && (e.code === 'PGRST204' || e.code === '42703') && /routine_/.test(e.message ?? '');
+const withoutRoutine = (r: Row) => { const { routine_id, routine_title, routine_icon, routine_position, ...rest } = r; return rest; };
 
 const assignmentRows = (familyId: string, taskId: string, list: Assignment[]) =>
   list.map((a) => ({ task_id: taskId, child_id: a.childId, family_id: familyId, difficulty: a.difficulty, coins: a.coins }));
@@ -469,9 +485,9 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     const created: Task[] = list.map((x, i) => ({ ...x, id: uuid(), sortOrder: now + i / 1000 }));
     setTasks((p) => [...p, ...created]);
     run(async () => {
-      const ins = await supabase.from('tasks').insert(
-        created.map((t) => ({ ...taskRow(t), id: t.id, family_id: f, created_by: userId })),
-      );
+      const rows0 = created.map((t) => ({ ...taskRow(t), id: t.id, family_id: f, created_by: userId }));
+      let ins = await supabase.from('tasks').insert(rows0);
+      if (missingRoutineColumn(ins.error)) ins = await supabase.from('tasks').insert(rows0.map(withoutRoutine));
       if (ins.error) return ins;
       // Yalnız ebeveyne atanan görevde çocuk ataması yok (ortak akislar.md 18)
       const rows = created.flatMap((t) => assignmentRows(f, t.id, t.assignments));

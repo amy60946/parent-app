@@ -17,10 +17,10 @@ const POPULAR_COUNT = 20;
 export default function CreateTaskScreen({ navigation, route }: any) {
   const date: string | undefined = route.params?.date;
   const { allTemplates, savedIds, toggleSaved, children } = useStore();
-  const plan = usePlan(); // tanışma yanıtlarına göre rutin sırası (lib/plan.ts)
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [age, setAge] = useState<TemplateAge | 'all'>(() => familyAge(children)); // kişisel plan: çocukların yaş grubu
+  const plan = usePlan(age); // tanışma yanıtlarına göre rutin sırası; rutinin yaş sürümü seçili yaş grubundan (lib/plan.ts)
   const [menu, setMenu] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
   const isCategory = filter !== 'all' && filter !== 'saved' && filter !== 'popular';

@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Info from '../components/Info';
 import Sheet from '../components/Sheet';
 import SuggestionCard from '../components/SuggestionCard';
+import RoutinePackCard from '../components/RoutinePackCard';
 import VerifiedBadge from '../components/VerifiedBadge';
 import { Avatar, IconButton, Toggle } from '../components/ui';
 import { ClinicianAvatar } from './CareScreen';
@@ -45,6 +46,14 @@ export default function ClinicianScreen({ navigation, route }: any) {
   const links = c.links;
   const todos = care.todos.filter((t) => links.some((l) => l.linkId === t.linkId));
   const suggestions = care.suggestions.filter((s) => links.some((l) => l.linkId === s.linkId));
+  // Günlük rutin paketleri (aynı routine.group) tek kart; diğerleri tek tek (akislar.md 5.4 v2)
+  const packs = Object.values(suggestions.filter((s) => s.routine).reduce<Record<string, typeof suggestions>>((acc, s) => {
+    (acc[s.routine!.group] ??= []).push(s);
+    return acc;
+  }, {}));
+  const singles = suggestions.filter((s) => !s.routine);
+  const goalTitle = (s: (typeof suggestions)[number]) => (s.goalId ? care.plans[s.linkId]?.goals.find((g) => g.id === s.goalId)?.title : undefined);
+  const dropSuggestions = (ids: string[]) => setCare((p) => p && ({ ...p, suggestions: p.suggestions.filter((x) => !ids.includes(x.id)) }));
   const unshared = children.filter((k) => !links.some((l) => l.childId === k.id));
 
   // "Bugün uyguladım" kısayolu: işaretliyse ayrıntı (zorluk / geri alma) takip planında
@@ -173,9 +182,11 @@ export default function ClinicianScreen({ navigation, route }: any) {
         {suggestions.length > 0 && (
           <View style={{ gap: 8 }}>
             <Text style={styles.section}>Görev önerileri</Text>
-            {suggestions.map((s) => (
-              <SuggestionCard key={s.id} s={s} childName={childName(s.childId)}
-                onDecided={(id) => setCare((p) => p && ({ ...p, suggestions: p.suggestions.filter((x) => x.id !== id) }))} />
+            {packs.map((p) => (
+              <RoutinePackCard key={p[0].routine!.group} items={p} childName={childName(p[0].childId)} goal={goalTitle(p[0])} onDecided={dropSuggestions} />
+            ))}
+            {singles.map((s) => (
+              <SuggestionCard key={s.id} s={s} childName={childName(s.childId)} goal={goalTitle(s)} onDecided={(id) => dropSuggestions([id])} />
             ))}
           </View>
         )}

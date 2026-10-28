@@ -20,6 +20,9 @@ export type Suggestion = {
   recurring: boolean; note: string; clinic: string;
   description: string; coins?: number; startDate?: string; repeatKind: RepeatKind; repeatDays: number[];
   endDate?: string; reminder?: string; requiresReview: boolean;
+  // Günlük rutin v2 (öneri 20261028200000_routines_v2): aynı routineGroup'lu öneriler tek paket; goalId takip planı hedefi.
+  // Sütunlar sunucuda yoksa (select *) boş gelir: öneri tek başına gösterilir.
+  routine?: { group: string; title: string; icon?: string; position: number }; goalId?: string;
 };
 
 const fail = (e: { message: string } | null) => { if (e) throw new Error(e.message); };
@@ -73,6 +76,8 @@ export async function pendingSuggestions(familyId: string): Promise<Suggestion[]
       repeatKind: (['daily', 'weekly', 'monthly'].includes(r.repeat_kind) ? r.repeat_kind : 'daily') as RepeatKind,
       repeatDays: (r.repeat_days ?? []).map(Number), endDate: r.end_date ?? undefined, reminder: r.reminder ?? undefined,
       requiresReview: r.requires_review !== false,
+      routine: r.routine_group ? { group: r.routine_group, title: r.routine_title ?? 'Rutin', icon: r.routine_icon ?? undefined, position: Number(r.routine_position ?? 0) } : undefined,
+      goalId: r.goal_id ?? undefined,
     }));
 }
 

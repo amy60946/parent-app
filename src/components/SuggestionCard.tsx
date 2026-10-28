@@ -1,28 +1,35 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, Alert, StyleSheet } from 'react-native';
 import { colors, radius, difficultyMeta } from '../theme';
-import { useStore } from '../store';
+import { useStore, Task } from '../store';
 import { formatTR, todayISO } from '../dates';
 import { Suggestion, decideSuggestion, linkSuggestionTask } from '../lib/clinic';
 
-// Uzmanın görev önerisi (ortak/sozlesme/akislar.md 5.4, 3a): kabul edilirse alanlar göreve birebir taşınır,
-// başlangıç yoksa ya da geçmişse bugün. "Şimdilik değil" öneriyi kapatır; uzman görür.
-export default function SuggestionCard({ s, childName, onDecided }: { s: Suggestion; childName: string; onDecided: (id: string) => void }) {
+// Kabul edilen öneri → görev: alanlar birebir taşınır, başlangıç yoksa ya da geçmişse bugün (akislar.md 5.4, 3a).
+// Rutin paketindeyse görev rutinine bağlanır (5.4 v2 adım 6); override: paket düzenlemesinde seçilen tekrar.
+export function suggestionTask(s: Suggestion, override?: Pick<Suggestion, 'recurring' | 'repeatKind' | 'repeatDays'>): Omit<Task, 'id' | 'sortOrder'> {
+  const start = s.startDate && s.startDate > todayISO() ? s.startDate : todayISO();
+  const rep = override ?? s;
+  return {
+    title: s.title, emoji: s.emoji, skill: s.skill, description: s.description,
+    assignments: [{ childId: s.childId, difficulty: s.difficulty, coins: s.coins ?? difficultyMeta[s.difficulty].coins }],
+    startDate: start, recurring: rep.recurring, repeatKind: rep.repeatKind, repeatDays: rep.repeatDays,
+    endDate: s.endDate && s.endDate >= start ? s.endDate : undefined, reminder: s.reminder, requiresReview: s.requiresReview,
+    routine: s.routine ? { id: s.routine.group, title: s.routine.title, icon: s.routine.icon, position: s.routine.position } : undefined,
+  };
+}
+
+// Uzmanın tek görev önerisi: "Görevlere ekle" ya da "Şimdilik değil" (öneriyi kapatır; uzman görür).
+export default function SuggestionCard({ s, childName, goal, onDecided }: { s: Suggestion; childName: string; goal?: string; onDecided: (id: string) => void }) {
   const { addTasks } = useStore();
   const [busy, setBusy] = useState(false);
   const decide = async (accept: boolean) => {
     setBusy(true);
     try {
       await decideSuggestion(s.id, accept);
-      const start = s.startDate && s.startDate > todayISO() ? s.startDate : todayISO();
-      if (accept) {
-        addTasks([{
-          title: s.title, emoji: s.emoji, skill: s.skill, description: s.description,
-          assignments: [{ childId: s.childId, difficulty: s.difficulty, coins: s.coins ?? difficultyMeta[s.difficulty].coins }],
-          startDate: start, recurring: s.recurring, repeatKind: s.repeatKind, repeatDays: s.repeatDays,
-          endDate: s.endDate && s.endDate >= start ? s.endDate : undefined, reminder: s.reminder, requiresReview: s.requiresReview,
-        }], ([taskId]) => { if (taskId) linkSuggestionTask(s.id, taskId).catch(() => {}); });
-      }
+      const task = suggestionTask(s);
+      const start = task.startDate;
+      if (accept) addTasks([task], ([taskId]) => { if (taskId) linkSuggestionTask(s.id, taskId).catch(() => {}); });
       onDecided(s.id);
       if (accept) Alert.alert('Görev eklendi', `"${s.title}" ${start === todayISO() ? 'bugünden' : formatTR(start) + ' tarihinden'} itibaren ${childName} için görevlerde.`);
     } catch (e) {
@@ -41,6 +48,7 @@ export default function SuggestionCard({ s, childName, onDecided }: { s: Suggest
         </View>
       </View>
       <Text style={styles.cap}>{scheduleText(s)}</Text>
+      {!!goal && <Text style={[styles.cap, { color: '#2F6B5E', fontWeight: '600' }]}>Hedef: {goal}</Text>}
       {!!s.description && <Text style={styles.body}>{s.description}</Text>}
       {!!s.note && <Text style={[styles.body, { fontStyle: 'italic' }]}>Uzmanın notu: {s.note}</Text>}
       <View style={{ flexDirection: 'row', gap: 10 }}>

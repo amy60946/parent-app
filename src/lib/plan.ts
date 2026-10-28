@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase';
-import { routines } from '../data/routines';
+import { Routine, routinesForAge, themeOf } from '../data/routines';
 import { TemplateAge } from '../data/templates';
 import { suggestAgeBand } from '../data/ageBands';
 import type { Child } from '../store';
@@ -48,13 +48,15 @@ export function familyAge(children: Pick<Child, 'ageBand' | 'birthday'>[]): Temp
   return bands.size === 1 ? ([...bands][0] as TemplateAge) : 'all';
 }
 
-export function usePlan() {
+// age: rutinlerin yaş sürümü (katalog sürüm 2; konu başına bir rutin). Puan konuya göre (GOAL_ROUTINES konu adlarıdır).
+export function usePlan(age: TemplateAge | 'all' = 'all') {
   const [rows, setRows] = useState<Row[] | null>(null);
   useEffect(() => { let live = true; load().then((r) => { if (live) setRows(r); }); return () => { live = false; }; }, []);
   return useMemo(() => {
     const scores = routineScores(rows ?? []);
-    const ordered = [...routines].sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0)); // eşitlikte katalog sırası (sort kararlı)
-    const top = ordered[0] && (scores[ordered[0].id] ?? 0) > 0 ? ordered[0].id : undefined;
+    const score = (r: Routine) => scores[themeOf(r)] ?? 0;
+    const ordered = [...routinesForAge(age)].sort((a, b) => score(b) - score(a)); // eşitlikte katalog sırası (sort kararlı)
+    const top = ordered[0] && score(ordered[0]) > 0 ? ordered[0].id : undefined;
     return { routines: ordered, recommended: top, ready: rows !== null };
-  }, [rows]);
+  }, [rows, age]);
 }

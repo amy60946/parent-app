@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { templates, Template } from './templates';
+import { templates, Template, TemplateAge } from './templates';
 import routinesJson from './routines.json';
 
 // Hazır rutinler (kullanıcı isteği 27 Ekim 2026; Joon "daily routine" örnekleri, kopya değil): birkaç görevi tek seferde ekleyen
@@ -16,6 +16,9 @@ export type Routine = {
   tint: string;
   repeat: RoutineRepeat;
   items: Item[];
+  // Katalog sürüm 2 (ortak akislar.md 5.4 v2): aynı konunun (theme) yaş gruplarına göre sürümleri; ages = uygun gruplar
+  theme?: string;
+  ages?: TemplateAge[];
 };
 export type RoutineTask = Template & { time: string; days?: number[] };
 
@@ -35,3 +38,16 @@ export function routineTasks(r: Routine): RoutineTask[] {
 }
 
 export const routineById = (id: string) => routines.find((r) => r.id === id);
+
+// Konu başına tek rutin: çocuğun yaş grubuna uyan sürüm. Yaş bilinmiyorsa ('all') konunun varsayılan sürümü (kimliği konuyla
+// aynı olan; eski kimlikler korunur), yoksa ilki. Sıra katalog sırası.
+export const themeOf = (r: Routine) => r.theme ?? r.id;
+export function routinesForAge(age: TemplateAge | 'all'): Routine[] {
+  const out: Routine[] = [];
+  for (const theme of [...new Set(routines.map(themeOf))]) {
+    const all = routines.filter((r) => themeOf(r) === theme);
+    const pick = (age !== 'all' && all.find((r) => !r.ages || r.ages.includes(age))) || all.find((r) => r.id === theme) || all[0];
+    if (pick) out.push(pick);
+  }
+  return out;
+}

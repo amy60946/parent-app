@@ -185,6 +185,17 @@ function seed(): Db {
     description: 'Yatmadan önce yarın giyeceklerini sandalyeye hazırla.', coins: 8, repeat_kind: 'weekly', repeat_days: [1, 2, 3, 4, 5], reminder: '19:30', requires_review: true,
   });
 
+  // Günlük rutin v2 paketi (proposed/20261028200000_routines_v2): aynı routine_group'lu üç öneri, hedefe bağlı
+  const RG = '9a7b0c1d-0000-4000-8000-00000000a001';
+  ([['Uyan, yatağını topla', '🛏️', '07:00'], ['Dişlerini fırçala', '🪥', '07:10'], ['Kahvaltını yap', '🥣', '07:20']] as const).forEach(([title, emoji, time], i) => {
+    db.clinic_task_suggestions.push({
+      id: uuid(), link_id: L, clinic_id: K, family_id: F, child_id: 'c-nazli', title, emoji, skill: 'Öz bakım', difficulty: 'easy', recurring: true, note: '',
+      status: 'pending', created_by: D, created_at: ago(200), decided_at: null, description: '', coins: 5, repeat_kind: 'weekly', repeat_days: [1, 2, 3, 4, 5],
+      reminder: time, requires_review: true, routine_group: RG, routine_title: 'Güne hazır sabah', routine_icon: 'sunny-outline', routine_position: i,
+      routine_key: 'morning', goal_id: db.clinic_goals[0]?.id ?? null,
+    });
+  });
+
   // Örnek bildirimler (gerçekte sunucu tetikleyicileri yazar)
   const note = (id: number, kind: string, title: string, body: string, min: number, data: Row, read = false) =>
     db.notifications.push({ id, user_id: U, app: 'parent', kind, title, body, data, child_id: data.child_id ?? null, created_at: ago(min), read_at: read ? ago(min - 1) : null });
