@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   View, Text, TextInput, Pressable, ScrollView, Alert, StyleSheet, ActivityIndicator, Animated, Easing, KeyboardAvoidingView, Platform,
 } from 'react-native';
@@ -20,6 +20,7 @@ import { openInvite, pendingInvites } from '../lib/clinic';
 import { clearPendingClinicInvite, getPendingClinicInvite } from '../lib/clinicInvite';
 import { hintOf } from '../lib/errors';
 import { useSetup } from '../setupContext';
+import { useKeyboardHeight } from '../lib/useKeyboardHeight';
 import ChildAvatarPicker, { LocalPhoto } from '../components/ChildAvatarPicker';
 import { uploadChildPhoto } from '../lib/avatarPhoto';
 
@@ -127,11 +128,7 @@ function Shell({ children, onBack, progress }: { children: React.ReactNode; onBa
               </Pressable>
             )}
           </View>
-          {progress !== undefined && (
-            <View style={styles.track} accessibilityLabel={`İlerleme yüzde ${Math.round(progress * 100)}`}>
-              <View style={[styles.fill, { width: `${Math.max(4, Math.round(progress * 100))}%` }]} />
-            </View>
-          )}
+          {progress !== undefined && <Progress value={progress} />}
           <View style={{ width: 36 }} />
         </View>
         <View style={{ flex: 1, paddingHorizontal: 20, paddingBottom: 16 }}>{children}</View>
@@ -140,12 +137,32 @@ function Shell({ children, onBack, progress }: { children: React.ReactNode; onBa
   );
 }
 
-type Btn = { label: string; onPress: () => void; busy?: boolean; disabled?: boolean };
-function Center({ icon, title, text, primary, secondary, onBack, progress, info }: {
-  icon: keyof typeof Ionicons.glyphMap; title: string; text?: string; primary: Btn; secondary?: Btn; onBack?: () => void; progress?: number; info?: string;
-}) {
+// İlerleme çubuğu: değer değişince kayarak dolar (adımlar arası geçiş akıcı görünsün)
+function Progress({ value }: { value: number }) {
+  const w = useRef(new Animated.Value(value)).current;
+  useEffect(() => {
+    Animated.timing(w, { toValue: value, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+  }, [value, w]);
   return (
-    <Shell onBack={onBack} progress={progress}>
+    <View style={styles.track} accessibilityLabel={`İlerleme yüzde ${Math.round(value * 100)}`}>
+      <Animated.View style={[styles.fill, { width: w.interpolate({ inputRange: [0, 1], outputRange: ['4%', '100%'], extrapolate: 'clamp' }) }]} />
+    </View>
+  );
+}
+
+type Btn = { label: string; onPress: () => void; busy?: boolean; disabled?: boolean };
+type CenterProps = {
+  icon: keyof typeof Ionicons.glyphMap; title: string; text?: string; primary: Btn; secondary?: Btn; info?: string;
+  points?: { icon: string; text: string }[]; foot?: string; source?: string;
+};
+function Center({ onBack, progress, ...body }: CenterProps & { onBack?: () => void; progress?: number }) {
+  return <Shell onBack={onBack} progress={progress}><CenterBody {...body} /></Shell>;
+}
+
+// Bilgi ekranı gövdesi: simge, başlık, metin, isteğe bağlı maddeler, kaynak ve alt not
+function CenterBody({ icon, title, text, primary, secondary, info, points, foot, source }: CenterProps) {
+  return (
+    <>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
         <View style={styles.icon}><Ionicons name={icon} size={40} color={colors.navy} /></View>
         <Text style={[styles.title, { textAlign: 'center' }]} accessibilityRole="header">{title}</Text>
@@ -155,12 +172,24 @@ function Center({ icon, title, text, primary, secondary, onBack, progress, info 
             {!!info && <Info title={title} text={info} />}
           </View>
         )}
+        {!!points?.length && (
+          <View style={styles.points}>
+            {points.map((pt) => (
+              <View key={pt.text} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={styles.pointIcon}><Ionicons name={pt.icon as any} size={18} color={colors.navy} /></View>
+                <Text style={[styles.text, { flex: 1 }]}>{pt.text}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+        {!!source && <Text style={[styles.cap, { textAlign: 'center' }]}>Kaynak: {source}</Text>}
       </View>
       <View style={{ gap: 10 }}>
+        {!!foot && <Text style={[styles.cap, { textAlign: 'center' }]}>{foot}</Text>}
         <Cta {...primary} />
         {secondary && <Cta {...secondary} ghost />}
       </View>
-    </Shell>
+    </>
   );
 }
 
@@ -181,6 +210,8 @@ function Questionnaire({ steps, childId, onDone, onBackFirst }: {
   const { session } = useAuth();
   const [i, setI] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
+  const answersRef = useRef(answers);
+  answersRef.current = answers;
   const [multi, setMulti] = useState<string[]>([]);
   const advancing = useRef(false);
   const step = steps[i];
@@ -188,67 +219,89 @@ function Questionnaire({ steps, childId, onDone, onBackFirst }: {
   const qIndex = steps.slice(0, i + 1).filter((s) => s.kind === 'question').length;
 
   useEffect(() => { if (session) myAnswers(session.user.id, childId).then(setAnswers).catch(() => {}); }, [session, childId]);
-  useEffect(() => { if (step?.kind === 'question' && step.multi) setMulti(answers[step.key] ?? []); }, [i]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const next = useCallback(() => {
+  // Geçiş (kullanıcı geri bildirimi 28 Ekim 2026: "takılıp akıyor"): yanıt beklenmeden ilerlenir, kayıt arka planda;
+  // yeni adım ilk karede saydam ve hafif kaymış çizilir, sonra yerine akar (yerel animasyon).
+  const anim = useRef(new Animated.Value(1)).current;
+  const dir = useRef(1);
+  useLayoutEffect(() => {
+    anim.setValue(0);
+    Animated.timing(anim, { toValue: 1, duration: 240, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [i, anim]);
+  const go = useCallback((to: number) => {
     advancing.current = false;
-    if (i + 1 >= steps.length) onDone(); else setI(i + 1);
-  }, [i, steps.length, onDone]);
+    if (to >= steps.length) return onDone();
+    if (to < 0) return onBackFirst?.();
+    const s = steps[to];
+    if (s.kind === 'question' && s.multi) setMulti(answersRef.current[s.key] ?? []); // seçimler ilk karede hazır
+    dir.current = to >= i ? 1 : -1;
+    setI(to);
+  }, [i, steps, onDone, onBackFirst]);
 
-  const answer = async (values: string[]) => {
+  const answer = (values: string[]) => {
     if (step.kind !== 'question' || advancing.current) return;
     advancing.current = true;
-    setAnswers((p) => ({ ...p, [step.key]: values }));
-    try { await saveAnswer(childId, step.key, values, step.health); }
-    catch (e) { Alert.alert('Yanıt kaydedilemedi', (e as Error).message); }
+    answersRef.current = { ...answersRef.current, [step.key]: values };
+    setAnswers(answersRef.current);
+    saveAnswer(childId, step.key, values, step.health).catch((e) => Alert.alert('Yanıt kaydedilemedi', (e as Error).message));
     track('intake.answer', { q: step.key });
-    setTimeout(next, step.multi ? 0 : 180);
+    setTimeout(() => go(i + 1), step.multi ? 0 : 140); // tek seçimde seçilenin vurgusu bir an görünsün
   };
 
   if (!step) return null;
-  const back = i > 0 ? () => setI(i - 1) : onBackFirst;
+  const back = i > 0 ? () => go(i - 1) : onBackFirst;
+  const slide = { flex: 1, opacity: anim, transform: [{ translateX: anim.interpolate({ inputRange: [0, 1], outputRange: [dir.current * 28, 0] }) }] };
+
+  let body: React.ReactNode;
   if (step.kind !== 'question') {
-    return <Center icon={step.icon as any} title={step.title} text={step.text} primary={{ label: 'Devam', onPress: next }}
-      onBack={back} progress={qIndex / qCount} />;
+    body = <CenterBody icon={step.icon as any} title={step.title} text={step.text} primary={{ label: (step.kind === 'intro' && step.cta) || 'Devam', onPress: () => go(i + 1) }}
+      points={step.kind === 'intro' ? step.points : undefined} foot={step.kind === 'intro' ? step.foot : undefined}
+      source={step.kind === 'note' ? step.source : undefined} />;
+  } else {
+    const chosen = step.multi ? multi : answers[step.key] ?? [];
+    const skip = step.exclude ? answers[step.exclude] ?? [] : [];
+    const options = step.options.filter((o) => !skip.includes(o.key));
+    const toggle = (key: string, exclusive?: boolean) => setMulti((p) => {
+      if (exclusive) return p.includes(key) ? [] : [key];
+      const base = p.filter((k) => !step.options.find((o) => o.key === k)?.exclusive);
+      return base.includes(key) ? base.filter((k) => k !== key) : [...base, key];
+    });
+    body = (
+      <>
+        <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
+          {!!step.prefix && <Text style={[styles.text, { textAlign: 'center' }]}>{step.prefix}</Text>}
+          <Text style={[styles.title, { textAlign: 'center', marginBottom: 8 }]} accessibilityRole="header">{step.title}</Text>
+          {step.multi && <Text style={[styles.cap, { textAlign: 'center' }]}>Uyanların hepsini seç</Text>}
+          {options.map((o) => {
+            const on = chosen.includes(o.key);
+            return (
+              <Pressable key={o.key} onPress={() => (step.multi ? toggle(o.key, o.exclusive) : answer([o.key]))}
+                accessibilityRole={step.multi ? 'checkbox' : 'button'} accessibilityState={{ checked: on, selected: on }}
+                style={[styles.option, on && styles.optionOn]}>
+                <Text style={[styles.optionText, on && { color: colors.navy, fontWeight: '700' }]}>{o.label}</Text>
+                {step.multi && <View style={[styles.box, on && styles.boxOn]}>{on && <Ionicons name="checkmark" size={14} color="#fff" />}</View>}
+              </Pressable>
+            );
+          })}
+          {step.health && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <Text style={[styles.cap, { flex: 1 }]}>İsteğe bağlı. Yanıt verirsen sağlık bilgisi olarak saklanmasına onay vermiş olursun.</Text>
+              <Info title="Sağlık yanıtları" text={HEALTH_CONSENT_TEXT} />
+            </View>
+          )}
+        </ScrollView>
+        <View style={{ gap: 8 }}>
+          {step.multi && <Cta label="İleri" onPress={() => answer(multi.filter((k) => !skip.includes(k)))} disabled={!multi.some((k) => !skip.includes(k))} />}
+          {step.health && <Pressable onPress={() => go(i + 1)} hitSlop={8} style={{ alignSelf: 'center', paddingVertical: 6 }}>
+            <Text style={styles.link}>Bu soruyu atla</Text>
+          </Pressable>}
+        </View>
+      </>
+    );
   }
-  const chosen = step.multi ? multi : answers[step.key] ?? [];
-  const skip = step.exclude ? answers[step.exclude] ?? [] : [];
-  const options = step.options.filter((o) => !skip.includes(o.key));
-  const toggle = (key: string, exclusive?: boolean) => setMulti((p) => {
-    if (exclusive) return p.includes(key) ? [] : [key];
-    const base = p.filter((k) => !step.options.find((o) => o.key === k)?.exclusive);
-    return base.includes(key) ? base.filter((k) => k !== key) : [...base, key];
-  });
   return (
     <Shell onBack={back} progress={qIndex / qCount}>
-      <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
-        {!!step.prefix && <Text style={[styles.text, { textAlign: 'center' }]}>{step.prefix}</Text>}
-        <Text style={[styles.title, { textAlign: 'center', marginBottom: 8 }]} accessibilityRole="header">{step.title}</Text>
-        {step.multi && <Text style={[styles.cap, { textAlign: 'center' }]}>Uyanların hepsini seç</Text>}
-        {options.map((o) => {
-          const on = chosen.includes(o.key);
-          return (
-            <Pressable key={o.key} onPress={() => (step.multi ? toggle(o.key, o.exclusive) : answer([o.key]))}
-              accessibilityRole={step.multi ? 'checkbox' : 'button'} accessibilityState={{ checked: on, selected: on }}
-              style={[styles.option, on && styles.optionOn]}>
-              <Text style={[styles.optionText, on && { color: colors.navy, fontWeight: '700' }]}>{o.label}</Text>
-              {step.multi && <View style={[styles.box, on && styles.boxOn]}>{on && <Ionicons name="checkmark" size={14} color="#fff" />}</View>}
-            </Pressable>
-          );
-        })}
-        {step.health && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-            <Text style={[styles.cap, { flex: 1 }]}>İsteğe bağlı. Yanıt verirsen sağlık bilgisi olarak saklanmasına onay vermiş olursun.</Text>
-            <Info title="Sağlık yanıtları" text={HEALTH_CONSENT_TEXT} />
-          </View>
-        )}
-      </ScrollView>
-      <View style={{ gap: 8 }}>
-        {step.multi && <Cta label="İleri" onPress={() => answer(multi.filter((k) => !skip.includes(k)))} disabled={!multi.some((k) => !skip.includes(k))} />}
-        {step.health && <Pressable onPress={next} hitSlop={8} style={{ alignSelf: 'center', paddingVertical: 6 }}>
-          <Text style={styles.link}>Bu soruyu atla</Text>
-        </Pressable>}
-      </View>
+      <Animated.View key={i} style={slide}>{body}</Animated.View>
     </Shell>
   );
 }
@@ -264,6 +317,7 @@ function ChildForm({ first, onSaved, onBack }: { first: boolean; onSaved: (id: s
   const [avatar, setAvatar] = useState(childAvatars[1].id);
   const [busy, setBusy] = useState(false);
   const [picking, setPicking] = useState(false); // doğum günü seçicisi açıkken Kaydet gizli, seçici görünür kaydırılır
+  const kb = useKeyboardHeight(); // klavye açıkken de Kaydet gizli: klavyenin üstüne binip formu kapatmasın (geri bildirim 28 Ekim)
   const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const save = async () => {
     const nm = name.trim();
@@ -283,11 +337,12 @@ function ChildForm({ first, onSaved, onBack }: { first: boolean; onSaved: (id: s
   };
   return (
     <Shell onBack={onBack}>
-      <ScrollView ref={scroll} contentContainerStyle={{ gap: 14, paddingBottom: 16 }} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scroll} contentContainerStyle={{ gap: 14, paddingBottom: 16 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <Text style={[styles.title, { textAlign: 'center' }]} accessibilityRole="header">{first ? 'İlk çocuğunu ekle' : 'Çocuk ekle'}</Text>
         <View>
           <Text style={styles.label}>Adı</Text>
-          <TextInput value={name} onChangeText={setName} maxLength={40} placeholder="Çocuğunun adı" placeholderTextColor={colors.muted} style={styles.input} />
+          <TextInput value={name} onChangeText={setName} maxLength={40} placeholder="Çocuğunun adı" placeholderTextColor={colors.muted} style={styles.input}
+            returnKeyType="done" autoCapitalize="words" />
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {([['kız', 'Kız'], ['erkek', 'Erkek']] as const).map(([k, l]) => (
@@ -312,7 +367,7 @@ function ChildForm({ first, onSaved, onBack }: { first: boolean; onSaved: (id: s
           </View>
         </View>
       </ScrollView>
-      {!picking && (
+      {!picking && !kb && (
         <>
           <Cta label="Kaydet" onPress={save} busy={busy} disabled={!name.trim()} />
           {/* veli beyanı (hukuk/50 §1.4) */}
@@ -458,6 +513,8 @@ const styles = StyleSheet.create({
   fill: { height: 8, borderRadius: 4, backgroundColor: colors.navy },
   icon: { width: 84, height: 84, borderRadius: 42, backgroundColor: colors.today, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 22, fontWeight: '800', color: colors.navy, lineHeight: 29 },
+  points: { alignSelf: 'stretch', gap: 14, backgroundColor: '#fff', borderRadius: radius.md, padding: 16, marginTop: 8 },
+  pointIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.today, alignItems: 'center', justifyContent: 'center' },
   text: { fontSize: 15, color: '#4A5165', lineHeight: 21 },
   cap: { fontSize: 12, color: colors.muted },
   label: { fontSize: 13, fontWeight: '600', color: colors.muted, marginBottom: 6 },

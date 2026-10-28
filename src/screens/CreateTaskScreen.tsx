@@ -1,12 +1,13 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { View, Text, TextInput, FlatList, Pressable, ScrollView, StyleSheet, LayoutAnimation, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
 import { DifficultyBadge, IconButton } from '../components/ui';
 import { categories, Category, TemplateAge, templateAges, categoryLabel, skillLabel } from '../data/templates';
 import { useStore } from '../store';
-import { routines, routineTasks } from '../data/routines';
+import { routineTasks } from '../data/routines';
+import { familyAge, usePlan } from '../lib/plan';
 
 // Akıllı öneri (smart recommendation) sonra eklenecek: ortak/DURUM.md hatırlatıcı
 type Filter = 'all' | 'saved' | 'popular' | Category;
@@ -15,10 +16,11 @@ const POPULAR_COUNT = 20;
 
 export default function CreateTaskScreen({ navigation, route }: any) {
   const date: string | undefined = route.params?.date;
-  const { allTemplates, savedIds, toggleSaved } = useStore();
+  const { allTemplates, savedIds, toggleSaved, children } = useStore();
+  const plan = usePlan(); // tanışma yanıtlarına göre rutin sırası (lib/plan.ts)
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
-  const [age, setAge] = useState<TemplateAge | 'all'>('all');
+  const [age, setAge] = useState<TemplateAge | 'all'>(() => familyAge(children)); // kişisel plan: çocukların yaş grubu
   const [menu, setMenu] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
   const isCategory = filter !== 'all' && filter !== 'saved' && filter !== 'popular';
@@ -48,80 +50,58 @@ export default function CreateTaskScreen({ navigation, route }: any) {
     ...categories.map((c) => ({ id: c.id as Filter, label: c.label })),
   ];
   const current = options.find((o) => o.id === filter)!;
-  const choose = (f: Filter) => { setFilter(f); setAge('all'); setMenu(false); };
+  const choose = (f: Filter) => { setFilter(f); setAge(familyAge(children)); setMenu(false); };
 
   const savedCount = allTemplates.filter((t) => savedIds.includes(t.id)).length;
 
   const toggle = (id: string) =>
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
-  // Kaydırınca üst bölüm daralır (kullanıcı isteği 27 Ekim 2026; "quick return" düzeni, ör. Safari/Instagram üst çubuğu):
-  // listede aşağı inerken rutin kartları yalnız başlığa iner, süzgeç ve yaş satırı gizlenir; yukarı doğru kaydırınca ya da
-  // en üste dönünce geri açılır. Daralma/açılma sırasında liste yüksekliği değiştiği için kısa bir süre olaylar yok sayılır.
-  const [compact, setCompactState] = useState(false);
-  const compactRef = useRef(false);
-  const lastY = useRef(0);
-  const lockUntil = useRef(0);
-  const setCompact = (v: boolean) => {
-    if (compactRef.current === v) return;
-    compactRef.current = v;
-    lockUntil.current = Date.now() + 320;
-    LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'));
-    setCompactState(v);
-  };
-  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-    const y = contentOffset.y;
-    const dy = y - lastY.current;
-    lastY.current = y;
-    if (Date.now() < lockUntil.current) return;
-    if (y <= 8) return setCompact(false);
-    const atBottom = y + layoutMeasurement.height >= contentSize.height - 4; // sonda geri sekme açmasın
-    if (dy > 6 && y > 48) setCompact(true);
-    else if (dy < -12 && !atBottom) setCompact(false);
-  };
-  const full = !compact || menu;
+  // Kaydırınca üst bölüm (kullanıcı geri bildirimi 28 Ekim 2026: daralma takılıyordu): rutin kartları, süzgeç ve yaş satırı
+  // listenin başında durur ve listeyle birlikte doğal kayar (yerleşim değişmez, takılma olmaz). Kartlar görünümden çıkınca
+  // üstte rutin başlıklarından oluşan ince bir şerit belirir; geri kaydırınca kartlar yeniden görünür ve şerit kaybolur.
+  // Şeridin görünürlüğü kaydırmaya bağlı yerel animasyondur (JS beklemez).
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const [cardsEnd, setCardsEnd] = useState(170); // rutin kartlarının listedeki alt kenarı
+  const [stripOn, setStripOn] = useState(false);
+  const stripRef = useRef(false);
+  const showRoutines = !query.trim() && !menu;
+  const onScroll = useMemo(() => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+    useNativeDriver: true,
+    listener: (e: any) => {
+      const on = e.nativeEvent.contentOffset.y > cardsEnd - 12;
+      if (on !== stripRef.current) { stripRef.current = on; setStripOn(on); } // yalnız eşik geçilince (dokunulabilirlik için)
+    },
+  }), [scrollY, cardsEnd]);
+  const stripOpacity = scrollY.interpolate({ inputRange: [cardsEnd - 28, cardsEnd], outputRange: [0, 1], extrapolate: 'clamp' });
+  const stripShift = scrollY.interpolate({ inputRange: [cardsEnd - 28, cardsEnd], outputRange: [-10, 0], extrapolate: 'clamp' });
 
-  return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.top}>
-        <IconButton name="chevron-back" label="Geri" onPress={() => navigation.goBack()} />
-        <Text style={styles.topTitle}>Görev Oluştur</Text>
-        <IconButton name="close" label="Kapat" onPress={() => navigation.goBack()} />
-      </View>
-
-      <View style={styles.search}>
-        <Ionicons name="search" size={18} color={colors.muted} />
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Şablon ara"
-          placeholderTextColor={colors.muted}
-          style={{ flex: 1, fontSize: 15, color: colors.navy, letterSpacing: 0 }}
-        />
-      </View>
-
-      {/* Hazır rutinler: birkaç görevi tek seferde ekler (kullanıcı isteği 27 Ekim 2026). Aramada ve menü açıkken gizli. */}
-      {!query.trim() && !menu && (
-        <View style={{ marginTop: full ? 14 : 10 }}>
-          {full && <Text style={styles.section}>Hazır rutinler</Text>}
+  const header = (
+    <View style={{ paddingBottom: 12 }}>
+      {/* Hazır rutinler: birkaç görevi tek seferde ekler (kullanıcı isteği 27 Ekim 2026). Aramada ve menü açıkken gizli.
+          Sıra ve "Sana önerilen" tanışma yanıtlarından (lib/plan.ts). */}
+      {showRoutines && (
+        <View style={{ marginTop: 14 }} onLayout={(e) => setCardsEnd(e.nativeEvent.layout.y + e.nativeEvent.layout.height)}>
+          <Text style={styles.section}>Hazır rutinler</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }}
-            contentContainerStyle={{ gap: full ? 10 : 8, paddingHorizontal: 20, paddingTop: full ? 8 : 0 }}>
-            {routines.map((r) => (
-              <Pressable key={r.id} onPress={() => navigation.navigate('Routine', { id: r.id })}
-                style={[full ? styles.routine : styles.routineMini, { backgroundColor: r.tint }]}
-                accessibilityRole="button" accessibilityLabel={`Hazır rutin: ${r.title}`}>
-                <Ionicons name={r.icon} size={full ? 22 : 15} color={colors.navy} />
-                <Text style={full ? styles.routineTitle : styles.routineMiniTitle} numberOfLines={full ? 2 : 1}>{r.title}</Text>
-                {full && <Text style={styles.routineSub}>{routineTasks(r).length} görev · {r.subtitle}</Text>}
+            contentContainerStyle={{ gap: 10, paddingHorizontal: 20, paddingTop: 8 }}>
+            {plan.routines.map((r) => (
+              <Pressable key={r.id} onPress={() => navigation.navigate('Routine', { id: r.id })} style={[styles.routine, { backgroundColor: r.tint }]}
+                accessibilityRole="button" accessibilityLabel={`Hazır rutin: ${r.title}${plan.recommended === r.id ? ', sana önerilen' : ''}`}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Ionicons name={r.icon} size={22} color={colors.navy} />
+                  {plan.recommended === r.id && <Text style={styles.forYou}>Sana önerilen</Text>}
+                </View>
+                <Text style={styles.routineTitle} numberOfLines={2}>{r.title}</Text>
+                <Text style={styles.routineSub}>{routineTasks(r).length} görev · {r.subtitle}</Text>
               </Pressable>
             ))}
           </ScrollView>
         </View>
       )}
 
-      {/* Açılır filtre: bütün seçenekler tek bakışta (daralınca gizli) */}
-      {full && <View style={{ paddingHorizontal: 20, marginTop: 12, zIndex: 2 }}>
+      {/* Açılır filtre: bütün seçenekler tek bakışta */}
+      <View style={{ paddingHorizontal: 20, marginTop: 12 }}>
         <Pressable onPress={() => setMenu((m) => !m)} style={styles.dropdown} accessibilityRole="button"
           accessibilityState={{ expanded: menu }} accessibilityLabel={`Filtre: ${current.label}`}>
           {current.icon && <Ionicons name={current.icon} size={18} color={colors.navy} />}
@@ -142,12 +122,11 @@ export default function CreateTaskScreen({ navigation, route }: any) {
             ))}
           </View>
         )}
-      </View>}
+      </View>
 
-      {/* Yaş grubu (Tüm görevler ve kategorilerde) */}
-      {full && showAges && !menu && (
-        // Yükseklik sabit: alttaki liste çipleri ezmesin (iOS'ta yatay kaydırma alanı küçülüp üst üste biniyordu)
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0, height: 44, marginTop: 12, marginBottom: 4 }}
+      {/* Yaş grubu (Tüm görevler ve kategorilerde); başlangıçta çocukların yaş grubu (hepsi aynıysa) */}
+      {showAges && !menu && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0, height: 44, marginTop: 12 }}
           contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20 }}>
           <Chip label="Tüm yaşlar" active={age === 'all'} onPress={() => setAge('all')} />
           {templateAges.map((b) => (
@@ -156,14 +135,38 @@ export default function CreateTaskScreen({ navigation, route }: any) {
         </ScrollView>
       )}
 
-      {full ? <Text style={styles.hint}>Birden fazla görev seçip tek seferde atayabilirsiniz.</Text> : <View style={{ height: 8 }} />}
+      <Text style={styles.hint}>Birden fazla görev seçip tek seferde atayabilirsiniz.</Text>
+    </View>
+  );
 
-      <FlatList
+  return (
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.top}>
+        <IconButton name="chevron-back" label="Geri" onPress={() => navigation.goBack()} />
+        <Text style={styles.topTitle}>Görev Oluştur</Text>
+        <IconButton name="close" label="Kapat" onPress={() => navigation.goBack()} />
+      </View>
+
+      <View style={styles.search}>
+        <Ionicons name="search" size={18} color={colors.muted} />
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Şablon ara"
+          placeholderTextColor={colors.muted}
+          style={{ flex: 1, fontSize: 15, color: colors.navy, letterSpacing: 0 }}
+        />
+      </View>
+
+      <View style={{ flex: 1 }}>
+      <Animated.FlatList
         data={list}
-        keyExtractor={(t) => t.id}
+        keyExtractor={(t: any) => t.id}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        contentContainerStyle={{ padding: 20, paddingBottom: 200, gap: 10 }}
+        ListHeaderComponent={header}
+        contentContainerStyle={{ paddingBottom: 200 }}
+        ItemSeparatorComponent={Gap}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         ListEmptyComponent={
@@ -173,11 +176,11 @@ export default function CreateTaskScreen({ navigation, route }: any) {
               : 'Sonuç bulunamadı.'}
           </Text>
         }
-        renderItem={({ item: t }) => {
+        renderItem={({ item: t }: { item: (typeof list)[number] }) => {
           const on = picked.includes(t.id);
           const saved = savedIds.includes(t.id);
           return (
-            <Pressable onPress={() => toggle(t.id)} style={[styles.card, on && { borderColor: colors.navy }]}>
+            <Pressable onPress={() => toggle(t.id)} style={[styles.card, { marginHorizontal: 20 }, on && { borderColor: colors.navy }]}>
               <View style={[styles.radio, on && { backgroundColor: colors.navy, borderColor: colors.navy }]}>
                 {on && <Ionicons name="checkmark" size={14} color="#fff" />}
               </View>
@@ -197,6 +200,21 @@ export default function CreateTaskScreen({ navigation, route }: any) {
           );
         }}
       />
+      {/* Rutin şeridi: kartlar yukarı kayıp gidince belirir (opaklık ve kayma kaydırmaya bağlı, yerel) */}
+      {showRoutines && (
+        <Animated.View pointerEvents={stripOn ? 'auto' : 'none'} style={[styles.strip, { opacity: stripOpacity, transform: [{ translateY: stripShift }] }]}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 20, alignItems: 'center' }}>
+            {plan.routines.map((r) => (
+              <Pressable key={r.id} onPress={() => navigation.navigate('Routine', { id: r.id })} style={[styles.routineMini, { backgroundColor: r.tint }]}
+                accessibilityRole="button" accessibilityLabel={`Hazır rutin: ${r.title}`}>
+                <Ionicons name={r.icon} size={15} color={colors.navy} />
+                <Text style={styles.routineMiniTitle} numberOfLines={1}>{r.title}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </Animated.View>
+      )}
+      </View>
 
       <View style={styles.bottom}>
         {picked.length > 0 && (
@@ -258,6 +276,9 @@ const styles = StyleSheet.create({
   routine: { width: 140, height: 104, borderRadius: radius.md, padding: 12, gap: 4, justifyContent: 'space-between' },
   routineTitle: { fontSize: 14, fontWeight: '700', color: colors.navy },
   routineSub: { fontSize: 11, color: '#4A5165' },
+  strip: { position: 'absolute', left: 0, right: 0, top: 0, height: 50, justifyContent: 'center', backgroundColor: colors.bg,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },
+  forYou: { fontSize: 10, fontWeight: '800', color: colors.navy, backgroundColor: 'rgba(255,255,255,0.75)', borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2, overflow: 'hidden' },
   routineMini: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, borderRadius: radius.pill, paddingHorizontal: 12 },
   routineMiniTitle: { fontSize: 13, fontWeight: '700', color: colors.navy },
   card: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: radius.md, padding: 14, borderWidth: 1.5, borderColor: 'transparent' },
@@ -268,3 +289,5 @@ const styles = StyleSheet.create({
   cta: { height: 52, borderRadius: radius.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
   ctaText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });
+
+const Gap = () => <View style={{ height: 10 }} />;

@@ -7,6 +7,7 @@ import { LegalDoc, legalAccept, legalPending } from './lib/legal';
 import { LegalTextView } from './components/LegalText';
 import { track } from './lib/track';
 import { MODAL_GAP } from './lib/modal';
+import { genitive } from './lib/tr';
 
 // Veli onayı (hukuk/50 §1.3): Pofi Adası'nı bağlamadan önce (giriş kodu ya da QR gösterilmeden) GameApp koşulları
 // veli tarafından çocuk adına kabul edilir; aydınlatma kutusuz satır. Sunucuda işlev yoksa ya da onay güncelse hemen geçer.
@@ -72,7 +73,8 @@ function ChildConsent({ visible, name, docs, onDone, onDismiss }: {
         <View style={styles.card} accessibilityViewIsModal>
           <View style={styles.icon}><Ionicons name="shield-checkmark-outline" size={30} color={colors.navy} /></View>
           <Text style={styles.title} accessibilityRole="header">Pofi Adası'nı bağlamadan önce</Text>
-          <Text style={styles.text}>Pofi Adası'nda reklam, satın alma ve izleme aracı yok. {name} yalnız ailesiyle yazışır; oyun ondan e-posta, konum, fotoğraf ya da ses almaz.</Text>
+          {/* "izleme aracı" = üçüncü taraf reklam/analiz takibi; oyunun aileye raporladığı ilerleme ayrı (hukuk/50 §1.3, 28 Ekim) */}
+          <Text style={styles.text}>Pofi Adası'nda reklam, satın alma ve dışarıdan izleme aracı (reklam ya da analiz takibi) yok. {genitive(name)} oyundaki ilerlemesi yalnız ailesine, izin verirsen uzmanına da gösterilir. Oyun ondan e-posta, konum, fotoğraf ya da ses almaz.</Text>
           <Pressable onPress={() => setOn(!on)} style={styles.row} accessibilityRole="checkbox" accessibilityState={{ checked: on }}>
             <Ionicons name={on ? 'checkbox' : 'square-outline'} size={22} color={colors.navy} />
             <Text style={[styles.text, { flex: 1, textAlign: 'left' }]}>

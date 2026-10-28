@@ -16,7 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import TrialBanner from '../components/TrialBanner';
 import PendingInviteBanner from '../components/PendingInviteBanner';
 import { useBilling } from '../billing';
-import { routines } from '../data/routines';
+import { usePlan } from '../lib/plan';
 import { useParentTasks, doneKey, ParentAssign, Member } from '../parentTasks';
 import { difficultyMeta } from '../theme';
 
@@ -36,6 +36,7 @@ export default function TasksScreen({ navigation }: any) {
   const pt = useParentTasks();
   // Ebeveyn kendini her zaman görür (görevi olmasa da): kendine görev atayabileceğini fark etsin (kullanıcı geri bildirimi 27 Ekim 2026)
   const showMe = pt.ready && !!pt.me;
+  const plan = usePlan(); // tanışma yanıtlarına göre rutin sırası (lib/plan.ts)
   // Uzmandan bekleyen görev önerisi varsa üstte kısa bir bildirim
   const [suggested, setSuggested] = useState(0);
   const [clinicOpen, setClinicOpen] = useState(false);
@@ -189,10 +190,11 @@ export default function TasksScreen({ navigation }: any) {
       <View style={{ height: 50, justifyContent: 'center', marginTop: 4 }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8, alignItems: 'center' }}>
           <Chip label="Tümü" active={childFilter === 'all'} onPress={() => setChildFilter('all')} />
+          {/* Aile üyesi (ben) önce, çocuklar ardından (geri bildirim 28 Ekim) */}
+          {showMe && <Chip label="Ben" avatar={parent.avatar} active={childFilter === 'me'} onPress={() => setChildFilter('me')} />}
           {children.map((c) => (
             <Chip key={c.id} label={c.name} avatar={c.avatar} active={childFilter === c.id} onPress={() => setChildFilter(c.id)} />
           ))}
-          {showMe && <Chip label="Ben" avatar={parent.avatar} active={childFilter === 'me'} onPress={() => setChildFilter('me')} />}
         </ScrollView>
       </View>
 
@@ -227,11 +229,12 @@ export default function TasksScreen({ navigation }: any) {
             <View style={styles.starter}>
               <Text style={{ fontSize: 16, fontWeight: '700', color: colors.navy }}>Bir rutinle başla</Text>
               <Text style={{ fontSize: 13, color: colors.muted }}>Birkaç görevi tek seferde ekle, sonra dilediğin gibi düzenle.</Text>
-              {routines.slice(0, 3).map((r) => (
+              {plan.routines.slice(0, 3).map((r) => (
                 <Pressable key={r.id} onPress={() => { if (allow('task')) navigation.navigate('Routine', { id: r.id }); }}
                   style={[styles.starterRow, { backgroundColor: r.tint }]} accessibilityRole="button">
                   <Ionicons name={r.icon} size={20} color={colors.navy} />
                   <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: colors.navy }}>{r.title}</Text>
+                  {plan.recommended === r.id && <Text style={styles.forYou}>Sana önerilen</Text>}
                   <Ionicons name="chevron-forward" size={16} color={colors.navy} />
                 </Pressable>
               ))}
@@ -370,8 +373,9 @@ function TaskRow({ item, date, kids, completions, members, me, done, onDone, act
           </View>
           <View style={{ flexDirection: 'row' }}>
             {[
-              ...item.assigns.map((a) => ({ key: a.childId, avatar: kids.find((k) => k.id === a.childId)?.avatar, ok: false })),
+              // Ebeveynler önce, çocuklar ardından (Görevler'deki süzgeç sırasıyla aynı)
               ...item.parents.map((x) => ({ key: x.userId, avatar: members.find((m) => m.id === x.userId)?.avatar, ok: !!done[doneKey(t.id, x.userId, date)] })),
+              ...item.assigns.map((a) => ({ key: a.childId, avatar: kids.find((k) => k.id === a.childId)?.avatar, ok: false })),
             ].filter((x) => x.avatar).slice(0, 4).map((x, i) => (
               <View key={x.key} style={{ marginLeft: i === 0 ? 0 : -10 }}>
                 <Avatar id={x.avatar!} size={28} />
@@ -420,7 +424,8 @@ function Chip({ label, active, onPress, avatar }: { label: string; active: boole
 
 const styles = StyleSheet.create({
   starter: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 16, gap: 10, marginTop: 12 },
-  starterRow: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: radius.md, paddingHorizontal: 14, height: 48 },
+forYou: { fontSize: 11, fontWeight: '700', color: colors.navy, backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, overflow: 'hidden' },
+    starterRow: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: radius.md, paddingHorizontal: 14, height: 48 },
   suggest: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 20, marginBottom: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.md, backgroundColor: '#FFF6DE' },
   safe: { flex: 1, backgroundColor: colors.bg },
   header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 10 },

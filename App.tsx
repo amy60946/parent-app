@@ -29,6 +29,7 @@ import KvkkScreen from './src/screens/KvkkScreen';
 import DeleteAccountScreen from './src/screens/DeleteAccountScreen';
 import LegalTextScreen from './src/screens/LegalTextScreen';
 import { afterModal, SCREEN_MODAL_GAP } from './src/lib/modal';
+import { resetPlan } from './src/lib/plan';
 import { acceptSignupConsent, legalPending } from './src/lib/legal';
 import ChatScreen from './src/screens/ChatScreen';
 import NotificationsScreen, { openNotification } from './src/screens/NotificationsScreen';
@@ -150,6 +151,7 @@ function Main() {
   const finishSetup = React.useCallback(async (how: SetupEnd) => {
     try { await completeSetup(); } catch (e) { Alert.alert('Kaydedilemedi', (e as Error).message); return; }
     await takeJustSignedUp(); // kurulum bitti: "Kodun var mı?" artık gösterilmez
+    resetPlan(); // tanışma yanıtları kişisel plana yeniden okunur
     markOnboardingSeen();
     track('setup.done', { how });
     setSetup('done');
@@ -277,7 +279,7 @@ function Main() {
       <Stack.Screen name="CarePlan" component={CarePlanScreen} />
     </Stack.Navigator>
     <CodeStep visible={codeStep} onResult={onCode} onSkip={() => { setCodeStep(false); afterModal(() => setGuide('full')); }} />
-    <Onboarding visible={!!guide} steps={guide === 'clinic' ? [1, 2, 3] : guide === 'short' ? [2, 3] : undefined} onClose={endGuide} />
+    <Onboarding visible={!!guide} steps={guide === 'clinic' ? [1, 2, 3, 4] : guide === 'short' ? [2, 3, 4] : undefined} onClose={endGuide} />
     <PushAsk visible={pushAsk} onDone={() => setPushAsk(false)} />
     </SetupCtx.Provider>
     </BillingProvider>

@@ -57,7 +57,7 @@ export default function ReviewScreen() {
       <View style={{ alignItems: 'flex-end', paddingHorizontal: 20, paddingTop: 4 }}>
         <NotificationBell />
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ padding: 20, gap: 16 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }} contentContainerStyle={{ padding: 20, gap: 16 }}>
         <Pressable onPress={() => setFilter('all')} style={{ alignItems: 'center', gap: 4 }}>
           <View style={[styles.all, filter === 'all' && { borderWidth: 2, borderColor: colors.navy }]}>
             <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Tümü</Text>

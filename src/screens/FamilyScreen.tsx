@@ -47,7 +47,8 @@ export default function FamilyScreen({ onLogout }: { onLogout?: () => void }) {
         <NotificationBell />
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 14, gap: 16, alignItems: 'flex-start' }}>
+      {/* Avatar satırı ve sekmeler ezilmez (flexShrink 0): Hesap'taki uzun liste iOS'ta satırı küçültüp üstüne çıkıyordu (geri bildirim 28 Ekim) */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }} contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 14, gap: 16, alignItems: 'flex-start' }}>
         <Person label={parent.nickname || 'Ben'} avatar={parent.avatar} active={who === 'me'} onPress={() => setWho('me')} />
         {children.map((c) => (
           <Person key={c.id} label={c.name} avatar={c.avatar} active={who === c.id} onPress={() => setWho(c.id)} />
@@ -645,7 +646,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   dot: { position: 'absolute', right: 1, top: 0, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.gold },
   plus: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
-  tabs: { flexDirection: 'row', justifyContent: 'center', gap: 36, paddingVertical: 4 },
+  tabs: { flexDirection: 'row', justifyContent: 'center', gap: 36, paddingVertical: 4, flexShrink: 0 },
   h: { fontSize: 16, fontWeight: '700', color: colors.navy },
   cap: { fontSize: 12, color: colors.muted },
   input: { letterSpacing: 0, backgroundColor: '#F3F4F8', borderRadius: radius.sm, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colors.navy, marginTop: 4 },

@@ -9,8 +9,8 @@ export const HEALTH_CONSENT_TEXT = 'Çocuğumun tanısı ve ilaç kullanımı ha
 
 export type Option = { key: string; label: string; exclusive?: boolean };
 export type Step =
-  | { kind: 'intro'; icon: string; title: string; text: string }
-  | { kind: 'note'; icon: string; title: string; text: string }
+  | { kind: 'intro'; icon: string; title: string; text: string; points?: { icon: string; text: string }[]; foot?: string; cta?: string }
+  | { kind: 'note'; icon: string; title: string; text: string; source?: string } // source: verinin kaynağı (küçük yazılır)
   | { kind: 'question'; key: string; title: string; prefix?: string; multi?: boolean; health?: boolean; options: Option[];
       exclude?: string }; // exclude: bu sorunun yanıtları seçeneklerden çıkarılır (ana hedef, "başka neler" sorusunda tekrar edilmez)
 
@@ -32,8 +32,16 @@ const GOALS: Option[] = [
 
 // Kayıttan sonra her ebeveyne (aile/ebeveyn soruları, child_id boş)
 export const familySteps: Step[] = [
-  { kind: 'intro', icon: 'chatbubbles-outline', title: 'Seni ve aileni tanıyalım',
-    text: 'Birkaç kısa soru, iki üç dakika sürer. Yanıtların görev ve rutin önerilerini ailene göre ayarlamamıza yardım eder; hiçbiri not ya da puan değildir.' },
+  // Giriş: yanıtların ne için kullanıldığı (kullanıcı isteği 28 Ekim 2026; Joon "Parenting Stress Questionnaire" ekranından esinle).
+  // Maddeler gerçekten yapılanlar: src/lib/plan.ts (rutin sırası, yaş süzgeci).
+  { kind: 'intro', icon: 'clipboard-outline', title: 'Ailene özel planı hazırlayalım',
+    text: 'Birkaç kısa soruyla aileni tanıyalım. Yanıtlarına göre:', cta: 'Başlayalım',
+    points: [
+      { icon: 'sparkles-outline', text: 'Hedefine uyan hazır rutinleri öne çıkarırız' },
+      { icon: 'options-outline', text: 'Görev önerilerini çocuğunun yaşına göre süzeriz' },
+      { icon: 'shield-checkmark-outline', text: 'Yanıtların tanı, not ya da puan değildir; yalnız ailen için kullanılır' },
+    ],
+    foot: 'Yaklaşık 3 dakika' },
   { kind: 'question', key: 'main_goal', title: 'Şu sıralar en çok neye ihtiyacın var?', options: GOALS },
   { kind: 'question', key: 'other_goals', title: 'Bunların yanında başka neler önemli?', multi: true, exclude: 'main_goal',
     options: [...GOALS, { key: 'other', label: 'Başka bir şey' }] },
@@ -46,17 +54,20 @@ export const familySteps: Step[] = [
     { key: 'tiktok', label: 'TikTok' },
     { key: 'other', label: 'Diğer' },
   ] },
-  { kind: 'intro', icon: 'clipboard-outline', title: 'Ailenin temposu', text: 'Üç kısa soru, evdeki günlük akışı anlamamıza ve önerileri ailene göre ayarlamamıza yardım eder.' },
+  { kind: 'intro', icon: 'clipboard-outline', title: 'Ailenin temposu', text: 'Üç kısa soru, evdeki günlük akışı anlamamıza ve önerileri ailene göre kişiselleştirmemize yardım eder.' },
   { kind: 'question', key: 'task_conflict_freq', title: 'Görevler ve ev işleri yüzünden ne sıklıkla tartışma çıkıyor?', options: FREQ },
   { kind: 'question', key: 'reminder_freq', title: 'Bir şeyi yapması için çocuğuna ne sıklıkla hatırlatman gerekiyor?', options: FREQ },
-  { kind: 'note', icon: 'leaf-outline', title: 'Bunu yaşayan tek ebeveyn sen değilsin', text: 'Hatırlatmak çoğu evin gündelik hâli. Bu yükü birlikte hafifletmek için buradayız.' },
+  // Veri bazlı tek cümle (kullanıcı isteği 28 Ekim 2026). Kaynak: Pew Research Center, "Parenting in America Today" (24 Ocak 2023;
+  // ABD, 3.757 ebeveyn, Eylül–Ekim 2022): %62 ebeveynliği beklediğinden en az biraz daha zor buluyor.
+  { kind: 'note', icon: 'leaf-outline', title: 'Ebeveynlerin %62\'si ebeveynliği beklediğinden zor buluyor',
+    text: 'Yalnız değilsin. Bu yükü birlikte hafifletelim.', source: 'Pew Research Center, 2023 · 3.757 ebeveyn' },
   { kind: 'question', key: 'prompt_conflict_freq', title: 'Hatırlatmak ne sıklıkla gerginliğe ya da öfke patlamasına dönüşüyor?', options: FREQ },
 ];
 
 // Çocuğu ekleyen ebeveyne, her çocuk için (child_id dolu)
 export const childSteps = (name: string): Step[] => [
   { kind: 'intro', icon: 'clipboard-outline', title: `${name} hakkında birkaç soru`,
-    text: `Yanıtların önerileri ${name} için ayarlamamıza yardım eder. İstersen bir soruyu atlayabilirsin.` },
+    text: `Yanıtların önerileri ${name} için kişiselleştirmemize yardım eder. İstersen bir soruyu atlayabilirsin.` },
   { kind: 'question', key: 'child_routine', title: `${name} için oturmuş bir günlük düzen var mı?`, options: [
     { key: 'yes', label: 'Evet' },
     { key: 'struggle', label: 'Var ama sürdürmekte zorlanıyoruz' },
