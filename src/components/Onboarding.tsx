@@ -141,7 +141,7 @@ function Person({ x, id, label, labelColor = colors.navy }: { x: number; id: str
 
 // Örnek aile: ebeveyn Okti anne, çocuk Nazlı (görseller uygulamadakiyle aynı)
 const PARENT_FACE = 'okti_anne_1';
-const CHILD_FACE = 'flamingo';
+const CHILD_FACE = 'okti_kiz_4';
 
 // Uygulamadaki gibi ortalı sekmeler; hide verilen sekmenin yeri boş kalır (Ring üstüne çizer).
 function Segments({ active, hide }: { active?: number; hide?: number }) {

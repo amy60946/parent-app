@@ -12,7 +12,7 @@ import CodeEntry, { CodeResult } from '../components/CodeEntry';
 import { useStore } from '../store';
 import { useAuth } from '../lib/auth';
 import { track } from '../lib/track';
-import { childAvatars, parentAvatarId } from '../data/avatars';
+import { defaultChildAvatar, parentAvatarId } from '../data/avatars';
 import ParentAvatarPicker from '../components/ParentAvatarPicker';
 import { HEALTH_CONSENT_TEXT, Step, childSteps, familySteps, relateSteps } from '../data/intake';
 import { myAnswers, saveAnswer } from '../lib/intake';
@@ -314,7 +314,10 @@ function ChildForm({ first, onSaved, onBack }: { first: boolean; onSaved: (id: s
   const [name, setName] = useState('');
   const [gender, setGender] = useState<'kız' | 'erkek' | undefined>();
   const [birthday, setBirthday] = useState<string | undefined>();
-  const [avatar, setAvatar] = useState(childAvatars[1].id);
+  const [avatar, setAvatarState] = useState(defaultChildAvatar());
+  const touched = useRef(false); // avatar elle seçilmediyse cinsiyet seçilince o cinsiyetin ilk Okti'si gelir
+  const setAvatar = (a: string) => { touched.current = true; setAvatarState(a); };
+  const pickGender = (g: 'kız' | 'erkek' | undefined) => { setGender(g); if (!touched.current && !photo) setAvatarState(defaultChildAvatar(g)); };
   const [busy, setBusy] = useState(false);
   const [picking, setPicking] = useState(false); // doğum günü seçicisi açıkken Kaydet gizli, seçici görünür kaydırılır
   const kb = useKeyboardHeight(); // klavye açıkken de Kaydet gizli: klavyenin üstüne binip formu kapatmasın (geri bildirim 28 Ekim)
@@ -346,7 +349,7 @@ function ChildForm({ first, onSaved, onBack }: { first: boolean; onSaved: (id: s
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {([['kız', 'Kız'], ['erkek', 'Erkek']] as const).map(([k, l]) => (
-            <Pressable key={k} onPress={() => setGender(gender === k ? undefined : k)} style={[styles.chip, gender === k && styles.chipOn]}
+            <Pressable key={k} onPress={() => pickGender(gender === k ? undefined : k)} style={[styles.chip, gender === k && styles.chipOn]}
               accessibilityState={{ selected: gender === k }}>
               <Text style={[styles.chipText, gender === k && { color: '#fff' }]}>{l}</Text>
             </Pressable>
@@ -363,7 +366,7 @@ function ChildForm({ first, onSaved, onBack }: { first: boolean; onSaved: (id: s
         <View>
           <Text style={styles.label}>Avatar: fotoğraflarından seç ya da bir simge</Text>
           <View style={{ paddingVertical: 4 }}>
-            <ChildAvatarPicker avatar={avatar} photo={photo} onAvatar={setAvatar} onPhoto={setPhoto} />
+            <ChildAvatarPicker avatar={avatar} photo={photo} onAvatar={setAvatar} onPhoto={setPhoto} gender={gender} />
           </View>
         </View>
       </ScrollView>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Alert, StyleSheet, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import NotificationBell from '../components/NotificationBell';
@@ -16,7 +16,7 @@ import Info, { InfoTitle } from '../components/Info';
 import CodeEntry, { CodeResult } from '../components/CodeEntry';
 import ClinicShareSheet from '../components/ClinicShare';
 import { messagePreview } from './ChatScreen';
-import { childAvatars, parentAvatarId } from '../data/avatars';
+import { defaultChildAvatar, parentAvatarId } from '../data/avatars';
 import ParentAvatarPicker from '../components/ParentAvatarPicker';
 import { AgeBand, ageBands, ageBandLabel, suggestAgeBand } from '../data/ageBands';
 import { useStore } from '../store';
@@ -230,7 +230,7 @@ function ChildInfo({ id }: { id: string }) {
         {edit ? (
           <View style={{ gap: 14 }}>
             <Text style={styles.cap}>Avatar: fotoğraflarından seç ya da bir simge</Text>
-            <ChildAvatarPicker avatar={draft.avatar} photo={draft.photo}
+            <ChildAvatarPicker avatar={draft.avatar} photo={draft.photo} gender={c.gender}
               onAvatar={(a) => setDraft((d) => ({ ...d, avatar: a }))} onPhoto={(p) => setDraft((d) => ({ ...d, photo: p }))} />
             <Field label="İsim" value={draft.name} onChange={(v) => setDraft((d) => ({ ...d, name: v }))} />
             <EditButtons onCancel={() => setEdit(false)} onSave={saveEdit} busy={saving} disabled={!draft.name.trim()} />
@@ -498,7 +498,9 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
   const [gender, setGender] = useState<'kız' | 'erkek'>('kız');
   const [birthday, setBirthday] = useState<string | undefined>();
   const [band, setBand] = useState<AgeBand | null>(null); // null: otomatik
-  const [avatar, setAvatar] = useState(childAvatars[1].id);
+  const [avatar, setAvatarState] = useState(defaultChildAvatar('kız'));
+  const touched = useRef(false); // avatar elle seçilmediyse cinsiyet değişince o cinsiyetin ilk Okti'si gelir
+  const setAvatar = (a: string) => { touched.current = true; setAvatarState(a); };
   const [code, setCode] = useState<IssuedCode | undefined>();
   const [busy, setBusy] = useState(false);
   const invite = async () => {
@@ -508,7 +510,8 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
     finally { setBusy(false); }
   };
 
-  const close = () => { setName(''); setBirthday(undefined); setBand('A'); setCode(undefined); setKind('child'); setPhoto(null); onClose(); };
+  const close = () => { setName(''); setBirthday(undefined); setBand('A'); setCode(undefined); setKind('child'); setPhoto(null);
+    setGender('kız'); setAvatarState(defaultChildAvatar('kız')); touched.current = false; onClose(); };
 
   // Aynı ad uyarısı (akislar.md 10 adım 6c): uzmanın bekleyen davetinde ya da ailede bu adda çocuk varsa önce sor
   const save = async () => {
@@ -563,11 +566,12 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
       {kind === 'child' ? (
         <>
           <Text style={styles.cap}>Avatar</Text>
-          <ChildAvatarPicker avatar={avatar} photo={photo} onAvatar={setAvatar} onPhoto={setPhoto} />
+          <ChildAvatarPicker avatar={avatar} photo={photo} onAvatar={setAvatar} onPhoto={setPhoto} gender={gender} />
           <Field label="İsim" value={name} onChange={setName} placeholder="Çocuğunun adı" />
           <View>
             <Text style={[styles.cap, { marginBottom: 6 }]}>Cinsiyet</Text>
-            <Segmented options={[{ id: 'kız', label: 'Kız' }, { id: 'erkek', label: 'Erkek' }]} value={gender} onChange={setGender} />
+            <Segmented options={[{ id: 'kız', label: 'Kız' }, { id: 'erkek', label: 'Erkek' }]} value={gender}
+              onChange={(g) => { setGender(g); if (!touched.current && !photo) setAvatarState(defaultChildAvatar(g)); }} />
           </View>
           <View>
             <Text style={[styles.cap, { marginBottom: 6 }]}>Doğum günü (isteğe bağlı)</Text>

@@ -17,10 +17,13 @@ export async function pickChildPhoto(): Promise<LocalPhoto | null> {
   return { uri: r.assets[0].uri, mime: r.assets[0].mimeType ?? undefined };
 }
 
-export default function ChildAvatarPicker({ avatar, photo, onAvatar, onPhoto, size = 48 }: {
+// gender verilirse o cinsiyetin Okti'leri önce gelir (12 Okti: 6 kız, 6 erkek)
+export default function ChildAvatarPicker({ avatar, photo, onAvatar, onPhoto, size = 48, gender }: {
   avatar: string; photo: LocalPhoto | null; onAvatar: (id: string) => void; onPhoto: (p: LocalPhoto | null) => void; size?: number;
+  gender?: 'kız' | 'erkek';
 }) {
   const savedPhoto = !photo && isPhoto(avatar);
+  const list = gender === 'erkek' ? [...childAvatars.slice(6), ...childAvatars.slice(0, 6)] : childAvatars;
   const pick = async () => { const p = await pickChildPhoto(); if (p) onPhoto(p); };
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
@@ -30,7 +33,7 @@ export default function ChildAvatarPicker({ avatar, photo, onAvatar, onPhoto, si
           : savedPhoto ? <Avatar id={avatar} size={size - 4} />
           : <Ionicons name="image-outline" size={22} color={colors.navy} />}
       </Pressable>
-      {childAvatars.map((a) => (
+      {list.map((a) => (
         <Pressable key={a.id} onPress={() => { onAvatar(a.id); onPhoto(null); }} accessibilityLabel={a.name}
           accessibilityState={{ selected: !photo && avatar === a.id }}>
           <Avatar id={a.id} size={size} ring={!photo && avatar === a.id} />

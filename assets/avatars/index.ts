@@ -4,20 +4,19 @@
 // Satır açılınca src/data/avatars.ts emoji yerine bu görseli kullanır.
 // Not: require yolu sabit yazılmalı; olmayan bir dosyayı açmak uygulama derlemesini bozar.
 export const avatarImages: Record<string, number | undefined> = {
-  // Çocuk
-  // marti: require('./marti.png'),
-  // kedi: require('./kedi.png'),
-  // sincap: require('./sincap.png'),
-  // kopek: require('./kopek.png'),
-  // kus: require('./kus.png'),
-  // caretta: require('./caretta.png'),
-  // 'boz-ayi': require('./boz-ayi.png'),
-  // kurt: require('./kurt.png'),
-  // keci: require('./keci.png'),
-  // flamingo: require('./flamingo.png'),
-  // fil: require('./fil.png'),
-  // zebra: require('./zebra.png'),
-  // at: require('./at.png'),
+  // Çocuk: Okti'nin çocuk hâli, 6 kız + 6 erkek (kullanıcı isteği 28 Ekim 2026; game-app art/child_avatars)
+  okti_kiz_1: require('./okti_kiz_1.jpg'),
+  okti_kiz_2: require('./okti_kiz_2.jpg'),
+  okti_kiz_3: require('./okti_kiz_3.jpg'),
+  okti_kiz_4: require('./okti_kiz_4.jpg'),
+  okti_kiz_5: require('./okti_kiz_5.jpg'),
+  okti_kiz_6: require('./okti_kiz_6.jpg'),
+  okti_erkek_1: require('./okti_erkek_1.jpg'),
+  okti_erkek_2: require('./okti_erkek_2.jpg'),
+  okti_erkek_3: require('./okti_erkek_3.jpg'),
+  okti_erkek_4: require('./okti_erkek_4.jpg'),
+  okti_erkek_5: require('./okti_erkek_5.jpg'),
+  okti_erkek_6: require('./okti_erkek_6.jpg'),
   // Ebeveyn: Okti anne/baba (kullanıcı seçimi 27 Ekim 2026; game-app art/parent_avatars, oyundaki Okti modelinden).
   // Kare, kendi pastel zeminli; yuvarlak kırpılır (avatars.ts full).
   okti_anne_1: require('./okti_anne_1.jpg'),

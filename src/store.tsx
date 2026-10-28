@@ -9,6 +9,7 @@ import { track } from './lib/track';
 import { readFileBytes } from './lib/files';
 import { TaskDayPart } from './data/dayParts';
 import { AgeBand, toAgeBand } from './data/ageBands';
+import { childAvatarId } from './data/avatars';
 import { toAppError } from './lib/errors';
 import { requestPremium } from './lib/billing';
 
@@ -147,7 +148,7 @@ type Row = Record<string, any>;
 const toChild = (r: Row): Child => ({
   id: r.id,
   name: r.name,
-  avatar: r.avatar,
+  avatar: childAvatarId(r.avatar, r.gender), // eski hayvan kimliği → Okti çocuğu (cinsiyete göre; veri değişmez)
   gender: r.gender ?? undefined,
   birthday: r.birthday ?? undefined,
   ageBand: toAgeBand(r.age_band),

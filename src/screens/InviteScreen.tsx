@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Alert, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,7 +11,7 @@ import Info from '../components/Info';
 import { SCOPE_FULL, SCOPE_SHORT, SHARE_WARNING, SHARE_WARNING_SHORT, historyConsent } from '../data/clinicTexts';
 import { useChildConsent } from '../legal';
 import { useStore, IssuedCode } from '../store';
-import { childAvatars } from '../data/avatars';
+import { childAvatars, defaultChildAvatar } from '../data/avatars';
 import { ageBands, AgeBand } from '../data/ageBands';
 import { hintOf } from '../lib/errors';
 import { requestPremium } from '../lib/billing';
@@ -33,7 +33,9 @@ export default function InviteScreen({ navigation, route }: any) {
   const [more, setMore] = useState(false);
   const [birthday, setBirthday] = useState<string | undefined>();
   const [gender, setGender] = useState<'kız' | 'erkek' | undefined>();
-  const [avatar, setAvatar] = useState('kedi');
+  const [avatar, setAvatarState] = useState(defaultChildAvatar());
+  const touched = useRef(false); // avatar elle seçilmediyse cinsiyet seçilince o cinsiyetin ilk Okti'si
+  const setAvatar = (a: string) => { touched.current = true; setAvatarState(a); };
   const [picked, setPicked] = useState<string[]>([]);
   const [history, setHistory] = useState(false); // açık rıza önceden işaretli olamaz (ortak hukuk/README.md sorun 1)
   const [agreed, setAgreed] = useState(false);
@@ -161,13 +163,14 @@ export default function InviteScreen({ navigation, route }: any) {
                     </View>
                     <View style={{ flexDirection: 'row', gap: 8 }}>
                       {(['kız', 'erkek'] as const).map((g) => (
-                        <Pressable key={g} onPress={() => setGender(gender === g ? undefined : g)} style={[styles.chip, gender === g && styles.chipOn]}>
+                        <Pressable key={g} onPress={() => { const v = gender === g ? undefined : g; setGender(v); if (!touched.current) setAvatarState(defaultChildAvatar(v)); }}
+                          style={[styles.chip, gender === g && styles.chipOn]}>
                           <Text style={[styles.chipText, gender === g && { color: '#fff' }]}>{g === 'kız' ? 'Kız' : 'Erkek'}</Text>
                         </Pressable>
                       ))}
                     </View>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-                      {childAvatars.map((a) => (
+                      {(gender === 'erkek' ? [...childAvatars.slice(6), ...childAvatars.slice(0, 6)] : childAvatars).map((a) => (
                         <Pressable key={a.id} onPress={() => setAvatar(a.id)} accessibilityLabel={a.name} accessibilityState={{ selected: avatar === a.id }}>
                           <Avatar id={a.id} size={46} ring={avatar === a.id} />
                         </Pressable>
