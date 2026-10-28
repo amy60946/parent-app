@@ -20,6 +20,14 @@ export async function myAnswers(userId: string, childId: string | null): Promise
   return Object.fromEntries((data ?? []).map((r: any) => [r.question_key, r.answer as string[]]));
 }
 
+// Hangi tanışma soruları yanıtlanmış: aile (child_id boş) ve yanıtı olan çocuklar. Okunamazsa "eksik yok" sayılır.
+export async function intakeStatus(userId: string): Promise<{ family: boolean; children: string[] }> {
+  const { data, error } = await supabase.from('intake_answers').select('child_id').eq('user_id', userId);
+  if (error) return { family: true, children: [] };
+  const rows = (data ?? []) as { child_id: string | null }[];
+  return { family: rows.some((r) => !r.child_id), children: [...new Set(rows.map((r) => r.child_id).filter((x): x is string => !!x))] };
+}
+
 // İlk kurulum bitti mi? Sunucuda alan yoksa (öneri uygulanmadı) bitmiş sayılır: bugünkü akış sürer.
 export async function setupDone(userId: string): Promise<boolean> {
   const { data, error } = await supabase.from('profiles').select('setup_completed_at').eq('id', userId).maybeSingle();

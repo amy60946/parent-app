@@ -12,16 +12,16 @@ const icon: Record<string, keyof typeof Ionicons.glyphMap> = {
   task_done: 'checkmark-circle-outline', task_declined: 'close-circle-outline', message: 'mail-outline',
   clinic_suggestion: 'medkit-outline', clinic_revoked: 'medkit-outline', device_linked: 'phone-portrait-outline',
   parent_joined: 'person-add-outline', reward_request: 'gift-outline', reward_given: 'gift-outline',
-  reward_decided: 'gift-outline', stones_deducted: 'sunny-outline',
+  reward_decided: 'gift-outline', stones_deducted: 'sunny-outline', guest_pass_used: 'gift-outline', care_plan_shared: 'clipboard-outline',
 };
 
 // Bildirime dokununca ilgili ekran. Gösterilecek bir ekran yoksa hiçbir şey olmaz (false döner):
 // yalnız bilgi veren bildirimler (eşin katılması, cihaz bağlanması, paylaşımın kapanması, görevin yapılamaması) ekran değiştirmez.
 export function notificationTarget(n: Pick<AppNotification, 'kind' | 'data'>): [string, object?] | null {
   const childId = n.data?.child_id;
-  if (n.kind === 'task_done') return ['Tabs', { screen: 'İnceleme' }];
+  if (n.kind === 'task_done') return ['Review'];
   if (n.kind === 'message' && childId) return ['Chat', { childId }];
-  if (n.kind === 'clinic_suggestion') return ['Tabs', { screen: 'Görevler' }];
+  if (n.kind === 'clinic_suggestion') return ['Tabs', { screen: 'Uzmanım' }];
   if (n.kind === 'reward_request') return ['Rewards', { childId }];
   // Uzmanın takip planı (akislar.md 12): tek paylaşım ya da davetle açılan ilk paylaşım
   const linkId = n.data?.link_id ?? (Array.isArray(n.data?.link_ids) ? n.data.link_ids[0] : undefined);

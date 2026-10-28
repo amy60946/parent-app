@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import Info from '../components/Info';
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert } from 'react-native';
-import NotificationBell from '../components/NotificationBell';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
-import { Avatar } from '../components/ui';
+import { Avatar, IconButton } from '../components/ui';
 import Sheet from '../components/Sheet';
 import Dialog from '../components/Dialog';
 import PushAsk from '../components/PushAsk';
@@ -23,9 +22,10 @@ const STONES = { easy: 1, medium: 2, hard: 3 } as const;
 const MAX_STONES = 6;
 const NOTE_MAX = 140;
 
-export default function ReviewScreen() {
+// Ben › Onay bekleyen (kullanıcı isteği 28 Ekim 2026: İnceleme sekmesi Ben'in içine alındı); bildirimden de açılır
+export default function ReviewScreen({ navigation, route }: any) {
   const { tasks, children, completions, review } = useStore();
-  const [filter, setFilter] = useState<string | 'all'>('all');
+  const [filter, setFilter] = useState<string | 'all'>(route?.params?.childId ?? 'all');
   const [open, setOpen] = useState<Item | null>(null); // ayrıntısı açık tamamlama
   const [ask, setAsk] = useState<Item | null>(null); // bildirim ön sorusu, ardından ayrıntı açılır
   const [party, setParty] = useState<string | null>(null); // ilk onay kutlaması (çocuğun adı)
@@ -54,10 +54,12 @@ export default function ReviewScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={{ alignItems: 'flex-end', paddingHorizontal: 20, paddingTop: 4 }}>
-        <NotificationBell />
+      <View style={styles.header}>
+        <IconButton name="chevron-back" label="Geri" onPress={() => navigation.goBack()} />
+        <Text style={styles.title} accessibilityRole="header">İnceleme</Text>
+        <Info title="İnceleme" text="Göreve dokun: motive etmek ne kadar zordu, Güneş Taşı, not; ardından Onayla, Tekrar dene ya da Reddet. Sağdaki ✓ hızlı onaydır (taş zorluğa göre)." />
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }} contentContainerStyle={{ padding: 20, gap: 16 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, gap: 16 }}>
         <Pressable onPress={() => setFilter('all')} style={{ alignItems: 'center', gap: 4 }}>
           <View style={[styles.all, filter === 'all' && { borderWidth: 2, borderColor: colors.navy }]}>
             <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Tümü</Text>
@@ -71,11 +73,7 @@ export default function ReviewScreen() {
         ))}
       </ScrollView>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 20 }}>
-        <Text style={styles.title}>İnceleme</Text>
-        <Info title="İnceleme" text="Göreve dokun: motive etmek ne kadar zordu, Güneş Taşı, not; ardından Onayla, Tekrar dene ya da Reddet. Sağdaki ✓ hızlı onaydır (taş zorluğa göre)." />
-      </View>
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 10 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40, gap: 10 }}>
         {pending.length === 0 ? (
           <View style={styles.empty}>
             <Text style={{ color: colors.muted, textAlign: 'center', fontSize: 13 }}>
@@ -248,7 +246,8 @@ function ActionButton({ icon, label, color, onPress, disabled, dim }: {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   all: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 17, fontWeight: '700', color: colors.navy },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8 },
+  title: { fontSize: 20, fontWeight: '800', color: colors.navy },
   empty: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 24 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: radius.md, padding: 14 },
   btn: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#F1F2F6', alignItems: 'center', justifyContent: 'center' },

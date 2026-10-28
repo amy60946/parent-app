@@ -14,7 +14,6 @@ import { CodeBox } from '../components/CodeBox';
 import Onboarding from '../components/Onboarding';
 import Info, { InfoTitle } from '../components/Info';
 import CodeEntry, { CodeResult } from '../components/CodeEntry';
-import ClinicShareSheet from '../components/ClinicShare';
 import { messagePreview } from './ChatScreen';
 import { defaultChildAvatar, parentAvatarId } from '../data/avatars';
 import ParentAvatarPicker from '../components/ParentAvatarPicker';
@@ -25,6 +24,7 @@ import { formatTR, toISO, todayISO } from '../dates';
 import { useBilling } from '../billing';
 import { IssuedCode } from '../store';
 import { PendingInvite, pendingInvites } from '../lib/clinic';
+import { guestRedeemedText } from '../lib/guestPass';
 import { useParentTasks } from '../parentTasks';
 import { useChildConsent } from '../legal';
 import { balances } from '../lib/rewards';
@@ -404,6 +404,7 @@ function Account({ onLogout }: { onLogout?: () => void }) {
   const { access } = useBilling();
   const pick = (id: AccountRow) => (id === 'notifications' ? navigation.navigate('Notifications')
     : id === 'membership' ? navigation.navigate('Paywall')
+    : id === 'clinic' ? navigation.navigate('Uzmanım')
     : id === 'legal' ? navigation.navigate('LegalDocs')
     : id === 'kvkk' ? navigation.navigate('Kvkk') : setOpen(id));
   const memberText = !access ? '' : access.state === 'premium' ? (access.plan === 'yearly' ? 'Yıllık' : 'Aylık')
@@ -432,7 +433,6 @@ function Account({ onLogout }: { onLogout?: () => void }) {
       </Pressable>
       <ManageSheet visible={open === 'manage'} onClose={() => setOpen(null)} />
       <CodeSheet visible={open === 'join'} onClose={() => setOpen(null)} />
-      <ClinicShareSheet visible={open === 'clinic'} onClose={() => setOpen(null)} />
       <Onboarding visible={open === 'guide'} onClose={() => setOpen(null)} />
     </ScrollView>
   );
@@ -446,14 +446,15 @@ function CodeSheet({ visible, onClose }: { visible: boolean; onClose: () => void
     onClose();
     if (r.kind === 'invite') afterModal(() => navigation.navigate('Invite', { invite: r.invite }));
     else if (r.kind === 'family') Alert.alert('Aileye katıldın', 'Ailenin çocuklarını, görevlerini ve bildirimlerini artık görüyorsun.');
-    else Alert.alert('Bu daveti zaten kabul ettin', `${r.invite.clinician || r.invite.clinic} ile paylaşım Uzmanım bölümünde.`);
+    else if (r.kind === 'guest') Alert.alert('Hediye kartı kullanıldı', guestRedeemedText(r.trialEndsAt));
+    else Alert.alert('Bu daveti zaten kabul ettin', `${r.invite.clinician || r.invite.clinic} ile paylaşım Uzmanım sekmesinde.`);
   };
   return (
     <Sheet visible={visible} title="Kod gir" onClose={onClose}>
       <View style={{ gap: 14 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Text style={{ flex: 1, fontSize: 13, color: colors.muted }}>Uzmanından ya da eşinden aldığın 6 haneli kod</Text>
-          <Info title="Hangi kod?" text={'Uygulama kodun kimden geldiğini kendisi anlar.\n\n• Uzman kodu: uzmanın davet ekranı açılır; onaylarsan çocuğunun görevleri onunla paylaşılır.\n• Eşinin kodu: aynı aileye katılırsın. Eşin kodu Aile › + › Ebeveyn bölümünden üretir; kod 15 dakika geçerlidir.'} />
+          <Text style={{ flex: 1, fontSize: 13, color: colors.muted }}>Uzmanından ya da eşinden aldığın kod, hediye kartı</Text>
+          <Info title="Hangi kod?" text={'Uygulama kodun kimden geldiğini kendisi anlar.\n\n• Uzman kodu (6 karakter): uzmanın davet ekranı açılır; onaylarsan çocuğunun görevleri onunla paylaşılır.\n• Eşinin kodu (6 karakter): aynı aileye katılırsın. Eşin kodu Aile › + › Ebeveyn bölümünden üretir; kod 15 dakika geçerlidir.\n• Hediye kartı (8 karakter): başka bir ailenin hediye ettiği 30 günlük tam erişim. ParentApp\'e yeni başlayan ailelerde (ilk 7 gün) geçerlidir.'} />
         </View>
         <CodeEntry onResult={done} />
       </View>

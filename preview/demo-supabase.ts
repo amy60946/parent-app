@@ -762,7 +762,7 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
   const access = () => {
     const sub = db.family_subscriptions.find((x: Row) => x.family_id === fam?.id);
     const premium = sub?.plan === 'premium' && (!sub.period_end || sub.period_end > now());
-    const end = fam?.trial_started_at ? new Date(new Date(fam.trial_started_at).getTime() + cfg.trial_days * 864e5) : null;
+    const end = fam?.trial_started_at ? new Date(new Date(fam.trial_started_at).getTime() + (fam.trial_days ?? cfg.trial_days) * 864e5) : null;
     const state = premium ? 'premium' : !end ? 'pending' : end.getTime() > Date.now() ? 'trial' : 'expired';
     return {
       state, enforced: cfg.enforce, full: state !== 'expired' || !cfg.enforce, trial_ends_at: end?.toISOString() ?? null,
@@ -771,6 +771,28 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
       limits: { max_tasks: cfg.free_max_tasks, max_children: cfg.free_max_children },
     };
   };
+  // Misafir kartı (ortak proposed/20261028120000_guest_pass.sql)
+  if (name === 'create_guest_pass') {
+    db.guest_passes = db.guest_passes ?? [];
+    const g = db.guest_passes.find((x: Row) => x.family_id === fam?.id && !x.redeemed_at && x.expires_at > now());
+    if (g) return { data: { code: g.code, expires_at: g.expires_at, new: false }, error: null };
+    const row = { code: Array.from({ length: 8 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join(''), family_id: fam?.id,
+      created_by: uid, created_at: now(), expires_at: new Date(Date.now() + 60 * 864e5).toISOString(), redeemed_family: null, redeemed_at: null };
+    db.guest_passes.push(row);
+    save();
+    return { data: { code: row.code, expires_at: row.expires_at, new: true }, error: null };
+  }
+  if (name === 'redeem_guest_pass') {
+    const g = (db.guest_passes ?? []).find((x: Row) => x.code === String(args.p_code ?? '').trim().toUpperCase());
+    const e = !g ? 'not_found' : g.redeemed_at ? 'used' : g.expires_at <= now() ? 'expired' : g.family_id === fam?.id ? 'own'
+      : fam?.trial_days ? 'already' : fam?.trial_started_at && fam.trial_started_at < ago(7 * 1440) ? 'not_new' : null;
+    if (e) return { data: { ok: false, error: e }, error: null };
+    fam.trial_days = 30;
+    fam.trial_started_at = fam.trial_started_at ?? now();
+    Object.assign(g, { redeemed_family: fam.id, redeemed_at: now() });
+    save();
+    return { data: { ok: true, trial_ends_at: new Date(new Date(fam.trial_started_at).getTime() + 30 * 864e5).toISOString() }, error: null };
+  }
   const premiumErr = (what: string) => ({ data: null, error: { message: `Bu özellik Premium üyelikte: ${what}`, hint: 'premium_required', code: 'P0001' } });
   if (name === 'family_access') return { data: access(), error: null };
 

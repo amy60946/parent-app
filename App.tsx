@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React from 'react';
-import { View, ActivityIndicator, Alert, AppState } from 'react-native';
+import { Alert, AppState } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import './src/lib/webAlert';
 import { NavigationContainer, DefaultTheme, createNavigationContainerRef } from '@react-navigation/native';
@@ -16,6 +16,13 @@ import { AuthProvider, useAuth, takeJustSignedUp } from './src/lib/auth';
 import { colors } from './src/theme';
 import TasksScreen from './src/screens/TasksScreen';
 import ReviewScreen from './src/screens/ReviewScreen';
+import MeScreen from './src/screens/MeScreen';
+import CareScreen from './src/screens/CareScreen';
+import ClinicianScreen from './src/screens/ClinicianScreen';
+import GuestPassScreen from './src/screens/GuestPassScreen';
+import IntakeScreen from './src/screens/IntakeScreen';
+import Splash from './src/components/Splash';
+import { guestRedeemedText } from './src/lib/guestPass';
 import ProgressScreen from './src/screens/ProgressScreen';
 import FamilyScreen from './src/screens/FamilyScreen';
 import CreateTaskScreen from './src/screens/CreateTaskScreen';
@@ -66,9 +73,11 @@ const navRef = createNavigationContainerRef<any>();
 
 const navTheme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: colors.bg } };
 
+// Sekmeler (kullanıcı isteği 28 Ekim 2026, Joon "Me / Care" örneği): Ben (ana sayfa; İnceleme içinde) · Uzmanım · Görevler · Gelişim · Aile
 const icons: Record<string, [keyof typeof Ionicons.glyphMap, keyof typeof Ionicons.glyphMap]> = {
+  Ben: ['home-outline', 'home'],
+  Uzmanım: ['medkit-outline', 'medkit'],
   Görevler: ['list-outline', 'list'],
-  İnceleme: ['checkmark-circle-outline', 'checkmark-circle'],
   Gelişim: ['stats-chart-outline', 'stats-chart'],
   Aile: ['people-outline', 'people'],
 };
@@ -91,12 +100,13 @@ function Tabs() {
         ),
       })}
     >
-      <Tab.Screen name="Görevler" component={TasksScreen} />
       <Tab.Screen
-        name="İnceleme"
-        component={ReviewScreen}
+        name="Ben"
+        component={MeScreen}
         options={{ tabBarBadge: pending || undefined, tabBarBadgeStyle: { backgroundColor: colors.gold, color: colors.navy } }}
       />
+      <Tab.Screen name="Uzmanım" component={CareScreen} />
+      <Tab.Screen name="Görevler" component={TasksScreen} />
       <Tab.Screen name="Gelişim" component={ProgressScreen} />
       <Tab.Screen name="Aile" options={{ tabBarBadge: unread || undefined, tabBarBadgeStyle: { backgroundColor: colors.gold, color: colors.navy } }}>
         {() => <FamilyScreen onLogout={signOut} />}
@@ -105,13 +115,8 @@ function Tabs() {
   );
 }
 
-function Loading() {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
-      <ActivityIndicator color={colors.navy} />
-    </View>
-  );
-}
+// Yükleme: açılış ekranıyla aynı görünüm (yerel açılış görselinden fark edilmeden geçer)
+const Loading = Splash;
 
 function Main() {
   const { ready, children } = useStore();
@@ -189,7 +194,7 @@ function Main() {
         for (let i = 0; i < 20 && !navRef.isReady(); i++) await new Promise((res) => setTimeout(res, 150));
         if (r.kind === 'pending' && navRef.isReady()) { navRef.navigate('Invite', { invite: r.invite }); return true; }
         if (r.kind === 'done') {
-          Alert.alert('Bu daveti zaten kabul ettin', `${r.invite.clinician || r.invite.clinic} ile paylaşım Aile › Hesap › Uzmanım bölümünde.`);
+          Alert.alert('Bu daveti zaten kabul ettin', `${r.invite.clinician || r.invite.clinic} ile paylaşım Uzmanım sekmesinde.`);
         }
       } catch (e) {
         const hint = hintOf(e);
@@ -218,7 +223,7 @@ function Main() {
   React.useEffect(() => navRef.addListener('state', () => {
     // Kurulumdan sonra cihaz ekranı kapanınca kısa rehber: görev ver · onayla
     // Rehber modal ekran kapanma animasyonu bitince açılır: kapanırken açılan pencere iOS'ta dokunuşları kilitleyebilir
-    if (afterDevice.current && navRef.getCurrentRoute()?.name === 'Görevler') {
+    if (afterDevice.current && navRef.getCurrentRoute()?.name === 'Ben') {
       afterDevice.current = false;
       afterModal(() => setGuide('short'), SCREEN_MODAL_GAP);
       return;
@@ -237,8 +242,11 @@ function Main() {
     } else if (r.kind === 'family') {
       markOnboardingSeen();
       Alert.alert('Aileye katıldın', 'Ailenin çocuklarını, görevlerini ve bildirimlerini artık görüyorsun.');
+    } else if (r.kind === 'guest') {
+      Alert.alert('Hediye kartı kullanıldı', guestRedeemedText(r.trialEndsAt));
+      afterModal(() => setGuide('full'));
     } else {
-      Alert.alert('Bu daveti zaten kabul ettin', `${r.invite.clinician || r.invite.clinic} ile paylaşım Aile › Hesap › Uzmanım bölümünde.`);
+      Alert.alert('Bu daveti zaten kabul ettin', `${r.invite.clinician || r.invite.clinic} ile paylaşım Uzmanım sekmesinde.`);
       afterModal(() => setGuide('full'));
     }
   };
@@ -277,6 +285,10 @@ function Main() {
       <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="Invite" component={InviteScreen} options={{ presentation: 'modal', gestureEnabled: false }} />
       <Stack.Screen name="CarePlan" component={CarePlanScreen} />
+      <Stack.Screen name="Review" component={ReviewScreen} />
+      <Stack.Screen name="Clinician" component={ClinicianScreen} />
+      <Stack.Screen name="GuestPass" component={GuestPassScreen} options={{ presentation: 'modal' }} />
+      <Stack.Screen name="Intake" component={IntakeScreen} options={{ presentation: 'modal' }} />
     </Stack.Navigator>
     <CodeStep visible={codeStep} onResult={onCode} onSkip={() => { setCodeStep(false); afterModal(() => setGuide('full')); }} />
     <Onboarding visible={!!guide} steps={guide === 'clinic' ? [1, 2, 3, 4] : guide === 'short' ? [2, 3, 4] : undefined} onClose={endGuide} />

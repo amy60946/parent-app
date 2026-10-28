@@ -20,9 +20,9 @@ export default function CodeStep({ visible, onResult, onSkip }: {
             <View style={styles.icon}><Ionicons name="key-outline" size={30} color={colors.navy} /></View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Text style={styles.title} accessibilityRole="header">Kodun var mı?</Text>
-              <Info title="Hangi kod?" text={'Uzmanın ClinicApp\'ten ya da eşin ParentApp\'ten 6 haneli bir kod gönderdiyse buraya yaz. Uygulama kodun kimden geldiğini kendisi anlar:\n\n• Uzman kodu: uzmanın davet ekranı açılır, onaylarsan çocuğunun görevleri onunla paylaşılır.\n• Eşinin kodu: aynı aileye katılırsın, çocuklar ve görevler ortak olur.\n\nKodun yoksa devam et; sonra Aile › Hesap › Kod gir bölümünden de yazabilirsin.'} />
+              <Info title="Hangi kod?" text={'Uzmanın ClinicApp\'ten ya da eşin ParentApp\'ten 6 haneli bir kod gönderdiyse buraya yaz. Uygulama kodun kimden geldiğini kendisi anlar:\n\n• Uzman kodu: uzmanın davet ekranı açılır, onaylarsan çocuğunun görevleri onunla paylaşılır.\n• Eşinin kodu: aynı aileye katılırsın, çocuklar ve görevler ortak olur.\n\nBir aile sana 8 karakterli hediye kartı gönderdiyse onu da buraya yaz: ParentApp 30 gün bütün özellikleriyle açılır.\n\nKodun yoksa devam et; sonra Aile › Hesap › Kod gir bölümünden de yazabilirsin.'} />
             </View>
-            <Text style={styles.sub}>Uzmanından ya da eşinden aldığın 6 haneli kod</Text>
+            <Text style={styles.sub}>Uzmanından ya da eşinden aldığın kod, hediye kartı</Text>
             <View style={{ alignSelf: 'stretch', marginTop: 8, gap: 10 }}>
               <CodeEntry onResult={onResult} />
               {/* Kodu olmayan çoğunluk: düğme Devam'ın hemen altında (kullanıcı geri bildirimi 27 Ekim 2026) */}

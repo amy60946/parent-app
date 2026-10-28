@@ -16,7 +16,8 @@ import { defaultChildAvatar, parentAvatarId } from '../data/avatars';
 import ParentAvatarPicker from '../components/ParentAvatarPicker';
 import { HEALTH_CONSENT_TEXT, Step, childSteps, familySteps, relateSteps } from '../data/intake';
 import { myAnswers, saveAnswer } from '../lib/intake';
-import { openInvite, pendingInvites } from '../lib/clinic';
+import { PendingInvite, openInvite, pendingInvites } from '../lib/clinic';
+import { guestRedeemedText } from '../lib/guestPass';
 import { clearPendingClinicInvite, getPendingClinicInvite } from '../lib/clinicInvite';
 import { hintOf } from '../lib/errors';
 import { useSetup } from '../setupContext';
@@ -25,23 +26,50 @@ import ChildAvatarPicker, { LocalPhoto } from '../components/ChildAvatarPicker';
 import { uploadChildPhoto } from '../lib/avatarPhoto';
 
 // İlk kurulum (kullanıcı kararları 27 Ekim 2026; ortak/sozlesme/akislar.md 16):
-// aile soruları → sıradaki (çocuğunu ekle / kodla katıl) → çocuk (uzman daveti ya da form) → çocuk soruları → çocukların
+// aile soruları → sıradaki (çocuğunu ekle / kodum var) → çocuk (uzman daveti ya da form) → çocuk soruları → çocukların
 // → hazırlanıyor → seni nasıl görsün → tanıdık mı ×3 → uygulama. Eşinin koduyla katılan çocuk adımlarını görmez.
-type Phase = 'family' | 'next' | 'join' | 'childForm' | 'child' | 'children' | 'loading' | 'nickname' | 'relate';
+// Uzman davetiyle (bağlantı ya da kayıttan önce yazılan kod) gelen aile önce "Uzman bağla"yı görür; bağlanınca tanışma
+// soruları atlanır, Ben'de "Tanışma sorularını tamamla" olarak kalır (kullanıcı isteği 28 Ekim 2026, Joon örneği).
+type Phase = 'start' | 'family' | 'next' | 'join' | 'childForm' | 'child' | 'children' | 'loading' | 'nickname' | 'relate';
 
 export default function SetupScreen({ navigation, route }: any) {
   const { children } = useStore();
   const { finish } = useSetup();
-  const [phase, setPhase] = useState<Phase>(children.length ? 'children' : 'family');
+  const [phase, setPhase] = useState<Phase>(children.length ? 'children' : 'start');
   const [childId, setChildId] = useState<string | undefined>();
   const [joined, setJoined] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  // Davet ekranından dönüş: eklenen çocuğun soruları
+  // Başlangıç: bekleyen uzman daveti varsa "Uzman bağla" (kod hazır); kapatılırsa aile sorularıyla sürer
   useEffect(() => {
-    const id = route.params?.childId as string | undefined;
-    if (id) { setChildId(id); setPhase('child'); navigation.setParams({ childId: undefined }); }
-  }, [route.params?.childId]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (phase !== 'start') return;
+    (async () => {
+      let invite: PendingInvite | undefined;
+      try {
+        const key = await getPendingClinicInvite();
+        if (key) {
+          try {
+            const r = await openInvite(key);
+            if (r.kind === 'pending') invite = r.invite;
+          } catch (e) {
+            Alert.alert('Uzman daveti açılamadı', `${(e as Error).message}\n\nKurulumdan sonra Uzmanım sekmesinden kodla bağlanabilirsin.`);
+          }
+          await clearPendingClinicInvite();
+        }
+        if (!invite) invite = (await pendingInvites().catch(() => []))[0];
+      } finally {
+        setPhase('family');
+        if (invite) navigation.navigate('Invite', { invite, fromSetup: true });
+      }
+    })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // "Uzman bağla"dan dönüş: bağlandıysa sorular sonraya (Ben), kurulum "seni nasıl görsün" ile sürer
+  useEffect(() => {
+    if (!route.params?.linked) return;
+    navigation.setParams({ linked: undefined });
+    setPhase('nickname');
+  }, [route.params?.linked]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // "Çocuğunu ekle": uzman daveti bekliyorsa önerisiyle davet ekranı, yoksa form
   const addChild = async () => {
@@ -69,12 +97,14 @@ export default function SetupScreen({ navigation, route }: any) {
   const onCode = (r: CodeResult) => {
     if (r.kind === 'invite') return navigation.navigate('Invite', { invite: r.invite, fromSetup: true });
     if (r.kind === 'family') { setJoined(true); setPhase('nickname'); return; }
-    Alert.alert('Bu daveti zaten kabul ettin', 'Paylaşım Aile › Hesap › Uzmanım bölümünde.');
+    if (r.kind === 'guest') { Alert.alert('Hediye kartı kullanıldı', guestRedeemedText(r.trialEndsAt)); setPhase('next'); return; }
+    Alert.alert('Bu daveti zaten kabul ettin', 'Paylaşım Uzmanım sekmesinde.');
   };
 
   const child = children.find((c) => c.id === childId);
   const done = () => finish(joined ? 'joined' : 'children');
 
+  if (phase === 'start') return <Shell><ActivityIndicator color={colors.navy} style={{ flex: 1 }} /></Shell>;
   if (phase === 'family') return <Questionnaire key="family" steps={familySteps} childId={null} onDone={() => setPhase('next')} />;
   if (phase === 'child' && childId) {
     return <Questionnaire key={childId} steps={childSteps(child?.name ?? 'Çocuğun')} childId={childId} onDone={() => setPhase('children')}
@@ -84,7 +114,7 @@ export default function SetupScreen({ navigation, route }: any) {
     return (
       <Center icon="people-outline" title="Şimdi aileni ekleyelim" text="Sonra başka çocuk da ekleyebilirsin."
         primary={{ label: 'Çocuğunu ekle', onPress: addChild, busy }}
-        secondary={{ label: 'Kodla aileye katıl', onPress: () => setPhase('join') }}
+        secondary={{ label: 'Kodum var', onPress: () => setPhase('join') }}
         onBack={() => setPhase('family')} />
     );
   }
@@ -94,9 +124,9 @@ export default function SetupScreen({ navigation, route }: any) {
         <View style={{ flex: 1, justifyContent: 'center', gap: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
             <Text style={styles.title}>Kodu yaz</Text>
-            <Info title="Hangi kod?" text={'Eşin ParentApp\'te Aile › + › Ebeveyn bölümünden 6 haneli bir kod üretir; bu kodla aynı aileye katılırsın, çocuklar ve görevler ortak olur. Uzmanından kod aldıysan onu da buraya yazabilirsin.'} />
+            <Info title="Hangi kod?" text={'Eşin ParentApp\'te Aile › + › Ebeveyn bölümünden 6 haneli bir kod üretir; bu kodla aynı aileye katılırsın, çocuklar ve görevler ortak olur. Uzmanından kod aldıysan onu da buraya yazabilirsin.\n\nBir aile sana 8 karakterli hediye kartı gönderdiyse onu yaz: ParentApp 30 gün bütün özellikleriyle açılır.'} />
           </View>
-          <Text style={[styles.text, { textAlign: 'center' }]}>Eşinden ya da uzmanından aldığın 6 haneli kod</Text>
+          <Text style={[styles.text, { textAlign: 'center' }]}>Eşinden ya da uzmanından aldığın kod, hediye kartı</Text>
           <CodeEntry onResult={onCode} autoFocus />
         </View>
       </Shell>
@@ -204,7 +234,7 @@ function Cta({ label, onPress, busy, disabled, ghost }: Btn & { ghost?: boolean 
 
 /* ---------- soru akışı ---------- */
 
-function Questionnaire({ steps, childId, onDone, onBackFirst }: {
+export function Questionnaire({ steps, childId, onDone, onBackFirst }: {
   steps: Step[]; childId: string | null; onDone: () => void; onBackFirst?: () => void;
 }) {
   const { session } = useAuth();

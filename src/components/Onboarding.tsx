@@ -13,6 +13,7 @@ import { useParentTasks } from '../parentTasks';
 // Tasarım 390×844 noktada çizildi; ekrana sığacak kadar ölçeklenir, alta (sekme çubuğuna) hizalanır.
 // 28 Ekim 2026 (kullanıcı isteği): son sürüme göre yeniden çizildi: Okti avatarları, Görevler'de Ben + hazır rutinler,
 // İnceleme'de ✓ ve ayrıntı sayfası, yeni adım "Sen de katıl" (ebeveyn görevi, Güneş Taşı, hediye dükkânı).
+// Aynı gün (Ben / Uzmanım sekmeleri): onay Ben › Onay bekleyen'den, uzman Uzmanım › Uzman bağla'dan.
 
 const KEY = 'onboarding-v1';
 const W = 390;
@@ -104,8 +105,11 @@ function Badge({ n, style }: { n: number; style: ViewStyle }) {
   );
 }
 
-const TAB_NAMES = ['Görevler', 'İnceleme', 'Gelişim', 'Aile'];
-const TAB_ICONS: (keyof typeof Ionicons.glyphMap)[] = ['list-outline', 'checkmark-circle-outline', 'stats-chart-outline', 'people-outline'];
+// Sekmeler (28 Ekim 2026): Ben · Uzmanım · Görevler · Gelişim · Aile; her biri W/5 = 78 nokta
+const TAB_NAMES = ['Ben', 'Uzmanım', 'Görevler', 'Gelişim', 'Aile'];
+const TAB_ICONS: (keyof typeof Ionicons.glyphMap)[] = ['home-outline', 'medkit-outline', 'list-outline', 'stats-chart-outline', 'people-outline'];
+const TAB_W = W / TAB_NAMES.length;
+const tabX = (i: number) => i * TAB_W + TAB_W / 2; // sekmenin ortası
 
 // Alttaki sekme çubuğu; vurgulanacak sekmenin yeri boş bırakılır (Ring onu karartmanın üstüne çizer).
 function TabBar({ hide, active }: { hide: number; active?: number }) {
@@ -120,9 +124,9 @@ function TabBar({ hide, active }: { hide: number; active?: number }) {
   );
 }
 
-function TabRing({ index, left, width }: { index: number; left: number; width: number }) {
+function TabRing({ index }: { index: number }) {
   return (
-    <Ring style={{ left, bottom: 14, width, height: 60 }} radius={16} badge={1} badgeAt={{ top: -12, left: -10 }}>
+    <Ring style={{ left: Math.max(14, Math.min(W - 88, tabX(index) - 37)), bottom: 14, width: 74, height: 60 }} radius={16} badge={1} badgeAt={{ top: -12, left: -10 }}>
       <Ionicons name={TAB_ICONS[index]} size={22} color={colors.navy} />
       <Text style={{ fontSize: 12, fontWeight: '800', color: colors.navy, marginTop: 3 }}>{TAB_NAMES[index]}</Text>
     </Ring>
@@ -194,16 +198,16 @@ function Step1(p: StepProps) {
       <Segments active={0} />
       <Block top={190} height={96} />
       <Block top={302} height={150} />
-      <TabBar hide={3} />
+      <TabBar hide={4} />
       <Dim />
-      <Trail d="M341 760 L360 760 L360 110 Q360 84 334 84 L128 84" />
+      <Trail d="M351 760 L362 760 L362 110 Q362 84 336 84 L128 84" />
       <View pointerEvents="none" style={{ position: 'absolute', left: 90, top: 56, alignItems: 'center', gap: 4 }}>
         <Ring style={{ position: 'relative', width: 54, height: 54 }} radius={27} badge={2} badgeAt={{ top: -10, right: -12 }} inner={{ backgroundColor: colors.navy }}>
           <Ionicons name="add" size={28} color="#fff" />
         </Ring>
         <Text style={{ fontSize: 11, fontWeight: '700', color: '#fff' }}>Ekle</Text>
       </View>
-      <TabRing index={3} left={302} width={78} />
+      <TabRing index={4} />
       <Coach {...p} title="Çocuğunu ekle" text="Aile sekmesi, sonra +. Avatarını Okti'lerden seç ya da fotoğrafını koy." style={{ left: 20, width: 300, top: 300 }} />
     </>
   );
@@ -232,7 +236,7 @@ function Step2(p: StepProps) {
       <Block top={402} height={128} style={{ padding: 16 }}>
         <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>Giriş kodu</Text>
       </Block>
-      <TabBar hide={-1} active={3} />
+      <TabBar hide={-1} active={4} />
       <Dim />
       <Trail d="M117 134 L117 160 Q117 172 129 172 L362 172 Q374 172 374 186 L374 470 Q374 484 360 484 L356 484" />
       <View pointerEvents="none" style={{ position: 'absolute', left: 90, top: 56, alignItems: 'center', gap: 4 }}>
@@ -285,13 +289,13 @@ function Step3(p: StepProps) {
       </Block>
       <Block top={320} height={82} />
       <Block top={414} height={82} />
-      <TabBar hide={0} />
+      <TabBar hide={2} />
       <Dim />
       <Ring style={{ right: 20, bottom: 106, width: 62, height: 62 }} radius={31} badge={2} badgeAt={{ top: -10, left: -10 }} inner={{ backgroundColor: colors.navy }}>
         <Ionicons name="add" size={32} color="#fff" />
       </Ring>
-      <TabRing index={0} left={8} width={82} />
-      <Trail d="M96 800 L300 800 Q330 800 330 770 L330 742" />
+      <TabRing index={2} />
+      <Trail d="M238 800 L300 800 Q330 800 330 770 L330 742" />
       {/* + sonrası açılan Görev Oluştur'un üstündeki hazır rutinlerin önizlemesi */}
       <View pointerEvents="none" style={st.preview}>
         <Text style={{ fontSize: 12, fontWeight: '700', color: colors.navy }}>Hazır rutinler</Text>
@@ -312,33 +316,44 @@ function Step3(p: StepProps) {
   );
 }
 
-/* ---------- 4 · İncele ve onayla: İnceleme → ✓ (ya da satıra dokun) ---------- */
+/* ---------- 4 · İncele ve onayla: Ben → Onay bekleyen → ✓ (ya da satıra dokun) ---------- */
 
 function Step4(p: StepProps) {
   return (
     <>
-      <View style={{ position: 'absolute', left: 20, top: 56, alignItems: 'center', gap: 4 }}>
-        <View style={[st.avatar, { backgroundColor: colors.navy }]}><Text style={{ fontSize: 12, fontWeight: '800', color: '#fff' }}>Tümü</Text></View>
+      <View style={{ position: 'absolute', left: 20, top: 54, gap: 2 }}>
+        <Text style={{ fontSize: 26, fontWeight: '800', color: colors.navy }}>Merhaba!</Text>
+        <Text style={{ fontSize: 13, color: '#5B6274' }}>28 Ekim, Salı</Text>
       </View>
-      <Person x={90} id={CHILD_FACE} label="Nazlı" />
-      <Text style={{ position: 'absolute', left: 20, top: 140, fontSize: 18, fontWeight: '800', color: colors.navy }}>İnceleme</Text>
-      <Block top={180} height={72} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14 }}>
-        <Face id={CHILD_FACE} size={36} />
-        <View style={{ flex: 1, gap: 2 }}>
-          <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>Yatağını topla</Text>
-          <Text style={{ fontSize: 12, color: '#5B6274' }}>Nazlı · 28 Ekim</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={16} color={colors.faint} />
-        <View style={{ width: 46 }} />
-      </Block>
-      <TabBar hide={1} />
+      <Block top={216} height={120} />
+      <Block top={350} height={150} />
+      <TabBar hide={0} />
       <Dim />
-      <Trail d="M146 744 L146 712 Q146 700 158 700 L366 700 Q378 700 378 686 L378 230 Q378 216 364 216 L364 216" />
-      <Ring style={{ right: 30, top: 194, width: 44, height: 44 }} radius={22} badge={2} badgeAt={{ top: -12, right: -12 }} inner={{ backgroundColor: colors.navy }}>
-        <Ionicons name="checkmark" size={22} color="#fff" />
+      <Trail d="M39 760 L39 214" />
+      <Ring style={{ left: 20, right: 20, top: 122, height: 80 }} radius={20} badge={2} badgeAt={{ top: -12, right: -12 }}
+        inner={{ backgroundColor: '#DDF1EC', flexDirection: 'row', justifyContent: 'flex-start', paddingHorizontal: 18, gap: 12 }}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: '#2F6B5E' }}>Onay bekleyen</Text>
+          <Text style={{ fontSize: 18, fontWeight: '800', color: colors.navy }}>1 görev onayını bekliyor</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.navy} />
       </Ring>
-      <TabRing index={1} left={106} width={80} />
-      <Coach {...p} title="Yaptı mı? Onayla" text="✓ ile hemen onayla. Satıra dokunursan Güneş Taşı ve not ekler, gerekirse 'Tekrar dene' dersin." style={{ left: 20, right: 20, top: 290 }} />
+      {/* Onay bekleyen'e dokununca açılan İnceleme'nin önizlemesi */}
+      <View pointerEvents="none" style={[st.preview, st.reviewPreview]}>
+        <Text style={{ fontSize: 12, fontWeight: '700', color: colors.navy }}>İnceleme</Text>
+        <View style={st.previewRow}>
+          <Face id={CHILD_FACE} size={32} />
+          <View style={{ flex: 1 }}>
+            <Text style={st.previewText}>Yatağını topla</Text>
+            <Text style={{ fontSize: 11, color: '#5B6274' }}>Nazlı · bugün</Text>
+          </View>
+          <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="checkmark" size={18} color="#fff" />
+          </View>
+        </View>
+      </View>
+      <TabRing index={0} />
+      <Coach {...p} title="Yaptı mı? Onayla" text="Ben'de 'Onay bekleyen'e dokun. ✓ ile hemen onayla; satıra dokunursan Güneş Taşı ve not ekler, gerekirse 'Tekrar dene' dersin." style={{ left: 20, right: 20, top: 372 }} />
     </>
   );
 }
@@ -365,57 +380,48 @@ function StepParent(p: StepProps) {
         <Text style={{ flex: 1, fontSize: 12, color: '#5B6274' }}>kullanılabilir</Text>
         <View style={{ width: 140 }} />
       </Block>
-      <TabBar hide={3} />
+      <TabBar hide={4} />
       <Dim />
-      <Trail d="M341 760 L376 760 L376 380 Q376 366 362 366 L356 366" />
+      <Trail d="M351 760 L376 760 L376 380 Q376 366 362 366 L356 366" />
       <Ring style={{ right: 32, top: 344, width: 140, height: 44 }} radius={22} badge={2} badgeAt={{ top: -12, right: -12 }} inner={{ backgroundColor: '#FFF4D6', flexDirection: 'row', gap: 6 }}>
         <Ionicons name="gift-outline" size={16} color={colors.navy} />
         <Text style={{ fontSize: 13, fontWeight: '800', color: colors.navy }}>Hediye dükkânı</Text>
       </Ring>
-      <TabRing index={3} left={302} width={78} />
+      <TabRing index={4} />
       <Coach {...p} title="Sen de katıl" text="Görevi kendine de ata, 'Yaptım' de, Güneş Taşı kazan. Taşlarla çocuğuna oyunda hediye gönder." style={{ left: 20, right: 20, top: 440 }} />
     </>
   );
 }
 
-/* ---------- 6 · Uzmanını ekle (isteğe bağlı): Aile → Hesap → Uzmanım ---------- */
-
-const ACCOUNT = ['Üyelik', 'Hesabı yönet', 'Kod gir', 'Bildirimler', '', 'Nasıl kullanılır?', 'Yasal metinler'];
+/* ---------- 6 · Uzmanını ekle (isteğe bağlı): Uzmanım → Uzman bağla ---------- */
 
 function Step5({ onNext, step, total }: StepProps) {
   return (
     <>
-      <Person x={20} id={PARENT_FACE} label="Anne" />
-      <Person x={90} id={CHILD_FACE} label="Nazlı" />
-      <Segments hide={2} />
-      <Block top={186} height={378}>
-        {ACCOUNT.map((t, i) => (
-          <View key={i} style={[{ height: 54, justifyContent: 'center', paddingHorizontal: 16 }, i < ACCOUNT.length - 1 && t !== '' && ACCOUNT[i + 1] !== '' && { borderBottomWidth: 1, borderBottomColor: colors.line }]}>
-            <Text style={{ fontSize: 15, color: colors.navy }}>{t}</Text>
-          </View>
-        ))}
-      </Block>
-      <TabBar hide={3} />
+      <Text style={{ position: 'absolute', left: 20, top: 54, fontSize: 26, fontWeight: '800', color: colors.navy }}>Uzmanım</Text>
+      <Block top={210} height={110} style={{ backgroundColor: '#FFF4D6' }} />
+      <TabBar hide={1} />
       <Dim />
-      <Trail d="M341 760 L376 760 L376 170 Q376 156 362 156 L323 156" />
-      <Trail d="M285 176 L285 400" />
-      <Ring style={{ left: 247, top: 138, width: 76, height: 36 }} radius={18} badge={2} badgeAt={{ top: -14, right: -14 }}>
-        <Text style={{ fontSize: 15, fontWeight: '800', color: colors.navy }}>Hesap</Text>
-      </Ring>
-      <Ring style={{ left: 20, right: 20, top: 402, height: 54 }} radius={14} badge={3} badgeAt={{ top: -14, right: -10 }}
+      <Trail d="M117 760 L117 196" />
+      <Ring style={{ left: 20, right: 20, top: 110, height: 72 }} radius={18} badge={2} badgeAt={{ top: -14, right: -10 }}
         inner={{ flexDirection: 'row', justifyContent: 'flex-start', gap: 12, paddingHorizontal: 16 }}>
-        <Ionicons name="medkit-outline" size={20} color={colors.navy} />
-        <Text style={{ flex: 1, fontSize: 15, fontWeight: '800', color: colors.navy }}>Uzmanım</Text>
+        <View style={{ width: 42, height: 42, borderRadius: 21, borderWidth: 1.5, borderColor: colors.line, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="add" size={20} color={colors.navy} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 16, fontWeight: '800', color: colors.navy }}>Uzman bağla</Text>
+          <Text style={{ fontSize: 12, color: '#5B6274' }}>Uzmanından aldığın kodla</Text>
+        </View>
         <Ionicons name="chevron-forward" size={16} color={colors.navy} />
       </Ring>
-      <TabRing index={3} left={302} width={78} />
-      <View style={[st.card, { left: 20, width: 300, top: 490 }]}>
+      <TabRing index={1} />
+      <View style={[st.card, { left: 20, right: 20, top: 360 }]}>
         <Text style={[st.counter, { alignSelf: 'flex-start' }]}>{step + 1} / {total} · isteğe bağlı</Text>
         <Text style={st.title} accessibilityRole="header">Uzmanını ekle</Text>
-        <Text style={st.text}>Kodla bağlan, istediğinde kapat</Text>
+        <Text style={st.text}>Kodla bağlan; uzmanın programı ve önerileri burada görünür</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Ionicons name="shield-checkmark-outline" size={14} color="#2F7D4A" />
-          <Text style={{ fontSize: 12, fontWeight: '600', color: '#2F7D4A' }}>Yalnız senin izninle</Text>
+          <Text style={{ fontSize: 12, fontWeight: '600', color: '#2F7D4A' }}>Yalnız senin izninle, istediğinde kapatırsın</Text>
         </View>
         <Pressable onPress={onNext} accessibilityRole="button" style={st.start}>
           <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Başla</Text>
@@ -438,6 +444,7 @@ const st = StyleSheet.create({
   chip: { alignSelf: 'flex-start', fontSize: 11, fontWeight: '700', color: '#2F7D4A', backgroundColor: '#E6F4EA', borderRadius: 8, paddingVertical: 2, paddingHorizontal: 8, overflow: 'hidden' },
   preview: { position: 'absolute', left: 20, right: 110, bottom: 100, backgroundColor: '#fff', borderRadius: 18, padding: 12, gap: 8, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 10 }, elevation: 8 },
   previewRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  reviewPreview: { top: 232, bottom: 'auto', right: 20 },
   previewText: { fontSize: 13, fontWeight: '600', color: colors.navy },
   check: { width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   coin: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFF4D6', borderRadius: 999, paddingHorizontal: 10, height: 30 },

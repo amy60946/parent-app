@@ -5,10 +5,13 @@ import { useStore } from '../store';
 import { AppError, hintOf } from '../lib/errors';
 import { PendingInvite, inviteErrorTitle, openInvite } from '../lib/clinic';
 import { track } from '../lib/track';
+import { GUEST_CODE, redeemGuestPass } from '../lib/guestPass';
 
 // Tek kod kutusu (kullanıcı kararı 26 Ekim 2026, "B"): ebeveyn kodun türünü bilmek zorunda değil.
-// Önce uzman daveti (ClinicApp, 6 haneli kod) denenir; değilse eşin aile kodu (join_family).
-export type CodeResult = { kind: 'invite'; invite: PendingInvite } | { kind: 'accepted'; invite: PendingInvite } | { kind: 'family' };
+// 8 karakter: başka bir ailenin hediye ettiği 30 günlük misafir kartı (akislar.md 19). 6 karakter: önce uzman daveti
+// (ClinicApp) denenir; değilse eşin aile kodu (join_family).
+export type CodeResult = { kind: 'invite'; invite: PendingInvite } | { kind: 'accepted'; invite: PendingInvite } | { kind: 'family' }
+  | { kind: 'guest'; trialEndsAt: string };
 
 const NOT_FOUND = 'Kod bulunamadı. Harfleri kontrol et ya da uzmanından/eşinden yeni kod iste.';
 const ask = (title: string, body: string, ok: string) => new Promise<boolean>((res) =>
@@ -17,6 +20,7 @@ const ask = (title: string, body: string, ok: string) => new Promise<boolean>((r
 export function useRedeemCode() {
   const { joinFamily, isOnlyParent, children, tasks } = useStore();
   return useCallback(async (code: string): Promise<CodeResult | null> => {
+    if (GUEST_CODE.test(code)) return { kind: 'guest', trialEndsAt: await redeemGuestPass(code) };
     // 1) Uzman daveti
     try {
       const r = await openInvite(code);
@@ -47,7 +51,7 @@ export default function CodeEntry({ onResult, autoFocus }: { onResult: (r: CodeR
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const submit = async () => {
-    if (code.length !== 6) return setError('Kod 6 karakter olmalı.');
+    if (code.length !== 6 && code.length !== 8) return setError('Kod 6 (hediye kartında 8) karakter olmalı.');
     setBusy(true);
     setError(undefined);
     try {
@@ -67,18 +71,18 @@ export default function CodeEntry({ onResult, autoFocus }: { onResult: (r: CodeR
     <View style={{ gap: 10 }}>
       <TextInput
         value={code}
-        onChangeText={(v) => { setCode(v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6)); setError(undefined); }}
+        onChangeText={(v) => { setCode(v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8)); setError(undefined); }}
         placeholder="KOD"
         placeholderTextColor={colors.faint}
         autoCapitalize="characters"
         autoCorrect={false}
         autoFocus={autoFocus}
         onSubmitEditing={submit}
-        accessibilityLabel="6 haneli kod"
+        accessibilityLabel="Kod"
         style={[styles.input, !!error && { borderColor: colors.danger }]}
       />
       {!!error && <Text style={{ fontSize: 13, color: colors.danger }}>{error}</Text>}
-      <Pressable style={[styles.cta, (busy || code.length !== 6) && { opacity: 0.5 }]} disabled={busy} onPress={submit} accessibilityRole="button">
+      <Pressable style={[styles.cta, (busy || (code.length !== 6 && code.length !== 8)) && { opacity: 0.5 }]} disabled={busy} onPress={submit} accessibilityRole="button">
         {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Devam</Text>}
       </Pressable>
     </View>

@@ -12,12 +12,11 @@ export type ClinicLink = {
   historyShared: boolean; historyAvailable: boolean; verifiedAs?: string;
   planReady: boolean; // sunucuda takip planı var (yeni sürüm); eski sunucuda Takip planı satırı gösterilmez
 };
-export type InvitePreview = { clinic: string; clinician: string; title: string };
 import type { RepeatKind } from '../store';
 
 // Öneri, ParentApp "Görev Oluştur" ile aynı alanları taşır (ortak/sozlesme/akislar.md 5.4, 3a)
 export type Suggestion = {
-  id: string; childId: string; title: string; emoji: string; skill: string; difficulty: Difficulty;
+  id: string; linkId: string; childId: string; title: string; emoji: string; skill: string; difficulty: Difficulty;
   recurring: boolean; note: string; clinic: string;
   description: string; coins?: number; startDate?: string; repeatKind: RepeatKind; repeatDays: number[];
   endDate?: string; reminder?: string; requiresReview: boolean;
@@ -39,18 +38,6 @@ export async function listLinks(): Promise<ClinicLink[]> {
     historyShared: !!r.history_shared, historyAvailable: !!r.history_available, verifiedAs: r.verified_as ?? undefined,
     planReady: 'history_available' in r,
   }));
-}
-
-export async function previewInvite(code: string): Promise<InvitePreview> {
-  const { data, error } = await supabase.rpc('clinic_invite_preview', { p_code: code });
-  fail(error);
-  return data as InvitePreview;
-}
-
-// Tek kodla seçilen bütün çocuklar (kod tek kullanımlık)
-export async function shareWithClinic(code: string, childIds: string[]) {
-  const { error } = await supabase.rpc('redeem_clinic_invite_children', { p_code: code, p_child_ids: childIds });
-  fail(error);
 }
 
 // Aynı uzmanla etkin paylaşım varsa yeni kod gerekmeden başka bir çocuğu da ekle
@@ -79,7 +66,7 @@ export async function pendingSuggestions(familyId: string): Promise<Suggestion[]
     .filter((r: any) => links.some((l) => l.linkId === r.link_id))
     .map((r: any) => ({
       // Beceri anahtarı; uzman eski serbest metin yazdıysa kategorinin becerisi
-      id: r.id, childId: r.child_id, title: r.title, emoji: r.emoji, difficulty: r.difficulty,
+      id: r.id, linkId: r.link_id, childId: r.child_id, title: r.title, emoji: r.emoji, difficulty: r.difficulty,
       skill: r.skill && r.skill in skillLabels ? r.skill : categorySkill[toCategory(r.category)],
       recurring: r.recurring, note: r.note ?? '', clinic: links.find((l) => l.linkId === r.link_id)?.clinician || links.find((l) => l.linkId === r.link_id)?.clinic || 'Uzman',
       description: r.description ?? '', coins: r.coins ?? undefined, startDate: r.start_date ?? undefined,

@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
 import { IconButton } from '../components/ui';
-import ClinicShareSheet from '../components/ClinicShare';
 import { LegalDoc, legalDocs } from '../lib/legal';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
@@ -16,7 +15,6 @@ export default function LegalDocsScreen({ navigation }: any) {
   const { session } = useAuth();
   const [docs, setDocs] = useState<LegalDoc[] | null | undefined>();
   const [health, setHealth] = useState<number | null>(null); // rızalı sağlık yanıtı sayısı; null = tablo yok
-  const [clinic, setClinic] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -81,10 +79,10 @@ export default function LegalDocsScreen({ navigation }: any) {
               {health > 0 && <Pressable onPress={revokeHealth} hitSlop={8}><Text style={styles.danger}>Geri al</Text></Pressable>}
             </View>
           )}
-          <Pressable onPress={() => setClinic(true)} style={[styles.row, health !== null && styles.sep]} accessibilityRole="button">
+          <Pressable onPress={() => navigation.navigate('Tabs', { screen: 'Uzmanım' })} style={[styles.row, health !== null && styles.sep]} accessibilityRole="button">
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={styles.h}>Uzman paylaşımı ve önceki uzman kayıtları</Text>
-              <Text style={styles.cap}>Uzmanım'da görür, durdurur ya da kapatırsın</Text>
+              <Text style={styles.cap}>Uzmanım sekmesinde görür, durdurur ya da kapatırsın</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.muted} />
           </Pressable>
@@ -95,7 +93,6 @@ export default function LegalDocsScreen({ navigation }: any) {
           <Ionicons name="chevron-forward" size={16} color={colors.muted} />
         </Pressable>
       </ScrollView>
-      <ClinicShareSheet visible={clinic} onClose={() => setClinic(false)} />
     </SafeAreaView>
   );
 }

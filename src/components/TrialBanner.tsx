@@ -1,12 +1,12 @@
 import React from 'react';
-import { Pressable, Text, StyleSheet } from 'react-native';
+import { Pressable, Text, StyleSheet, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors, radius } from '../theme';
 import { useBilling } from '../billing';
 
-// Görevler ekranında üyelik durumu: deneme süresi / ücretsiz plan. Üyelerde görünmez.
-export default function TrialBanner() {
+// Görevler ve Ben ekranında üyelik durumu: deneme süresi / ücretsiz plan. Üyelerde görünmez.
+export default function TrialBanner({ style }: { style?: ViewStyle }) {
   const { access } = useBilling();
   const navigation = useNavigation<any>();
   if (!access || (access.state !== 'trial' && access.state !== 'expired')) return null;
@@ -15,7 +15,7 @@ export default function TrialBanner() {
     ? `Ücretsiz deneme · ${access.daysLeft ?? 0} gün kaldı`
     : access.enforced ? 'Ücretsiz plandasın' : 'Ücretsiz deneme süresi bitti';
   return (
-    <Pressable onPress={() => navigation.navigate('Paywall')} style={[styles.bar, expired && { backgroundColor: '#FFF6DE' }]}
+    <Pressable onPress={() => navigation.navigate('Paywall')} style={[styles.bar, expired && { backgroundColor: '#FFF6DE' }, style]}
       accessibilityLabel={`${text}. Planları gör`}>
       <Ionicons name={expired ? 'lock-open-outline' : 'time-outline'} size={15} color={colors.navy} />
       <Text style={styles.text}>{text}</Text>

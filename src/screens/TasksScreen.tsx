@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet, useWindowDimensions, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import ReanimatedSwipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -8,13 +9,11 @@ import { colors, radius } from '../theme';
 import { Avatar, DifficultyBadge } from '../components/ui';
 import { useStore, taskOccursOn, completionKey, Task, CompletionStatus } from '../store';
 import { DAY_SHORT, addDays, fromISO, monthYear, startOfWeek, toISO, todayISO } from '../dates';
-import ClinicShareSheet from '../components/ClinicShare';
 import { pendingSuggestions } from '../lib/clinic';
 import NotificationBell from '../components/NotificationBell';
 import { TaskDayPart, dayPartLabel, taskDayPartOf } from '../data/dayParts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TrialBanner from '../components/TrialBanner';
-import PendingInviteBanner from '../components/PendingInviteBanner';
 import { useBilling } from '../billing';
 import { usePlan } from '../lib/plan';
 import { useParentTasks, doneKey, ParentAssign, Member } from '../parentTasks';
@@ -30,7 +29,7 @@ const WEEK_RANGE = 52; // bugünden ±52 hafta
 
 type DayItem = { task: Task; assigns: Task['assignments']; parents: ParentAssign[] }; // parents: ebeveyn atamaları (akislar.md 18)
 
-export default function TasksScreen({ navigation }: any) {
+export default function TasksScreen({ navigation, route }: any) {
   const { width } = useWindowDimensions();
   const { tasks, children, completions, reorderTasks, deleteTask, familyId, parent } = useStore();
   const pt = useParentTasks();
@@ -39,13 +38,20 @@ export default function TasksScreen({ navigation }: any) {
   const plan = usePlan(); // tanışma yanıtlarına göre rutin sırası (lib/plan.ts)
   // Uzmandan bekleyen görev önerisi varsa üstte kısa bir bildirim
   const [suggested, setSuggested] = useState(0);
-  const [clinicOpen, setClinicOpen] = useState(false);
-  React.useEffect(() => {
-    if (!familyId || clinicOpen) return;
+  useFocusEffect(React.useCallback(() => {
+    if (!familyId) return;
     pendingSuggestions(familyId).then((l) => setSuggested(l.length)).catch(() => setSuggested(0));
-  }, [familyId, clinicOpen]);
+  }, [familyId]));
   const [selected, setSelected] = useState(todayISO());
   const [childFilter, setChildFilter] = useState<string | 'all'>('all');
+  // Ben › Bugünün ilerlemesi / Senin görevlerin: kişi ve gün süzgeciyle açılır ('me' = ebeveynin kendisi)
+  React.useEffect(() => {
+    const p = route?.params as { filter?: string; date?: string } | undefined;
+    if (!p?.filter && !p?.date) return;
+    if (p.filter) setChildFilter(p.filter);
+    if (p.date) setSelected(p.date);
+    navigation.setParams({ filter: undefined, date: undefined });
+  }, [route?.params?.filter, route?.params?.date]); // eslint-disable-line react-hooks/exhaustive-deps
   const [part, setPart] = useState<PartFilter>('all');
   // + düğmesi: kısa bas → görev oluştur; basılı tut → "Ödül" ve "Gözlem notu" düğmeleri (ilk seferde ipucu)
   const [dial, setDial] = useState<'menu' | null>(null);
@@ -125,15 +131,13 @@ export default function TasksScreen({ navigation }: any) {
         <NotificationBell />
       </View>
       <TrialBanner />
-      <PendingInviteBanner />
       {suggested > 0 && (
-        <Pressable onPress={() => setClinicOpen(true)} style={styles.suggest} accessibilityLabel="Uzman önerilerini gör">
+        <Pressable onPress={() => navigation.navigate('Uzmanım')} style={styles.suggest} accessibilityLabel="Uzman önerilerini gör">
           <Ionicons name="medkit-outline" size={16} color={colors.navy} />
           <Text style={{ flex: 1, fontSize: 13, color: colors.navy, fontWeight: '600' }}>Uzmanından {suggested} görev önerisi var</Text>
           <Ionicons name="chevron-forward" size={14} color={colors.muted} />
         </Pressable>
       )}
-      <ClinicShareSheet visible={clinicOpen} onClose={() => setClinicOpen(false)} />
 
       <FlatList
         ref={listRef}
