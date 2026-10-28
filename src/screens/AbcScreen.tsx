@@ -18,7 +18,7 @@ import { DayPart, dayPartLabel, dayPartOf } from '../data/dayParts';
 import { Voice, mmss } from './ChatScreen';
 import { useBilling } from '../billing';
 
-// Gözlem notları (ABC kaydı): yeni kayıt (çok çocuk, gün bölümü seçimi, sesli kayıt) + geçmiş kayıtlar (arşiv).
+// Davranış kayıtları (ABC kaydı): yeni kayıt (çok çocuk, gün bölümü seçimi, sesli kayıt) + geçmiş kayıtlar (arşiv).
 // Rızalı paylaşım varsa kayıt o çocuğun uzmanına gider; olmasa da ailenin raporunda kalır.
 export default function AbcScreen({ navigation, route }: any) {
   const { children, familyId } = useStore();
@@ -56,7 +56,7 @@ export default function AbcScreen({ navigation, route }: any) {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
         <IconButton name="chevron-back" onPress={() => (form && events?.length ? setForm(false) : navigation.goBack())} label="Geri" />
-        <Text style={styles.title}>{form ? 'Gözlem notu ekle' : 'Gözlem notları'}</Text>
+        <Text style={styles.title}>{form ? 'Davranış kaydı ekle' : 'Davranış kayıtları'}</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -66,11 +66,11 @@ export default function AbcScreen({ navigation, route }: any) {
         <ScrollView contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }}>
           <Pressable style={styles.cta} onPress={() => setForm(true)}>
             <Ionicons name="add" size={20} color="#fff" />
-            <Text style={styles.ctaText}>Gözlem notu ekle</Text>
+            <Text style={styles.ctaText}>Davranış kaydı ekle</Text>
           </Pressable>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text style={[styles.cap, { flex: 1 }]}>Uzmanla paylaştığın çocuklarda uzmanın da görür.</Text>
-            <Info title="Gözlem notu" text="Ne oldu, öncesinde ne vardı, sonrasında ne oldu: kısaca yaz. Uzmanla paylaştığın çocuklar için uzmanın da görür; paylaşmadıkların yalnız ailede kalır. Gözlem notu tanı ya da puan değildir." />
+            <Info title="Davranış kaydı" text="Ne oldu, öncesinde ne vardı, sonrasında ne oldu: kısaca yaz. Uzmanla paylaştığın çocuklar için uzmanın da görür; paylaşmadıkların yalnız ailede kalır. Davranış kaydı tanı ya da puan değildir." />
           </View>
 
           {children.length > 1 && (
@@ -299,7 +299,7 @@ function AbcForm({ onDone, defaultChild, links }: { onDone: () => void; defaultC
         {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Kaydet</Text>}
       </Pressable>
       {/* Acil durum notu (hukuk/50 §9) */}
-      <Text style={[styles.cap, { textAlign: 'center' }]}>ParentApp bir acil yardım hizmeti değildir. Çocuğunun ya da başka birinin güvenliği tehlikedeyse hemen 112'yi ara. Gözlem notun uzmanına anında ulaşmayabilir.</Text>
+      <Text style={[styles.cap, { textAlign: 'center' }]}>ParentApp bir acil yardım hizmeti değildir. Çocuğunun ya da başka birinin güvenliği tehlikedeyse hemen 112'yi ara. Davranış kaydın uzmanına anında ulaşmayabilir.</Text>
     </ScrollView>
   );
 }

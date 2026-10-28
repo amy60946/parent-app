@@ -73,10 +73,10 @@ export default function ProgressScreen({ navigation }: any) {
         <NotificationBell />
       </View>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 12 }}>
-        {/* Gözlem notları arşivi (yeni kayıt: Görevler'de + düğmesine basılı tut) */}
-        <Pressable style={styles.abcList} onPress={() => navigation.navigate('Abc')} accessibilityLabel="Gözlem notları">
+        {/* Davranış kayıtları arşivi (yeni kayıt: Görevler'de + düğmesine basılı tut) */}
+        <Pressable style={styles.abcList} onPress={() => navigation.navigate('Abc')} accessibilityLabel="Davranış kayıtları">
           <Ionicons name="pulse-outline" size={18} color={colors.navy} />
-          <Text style={{ flex: 1, color: colors.navy, fontSize: 14, fontWeight: '600' }}>Gözlem notları</Text>
+          <Text style={{ flex: 1, color: colors.navy, fontSize: 14, fontWeight: '600' }}>Davranış kayıtları</Text>
           <Ionicons name="chevron-forward" size={16} color={colors.faint} />
         </Pressable>
 

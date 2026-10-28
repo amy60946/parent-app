@@ -14,7 +14,7 @@ const featureText: Record<Feature, string> = {
   reward: 'Ödüller Premium üyelikte.',
   stones: 'Güneş Taşı düşme Premium üyelikte.',
   message: 'Çocuğuna mesaj göndermek Premium üyelikte.',
-  abc: 'Gözlem notları Premium üyelikte.',
+  abc: 'Davranış kayıtları Premium üyelikte.',
 };
 
 type Billing = {

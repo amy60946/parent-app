@@ -17,7 +17,7 @@ import TrialBanner from '../components/TrialBanner';
 import { todayISO } from '../dates';
 
 // Ben (ana sayfa; kullanıcı isteği 28 Ekim 2026, Joon "Me" örneğinden): onay bekleyenler (İnceleme), 30 günlük misafir kartı,
-// senin görevlerin (uzmanın programı, öneriler, sana atanan görevler, gözlem notu), programına devam et, bugünün ilerlemesi.
+// senin görevlerin (uzmanın programı, öneriler, sana atanan görevler, davranış kaydı), programına devam et, bugünün ilerlemesi.
 // Her satır ilgili ekranı açar. Misafir kartı kapatılınca sağ üstte hediye simgesi olarak kalır.
 const GUEST_HIDDEN = 'guest-pass-hidden';
 const DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
@@ -90,9 +90,9 @@ export default function MeScreen({ navigation }: any) {
     todo.push({ key: 'intake', icon: 'clipboard-outline', title: 'Tanışma sorularını tamamla', sub: 'Yaklaşık 3 dakika; öneriler ailene göre kişiselleşir',
       onPress: () => navigation.navigate('Intake') });
   }
-  // Uzmanı olan aile: gözlem notu uzmanın istediği bir görevdir (uzman görür)
+  // Uzmanı olan aile: davranış kaydı uzmanın istediği bir görevdir (uzman görür)
   if (care?.links.length) {
-    todo.push({ key: 'abc', icon: 'pulse-outline', title: 'Gözlem notu ekle', sub: 'Zor bir an mı oldu? Kısaca yaz; uzmanın görür',
+    todo.push({ key: 'abc', icon: 'pulse-outline', title: 'Davranış kaydı ekle', sub: 'Zor bir an mı oldu? Kısaca yaz; uzmanın görür',
       onPress: () => navigation.navigate('Abc', { new: true }) });
   }
   if (!todo.length) {
@@ -201,10 +201,10 @@ export default function MeScreen({ navigation }: any) {
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {([['add-circle-outline', 'Görev ver', () => navigation.navigate('CreateTask', { date: today })],
             ['gift-outline', 'Ödül', () => navigation.navigate('Rewards')],
-            ['pulse-outline', 'Gözlem notu', () => navigation.navigate('Abc', { new: true })]] as const).map(([icon, label, go]) => (
+            ['pulse-outline', 'Davranış kaydı', () => navigation.navigate('Abc', { new: true })]] as const).map(([icon, label, go]) => (
             <Pressable key={label} onPress={go} style={styles.quick} accessibilityRole="button">
               <Ionicons name={icon} size={18} color={colors.navy} />
-              <Text style={styles.quickText}>{label}</Text>
+              <Text style={styles.quickText} numberOfLines={1}>{label}</Text>
             </Pressable>
           ))}
         </View>
@@ -248,6 +248,6 @@ const styles = StyleSheet.create({
   pct: { fontSize: 15, fontWeight: '800', color: colors.navy, minWidth: 44, textAlign: 'right' },
   setUp: { borderWidth: 1, borderColor: colors.navy, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 5 },
   setUpText: { fontSize: 13, fontWeight: '700', color: colors.navy },
-  quick: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 44, borderRadius: radius.md, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line },
+  quick: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, height: 60, borderRadius: radius.md, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line },
   quickText: { fontSize: 13, fontWeight: '700', color: colors.navy },
 });

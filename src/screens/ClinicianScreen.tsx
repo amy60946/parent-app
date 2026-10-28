@@ -20,7 +20,7 @@ import { track } from '../lib/track';
 import { afterModal } from '../lib/modal';
 
 // Uzmanım › uzman (kullanıcı isteği 28 Ekim 2026, Joon "Care › therapist" örneğinden): bugün yapılacaklar (uzmanın aile
-// programındaki uygulamalar + gözlem notu), çocuk başına program (takip planı), görev önerileri, paylaşılan çocuklar.
+// programındaki uygulamalar + davranış kaydı), çocuk başına program (takip planı), görev önerileri, paylaşılan çocuklar.
 // Sağ üstteki ayar: çocuğu uzmandan ayır ya da uzmanı tamamen kaldır (revoke_clinic_link; akislar.md 5, 8).
 export default function ClinicianScreen({ navigation, route }: any) {
   const clinicId: string = route.params.clinicId;
@@ -64,7 +64,7 @@ export default function ClinicianScreen({ navigation, route }: any) {
 
   const add = (childId: string) => Alert.alert(
     `${childName(childId)} da paylaşılsın mı?`,
-    `${c.name}, ${childName(childId)} için görevleri, tamamlanma durumunu ve gözlem notlarını görebilecek. Mesajlar ve coin paylaşılmaz. İstediğin an durdurabilirsin.`,
+    `${c.name}, ${childName(childId)} için görevleri, tamamlanma durumunu ve davranış kayıtlarını görebilecek. Mesajlar ve coin paylaşılmaz. İstediğin an durdurabilirsin.`,
     [
       { text: 'Vazgeç', style: 'cancel' },
       { text: 'Onaylıyorum, paylaş', onPress: async () => {
@@ -126,7 +126,7 @@ export default function ClinicianScreen({ navigation, route }: any) {
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 48, gap: 18 }}>
         <VerifiedBadge verifiedAs={c.verifiedAs} />
 
-        <Section title="Bugün yapılacaklar" info="Uzmanının seninle paylaştığı evde uygulamalar. Uyguladığın gün kutuyu işaretle; nasıl geçtiğini takip planında yazabilirsin. Zor bir an olduysa gözlem notu ekle; uzmanın görür.">
+        <Section title="Bugün yapılacaklar" info="Uzmanının seninle paylaştığı evde uygulamalar. Uyguladığın gün kutuyu işaretle; nasıl geçtiğini takip planında yazabilirsin. Zor bir an olduysa davranış kaydı ekle; uzmanın görür.">
           {todos.map((t, i) => (
             <View key={t.module.id} style={[styles.row, i > 0 && styles.sep]}>
               <Pressable style={{ flex: 1, gap: 2 }} onPress={() => openPlan(links.find((l) => l.linkId === t.linkId)!)} accessibilityRole="button">
@@ -141,7 +141,7 @@ export default function ClinicianScreen({ navigation, route }: any) {
           ))}
           <Pressable onPress={() => navigation.navigate('Abc', { new: true })} style={[styles.row, todos.length > 0 && styles.sep]} accessibilityRole="button">
             <View style={{ flex: 1, gap: 2 }}>
-              <Text style={styles.rowTitle}>Gözlem notu ekle</Text>
+              <Text style={styles.rowTitle}>Davranış kaydı ekle</Text>
               <Text style={styles.cap}>Ne oldu, öncesinde ve sonrasında</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.faint} />

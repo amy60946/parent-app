@@ -53,7 +53,7 @@ export default function TasksScreen({ navigation, route }: any) {
     navigation.setParams({ filter: undefined, date: undefined });
   }, [route?.params?.filter, route?.params?.date]); // eslint-disable-line react-hooks/exhaustive-deps
   const [part, setPart] = useState<PartFilter>('all');
-  // + düğmesi: kısa bas → görev oluştur; basılı tut → "Ödül" ve "Gözlem notu" düğmeleri (ilk seferde ipucu)
+  // + düğmesi: kısa bas → görev oluştur; basılı tut → "Ödül" ve "Davranış kaydı" düğmeleri (ilk seferde ipucu)
   const [dial, setDial] = useState<'menu' | null>(null);
   const [hint, setHint] = useState(false);
   const [newReward, setNewReward] = useState(false);
@@ -266,21 +266,21 @@ export default function TasksScreen({ navigation, route }: any) {
             <Text style={styles.dialLabel}>Ödül</Text>
             <View style={styles.dialIcon}><Ionicons name="gift-outline" size={20} color={colors.navy} /></View>
           </Pressable>
-          <Pressable style={styles.dialItem} accessibilityLabel="Gözlem notu ekle"
+          <Pressable style={styles.dialItem} accessibilityLabel="Davranış kaydı ekle"
             onPress={() => go('Abc', { new: true })}>
-            <Text style={styles.dialLabel}>Gözlem notu</Text>
+            <Text style={styles.dialLabel}>Davranış kaydı</Text>
             <View style={styles.dialIcon}><Ionicons name="create-outline" size={20} color={colors.navy} /></View>
           </Pressable>
         </View>
       )}
       {hint && !dial && (
         <Pressable style={styles.hintBubble} onPress={seenHint} accessibilityLabel="İpucunu kapat">
-          <Text style={{ fontSize: 12, color: '#fff' }}>Ödül ve gözlem notu için + düğmesini basılı tut</Text>
+          <Text style={{ fontSize: 12, color: '#fff' }}>Ödül ve davranış kaydı için + düğmesini basılı tut</Text>
         </Pressable>
       )}
       <Pressable
         style={styles.fab}
-        accessibilityLabel="Görev oluştur. Ödül ve gözlem notu için basılı tut."
+        accessibilityLabel="Görev oluştur. Ödül ve davranış kaydı için basılı tut."
         onPress={() => { if (dial) setDial(null); else if (allow('task')) navigation.navigate('CreateTask', { date: selected }); }}
         onLongPress={() => { setDial('menu'); seenHint(); }}
         delayLongPress={350}

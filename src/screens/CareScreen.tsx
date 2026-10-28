@@ -23,7 +23,7 @@ export default function CareScreen({ navigation }: any) {
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 18 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Text style={styles.title} accessibilityRole="header">Uzmanım</Text>
-          <Info title="Uzmanım" text={'Çocuğunla çalışan bir uzman (psikolog, ergoterapist, özel eğitim öğretmeni…) varsa görev ilerlemesini ve gözlem notlarını onunla paylaşabilirsin. Uzmanın sana bir davet bağlantısı ya da kod gönderir.\n\nPaylaşım yalnız senin onayınla başlar, çocuk çocuk seçilir ve istediğin an durur. Uzmanın verdiği program ve görev önerileri burada görünür.'} />
+          <Info title="Uzmanım" text={'Çocuğunla çalışan bir uzman (psikolog, ergoterapist, özel eğitim öğretmeni…) varsa görev ilerlemesini ve davranış kayıtlarını onunla paylaşabilirsin. Uzmanın sana bir davet bağlantısı ya da kod gönderir.\n\nPaylaşım yalnız senin onayınla başlar, çocuk çocuk seçilir ve istediğin an durur. Uzmanın verdiği program ve görev önerileri burada görünür.'} />
         </View>
 
         {care === null ? <ActivityIndicator color={colors.navy} style={{ marginTop: 30 }} /> : (

@@ -44,7 +44,7 @@ export default function PaywallScreen({ navigation, route }: any) {
     ?? (state === 'trial' && access?.daysLeft !== undefined
       ? `Ücretsiz denemende ${access.daysLeft} gün kaldı. Bittiğinde ücretsiz planla devam edersin; senden kendiliğinden ücret alınmaz.`
       : state === 'expired'
-        ? 'Ücretsiz planda 1 çocuk ve 3 etkin görevle devam edebilirsin; ödüller, mesajlar ve gözlem notları kapanır. Verilerin silinmez.'
+        ? 'Ücretsiz planda 1 çocuk ve 3 etkin görevle devam edebilirsin; ödüller, mesajlar ve davranış kayıtları kapanır. Verilerin silinmez.'
         : 'Ailenin bütün özellikleri tek üyelikte. İki ebeveyn birlikte kullanır.');
 
   return (

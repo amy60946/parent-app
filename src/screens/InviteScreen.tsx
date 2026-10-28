@@ -290,7 +290,7 @@ export default function InviteScreen({ navigation, route }: any) {
           )}
 
           <View style={styles.note}>
-            <Text style={[styles.cap, { flex: 1 }]}>Uzmanının seninle çalışabilmesi için seçtiğin çocukların görevleri ve gözlem notları paylaşılır; mesajlar ve coin paylaşılmaz.</Text>
+            <Text style={[styles.cap, { flex: 1 }]}>Uzmanının seninle çalışabilmesi için seçtiğin çocukların görevleri ve davranış kayıtları paylaşılır; mesajlar ve coin paylaşılmaz.</Text>
             <Info title="Uzman ne görür?" text={SCOPE_FULL} />
           </View>
 
@@ -369,7 +369,7 @@ function Done({ invite, who, done, fromSetup, onClose, createChildCode }: {
           <View style={styles.doneIcon}><Ionicons name="checkmark" size={34} color="#fff" /></View>
           <Text style={[styles.lead, { textAlign: 'center' }]} accessibilityRole="header">Hesaplar başarıyla bağlandı</Text>
           <Text style={[styles.small, { textAlign: 'center' }]}>
-            {who} artık {names} için görevleri ve gözlem notlarını görebilir{invite.hasPlan ? '; programı Uzmanım sekmesinde' : ''}. Paylaşımı istediğin an Uzmanım sekmesinden durdurabilirsin.
+            {who} artık {names} için görevleri ve davranış kayıtlarını görebilir{invite.hasPlan ? '; programı Uzmanım sekmesinde' : ''}. Paylaşımı istediğin an Uzmanım sekmesinden durdurabilirsin.
           </Text>
         </View>
         {target && !target.linked && (

@@ -63,7 +63,7 @@ export default function DeleteAccountScreen({ navigation }: any) {
               'hesabın ve çocuk profillerin,',
               'görevler, onaylar, ödüller, coin ve Güneş Taşı geçmişi,',
               'mesajlar, fotoğraflar ve sesli mesajlar,',
-              'gözlem notları (zor an kayıtları) ve tanışma yanıtları,',
+              'davranış kayıtları (zor anlar) ve tanışma yanıtları,',
               'uzman paylaşımları (uzmanın erişimi hemen biter) ve uzmanın bu çocuklar için tuttuğu notlar, hedefler ve takip planı,',
               'oyun yedekleri.',
             ].map((t) => (

@@ -24,9 +24,9 @@ export const premiumFeatures = [
   'Sınırsız görev ve çocuk',
   'Ödüller ve Güneş Taşı',
   'Çocuğunla mesajlaşma',
-  'Gözlem notları (sesli) ve arşiv',
+  'Davranış kayıtları (sesli) ve arşiv',
   'İki ebeveyn aynı üyelikle',
 ];
 
 // hukuk/50 §6.1 "Şimdilik ücretsiz devam et" notu
-export const freeFeatures = 'Ücretsiz planda 1 çocuk ve 3 etkin görevle devam edersin; ödüller, mesajlar ve gözlem notları kapalıdır. Oyun ve uzman paylaşımı çalışmaya devam eder.';
+export const freeFeatures = 'Ücretsiz planda 1 çocuk ve 3 etkin görevle devam edersin; ödüller, mesajlar ve davranış kayıtları kapalıdır. Oyun ve uzman paylaşımı çalışmaya devam eder.';

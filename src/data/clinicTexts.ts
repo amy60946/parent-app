@@ -10,12 +10,12 @@ export const historyConsent = (children: string, clinician: string) =>
   `Çocuğum ${children} için daha önce çalıştığım uzman(lar)ın ClinicApp'e girdiği notların, hedeflerin, haftalık değerlendirmelerin, görev önerilerinin, aile programının ve benim uygulama kayıtlarımın, takibin kesintisiz sürmesi amacıyla yeni uzmanım ${clinician} ile yalnız okunur olarak paylaşılmasına açık rıza veriyorum. Önceki uzmanın adı ve bilgileri yeni uzmana gösterilmez. Bu izni Uzmanım bölümünden istediğim an geri alabilirim; geri aldığımda erişim hemen sona erer.`;
 
 // Uzmanın gördükleri: ekranda tek satır, listesi i'de
-export const SCOPE_SHORT = 'Görevler ve gözlem notları paylaşılır; mesajlar ve coin paylaşılmaz.';
+export const SCOPE_SHORT = 'Görevler ve davranış kayıtları paylaşılır; mesajlar ve coin paylaşılmaz.';
 export const SCOPE_FULL = [
   'Paylaşılır:',
   '• Görevler ve tamamlanma durumu (saatiyle)',
   '• "Yapamam" yanıtları ve nedenleri',
-  '• Bu uygulamada eklediğin gözlem notları',
+  '• Bu uygulamada eklediğin davranış kayıtları',
   '',
   'Paylaşılmaz:',
   '• Mesajlar, fotoğraf ve sesler',
@@ -29,6 +29,6 @@ export const TELL_CLINICIAN = 'Merhaba, çocuğumun günlük rutinlerini ve gör
 
 // Uzmandan ayırma / uzmanı kaldırma (ortak akislar.md 5, 8: revoke_clinic_link): uzman yeni veriyi göremez, aldığı notlar onda kalır
 export const unlinkText = (child: string, clinician: string) =>
-  `${clinician}, ${child} için yeni görevleri ve gözlem notlarını artık göremez. Daha önce aldığı notlar uzmanda kalır. İstersen sonra yeni bir kodla yeniden paylaşabilirsin.`;
+  `${clinician}, ${child} için yeni görevleri ve davranış kayıtlarını artık göremez. Daha önce aldığı notlar uzmanda kalır. İstersen sonra yeni bir kodla yeniden paylaşabilirsin.`;
 export const removeText = (clinician: string) =>
   `${clinician} ile bütün çocuklarının paylaşımı durur; uzman yeni verileri göremez ve sana görev önerisi gönderemez. Daha önce aldığı notlar uzmanda kalır.`;
