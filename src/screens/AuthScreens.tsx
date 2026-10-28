@@ -295,17 +295,18 @@ export function SignUpScreen({ navigation, route }: any) {
         autoCapitalize="none" autoComplete="email" textContentType="emailAddress" />
       <Input value={password} onChangeText={setPassword} placeholder={`Şifre (en az ${MIN_PASSWORD} karakter)`} secure
         autoComplete="new-password" textContentType="newPassword" onSubmitEditing={submit} />
-      {/* Hukuki satırlar (hukuk/50 §1.1): koşullar kutulu; aydınlatma kutusuz bilgilendirme; açık rıza bu ekranda yok */}
-      <Pressable onPress={() => setTerms(!terms)} style={styles.legalRow} accessibilityRole="checkbox" accessibilityState={{ checked: terms }}>
-        <Ionicons name={terms ? 'checkbox' : 'square-outline'} size={22} color={colors.navy} />
+      {/* Hukuki satır (hukuk/50 §1.1; kullanıcı isteği 28 Ekim 2026: tek küçük satır, ayrıntı bağlantılarda): koşullar kutulu;
+          aydınlatma ve gizlilik kutusuz bağlantı; açık rıza bu ekranda yok */}
+      <Pressable onPress={() => setTerms(!terms)} style={styles.legalRow} accessibilityRole="checkbox" accessibilityState={{ checked: terms }}
+        accessibilityLabel="Kullanım Koşulları'nı kabul ediyorum">
+        <Ionicons name={terms ? 'checkbox' : 'square-outline'} size={20} color={colors.navy} />
         <Text style={styles.legalText}>
-          <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalText', { key: 'kosullar-parentapp' })}>Kullanım Koşulları</Text>'nı okudum, kabul ediyorum.
+          <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalText', { key: 'kosullar-parentapp' })}>Kullanım Koşulları</Text>'nı kabul ediyorum.{' '}
+          <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalText', { key: 'aydinlatma-ebeveyn' })}>Aydınlatma</Text>
+          {' · '}
+          <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalText', { key: 'gizlilik' })}>Gizlilik</Text>
         </Text>
       </Pressable>
-      <Text style={[styles.legalText, { flex: 0 }]}>
-        Kişisel verilerinin nasıl işlendiğini <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalText', { key: 'aydinlatma-ebeveyn' })}>Aydınlatma Metni</Text>'nde anlatıyoruz.
-      </Text>
-      <Text style={styles.small} onPress={() => navigation.navigate('LegalText', { key: 'gizlilik' })} accessibilityRole="link">Gizlilik Politikası</Text>
       <Cta label="Kayıt ol" onPress={submit} busy={busy} disabled={!terms} />
       <LinkText onPress={() => navigation.navigate('Login')}>Zaten hesabın var mı? Giriş yap</LinkText>
     </Layout>
@@ -431,7 +432,7 @@ const styles = StyleSheet.create({
   link: { fontSize: 13, fontWeight: '600', color: colors.navy },
   small: { fontSize: 12, color: colors.muted },
   legalRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  legalText: { flex: 1, fontSize: 13, lineHeight: 19, color: '#4A5165' },
-  legalLink: { color: colors.navy, fontWeight: '700', textDecorationLine: 'underline' },
+  legalText: { flex: 1, fontSize: 12, lineHeight: 17, color: '#4A5165' },
+  legalLink: { color: colors.navy, fontWeight: '600', textDecorationLine: 'underline' },
   sent: { flexDirection: 'row', gap: 12, backgroundColor: '#fff', borderRadius: radius.md, padding: 16, alignItems: 'center' },
 });

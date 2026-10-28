@@ -6,17 +6,23 @@ import { colors, radius } from '../theme';
 import { LegalDoc, isNotice, legalAccept } from '../lib/legal';
 import { track } from '../lib/track';
 
-// Yeniden onay (hukuk/50 §2): açılışta legal_pending boş değilse. Her onay isteyen metin ayrı kutu (önceden işaretli değil);
-// aydınlatma metninde kutu yok ("gösterildi" kaydı). Bu ekrandayken de hesap silme, yasal metinler ve KVKK başvurusu açılır.
+// Yeniden onay (hukuk/50 §2): açılışta legal_pending boş değilse. Kullanıcı isteği 28 Ekim 2026: büyük sayfa yerine küçük
+// kart; metin adları tek satırda bağlantı, ayrıntı metinde. Koşullar için tek kutu (önceden işaretli değil); veli olarak
+// çocuk adına kabul ayrı kutu; aydınlatma metinlerinde kutu yok ("gösterildi" kaydı). "Kısaca neler değişti?" açılır.
+// Hesap silme ve Yasal ve gizlilik (KVKK başvurusu) bu ekrandan da açılır.
 export default function LegalUpdateScreen({ navigation, route }: any) {
   const parent: LegalDoc[] = route.params?.parent ?? [];
   const child: LegalDoc[] = route.params?.child ?? [];
   const kids: string = route.params?.kids ?? '';
-  const boxes = [...parent, ...child].filter((d) => !isNotice(d.key));
-  const [on, setOn] = useState<Record<string, boolean>>({});
+  const parentBox = parent.filter((d) => !isNotice(d.key));
+  const childBox = child.filter((d) => !isNotice(d.key));
+  const [okParent, setOkParent] = useState(false);
+  const [okChild, setOkChild] = useState(false);
+  const [more, setMore] = useState(false);
   const [busy, setBusy] = useState(false);
-  const all = boxes.every((d) => on[`${d.key}@${d.version}`]);
-  const updated = [...parent, ...child].some((d) => !!d.summary);
+  const all = (!parentBox.length || okParent) && (!childBox.length || okChild);
+  const summaries = [...parent, ...child].filter((d) => !!d.summary);
+  const updated = summaries.length > 0;
 
   const done = async () => {
     setBusy(true);
@@ -30,54 +36,63 @@ export default function LegalUpdateScreen({ navigation, route }: any) {
     } finally { setBusy(false); }
   };
 
-  const Doc = ({ d, forChild }: { d: LegalDoc; forChild?: boolean }) => {
-    const k = `${d.key}@${d.version}`;
-    return (
-      <View style={styles.card}>
-        <Text style={styles.h}>{d.title}</Text>
-        {!!d.summary && (
-          <View style={{ gap: 4 }}>
-            <Text style={styles.cap}>Kısaca ne değişti:</Text>
-            <Text style={styles.text}>{d.summary}</Text>
-          </View>
-        )}
-        <Pressable onPress={() => navigation.navigate('LegalText', { key: d.key, version: d.version })} hitSlop={6} accessibilityRole="link">
-          <Text style={styles.link}>Tam metni oku</Text>
-        </Pressable>
-        {isNotice(d.key) ? (
-          <Text style={styles.cap}>{updated ? 'Aydınlatma metnimizi güncelledik.' : 'Kişisel verilerinin nasıl işlendiğini bu metinde anlatıyoruz.'}</Text>
-        ) : (
-          <Pressable onPress={() => setOn((p) => ({ ...p, [k]: !p[k] }))} style={styles.row} accessibilityRole="checkbox" accessibilityState={{ checked: !!on[k] }}>
-            <Ionicons name={on[k] ? 'checkbox' : 'square-outline'} size={22} color={colors.navy} />
-            <Text style={[styles.text, { flex: 1 }]}>
-              {forChild ? `Velisi olarak ${d.title} metnini okudum, çocuğum adına kabul ediyorum.` : `${d.title} metnini okudum, kabul ediyorum.`}
-            </Text>
-          </Pressable>
-        )}
-      </View>
-    );
-  };
+  const Links = ({ docs }: { docs: LegalDoc[] }) => (
+    <>
+      {docs.map((d, i) => (
+        <Text key={d.key}>
+          {i > 0 ? (i === docs.length - 1 ? ' ve ' : ', ') : ''}
+          <Text style={styles.link} onPress={() => navigation.navigate('LegalText', { key: d.key, version: d.version })}>{d.title}</Text>
+        </Text>
+      ))}
+    </>
+  );
+  const notices = [...parent, ...child].filter((d) => isNotice(d.key));
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }}>
-        <View style={styles.icon}><Ionicons name="document-text-outline" size={30} color={colors.navy} /></View>
-        <Text style={styles.title} accessibilityRole="header">{updated ? 'Koşullarımız güncellendi' : 'Koşullarımızı onayla'}</Text>
-        {parent.map((d) => <Doc key={d.key} d={d} />)}
-        {child.length > 0 && (
-          <>
-            <Text style={[styles.h, { marginTop: 6 }]}>Pofi Adası{kids ? ` · ${kids} adına` : ''}</Text>
-            {child.map((d) => <Doc key={d.key} d={d} forChild />)}
-          </>
-        )}
-        <Pressable onPress={done} disabled={!all || busy} style={[styles.cta, (!all || busy) && { opacity: 0.45 }]} accessibilityRole="button">
-          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Devam et</Text>}
-        </Pressable>
-        <Text style={[styles.cap, { textAlign: 'center' }]}>
-          Kabul etmek istemiyorsan <Text style={styles.link} onPress={() => navigation.navigate('DeleteAccount')}>hesabını silebilir</Text> ya da{' '}
-          <Text style={styles.link} onPress={() => navigation.navigate('Kvkk')}>KVKK başvurusu</Text> gönderebilirsin.{' '}
-          <Text style={styles.link} onPress={() => navigation.navigate('LegalDocs')}>Yasal metinler</Text>
-        </Text>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 20 }}>
+        <View style={styles.card}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Ionicons name="document-text-outline" size={22} color={colors.navy} />
+            <Text style={styles.title} accessibilityRole="header">{updated ? 'Koşullarımız güncellendi' : 'Koşullarımızı onayla'}</Text>
+          </View>
+
+          {updated && (
+            <View style={{ gap: 6 }}>
+              <Pressable onPress={() => setMore(!more)} hitSlop={6} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} accessibilityRole="button">
+                <Text style={styles.small}>Kısaca neler değişti?</Text>
+                <Ionicons name={more ? 'chevron-up' : 'chevron-down'} size={14} color={colors.navy} />
+              </Pressable>
+              {more && summaries.map((d) => (
+                <Text key={d.key} style={styles.cap}><Text style={{ fontWeight: '700' }}>{d.title}: </Text>{d.summary}</Text>
+              ))}
+            </View>
+          )}
+
+          {parentBox.length > 0 && (
+            <Pressable onPress={() => setOkParent(!okParent)} style={styles.row} accessibilityRole="checkbox" accessibilityState={{ checked: okParent }}>
+              <Ionicons name={okParent ? 'checkbox' : 'square-outline'} size={20} color={colors.navy} />
+              <Text style={styles.line}><Links docs={parentBox} /> {parentBox.length > 1 ? 'metinlerini' : 'metnini'} kabul ediyorum.</Text>
+            </Pressable>
+          )}
+          {childBox.length > 0 && (
+            <Pressable onPress={() => setOkChild(!okChild)} style={styles.row} accessibilityRole="checkbox" accessibilityState={{ checked: okChild }}>
+              <Ionicons name={okChild ? 'checkbox' : 'square-outline'} size={20} color={colors.navy} />
+              <Text style={styles.line}>Velisi olarak <Links docs={childBox} /> {childBox.length > 1 ? 'metinlerini' : 'metnini'} {kids ? `${kids} adına` : 'çocuğum adına'} kabul ediyorum.</Text>
+            </Pressable>
+          )}
+          {notices.length > 0 && (
+            <Text style={styles.cap}>Verilerinin nasıl işlendiği: <Links docs={notices} /></Text>
+          )}
+
+          <Pressable onPress={done} disabled={!all || busy} style={[styles.cta, (!all || busy) && { opacity: 0.45 }]} accessibilityRole="button">
+            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Devam et</Text>}
+          </Pressable>
+          <Text style={[styles.cap, { textAlign: 'center' }]}>
+            Kabul etmek istemiyorsan <Text style={styles.link} onPress={() => navigation.navigate('DeleteAccount')}>hesabını silebilir</Text> ya da{' '}
+            <Text style={styles.link} onPress={() => navigation.navigate('LegalDocs')}>KVKK başvurusu</Text> gönderebilirsin.
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -85,14 +100,13 @@ export default function LegalUpdateScreen({ navigation, route }: any) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  icon: { width: 60, height: 60, borderRadius: 30, backgroundColor: colors.today, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginTop: 8 },
-  title: { fontSize: 22, fontWeight: '800', color: colors.navy, textAlign: 'center' },
-  card: { backgroundColor: '#fff', borderRadius: radius.md, padding: 16, gap: 10 },
-  h: { fontSize: 15, fontWeight: '700', color: colors.navy },
-  text: { fontSize: 14, lineHeight: 20, color: '#4A5165' },
+  card: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 18, gap: 12 },
+  title: { fontSize: 18, fontWeight: '800', color: colors.navy, flex: 1 },
+  small: { fontSize: 13, fontWeight: '600', color: colors.navy },
+  line: { flex: 1, fontSize: 13, lineHeight: 19, color: '#4A5165' },
   cap: { fontSize: 12, lineHeight: 17, color: colors.muted },
-  link: { fontSize: 13, color: colors.navy, fontWeight: '700', textDecorationLine: 'underline' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F6F7FB', borderRadius: radius.sm, padding: 10 },
-  cta: { height: 52, borderRadius: radius.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  link: { color: colors.navy, fontWeight: '600', textDecorationLine: 'underline' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  cta: { height: 50, borderRadius: radius.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
   ctaText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });

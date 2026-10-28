@@ -9,8 +9,9 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { formatTR, toISO } from '../dates';
 
-// Aile › Hesap › Yasal metinler (hukuk/50 §3): ParentApp ve Pofi Adası metinleri (legal_documents_for), onay tarihi;
-// "Verdiğin izinler": sağlık yanıtları (geri al = sil), uzman paylaşımı ve önceki uzman kayıtları (Uzmanım'da).
+// Aile › Hesap › Yasal ve gizlilik (hukuk/50 §3–4; kullanıcı isteği 28 Ekim 2026: bütün hukuki içerik tek başlık altında):
+// ParentApp ve Pofi Adası metinleri (legal_documents_for), onay tarihi; "Verdiğin izinler": sağlık yanıtları (geri al = sil),
+// uzman paylaşımı ve önceki uzman kayıtları (Uzmanım'da); KVKK başvurusu ve başvurularım.
 export default function LegalDocsScreen({ navigation }: any) {
   const { session } = useAuth();
   const [docs, setDocs] = useState<LegalDoc[] | null | undefined>();
@@ -44,7 +45,7 @@ export default function LegalDocsScreen({ navigation }: any) {
     <SafeAreaView style={styles.safe}>
       <View style={styles.top}>
         <IconButton name="chevron-back" label="Geri" onPress={() => navigation.goBack()} />
-        <Text style={styles.topTitle}>Yasal metinler</Text>
+        <Text style={styles.topTitle}>Yasal ve gizlilik</Text>
         <View style={{ width: 40 }} />
       </View>
       <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }}>
@@ -89,7 +90,7 @@ export default function LegalDocsScreen({ navigation }: any) {
         </View>
         <Pressable onPress={() => navigation.navigate('Kvkk')} style={styles.kvkk} accessibilityRole="button">
           <Ionicons name="shield-outline" size={18} color={colors.navy} />
-          <Text style={[styles.h, { flex: 1 }]}>KVKK başvurusu</Text>
+          <Text style={[styles.h, { flex: 1 }]}>KVKK başvurusu ve başvurularım</Text>
           <Ionicons name="chevron-forward" size={16} color={colors.muted} />
         </Pressable>
       </ScrollView>

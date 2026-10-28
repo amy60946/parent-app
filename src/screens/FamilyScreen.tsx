@@ -380,7 +380,7 @@ function Mail() {
 
 /* ---------- Hesap ---------- */
 
-type AccountRow = 'manage' | 'join' | 'clinic' | 'notifications' | 'membership' | 'guide' | 'legal' | 'kvkk' | 'other';
+type AccountRow = 'manage' | 'join' | 'clinic' | 'notifications' | 'membership' | 'guide' | 'legal' | 'other';
 
 const accountRows: { icon: keyof typeof Ionicons.glyphMap; label: string; id?: AccountRow }[] = [
   { icon: 'sunny-outline', label: 'Üyelik', id: 'membership' },
@@ -389,8 +389,7 @@ const accountRows: { icon: keyof typeof Ionicons.glyphMap; label: string; id?: A
   { icon: 'notifications-outline', label: 'Bildirimler', id: 'notifications' },
   { icon: 'medkit-outline', label: 'Uzmanım', id: 'clinic' },
   { icon: 'compass-outline', label: 'Nasıl kullanılır?', id: 'guide' },
-  { icon: 'document-text-outline', label: 'Yasal metinler', id: 'legal' },
-  { icon: 'shield-outline', label: 'KVKK başvurusu', id: 'kvkk' },
+  { icon: 'shield-checkmark-outline', label: 'Yasal ve gizlilik', id: 'legal' },
   { icon: 'create-outline', label: 'Geri bildirim gönder' },
   { icon: 'star-outline', label: 'Uygulamayı puanla' },
   { icon: 'book-outline', label: 'Ebeveyn kaynakları' },
@@ -405,8 +404,7 @@ function Account({ onLogout }: { onLogout?: () => void }) {
   const pick = (id: AccountRow) => (id === 'notifications' ? navigation.navigate('Notifications')
     : id === 'membership' ? navigation.navigate('Paywall')
     : id === 'clinic' ? navigation.navigate('Uzmanım')
-    : id === 'legal' ? navigation.navigate('LegalDocs')
-    : id === 'kvkk' ? navigation.navigate('Kvkk') : setOpen(id));
+    : id === 'legal' ? navigation.navigate('LegalDocs') : setOpen(id));
   const memberText = !access ? '' : access.state === 'premium' ? (access.plan === 'yearly' ? 'Yıllık' : 'Aylık')
     : access.state === 'clinic' ? 'Klinik' : access.state === 'trial' ? `Deneme · ${access.daysLeft ?? 0} gün`
     : access.state === 'expired' ? 'Ücretsiz' : '';
@@ -422,9 +420,6 @@ function Account({ onLogout }: { onLogout?: () => void }) {
           </Pressable>
         ))}
       </Card>
-      <Text style={{ fontSize: 11, color: colors.muted, textAlign: 'center' }}>
-        Gizlilik politikamızı ve kullanım koşullarımızı okuyabilirsiniz.
-      </Text>
       <Pressable
         onPress={() => Alert.alert('Çıkış yapılsın mı?', '', [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Çıkış yap', style: 'destructive', onPress: onLogout }])}
         style={styles.logout}

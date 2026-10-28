@@ -71,19 +71,17 @@ function ChildConsent({ visible, name, docs, onDone, onDismiss }: {
       ) : (
       <View style={styles.backdrop}>
         <View style={styles.card} accessibilityViewIsModal>
-          <View style={styles.icon}><Ionicons name="shield-checkmark-outline" size={30} color={colors.navy} /></View>
           <Text style={styles.title} accessibilityRole="header">Pofi Adası'nı bağlamadan önce</Text>
-          {/* "izleme aracı" = üçüncü taraf reklam/analiz takibi; oyunun aileye raporladığı ilerleme ayrı (hukuk/50 §1.3, 28 Ekim) */}
-          <Text style={styles.text}>Pofi Adası'nda reklam, satın alma ve dışarıdan izleme aracı (reklam ya da analiz takibi) yok. {genitive(name)} oyundaki ilerlemesi yalnız ailesine, izin verirsen uzmanına da gösterilir. Oyun ondan e-posta, konum, fotoğraf ya da ses almaz.</Text>
+          {/* "izleme aracı" = üçüncü taraf reklam/analiz takibi; oyunun aileye raporladığı ilerleme ayrı (hukuk/50 §1.3, 28 Ekim).
+              Kısa metin (kullanıcı isteği 28 Ekim 2026); ayrıntı bağlantılı metinlerde. */}
+          <Text style={styles.text}>Oyunda reklam, satın alma ve dışarıdan izleme aracı yok. {genitive(name)} ilerlemesini yalnız ailesi, izin verirsen uzmanı görür.</Text>
           <Pressable onPress={() => setOn(!on)} style={styles.row} accessibilityRole="checkbox" accessibilityState={{ checked: on }}>
-            <Ionicons name={on ? 'checkbox' : 'square-outline'} size={22} color={colors.navy} />
-            <Text style={[styles.text, { flex: 1, textAlign: 'left' }]}>
-              Velisi olarak <Text style={styles.link} onPress={() => setDoc('kosullar-gameapp')}>Pofi Adası Koşulları</Text>'nı okudum, {name} adına kabul ediyorum.
+            <Ionicons name={on ? 'checkbox' : 'square-outline'} size={20} color={colors.navy} />
+            <Text style={[styles.cap, { flex: 1, color: '#4A5165', fontSize: 13, lineHeight: 19 }]}>
+              Velisi olarak <Text style={styles.link} onPress={() => setDoc('kosullar-gameapp')}>Pofi Adası Koşulları</Text>'nı {name} adına kabul ediyorum.{' '}
+              <Text style={styles.link} onPress={() => setDoc('aydinlatma-cocuk')}>Aydınlatma</Text>
             </Text>
           </Pressable>
-          <Text style={[styles.cap, { alignSelf: 'stretch' }]}>
-            Çocuğunun verilerinin nasıl işlendiğini <Text style={styles.link} onPress={() => setDoc('aydinlatma-cocuk')}>Pofi Adası Çocuk ve Veli Aydınlatma Metni</Text>'nde anlatıyoruz.
-          </Text>
           <Pressable onPress={accept} disabled={!on || busy} style={[styles.cta, (!on || busy) && { opacity: 0.45 }]} accessibilityRole="button">
             {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Kabul et ve devam et</Text>}
           </Pressable>
@@ -97,13 +95,12 @@ function ChildConsent({ visible, name, docs, onDone, onDismiss }: {
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(15,27,61,0.45)', justifyContent: 'center', padding: 20 },
-  card: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 20, gap: 12, alignItems: 'center' },
-  icon: { width: 60, height: 60, borderRadius: 30, backgroundColor: colors.today, alignItems: 'center', justifyContent: 'center' },
+  card: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 18, gap: 12, alignItems: 'center' },
   title: { fontSize: 18, fontWeight: '800', color: colors.navy, textAlign: 'center' },
   text: { fontSize: 14, lineHeight: 20, color: '#4A5165', textAlign: 'center' },
   cap: { fontSize: 12, lineHeight: 17, color: colors.muted },
   link: { color: colors.navy, fontWeight: '700', textDecorationLine: 'underline' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'stretch', backgroundColor: '#F6F7FB', borderRadius: radius.md, padding: 12 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'stretch' },
   cta: { alignSelf: 'stretch', height: 50, borderRadius: radius.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
   ctaText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   cancel: { fontSize: 14, fontWeight: '600', color: colors.navy, paddingVertical: 4 },
