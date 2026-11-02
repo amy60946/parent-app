@@ -23,6 +23,9 @@ export type Suggestion = {
   // Günlük rutin v2 (öneri 20261028200000_routines_v2): aynı routineGroup'lu öneriler tek paket; goalId takip planı hedefi.
   // Sütunlar sunucuda yoksa (select *) boş gelir: öneri tek başına gösterilir.
   routine?: { group: string; title: string; icon?: string; position: number }; goalId?: string;
+  // Takip planı yeniden tasarımı (öneri 20261102100000_plan_redesign; akislar.md 12.1): 'change' = ailede ekli görevin
+  // değişikliği (targetTaskId; yeni değerler reminder/repeat*/recurring/endDate; changeRemove = görevi bitir). Sütun yoksa 'new'.
+  kind: 'new' | 'change'; targetTaskId?: string; changeRemove: boolean;
 };
 
 const fail = (e: { message: string } | null) => { if (e) throw new Error(e.message); };
@@ -78,6 +81,7 @@ export async function pendingSuggestions(familyId: string): Promise<Suggestion[]
       requiresReview: r.requires_review !== false,
       routine: r.routine_group ? { group: r.routine_group, title: r.routine_title ?? 'Rutin', icon: r.routine_icon ?? undefined, position: Number(r.routine_position ?? 0) } : undefined,
       goalId: r.goal_id ?? undefined,
+      kind: (r.kind === 'change' ? 'change' : 'new') as Suggestion['kind'], targetTaskId: r.target_task_id ?? undefined, changeRemove: !!r.change_remove,
     }));
 }
 
@@ -195,14 +199,19 @@ export async function inviteInfo(token: string): Promise<InviteInfo | null> {
 /* ---------- Takip planı (akislar.md 12) ---------- */
 
 export type CareGoal = { id: string; title: string; description: string; homeSupport: string; target: string; status: 'active' | 'achieved' | 'paused' };
-export type CareModule = { id: string; title: string; aim: string; practice: string; checklist: string[]; status: 'active' | 'done'; practicedWeek: number };
+export type CareModule = {
+  id: string; title: string; aim: string; practice: string; checklist: string[]; status: 'active' | 'done'; practicedWeek: number;
+  goalIds: string[]; // programın bağlı olduğu, aileye açık hedefler (12.1; eski sunucuda boş)
+};
+// Kabul edilmiş öneriler: rutin (aynı routine_group) ya da tek görev; hedef yalnız aileye gönderilmişse (12.1)
+export type CareRoutine = { id: string; title: string; icon?: string; single: boolean; goalId?: string; taskIds: string[] };
 export type CareBarrier = 'no_time' | 'forgot' | 'child_resisted' | 'unsure';
 export type CareLog = { moduleId: string; practiced: boolean; difficulty?: number; barrier?: CareBarrier };
 
-export async function carePlan(linkId: string): Promise<{ goals: CareGoal[]; modules: CareModule[] } | null> {
+export async function carePlan(linkId: string): Promise<{ goals: CareGoal[]; modules: CareModule[]; routines: CareRoutine[] } | null> {
   const { data, error } = await supabase.rpc('family_care_plan', { p_link_id: linkId });
   if (error) { if (isMissingRpc(error)) return null; throw new Error(error.message); }
-  if (!data) return { goals: [], modules: [] };
+  if (!data) return { goals: [], modules: [], routines: [] };
   return {
     goals: (data.goals ?? []).map((g: any) => ({
       id: g.id, title: g.title, description: g.description ?? '', homeSupport: g.home_support ?? '', target: g.target ?? '', status: g.status,
@@ -211,6 +220,11 @@ export async function carePlan(linkId: string): Promise<{ goals: CareGoal[]; mod
       id: m.id, title: m.title, aim: m.aim ?? '', practice: m.practice ?? '',
       checklist: (Array.isArray(m.checklist) ? m.checklist : []).map((x: any) => (typeof x === 'string' ? x : x?.text ?? '')).filter(Boolean),
       status: m.status, practicedWeek: Number(m.practiced_week ?? 0),
+      goalIds: Array.isArray(m.goal_ids) ? m.goal_ids.map(String) : [],
+    })),
+    routines: (Array.isArray(data.routines) ? data.routines : []).map((r: any) => ({
+      id: String(r.id), title: r.title ?? '', icon: r.icon ?? undefined, single: !!r.single, goalId: r.goal_id ?? undefined,
+      taskIds: Array.isArray(r.task_ids) ? r.task_ids.map(String) : [],
     })),
   };
 }

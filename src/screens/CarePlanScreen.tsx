@@ -8,7 +8,9 @@ import { Card, IconButton } from '../components/ui';
 import { useAuth } from '../lib/auth';
 import { todayISO } from '../dates';
 import { track } from '../lib/track';
-import { CareBarrier, CareGoal, CareLog, CareModule, carePlan, listLinks, saveLog, todayLogs } from '../lib/clinic';
+import { CareBarrier, CareGoal, CareLog, CareModule, CareRoutine, carePlan, listLinks, saveLog, todayLogs } from '../lib/clinic';
+import { genitive } from '../lib/tr';
+import { addDays, fromISO, toISO } from '../dates';
 import { useStore } from '../store';
 
 // Uzmanım › çocuk › Takip planı (ortak/sozlesme/akislar.md 12): uzmanın aileyle paylaştığı hedefler ve aile programı.
@@ -25,18 +27,17 @@ const ease = ['Çok kolaydı', 'Kolaydı', 'Orta', 'Zorlandım', 'Çok zorlandı
 export default function CarePlanScreen({ navigation, route }: any) {
   const { linkId } = route.params as { linkId: string; childName?: string; clinician?: string };
   const { session } = useAuth();
-  const { children } = useStore();
-  // Bildirimden açılınca yalnız paylaşım kimliği gelir: çocuk ve uzman adını paylaşımdan bul
-  const [names, setNames] = useState({ childName: route.params.childName as string | undefined, clinician: route.params.clinician as string | undefined });
+  const { children, completions } = useStore();
+  // Bildirimden açılınca yalnız paylaşım kimliği gelir: çocuk ve uzman adını paylaşımdan bul (rutin satırı için çocuk kimliği de)
+  const [names, setNames] = useState({ childName: route.params.childName as string | undefined, clinician: route.params.clinician as string | undefined, childId: undefined as string | undefined });
   useEffect(() => {
-    if (names.childName) return;
     listLinks().then((ls) => {
       const l = ls.find((x) => x.linkId === linkId);
-      if (l) setNames({ childName: children.find((c) => c.id === l.childId)?.name, clinician: l.clinician || l.clinic });
+      if (l) setNames({ childName: children.find((c) => c.id === l.childId)?.name, clinician: l.clinician || l.clinic, childId: l.childId });
     }).catch(() => {});
   }, [linkId]); // eslint-disable-line react-hooks/exhaustive-deps
-  const { childName, clinician } = names;
-  const [plan, setPlan] = useState<{ goals: CareGoal[]; modules: CareModule[] } | null | undefined>();
+  const { childName, clinician, childId } = names;
+  const [plan, setPlan] = useState<{ goals: CareGoal[]; modules: CareModule[]; routines: CareRoutine[] } | null | undefined>();
   const [logs, setLogs] = useState<Record<string, CareLog>>({});
   const today = todayISO();
 
@@ -72,7 +73,19 @@ export default function CarePlanScreen({ navigation, route }: any) {
     }
   };
 
-  const empty = plan && !plan.goals.length && !plan.modules.length;
+  const empty = plan && !plan.goals.length && !plan.modules.length && !plan.routines.length;
+  // Sunucu programların hedeflerini ya da kabul edilen rutinleri döndürüyorsa gruplu görünüm; eski sunucuda bugünkü liste
+  const grouped = !!plan && (plan.modules.some((m) => m.goalIds.length > 0) || plan.routines.length > 0);
+  const goalIds = new Set(plan?.goals.map((g) => g.id) ?? []);
+  const free = plan?.modules.filter((m) => !m.goalIds.some((id) => goalIds.has(id))) ?? [];
+  const freeRts = plan?.routines.filter((r) => !r.goalId || !goalIds.has(r.goalId)) ?? [];
+  // Rutinin bu haftaki onayları (son 7 gün; çocuk tarafı kayıtları)
+  const weekStart = toISO(addDays(fromISO(today), -6));
+  const approvedWeek = (r: CareRoutine) => Object.entries(completions).filter(([k, st]) => {
+    const [taskId, cid, day] = k.split('|');
+    return st === 'approved' && r.taskIds.includes(taskId) && (!childId || cid === childId) && day >= weekStart && day <= today;
+  }).length;
+  const openTasks = () => navigation.navigate('Tabs', { screen: 'Görevler', params: childId ? { filter: childId, date: today } : { date: today } });
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
@@ -95,39 +108,91 @@ export default function CarePlanScreen({ navigation, route }: any) {
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 48 }}>
-          {plan.modules.length > 0 && (
-            <View style={{ gap: 10 }}>
-              <Text style={styles.section}>Evde uygulama</Text>
-              {plan.modules.map((m) => <Module key={m.id} m={m} log={logs[m.id]} onSave={save} />)}
-            </View>
+          {grouped ? (
+            <>
+              {/* Hedefe göre gruplu (akislar.md 12.1): hedef → bu haftaki program → çocuğun rutini */}
+              {plan.goals.map((g) => {
+                const mods = plan.modules.filter((m) => m.goalIds.includes(g.id));
+                const rts = plan.routines.filter((r) => r.goalId === g.id);
+                return (
+                  <Card key={g.id} style={{ gap: 10 }}>
+                    <GoalHead g={g} />
+                    {mods.length > 0 && <Text style={styles.sub}>Bu hafta senin programın</Text>}
+                    {mods.map((m) => <Module key={m.id} m={m} log={logs[m.id]} onSave={save} flat />)}
+                    {rts.length > 0 && <Text style={styles.sub}>{childName ? `${genitive(childName)} rutini` : 'Çocuğunun rutini'}</Text>}
+                    {rts.map((r) => <RoutineRow key={r.id} r={r} approved={approvedWeek(r)} onPress={openTasks} />)}
+                  </Card>
+                );
+              })}
+              {(free.length > 0 || freeRts.length > 0) && (
+                <View style={{ gap: 10 }}>
+                  <Text style={styles.section}>{plan.goals.length ? 'Hedefe bağlı olmayanlar' : 'Evde uygulama'}</Text>
+                  {free.map((m) => <Module key={m.id} m={m} log={logs[m.id]} onSave={save} />)}
+                  {freeRts.length > 0 && (
+                    <Card style={{ gap: 4 }}>
+                      {freeRts.map((r) => <RoutineRow key={r.id} r={r} approved={approvedWeek(r)} onPress={openTasks} />)}
+                    </Card>
+                  )}
+                </View>
+              )}
+            </>
+          ) : (
+            <>
+              {plan.modules.length > 0 && (
+                <View style={{ gap: 10 }}>
+                  <Text style={styles.section}>Evde uygulama</Text>
+                  {plan.modules.map((m) => <Module key={m.id} m={m} log={logs[m.id]} onSave={save} />)}
+                </View>
+              )}
+              {plan.goals.length > 0 && (
+                <View style={{ gap: 10 }}>
+                  <Text style={styles.section}>Hedefler</Text>
+                  {plan.goals.map((g) => <Card key={g.id} style={{ gap: 6 }}><GoalHead g={g} /></Card>)}
+                </View>
+              )}
+            </>
           )}
-          {plan.goals.length > 0 && (
-            <View style={{ gap: 10 }}>
-              <Text style={styles.section}>Hedefler</Text>
-              {plan.goals.map((g) => (
-                <Card key={g.id} style={{ gap: 6 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
-                    <Text style={[styles.h, { flex: 1 }]}>{g.title}</Text>
-                    <Text style={[styles.tag, g.status === 'achieved' && { backgroundColor: colors.easy.bg, color: colors.easy.fg }]}>{goalStatus[g.status] ?? ''}</Text>
-                  </View>
-                  {!!g.description && <Text style={styles.body}>{g.description}</Text>}
-                  {!!g.target && <Text style={styles.cap}>Hedef: {g.target}</Text>}
-                  {!!g.homeSupport && <Text style={styles.body}><Text style={{ fontWeight: '700' }}>Evde: </Text>{g.homeSupport}</Text>}
-                </Card>
-              ))}
-            </View>
-          )}
+          <Text style={[styles.cap, { textAlign: 'center' }]}>Bu bilgiler tanı ya da puan değildir.</Text>
         </ScrollView>
       )}
     </SafeAreaView>
   );
 }
 
-function Module({ m, log, onSave }: { m: CareModule; log?: CareLog; onSave: (l: CareLog) => void }) {
+function GoalHead({ g }: { g: CareGoal }) {
+  return (
+    <View style={{ gap: 6 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+        <Text style={[styles.h, { flex: 1 }]}>{g.title}</Text>
+        <Text style={[styles.tag, g.status === 'achieved' && { backgroundColor: colors.easy.bg, color: colors.easy.fg }]}>{goalStatus[g.status] ?? ''}</Text>
+      </View>
+      {!!g.description && <Text style={styles.body}>{g.description}</Text>}
+      {!!g.target && <Text style={styles.cap}>Hedef: {g.target}</Text>}
+      {!!g.homeSupport && <Text style={styles.body}><Text style={{ fontWeight: '700' }}>Evde: </Text>{g.homeSupport}</Text>}
+    </View>
+  );
+}
+
+// Uzmanın önerip ailenin eklediği rutin (ya da tek görev): görev sayısı, bu hafta onay; dokununca çocuğun görevleri
+function RoutineRow({ r, approved, onPress }: { r: CareRoutine; approved: number; onPress: () => void }) {
+  const icon = r.icon && /^[a-z0-9-]+$/.test(r.icon) ? (r.icon as keyof typeof Ionicons.glyphMap) : undefined;
+  return (
+    <Pressable onPress={onPress} style={styles.rt} accessibilityRole="button" accessibilityLabel={`${r.title}, görevler`}>
+      <View style={styles.rtIcon}>{icon ? <Ionicons name={icon} size={16} color={colors.navy} /> : <Text style={{ fontSize: 15 }}>{r.icon ?? '•'}</Text>}</View>
+      <View style={{ flex: 1, gap: 1 }}>
+        <Text style={styles.h}>{r.title}</Text>
+        <Text style={styles.cap}>{r.single ? 'Görev' : `${r.taskIds.length} görev`} · bu hafta {approved} onay</Text>
+      </View>
+      <Text style={styles.cap}>Görevler ›</Text>
+    </Pressable>
+  );
+}
+
+function Module({ m, log, onSave, flat }: { m: CareModule; log?: CareLog; onSave: (l: CareLog) => void; flat?: boolean }) {
   const [open, setOpen] = useState(false);
   const active = m.status === 'active';
   return (
-    <Card style={{ gap: 10 }}>
+    <Card style={flat ? { gap: 10, ...styles.flat } : { gap: 10 }}>
       <Pressable onPress={() => setOpen(!open)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }} accessibilityRole="button">
         <View style={{ flex: 1, gap: 2 }}>
           <Text style={styles.h}>{m.title}</Text>
@@ -208,4 +273,8 @@ const styles = StyleSheet.create({
   chip: { paddingHorizontal: 12, height: 34, borderRadius: 17, borderWidth: 1, borderColor: colors.line, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   chipOn: { backgroundColor: colors.navy, borderColor: colors.navy },
   chipText: { fontSize: 12, fontWeight: '600', color: colors.navy },
+  sub: { fontSize: 12, fontWeight: '800', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 4 },
+  flat: { backgroundColor: '#F7F8FB', padding: 12 },
+  rt: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
+  rtIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#FFF1D6', alignItems: 'center', justifyContent: 'center' },
 });

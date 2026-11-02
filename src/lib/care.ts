@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
-  ClinicLink, CareGoal, CareModule, PendingInvite, Suggestion, carePlan, listLinks, pendingInvites, pendingSuggestions, todayLogs,
+  ClinicLink, CareGoal, CareModule, CareRoutine, PendingInvite, Suggestion, carePlan, listLinks, pendingInvites, pendingSuggestions, todayLogs,
 } from './clinic';
 import { todayISO } from '../dates';
 
@@ -10,7 +10,7 @@ import { todayISO } from '../dates';
 // bugün uygulandı mı. Hepsi mevcut ortak işlevlerle (akislar.md 10–12, 5.4); sunucuda işlev yoksa boş döner.
 export type CareTodo = { linkId: string; childId: string; clinician: string; module: CareModule; doneToday: boolean };
 export type Clinician = { clinicId: string; name: string; clinic: string; title: string; verifiedAs?: string; links: ClinicLink[] };
-export type CarePlanData = { goals: CareGoal[]; modules: CareModule[] };
+export type CarePlanData = { goals: CareGoal[]; modules: CareModule[]; routines: CareRoutine[] };
 export type CareState = { links: ClinicLink[]; invites: PendingInvite[]; suggestions: Suggestion[]; todos: CareTodo[]; plans: Record<string, CarePlanData> };
 const EMPTY: CareState = { links: [], invites: [], suggestions: [], todos: [], plans: {} };
 

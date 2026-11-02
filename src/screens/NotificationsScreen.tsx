@@ -21,11 +21,11 @@ export function notificationTarget(n: Pick<AppNotification, 'kind' | 'data'>): [
   const childId = n.data?.child_id;
   if (n.kind === 'task_done') return ['Review'];
   if (n.kind === 'message' && childId) return ['Chat', { childId }];
-  if (n.kind === 'clinic_suggestion') return ['Tabs', { screen: 'Uzmanım' }];
   if (n.kind === 'reward_request') return ['Rewards', { childId }];
-  // Uzmanın takip planı (akislar.md 12): tek paylaşım ya da davetle açılan ilk paylaşım
+  // Uzmanın tek gönderimi (plan + öneriler) ya da öneri: uzmanın sayfası (akislar.md 12, 12.1; data.link_id ya da davetle ilk paylaşım)
   const linkId = n.data?.link_id ?? (Array.isArray(n.data?.link_ids) ? n.data.link_ids[0] : undefined);
-  if (n.kind === 'care_plan_shared' && linkId) return ['CarePlan', { linkId }];
+  if ((n.kind === 'care_plan_shared' || n.kind === 'clinic_suggestion') && linkId) return ['Clinician', { linkId }];
+  if (n.kind === 'clinic_suggestion') return ['Tabs', { screen: 'Uzmanım' }];
   if (n.kind === 'kvkk_answered') return ['Kvkk', { tab: 'list' }]; // KVKK başvurusu yanıtlandı (ortak P17)
   return null;
 }

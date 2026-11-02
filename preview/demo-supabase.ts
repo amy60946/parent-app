@@ -196,6 +196,13 @@ function seed(): Db {
     });
   });
 
+  // Değişiklik önerisi (12.1): ailede ekli "10 dakika kitap oku" için saat ve gün değişikliği
+  db.clinic_task_suggestions.push({
+    id: uuid(), link_id: L, clinic_id: K, family_id: F, child_id: 'c-nazli', title: '10 dakika kitap oku', emoji: '📖', skill: 'Odaklanma', difficulty: 'medium',
+    recurring: true, note: 'Okul günlerinde akşam yemeğinden sonra daha kolay.', status: 'pending', created_by: D, created_at: ago(90), decided_at: null, description: '',
+    coins: 10, repeat_kind: 'weekly', repeat_days: [1, 2, 3, 4, 5], reminder: '19:45', requires_review: true, kind: 'change', target_task_id: 'k-kitap', change_remove: false,
+  });
+
   // Örnek bildirimler (gerçekte sunucu tetikleyicileri yazar)
   const note = (id: number, kind: string, title: string, body: string, min: number, data: Row, read = false) =>
     db.notifications.push({ id, user_id: U, app: 'parent', kind, title, body, data, child_id: data.child_id ?? null, created_at: ago(min), read_at: read ? ago(min - 1) : null });
@@ -758,8 +765,17 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
     return { data: {
       goals: db.clinic_goals.filter((g: Row) => g.link_id === l.id && g.shared && !g.archived)
         .map((g: Row) => ({ id: g.id, title: g.title, description: g.description, target: g.target ?? '', home_support: g.home_support ?? '', status: g.status ?? 'active' })),
+      // Takip planı yeniden tasarımı (proposed/20261102100000_plan_redesign): programın hedefleri ve kabul edilen rutinler
       modules: db.care_modules.filter((m: Row) => m.link_id === l.id && m.status !== 'planned').map((m: Row) => ({ ...m,
+        goal_ids: m.id === 'm-rutin' ? ['g-sabah'] : [],
         practiced_week: db.care_module_logs.filter((x: Row) => x.module_id === m.id && x.practiced && x.day >= week).length })),
+      routines: Object.values(db.clinic_task_suggestions.filter((x: Row) => x.link_id === l.id && x.status === 'accepted' && (x.kind ?? 'new') === 'new')
+        .reduce((acc: Record<string, Row>, x: Row) => {
+          const k = x.routine_group ?? x.id;
+          const r = acc[k] ??= { id: k, title: x.routine_title ?? x.title, icon: x.routine_icon ?? x.emoji, single: !x.routine_group, goal_id: x.goal_id ?? null, task_ids: [] };
+          if (x.task_id) r.task_ids.push(x.task_id);
+          return acc;
+        }, {})),
     }, error: null };
   }
   if (name === 'family_premium') {

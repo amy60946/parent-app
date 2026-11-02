@@ -78,9 +78,21 @@ export default function MeScreen({ navigation }: any) {
     todo.push({ key: 'mods', icon: 'medkit-outline', title: `Bugün ${openToday.length} uygulama seni bekliyor`, sub: `${who} · uyguladıysan işaretle`,
       onPress: () => (clinics.length === 1 ? navigation.navigate('Clinician', { clinicId: clinics[0] }) : navigation.navigate('Uzmanım')) });
   }
-  if (care?.suggestions.length) {
-    todo.push({ key: 'sug', icon: 'sparkles-outline', title: `Uzmanından ${care.suggestions.length} görev önerisi`, sub: 'Kabul edersen görevlere eklenir',
-      onPress: () => navigation.navigate('Uzmanım') });
+  // Uzmanın önerileri: yeni görev/rutin ve ekli görevlerde değişiklik (akislar.md 12.1); tek uzmansa doğrudan sayfası
+  const openSug = (kind: 'new' | 'change') => {
+    const list = (care?.suggestions ?? []).filter((x) => x.kind === kind);
+    const clinic = [...new Set(list.map((x) => care!.links.find((l) => l.linkId === x.linkId)?.clinicId).filter(Boolean))] as string[];
+    if (clinic.length === 1) navigation.navigate('Clinician', { clinicId: clinic[0] }); else navigation.navigate('Uzmanım');
+  };
+  const newSug = (care?.suggestions ?? []).filter((x) => x.kind === 'new').length;
+  const changeSug = (care?.suggestions ?? []).filter((x) => x.kind === 'change').length;
+  if (changeSug) {
+    todo.push({ key: 'chg', icon: 'swap-horizontal', tint: '#FFF4D6', title: 'Uzmanından değişiklik önerisi', sub: `${changeSug} görevde saat ya da gün değişikliği; uygula ya da şimdilik değil`,
+      onPress: () => openSug('change') });
+  }
+  if (newSug) {
+    todo.push({ key: 'sug', icon: 'sparkles-outline', title: `Uzmanından ${newSug} görev önerisi`, sub: 'Kabul edersen görevlere eklenir',
+      onPress: () => openSug('new') });
   }
   if (myOpen && myOpen.total > myOpen.done) {
     todo.push({ key: 'mine', icon: 'person-outline', title: `Bugün sana ${myOpen.total - myOpen.done} görev`, sub: 'Yapınca "Yaptım" de, Güneş Taşı kazan',

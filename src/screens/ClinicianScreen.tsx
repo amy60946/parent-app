@@ -6,6 +6,7 @@ import Info from '../components/Info';
 import Sheet from '../components/Sheet';
 import SuggestionCard from '../components/SuggestionCard';
 import RoutinePackCard from '../components/RoutinePackCard';
+import ChangeSuggestionCard from '../components/ChangeSuggestionCard';
 import VerifiedBadge from '../components/VerifiedBadge';
 import { Avatar, IconButton, Toggle } from '../components/ui';
 import { ClinicianAvatar } from './CareScreen';
@@ -24,12 +25,13 @@ import { afterModal } from '../lib/modal';
 // programındaki uygulamalar + davranış kaydı), çocuk başına program (takip planı), görev önerileri, paylaşılan çocuklar.
 // Sağ üstteki ayar: çocuğu uzmandan ayır ya da uzmanı tamamen kaldır (revoke_clinic_link; akislar.md 5, 8).
 export default function ClinicianScreen({ navigation, route }: any) {
-  const clinicId: string = route.params.clinicId;
+  // Bildirimden açılınca yalnız paylaşım kimliği gelir (care_plan_shared / clinic_suggestion data.link_id; akislar.md 12.1)
   const { children, familyId } = useStore();
   const { session } = useAuth();
   const { care, reload, setCare } = useCare(familyId);
   const [manage, setManage] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const clinicId: string | undefined = route.params?.clinicId ?? care?.links.find((l) => l.linkId === route.params?.linkId)?.clinicId;
   const c = groupClinicians(care?.links ?? []).find((x) => x.clinicId === clinicId);
   const childName = (id: string) => children.find((k) => k.id === id)?.name ?? '';
 
@@ -45,7 +47,13 @@ export default function ClinicianScreen({ navigation, route }: any) {
 
   const links = c.links;
   const todos = care.todos.filter((t) => links.some((l) => l.linkId === t.linkId));
-  const suggestions = care.suggestions.filter((s) => links.some((l) => l.linkId === s.linkId));
+  const all = care.suggestions.filter((s) => links.some((l) => l.linkId === s.linkId));
+  const suggestions = all.filter((s) => s.kind === 'new');
+  // Değişiklik önerileri: aynı rutinin değişiklikleri tek kart, diğerleri görev başına (akislar.md 12.1 adım 7)
+  const changes = Object.values(all.filter((s) => s.kind === 'change').reduce<Record<string, typeof all>>((acc, s) => {
+    (acc[s.routine?.group ?? s.id] ??= []).push(s);
+    return acc;
+  }, {}));
   // Günlük rutin paketleri (aynı routine.group) tek kart; diğerleri tek tek (akislar.md 5.4 v2)
   const packs = Object.values(suggestions.filter((s) => s.routine).reduce<Record<string, typeof suggestions>>((acc, s) => {
     (acc[s.routine!.group] ??= []).push(s);
@@ -77,7 +85,7 @@ export default function ClinicianScreen({ navigation, route }: any) {
     [
       { text: 'Vazgeç', style: 'cancel' },
       { text: 'Onaylıyorum, paylaş', onPress: async () => {
-        try { await addChildToClinic(clinicId, childId); reload(); } catch (e) { Alert.alert('Paylaşılamadı', (e as Error).message); }
+        try { await addChildToClinic(c.clinicId, childId); reload(); } catch (e) { Alert.alert('Paylaşılamadı', (e as Error).message); }
       } },
     ],
   );
@@ -134,6 +142,10 @@ export default function ClinicianScreen({ navigation, route }: any) {
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 48, gap: 18 }}>
         <VerifiedBadge verifiedAs={c.verifiedAs} />
+
+        {changes.map((g) => (
+          <ChangeSuggestionCard key={g[0].routine?.group ?? g[0].id} items={g} childName={childName(g[0].childId)} onDecided={dropSuggestions} />
+        ))}
 
         <Section title="Bugün yapılacaklar" info="Uzmanının seninle paylaştığı evde uygulamalar. Uyguladığın gün kutuyu işaretle; nasıl geçtiğini takip planında yazabilirsin. Zor bir an olduysa davranış kaydı ekle; uzmanın görür.">
           {todos.map((t, i) => (
