@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, ActivityIndicator, Alert, Linking } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
@@ -9,8 +9,10 @@ import { useAuth } from '../lib/auth';
 import { useBilling } from '../billing';
 import { useParentTasks, memberName } from '../parentTasks';
 import { track } from '../lib/track';
+import { storeManage, storeSubscription } from '../lib/purchases';
 
-// Hesabımı sil (hukuk/50 §5.1; ortak delete_account()). Etkin App Store aboneliği varsa önce uyarı; ailede tek ebeveynse
+// Hesabımı sil (hukuk/50 §5.1; ortak delete_account()). Etkin App Store aboneliği varsa önce uyarı (Apple 5.1.1(v):
+// ödeme Apple'da sürer, önce iptal; silme yine serbest). Abonelik sunucudan ve bu Apple Kimliği'nden (RevenueCat) okunur. Ailede tek ebeveynse
 // ailenin bütün verisi silinir; başka ebeveyn varsa yalnız bu hesap. Onay: "SİL" yazılır.
 export default function DeleteAccountScreen({ navigation }: any) {
   const { isOnlyParent, deleteAccount } = useStore();
@@ -20,9 +22,11 @@ export default function DeleteAccountScreen({ navigation }: any) {
   const [only, setOnly] = useState<boolean | null>(null);
   const [typed, setTyped] = useState('');
   const [busy, setBusy] = useState(false);
+  const [store, setStore] = useState<{ active: boolean; willRenew: boolean } | null>(null);
   useEffect(() => { isOnlyParent().then(setOnly).catch(() => setOnly(true)); }, [isOnlyParent]);
+  useEffect(() => { storeSubscription().then(setStore); }, []);
   const other = pt.members.find((m) => m.id !== pt.me);
-  const subscribed = access?.state === 'premium' && access.autoRenew !== false;
+  const subscribed = (store?.active && store.willRenew) || (!store && access?.state === 'premium' && access.autoRenew !== false);
   const ok = typed.trim().toLocaleUpperCase('tr') === 'SİL' && !busy;
 
   const del = async () => {
@@ -50,7 +54,7 @@ export default function DeleteAccountScreen({ navigation }: any) {
           <View style={styles.red}>
             <Text style={[styles.h, { color: colors.danger }]}>Aboneliğin Apple'da devam ediyor.</Text>
             <Text style={styles.text}>Hesabını silmek aboneliği durdurmaz; Apple ücret almaya devam eder. Önce aboneliğini iptal et.</Text>
-            <Pressable onPress={() => Linking.openURL('https://apps.apple.com/account/subscriptions')} style={styles.redBtn} accessibilityRole="button">
+            <Pressable onPress={storeManage} style={styles.redBtn} accessibilityRole="button">
               <Text style={{ fontWeight: '700', color: colors.danger }}>Aboneliği yönet</Text>
             </Pressable>
           </View>

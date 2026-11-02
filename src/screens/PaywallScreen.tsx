@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert, Linking, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
@@ -7,14 +7,33 @@ import { IconButton } from '../components/ui';
 import { useBilling } from '../billing';
 import { PlanId, plans, premiumFeatures, freeFeatures } from '../data/plans';
 import { purchase, restorePurchases } from '../lib/billing';
+import { storeManage, StorePrices } from '../lib/purchases';
 import { formatTR, toISO } from '../dates';
 
 const NOT_CONNECTED = 'Ödeme henüz açık değil. Uygulama App Store\'da yayınlanınca üyelik buradan alınabilecek.';
+const UNAVAILABLE = 'Üyelik seçenekleri şu an App Store\'dan yüklenemedi. Biraz sonra tekrar dene.';
+const PENDING = 'Ödemen onay bekliyor (ör. Aile Paylaşımı\'nda satın alma izni). Onaylanınca üyeliğin kendiliğinden açılır.';
+
+// Plan kartı: fiyat mağazadan (yerel para birimi), gelmezse plans.ts yer tutucusu.
+// Yıllıkta aylık karşılığı ve indirim yüzdesi gerçek fiyattan hesaplanır (aşağı yuvarlanır, abartılmaz).
+function planView(id: PlanId, prices: StorePrices | null) {
+  const p = plans[id];
+  const sp = prices?.[id];
+  if (!sp) return { title: p.title, price: p.price, period: p.period, note: p.note, badge: p.badge };
+  if (id === 'monthly') return { title: p.title, price: sp.priceString, period: p.period, note: p.note };
+  const m = prices?.monthly;
+  const off = m && m.currency === sp.currency && m.price > 0 ? Math.floor((1 - sp.price / (m.price * 12)) * 100) : 0;
+  return {
+    title: p.title, price: sp.priceString, period: p.period,
+    note: sp.perMonth ? `Tek seferde peşin ödenir · ayda yaklaşık ${sp.perMonth}` : 'Tek seferde peşin ödenir',
+    badge: off >= 5 ? `%${off} avantajlı` : undefined,
+  };
+}
 
 // Üyelik: deneme bitince açılır; Aile > Hesap > Üyelik'ten ve kapalı bir özelliğe dokununca da açılır.
 export default function PaywallScreen({ navigation, route }: any) {
   const reason: string | undefined = route.params?.reason;
-  const { access, refresh } = useBilling();
+  const { access, refreshAfterPurchase, prices } = useBilling();
   const [plan, setPlan] = useState<PlanId>('yearly');
   const [busy, setBusy] = useState(false);
   const state = access?.state;
@@ -24,8 +43,10 @@ export default function PaywallScreen({ navigation, route }: any) {
     setBusy(true);
     try {
       const r = await purchase(plan);
-      if (r.ok) { await refresh(); navigation.goBack(); Alert.alert('Premium üyeliğin başladı'); }
+      if (r.ok) { refreshAfterPurchase(); navigation.goBack(); Alert.alert('Premium üyeliğin başladı'); }
       else if (r.reason === 'not_connected') Alert.alert('Yakında', NOT_CONNECTED);
+      else if (r.reason === 'unavailable') Alert.alert('Şu an alınamıyor', UNAVAILABLE);
+      else if (r.reason === 'pending') Alert.alert('Onay bekleniyor', PENDING);
       else if (r.reason === 'failed') Alert.alert('Satın alınamadı', r.message ?? 'Tekrar dene.');
     } finally {
       setBusy(false);
@@ -33,9 +54,16 @@ export default function PaywallScreen({ navigation, route }: any) {
   };
 
   const restore = async () => {
-    const r = await restorePurchases();
-    if (r.ok) { await refresh(); Alert.alert('Satın alımların geri yüklendi'); }
-    else Alert.alert('Geri yükleme', r.reason === 'not_connected' ? NOT_CONNECTED : 'Bu Apple Kimliği ile etkin bir üyelik bulunamadı.');
+    setBusy(true);
+    try {
+      const r = await restorePurchases();
+      if (r.ok) { refreshAfterPurchase(); Alert.alert('Satın alımların geri yüklendi'); }
+      else Alert.alert('Geri yükleme', r.reason === 'not_connected' ? NOT_CONNECTED
+        : r.reason === 'failed' ? (r.message ?? 'Geri yüklenemedi. Tekrar dene.')
+        : 'Bu Apple Kimliği ile etkin bir üyelik bulunamadı.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const title = member ? 'Üyeliğin' : state === 'expired' ? 'Ücretsiz deneme süren bitti' : 'Premium\'a geç';
@@ -62,7 +90,7 @@ export default function PaywallScreen({ navigation, route }: any) {
         {member ? (
           <>
             {state === 'premium' && (
-              <Pressable style={styles.secondary} onPress={() => Linking.openURL('https://apps.apple.com/account/subscriptions')}>
+              <Pressable style={styles.secondary} onPress={storeManage}>
                 <Text style={styles.secondaryText}>Aboneliği yönet</Text>
               </Pressable>
             )}
@@ -80,7 +108,7 @@ export default function PaywallScreen({ navigation, route }: any) {
 
             <View style={{ gap: 10 }}>
               {(['yearly', 'monthly'] as PlanId[]).map((id) => {
-                const p = plans[id];
+                const p = planView(id, prices);
                 const on = plan === id;
                 return (
                   <Pressable key={id} onPress={() => setPlan(id)} style={[styles.plan, on && styles.planOn]}
@@ -102,7 +130,7 @@ export default function PaywallScreen({ navigation, route }: any) {
             <Pressable style={[styles.cta, busy && { opacity: 0.6 }]} disabled={busy} onPress={buy} accessibilityLabel="Üyeliği başlat">
               {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Devam et</Text>}
             </Pressable>
-            <Pressable onPress={restore} hitSlop={8} style={{ alignSelf: 'center' }}>
+            <Pressable onPress={restore} disabled={busy} hitSlop={8} style={{ alignSelf: 'center' }}>
               <Text style={{ fontSize: 14, fontWeight: '600', color: colors.navy }}>Satın alımları geri yükle</Text>
             </Pressable>
             {state === 'expired' && (
@@ -121,7 +149,7 @@ export default function PaywallScreen({ navigation, route }: any) {
             <Text style={[styles.legal, { textAlign: 'center' }]}>
               <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalText', { key: 'kosullar-parentapp' })}>Kullanım Koşulları</Text>{'  ·  '}
               <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalText', { key: 'gizlilik' })}>Gizlilik Politikası</Text>{'  ·  '}
-              <Text style={styles.legalLink} onPress={() => Linking.openURL('https://apps.apple.com/account/subscriptions')}>Aboneliği yönet</Text>
+              <Text style={styles.legalLink} onPress={storeManage}>Aboneliği yönet</Text>
             </Text>
           </>
         )}

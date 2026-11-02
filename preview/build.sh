@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ParentApp web önizlemesini üretir: preview/out/index.html (telefon çerçevesi) + app.html (uygulama)
-# Deneme veritabanı (preview/demo-supabase.ts) kullanılır; gerçek Supabase'e bağlanmaz.
+# Deneme veritabanı (preview/demo-supabase.ts) ve mağaza taklidi (preview/demo-purchases.ts) kullanılır; gerçek Supabase'e ve App Store'a bağlanmaz.
 # Kullanım: bash preview/build.sh
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -28,6 +28,7 @@ rm -rf "$WORK/src" "$WORK/App.tsx" "$WORK/assets/avatars"
 cp -r "$ROOT/App.tsx" "$ROOT/src" "$WORK/"
 mkdir -p "$WORK/assets" && cp -r "$ROOT/assets/." "$WORK/assets/"
 cp "$ROOT/preview/demo-supabase.ts" "$WORK/src/lib/supabase.ts"
+cp "$ROOT/preview/demo-purchases.ts" "$WORK/src/lib/purchases.ts"  # mağaza (RevenueCat) taklidi
 
 echo "› Tip kontrolü"
 (cd "$WORK" && npx tsc --noEmit)

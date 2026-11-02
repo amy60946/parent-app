@@ -1,4 +1,5 @@
-// Aile aboneliği planları. Fiyatlar YER TUTUCU: canlıda fiyat ve para birimi App Store'dan (ödeme sağlayıcısı) gelir.
+// Aile aboneliği planları. Fiyatlar YER TUTUCU: canlıda fiyat ve para birimi App Store'dan gelir (lib/purchases.ts →
+// PaywallScreen planView); bunlar yalnız mağaza fiyatı gelmezse (anahtar yok, ürünler onaylanmadı, web) görünür.
 // Ürün kimlikleri sunucuyla aynı (ortak/sozlesme/durumlar.md 12).
 export type PlanId = 'monthly' | 'yearly';
 

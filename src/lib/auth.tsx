@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session, EmailOtpType } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './supabase';
 import { unregisterPush } from './notifications';
+import { storeLogOut } from './purchases';
 
 // E-postadaki bağlantılar uygulamayı bu adresle açar:
 // geliştirmede exp://…/--/auth (Expo Go), derlenmiş uygulamada parentapp://auth
@@ -161,7 +162,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       if (event === 'PASSWORD_RECOVERY') setRecovery(true);
-      if (event === 'SIGNED_OUT') setRecovery(false);
+      // Çıkışta mağaza (RevenueCat) kimliği de bırakılır; girişte BillingProvider logIn yapar
+      if (event === 'SIGNED_OUT') { setRecovery(false); storeLogOut(); }
     });
     Linking.getInitialURL().then(handleUrl);
     const sub = Linking.addEventListener('url', ({ url }) => handleUrl(url));

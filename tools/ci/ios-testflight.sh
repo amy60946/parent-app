@@ -57,6 +57,11 @@ jsb=$(find "$archive/Products/Applications" -name 'main.jsbundle' | head -1)
 has_url=$(grep -ac 'uhelhxqgpcjemadhsifx.supabase.co' "$jsb" || true); has_fallback=$(grep -ac 'ayarlanmadi.supabase.co' "$jsb" || true)
 echo "JS paketi: sunucu adresi=$has_url, yedek adres=$has_fallback"
 [ "${has_url:-0}" -gt 0 ] || { echo "::error::Supabase adresi JS paketinde yok (.env okunmadı)"; exit 1; }
+# Ödeme anahtarı verildiyse pakette olmalı; gizli RevenueCat anahtarı (sk_) asla pakette olmamalı
+if [ -n "${EXPO_PUBLIC_REVENUECAT_IOS_KEY:-}" ]; then
+  grep -aq "$EXPO_PUBLIC_REVENUECAT_IOS_KEY" "$jsb" && echo "JS paketi: RevenueCat anahtarı var" || { echo "::error::RevenueCat anahtarı JS paketinde yok"; exit 1; }
+fi
+if grep -aqE '"sk_[A-Za-z0-9]{20,}"' "$jsb"; then echo "::error::JS paketinde gizli anahtar (sk_) var"; exit 1; fi
 codesign -dvv "$(ls -d "$archive"/Products/Applications/*.app | head -1)" 2>&1 | grep -E "Authority|TeamIdentifier" || true
 
 # Dışa aktarma: elle App Store dağıtım imzası (asc_sign.py → geçici sertifika + profil, geçici yerel anahtar zinciri;

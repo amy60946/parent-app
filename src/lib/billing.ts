@@ -1,9 +1,10 @@
 import { supabase } from './supabase';
 import { PlanId } from '../data/plans';
+import { storePurchase, storeRestore, StoreResult } from './purchases';
 
-// Aile aboneliğinin durumu: sunucuda family_access() (ortak/supabase/proposed/20261021140000_subscriptions.sql).
-// Ödeme altyapısı henüz bağlı değil: satın alma düğmesi bilgi verir. Bağlanınca purchase/restore burada
-// ödeme sağlayıcısına (öneri: RevenueCat) gider; sunucu durumu billing-webhook ile güncellenir.
+// Aile aboneliğinin durumu: sunucuda family_access() (ortak/supabase/migrations/20261022110000_subscriptions.sql).
+// Satın alma ve geri yükleme App Store'da (RevenueCat, lib/purchases.ts); RevenueCat olayı billing-webhook'a iletir,
+// sunucu aile durumunu günceller. Mağaza anahtarı yoksa purchase/restore 'not_connected' döner (bugünkü davranış).
 export type AccessState = 'pending' | 'trial' | 'premium' | 'clinic' | 'expired' | 'unknown';
 export type Access = {
   state: AccessState;
@@ -37,15 +38,10 @@ export async function fetchAccess(): Promise<Access> {
   };
 }
 
-export type PurchaseResult = { ok: true } | { ok: false; reason: 'not_connected' | 'canceled' | 'failed'; message?: string };
+export type PurchaseResult = StoreResult;
 
-export async function purchase(_plan: PlanId): Promise<PurchaseResult> {
-  return { ok: false, reason: 'not_connected' };
-}
-
-export async function restorePurchases(): Promise<PurchaseResult> {
-  return { ok: false, reason: 'not_connected' };
-}
+export const purchase = (plan: PlanId): Promise<PurchaseResult> => storePurchase(plan);
+export const restorePurchases = (): Promise<PurchaseResult> => storeRestore();
 
 // Ücretsiz planda kapalı bir şeye dokunulunca (ya da sunucu premium_required dönünce) üyelik ekranı açılır.
 type Listener = (reason?: string) => void;

@@ -426,6 +426,11 @@ function Account({ onLogout }: { onLogout?: () => void }) {
       >
         <Text style={{ color: colors.danger, fontWeight: '700' }}>Çıkış Yap</Text>
       </Pressable>
+      {/* Apple 5.1.1(v): silme kolay bulunur; tek dokunuşla silme ekranı (abonelik uyarısı orada) */}
+      <Pressable onPress={() => navigation.navigate('DeleteAccount')} hitSlop={8} style={{ alignSelf: 'center', paddingVertical: 4 }}
+        accessibilityRole="button" accessibilityLabel="Hesabımı sil">
+        <Text style={{ color: colors.danger, fontSize: 14 }}>Hesabımı sil</Text>
+      </Pressable>
       <ManageSheet visible={open === 'manage'} onClose={() => setOpen(null)} />
       <CodeSheet visible={open === 'join'} onClose={() => setOpen(null)} />
       <Onboarding visible={open === 'guide'} onClose={() => setOpen(null)} />
