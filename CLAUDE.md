@@ -25,7 +25,7 @@ ParentApp, ebeveynin kullandığı uygulama (Expo / React Native, TypeScript). �
 ## Teknik notlar
 
 - Doğrulama: `npx tsc --noEmit`. Web önizleme: `preview/` (deneme veritabanı `preview/demo-supabase.ts`).
-- iOS/TestFlight: `.github/workflows/ios-testflight.yml` → `tools/ci/ios-testflight.sh` (macos-15, Xcode 26 zorunlu; `expo prebuild` + xcodebuild).
+- iOS/TestFlight: `.github/workflows/ios-testflight.yml` → `tools/ci/ios-testflight.sh` (macos-15, Xcode 26 zorunlu; `expo prebuild` + xcodebuild). GitHub'da Apple işlemcili Mac kapasitesi dolarsa iş 15 dk kuyrukta bekleyip "not acquired by Runner" ile düşer (gerekçe iş notlarında: check-run annotations); o zaman elle başlatmada `runner: macos-15-intel` seçilir.
   İmza: arşiv otomatik geliştirme imzası (`tools/ci/asc_device.py` gerekirse yer tutucu cihaz kaydeder), dışa aktarma **elle App Store dağıtım imzası** (`tools/ci/asc_sign.py`: geçici sertifika + profil, iş sonunda iptal; kullanıcı onayı 19 Ekim 2026). Xcode bulut imzası "Invalid Signature" verdiği için kullanılmaz.
   Arşivden önce `asc_sign.py prune_dev`, CI'ın birikmiş geliştirme sertifikalarını ("Created via API") iptal eder (kullanıcı onayı 19 Ekim 2026). Xcode'un JS paketleme adımı `.env`'i okumadığı için Supabase değerleri ayrıca ortam değişkeni olarak verilir; derleme başında ve arşivden sonra JS paketinde sunucu adresi denetlenir.
   Secret'lar: `SUPABASE_PUBLISHABLE_KEY`, `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`, `APPLE_TEAM_ID`, isteğe bağlı `EXPO_PUBLIC_REVENUECAT_IOS_KEY` (RevenueCat `appl_…`; `docs/TESTFLIGHT.md`). Elle başlatma: Actions → iOS (TestFlight) ya da commit mesajında `[ios]`.
