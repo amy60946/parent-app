@@ -102,4 +102,4 @@ Bu turda yapılanlar: klavye her alanda yazılanı gösteriyor (alt sayfalar `sr
 - **ParentApp = yalnızca ebeveyn uygulaması.** Açılış ekranı ebeveyn girişi; çocuk "sihirli kod" ekranı ParentApp'ten kaldırıldı.
   Çocuk giriş kodunu **Pofi Adası** oyununa yazar (`amy60946/pofi-adasi`). Sunucu, `redeem_child_code`, görev/onay akışı aynı.
   Eski sürümden kalan çocuk oturumu olan cihazda bilgi ekranı + "Ebeveyn girişine geç" (yalnız yerel oturum kapanır).
-- TestFlight: `docs/TESTFLIGHT.md` (EAS Build + Submit, `.github/workflows/ios-testflight.yml`).
+- TestFlight: `docs/TESTFLIGHT.md` (EAS Build + Submit, `.github/workflows/ios-testflight.yml`). **TestFlight bekliyor:** çalışma 84 iki kez macOS makinesi alamadan iptal (kod hatası değil); GitHub Billing → Actions kontrol edilecek.
