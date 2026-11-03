@@ -532,7 +532,7 @@ const R_ROWS: { icon: keyof typeof Ionicons.glyphMap; title: string; price: stri
   { icon: 'football-outline', title: 'Parkta oyun', price: '8 taş', cost: 8 },
   { icon: 'tablet-portrait-outline', title: 'Tablet süresi', price: '1 taş = 10 dk', cost: 1 },
 ];
-const R_TOP = { bal: 100, req: 166, sugLabel: 238, sug: 262, title: 322, card: 350 };
+const R_TOP = { bal: 100, req: 166, sugLabel: 234, sug: 266, title: 322, card: 350 };
 const LETTER = 44;
 // Satırdaki harflerin yeri (sağdan: Can, Nazlı)
 const letterLeft = (k: number) => W - 20 - 14 - LETTER - (KIDS.length - 1 - k) * (LETTER + 8);
@@ -647,8 +647,8 @@ function StepAdd(p: StepProps) {
       <RewardsMock hide="sug" />
       <Dim />
       <Ring style={{ left: 20, top: R_TOP.sug, width: W - 40, height: 40 }} radius={20} badge={1} badgeAt={{ top: -12, left: -12 }}
-        inner={{ backgroundColor: 'transparent', alignItems: 'flex-start' }}>
-        <View style={{ backgroundColor: '#F5F6F8', borderRadius: 20, padding: 0 }}><Suggestions /></View>
+        inner={{ backgroundColor: '#F5F6F8', alignItems: 'flex-start', justifyContent: 'center' }}>
+        <Suggestions />
       </Ring>
       <Ring style={{ right: 20, bottom: 34, width: 150, height: 56 }} radius={28} badge={2} badgeAt={{ top: -12, left: -12 }}
         inner={{ backgroundColor: colors.navy, flexDirection: 'row', gap: 8 }}>

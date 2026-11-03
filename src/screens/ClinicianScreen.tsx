@@ -146,20 +146,24 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
   return (
     <View style={styles.safe}>
       <SafeAreaView edges={['top']} style={[styles.hero, wide && styles.heroWide]}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingTop: 6, paddingBottom: 18 }}>
+        {/* Sekmede: düğmeler üst satırda sağda (Uzman bağla + yönet), ad ve unvan alt satırda tam genişlik (telefonda kesilmesin) */}
+        {tab && (
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingTop: 6 }}>
+            <IconButton name="settings-outline" label="Uzmanı yönet" onPress={() => setManage(true)} color="#fff" style={styles.heroBtn} />
+            <Pressable onPress={tab.onConnect} hitSlop={6} style={styles.connect} accessibilityRole="button" accessibilityLabel="Yeni uzman bağla">
+              <Ionicons name="add" size={18} color={colors.navy} />
+              <Text style={styles.connectText}>Uzman bağla</Text>
+            </Pressable>
+          </View>
+        )}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: tab ? 16 : 12, paddingTop: tab ? 4 : 6, paddingBottom: 18 }}>
           {!tab && <IconButton name="chevron-back" label="Geri" onPress={() => navigation.goBack()} color="#fff" style={styles.heroBtn} />}
           <ClinicianAvatar name={c.name} size={46} light />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={styles.heroName} numberOfLines={1}>{c.name}</Text>
             <Text style={styles.heroCap} numberOfLines={2}>{[c.title, c.clinic !== c.name ? c.clinic : ''].filter(Boolean).join(' · ') || 'Uzman'}</Text>
           </View>
-          <IconButton name="settings-outline" label="Uzmanı yönet" onPress={() => setManage(true)} color="#fff" style={styles.heroBtn} />
-          {tab && (
-            <Pressable onPress={tab.onConnect} hitSlop={6} style={styles.connect} accessibilityRole="button" accessibilityLabel="Yeni uzman bağla">
-              <Ionicons name="add" size={18} color={colors.navy} />
-              <Text style={styles.connectText}>Uzman bağla</Text>
-            </Pressable>
-          )}
+          {!tab && <IconButton name="settings-outline" label="Uzmanı yönet" onPress={() => setManage(true)} color="#fff" style={styles.heroBtn} />}
         </View>
       </SafeAreaView>
 
