@@ -11,6 +11,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
+import { columnLayout } from './src/components/Column';
 import { StoreProvider, useStore } from './src/store';
 import { AuthProvider, useAuth, takeJustSignedUp } from './src/lib/auth';
 import { colors } from './src/theme';
@@ -74,9 +75,10 @@ const navRef = createNavigationContainerRef<any>();
 const navTheme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: colors.bg } };
 
 // Sekmeler (kullanıcı isteği 28 Ekim 2026, Joon "Me / Care" örneği): Ben (ana sayfa; İnceleme içinde) · Uzmanım · Görevler · Gelişim · Aile
+// 3 Kasım 2026: ana sayfa sekmesi yalnız ev simgesi; Uzmanım simgesi artısız çanta (sağlık çağrışımı olmasın)
 const icons: Record<string, [keyof typeof Ionicons.glyphMap, keyof typeof Ionicons.glyphMap]> = {
   Ben: ['home-outline', 'home'],
-  Uzmanım: ['medkit-outline', 'medkit'],
+  Uzmanım: ['briefcase-outline', 'briefcase'],
   Görevler: ['list-outline', 'list'],
   Gelişim: ['stats-chart-outline', 'stats-chart'],
   Aile: ['people-outline', 'people'],
@@ -89,6 +91,7 @@ function Tabs() {
   const unread = messages.filter((m) => m.sender === 'child' && !m.readAt).length;
   return (
     <Tab.Navigator
+      screenLayout={columnLayout}
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: colors.navy,
@@ -100,10 +103,14 @@ function Tabs() {
         ),
       })}
     >
+      {/* Ana sayfa: sekmede yazı yok, yalnız ev simgesi (kullanıcı isteği 3 Kasım 2026); ekran okuyucu "Ana sayfa" der */}
       <Tab.Screen
         name="Ben"
         component={MeScreen}
-        options={{ tabBarBadge: pending || undefined, tabBarBadgeStyle: { backgroundColor: colors.gold, color: colors.navy } }}
+        options={{
+          tabBarLabel: () => null, tabBarAccessibilityLabel: 'Ana sayfa',
+          tabBarBadge: pending || undefined, tabBarBadgeStyle: { backgroundColor: colors.gold, color: colors.navy },
+        }}
       />
       <Tab.Screen name="Uzmanım" component={CareScreen} />
       <Tab.Screen name="Görevler" component={TasksScreen} />
@@ -243,7 +250,7 @@ function Main() {
       markOnboardingSeen();
       Alert.alert('Aileye katıldın', 'Ailenin çocuklarını, görevlerini ve bildirimlerini artık görüyorsun.');
     } else if (r.kind === 'guest') {
-      Alert.alert('Hediye kartı kullanıldı', guestRedeemedText(r.trialEndsAt));
+      Alert.alert('Davet kodu kullanıldı', guestRedeemedText(r.trialEndsAt));
       afterModal(() => setGuide('full'));
     } else {
       Alert.alert('Bu daveti zaten kabul ettin', `${r.invite.clinician || r.invite.clinic} ile paylaşım Uzmanım sekmesinde.`);
@@ -264,7 +271,7 @@ function Main() {
   return (
     <BillingProvider onPaywall={paywall}>
     <SetupCtx.Provider value={{ finish: finishSetup }}>
-    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={setup === 'needed' ? 'Setup' : 'Tabs'}>
+    <Stack.Navigator screenOptions={{ headerShown: false }} screenLayout={columnLayout} initialRouteName={setup === 'needed' ? 'Setup' : 'Tabs'}>
       <Stack.Screen name="Setup" component={SetupScreen} options={{ gestureEnabled: false }} />
       <Stack.Screen name="DeviceSetup" component={DeviceSetupScreen} options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen name="Tabs" component={Tabs} />
@@ -302,7 +309,7 @@ function Main() {
 function AuthFlow() {
   return (
     <NavigationContainer theme={navTheme}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator screenOptions={{ headerShown: false }} screenLayout={columnLayout}>
         {/* ParentApp yalnızca ebeveyn uygulaması (çocuk girişi Pofi Adası oyununda). Açılış: Başla / Hesabım var (27 Ekim 2026) */}
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
         <Stack.Screen name="ExpertAsk" component={ExpertAskScreen} />

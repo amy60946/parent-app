@@ -37,7 +37,7 @@ export default function Dialog({ visible, icon, badge, title, text, primary, onP
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(15,27,61,0.45)', justifyContent: 'center', padding: 24 },
-  card: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 22, gap: 12, alignItems: 'center' },
+  card: { width: '100%', maxWidth: 440, alignSelf: 'center', backgroundColor: '#fff', borderRadius: radius.lg, padding: 22, gap: 12, alignItems: 'center' },
   art: { width: 88, height: 88, borderRadius: 44, backgroundColor: colors.today, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   badge: { position: 'absolute', top: 6, right: 6, width: 28, height: 28, borderRadius: 14, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff' },
   title: { fontSize: 19, fontWeight: '800', color: colors.navy, textAlign: 'center' },

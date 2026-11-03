@@ -163,7 +163,8 @@ function seed(): Db {
   db.clinic_goals.push(
     { id: 'g-sabah', link_id: L, clinic_id: K, title: 'Sabah rutinini hatırlatmasız başlatır', description: '-2: hiç başlatmaz · 0: haftada 3 gün · +2: her gün', archived: false, created_by: D, created_at: ago(40 * 1440),
       shared: true, status: 'active', target: 'Haftada 5 gün', home_support: 'Kart panosunu kapının yanına as; adımı yalnız kartla göster.' },
-    { id: 'g-gecis', link_id: L, clinic_id: K, title: 'Ekran kapatma geçişinde sakin kalır', description: '-2: her geçişte kriz · 0: haftada 1–2 · +2: hiç', archived: false, created_by: D, created_at: ago(40 * 1440) },
+    { id: 'g-gecis', link_id: L, clinic_id: K, title: 'Ekran kapatma geçişinde sakin kalır', description: 'Ekran süresi bitince ağlama, bağırma ya da eşyaya vurma olmadan tableti bırakır.', archived: false, created_by: D, created_at: ago(40 * 1440),
+      shared: true, status: 'active' },
   );
   [-2, -1, -1, 0, 0, 1].forEach((r, i) => db.goal_ratings.push({ goal_id: 'g-sabah', clinic_id: K, week: monday(5 - i), rating: r, note: '', rated_by: D, created_at: now() }));
   [-1, -1, 0, 0, 1, 1].forEach((r, i) => db.goal_ratings.push({ goal_id: 'g-gecis', clinic_id: K, week: monday(5 - i), rating: r, note: '', rated_by: D, created_at: now() }));
@@ -178,6 +179,7 @@ function seed(): Db {
   abc(27, 'Ödev zamanı geldi', 'Masaya oturmayı reddetti', 'Ödev ertelendi', 3);
   abc(20, 'Tablet süresi bitti', 'Söylendi ama kapattı', 'Övgü aldı', 2);
   abc(12, 'Tablet süresi bitti', 'Biraz itiraz etti, 2 dakikada kapattı', 'Birlikte oyun oynandı', 2);
+  db.abc_events[db.abc_events.length - 1].goal_id = 'g-gecis'; // hedefe bağlı örnek kayıt (ortak 20261103120000_abc_goal)
   abc(4, 'Kardeşi oyuncağını aldı', 'Kardeşine vurdu', 'Sakinleşme köşesine gitti', 3);
   db.clinic_task_suggestions.push({
     id: uuid(), link_id: L, clinic_id: K, family_id: F, child_id: 'c-nazli', title: 'Kıyafetini akşamdan hazırla', emoji: '👕',
@@ -815,11 +817,15 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
     const e = !g ? 'not_found' : g.redeemed_at ? 'used' : g.expires_at <= now() ? 'expired' : g.family_id === fam?.id ? 'own'
       : fam?.trial_days ? 'already' : fam?.trial_started_at && fam.trial_started_at < ago(7 * 1440) ? 'not_new' : null;
     if (e) return { data: { ok: false, error: e }, error: null };
-    fam.trial_days = 30;
+    fam.trial_days = 14;
     fam.trial_started_at = fam.trial_started_at ?? now();
     Object.assign(g, { redeemed_family: fam.id, redeemed_at: now() });
     save();
-    return { data: { ok: true, trial_ends_at: new Date(new Date(fam.trial_started_at).getTime() + 30 * 864e5).toISOString() }, error: null };
+    return { data: { ok: true, trial_ends_at: new Date(new Date(fam.trial_started_at).getTime() + 14 * 864e5).toISOString() }, error: null };
+  }
+  // Davet özeti (önizlemede örnek: 2 aile başladı, 1'i abone oldu → 1 ay)
+  if (name === 'my_referrals') {
+    return { data: { joined: 2, paid: 1, months: 1, year_left: 11, pending_codes: 0, codes: [], bonus_until: null }, error: null };
   }
   const premiumErr = (what: string) => ({ data: null, error: { message: `Bu özellik Premium üyelikte: ${what}`, hint: 'premium_required', code: 'P0001' } });
   if (name === 'family_access') return { data: access(), error: null };

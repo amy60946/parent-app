@@ -10,9 +10,9 @@ import { track } from '../lib/track';
 
 const icon: Record<string, keyof typeof Ionicons.glyphMap> = {
   task_done: 'checkmark-circle-outline', task_declined: 'close-circle-outline', message: 'mail-outline',
-  clinic_suggestion: 'medkit-outline', clinic_revoked: 'medkit-outline', device_linked: 'phone-portrait-outline',
+  clinic_suggestion: 'briefcase-outline', clinic_revoked: 'briefcase-outline', device_linked: 'phone-portrait-outline',
   parent_joined: 'person-add-outline', reward_request: 'gift-outline', reward_given: 'gift-outline',
-  reward_decided: 'gift-outline', stones_deducted: 'sunny-outline', guest_pass_used: 'gift-outline', care_plan_shared: 'clipboard-outline',
+  reward_decided: 'gift-outline', stones_deducted: 'sunny-outline', guest_pass_used: 'gift-outline', referral_reward: 'gift-outline', care_plan_shared: 'clipboard-outline',
 };
 
 // Bildirime dokununca ilgili ekran. Gösterilecek bir ekran yoksa hiçbir şey olmaz (false döner):
@@ -26,6 +26,8 @@ export function notificationTarget(n: Pick<AppNotification, 'kind' | 'data'>): [
   const linkId = n.data?.link_id ?? (Array.isArray(n.data?.link_ids) ? n.data.link_ids[0] : undefined);
   if ((n.kind === 'care_plan_shared' || n.kind === 'clinic_suggestion') && linkId) return ['Clinician', { linkId }];
   if (n.kind === 'clinic_suggestion') return ['Tabs', { screen: 'Uzmanım' }];
+  // Aile davet et: davet kullanıldı / davet ödülü (akislar.md 19) → davet sayfası (özet ve Apple hediye kodu)
+  if (n.kind === 'guest_pass_used' || n.kind === 'referral_reward') return ['GuestPass'];
   if (n.kind === 'kvkk_answered') return ['Kvkk', { tab: 'list' }]; // KVKK başvurusu yanıtlandı (ortak P17)
   return null;
 }

@@ -97,7 +97,7 @@ export default function SetupScreen({ navigation, route }: any) {
   const onCode = (r: CodeResult) => {
     if (r.kind === 'invite') return navigation.navigate('Invite', { invite: r.invite, fromSetup: true });
     if (r.kind === 'family') { setJoined(true); setPhase('nickname'); return; }
-    if (r.kind === 'guest') { Alert.alert('Hediye kartı kullanıldı', guestRedeemedText(r.trialEndsAt)); setPhase('next'); return; }
+    if (r.kind === 'guest') { Alert.alert('Davet kodu kullanıldı', guestRedeemedText(r.trialEndsAt)); setPhase('next'); return; }
     Alert.alert('Bu daveti zaten kabul ettin', 'Paylaşım Uzmanım sekmesinde.');
   };
 
@@ -124,9 +124,9 @@ export default function SetupScreen({ navigation, route }: any) {
         <View style={{ flex: 1, justifyContent: 'center', gap: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
             <Text style={styles.title}>Kodu yaz</Text>
-            <Info title="Hangi kod?" text={'Eşin ParentApp\'te Aile › + › Ebeveyn bölümünden 6 haneli bir kod üretir; bu kodla aynı aileye katılırsın, çocuklar ve görevler ortak olur. Uzmanından kod aldıysan onu da buraya yazabilirsin.\n\nBir aile sana 8 karakterli hediye kartı gönderdiyse onu yaz: ParentApp 30 gün bütün özellikleriyle açılır.'} />
+            <Info title="Hangi kod?" text={'Eşin ParentApp\'te Aile › + › Ebeveyn bölümünden 6 haneli bir kod üretir; bu kodla aynı aileye katılırsın, çocuklar ve görevler ortak olur. Uzmanından kod aldıysan onu da buraya yazabilirsin.\n\nBir aile sana 8 karakterli davet kodu gönderdiyse onu yaz: ParentApp 7 yerine 14 gün bütün özellikleriyle açılır.'} />
           </View>
-          <Text style={[styles.text, { textAlign: 'center' }]}>Eşinden ya da uzmanından aldığın kod, hediye kartı</Text>
+          <Text style={[styles.text, { textAlign: 'center' }]}>Eşinden, uzmanından ya da bir aileden aldığın kod</Text>
           <CodeEntry onResult={onCode} autoFocus />
         </View>
       </Shell>

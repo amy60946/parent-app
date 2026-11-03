@@ -23,12 +23,14 @@ export type AbcEvent = {
   audioPath?: string;
   audioUrl?: string;
   durationMs?: number;
+  goals: Record<string, string>; // çocuk → uzmanın hedefi (goal_id; ortak proposed/20261103120000_abc_goal.sql)
 };
 
 export type AbcInput = {
   childIds: string[]; date: string; dayPart: DayPart;
   antecedent: string; behavior: string; consequence: string; intensity: number;
   audio?: { uri: string; durationMs: number };
+  goals?: Record<string, string>; // isteğe bağlı: çocuk → hedef ("Hangi hedefle ilgili?")
 };
 
 
@@ -47,11 +49,11 @@ export async function listAbc(familyId: string): Promise<AbcEvent[]> {
   (data ?? []).forEach((r: any) => {
     const key = r.group_id ?? r.id;
     const g = groups.get(key);
-    if (g) { g.ids.push(r.id); g.childIds.push(r.child_id); return; }
+    if (g) { g.ids.push(r.id); g.childIds.push(r.child_id); if (r.goal_id) g.goals[r.child_id] = r.goal_id; return; }
     groups.set(key, {
       key, ids: [r.id], childIds: [r.child_id], occurredAt: r.occurred_at, dayPart: r.day_part ?? 'evening',
       antecedent: r.antecedent ?? '', behavior: r.behavior, consequence: r.consequence ?? '', intensity: r.intensity,
-      audioPath: r.audio_path ?? undefined, durationMs: r.duration_ms ?? undefined,
+      audioPath: r.audio_path ?? undefined, durationMs: r.duration_ms ?? undefined, goals: r.goal_id ? { [r.child_id]: r.goal_id } : {},
     });
   });
   const list = [...groups.values()].sort((x, y) => y.occurredAt.localeCompare(x.occurredAt));
@@ -74,12 +76,20 @@ export async function addAbc(familyId: string, userId: string | undefined, e: Ab
     fail(up.error);
   }
   const group = e.childIds.length > 1 ? uuid() : null;
-  // Tek INSERT: uzmana tek bildirim gider
-  const { error } = await supabase.from('abc_events').insert(e.childIds.map((childId) => ({
+  // Tek INSERT: uzmana tek bildirim gider. Hedef yalnız seçildiyse yazılır (sunucu güncellemesi yoksa hedefsiz yeniden denenir).
+  const rows = (withGoal: boolean) => e.childIds.map((childId) => ({
     family_id: familyId, child_id: childId, group_id: group, occurred_at: occurredAt(e.date, e.dayPart), day_part: e.dayPart,
     antecedent: e.antecedent.trim(), behavior: e.behavior.trim(), consequence: e.consequence.trim(), intensity: e.intensity,
     audio_path: audioPath, duration_ms: e.audio ? Math.round(e.audio.durationMs) : null, created_by: userId ?? null,
-  })));
+    ...(withGoal && e.goals?.[childId] ? { goal_id: e.goals[childId] } : {}),
+  }));
+  const withGoal = !!e.goals && Object.values(e.goals).some(Boolean);
+  let { error } = await supabase.from('abc_events').insert(rows(withGoal));
+  // Hedef sütunu yoksa ya da hedef bu arada paylaşımdan çıktıysa (goal_mismatch) kayıt kaybolmasın: hedefsiz kaydet
+  if (error && withGoal && (/goal_id/.test(error.message ?? '') || (error as { hint?: string }).hint === 'goal_mismatch')) {
+    ({ error } = await supabase.from('abc_events').insert(rows(false)));
+  }
+  if (!error && withGoal) track('observation.goal', { n: Object.values(e.goals!).filter(Boolean).length });
   if (error && audioPath) await supabase.storage.from(BUCKET).remove([audioPath]);
   fail(error);
 }

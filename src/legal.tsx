@@ -95,7 +95,7 @@ function ChildConsent({ visible, name, docs, onDone, onDismiss }: {
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(15,27,61,0.45)', justifyContent: 'center', padding: 20 },
-  card: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 18, gap: 12, alignItems: 'center' },
+  card: { width: '100%', maxWidth: 480, alignSelf: 'center', backgroundColor: '#fff', borderRadius: radius.lg, padding: 18, gap: 12, alignItems: 'center' },
   title: { fontSize: 18, fontWeight: '800', color: colors.navy, textAlign: 'center' },
   text: { fontSize: 14, lineHeight: 20, color: '#4A5165', textAlign: 'center' },
   cap: { fontSize: 12, lineHeight: 17, color: colors.muted },

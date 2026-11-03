@@ -13,7 +13,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.parentapp.ios",
-      "supportsTablet": false,
+      "supportsTablet": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDevelopmentRegion": "tr"

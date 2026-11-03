@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   done: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.easy.bg, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
   doneText: { color: colors.easy.fg, fontWeight: '700', fontSize: 13 },
   backdrop: { flex: 1, backgroundColor: 'rgba(15,27,61,0.45)', justifyContent: 'center', padding: 16 },
-  sheet: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 18, gap: 14 },
+  sheet: { width: '100%', maxWidth: 480, alignSelf: 'center', backgroundColor: '#fff', borderRadius: radius.lg, padding: 18, gap: 14 },
   store: { backgroundColor: '#F3F4F8', borderRadius: radius.md, padding: 14, gap: 10, alignItems: 'center' },
   storeBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fff', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: colors.line },
   storeText: { color: colors.navy, fontWeight: '700' },

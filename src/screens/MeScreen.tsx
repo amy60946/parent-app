@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NotificationBell from '../components/NotificationBell';
 import FirstSteps from '../components/FirstSteps';
 import Onboarding from '../components/Onboarding';
+import Info from '../components/Info';
+import { COLUMN, WIDE_COLUMN } from '../components/Column';
 import { Avatar } from '../components/ui';
 import { colors, radius } from '../theme';
 import { useStore, taskOccursOn } from '../store';
@@ -17,8 +19,9 @@ import { intakeStatus } from '../lib/intake';
 import TrialBanner from '../components/TrialBanner';
 import { todayISO } from '../dates';
 
-// Ben (ana sayfa; kullanıcı isteği 28 Ekim 2026, Joon "Me" örneğinden): onay bekleyenler (İnceleme), 30 günlük misafir kartı,
-// senin görevlerin (uzmanın programı, öneriler, sana atanan görevler, davranış kaydı), programına devam et, bugünün ilerlemesi.
+// Ben (ana sayfa; kullanıcı isteği 28 Ekim 2026, Joon "Me" örneğinden): onay bekleyenler (İnceleme), aile davet et kartı (3 Kasım 2026),
+// senin görevlerin (uzmanın programı, öneriler, sana atanan görevler; davranış kaydı yalnız alttaki hızlı düğmede), programına devam et,
+// bugünün ilerlemesi. Sekmede adı yok, yalnız ev simgesi (3 Kasım 2026).
 // Her satır ilgili ekranı açar. Misafir kartı kapatılınca sağ üstte hediye simgesi olarak kalır.
 const GUEST_HIDDEN = 'guest-pass-hidden';
 const DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
@@ -32,6 +35,7 @@ export default function MeScreen({ navigation }: any) {
   const { session } = useAuth();
   const { care } = useCare(familyId);
   const today = todayISO();
+  const wide = Math.min(useWindowDimensions().width, WIDE_COLUMN) >= 900;
   const [guestHidden, setGuestHidden] = useState<boolean | null>(null);
   const [intakeMissing, setIntakeMissing] = useState(false);
   const [guide, setGuide] = useState(false);
@@ -76,14 +80,14 @@ export default function MeScreen({ navigation }: any) {
   if (openToday.length) {
     const clinics = [...new Set(openToday.map((t) => care!.links.find((l) => l.linkId === t.linkId)?.clinicId).filter(Boolean))] as string[];
     const who = [...new Set(openToday.map((t) => t.clinician))].join(', ');
-    todo.push({ key: 'mods', icon: 'medkit-outline', title: `Bugün ${openToday.length} uygulama seni bekliyor`, sub: `${who} · uyguladıysan işaretle`,
-      onPress: () => (clinics.length === 1 ? navigation.navigate('Clinician', { clinicId: clinics[0] }) : navigation.navigate('Uzmanım')) });
+    todo.push({ key: 'mods', icon: 'briefcase-outline', title: `Bugün ${openToday.length} uygulama seni bekliyor`, sub: `${who} · uyguladıysan işaretle`,
+      onPress: () => navigation.navigate('Uzmanım', clinics.length === 1 ? { clinicId: clinics[0] } : undefined) });
   }
-  // Uzmanın önerileri: yeni görev/rutin ve ekli görevlerde değişiklik (akislar.md 12.1); tek uzmansa doğrudan sayfası
+  // Uzmanın önerileri: yeni görev/rutin ve ekli görevlerde değişiklik (akislar.md 12.1); Uzmanım sekmesi o uzmanla açılır
   const openSug = (kind: 'new' | 'change') => {
     const list = (care?.suggestions ?? []).filter((x) => x.kind === kind);
     const clinic = [...new Set(list.map((x) => care!.links.find((l) => l.linkId === x.linkId)?.clinicId).filter(Boolean))] as string[];
-    if (clinic.length === 1) navigation.navigate('Clinician', { clinicId: clinic[0] }); else navigation.navigate('Uzmanım');
+    navigation.navigate('Uzmanım', clinic.length === 1 ? { clinicId: clinic[0] } : undefined);
   };
   const newSug = (care?.suggestions ?? []).filter((x) => x.kind === 'new').length;
   const changeSug = (care?.suggestions ?? []).filter((x) => x.kind === 'change').length;
@@ -103,11 +107,6 @@ export default function MeScreen({ navigation }: any) {
     todo.push({ key: 'intake', icon: 'clipboard-outline', title: 'Tanışma sorularını tamamla', sub: 'Yaklaşık 3 dakika; öneriler ailene göre kişiselleşir',
       onPress: () => navigation.navigate('Intake') });
   }
-  // Uzmanı olan aile: davranış kaydı uzmanın istediği bir görevdir (uzman görür)
-  if (care?.links.length) {
-    todo.push({ key: 'abc', icon: 'pulse-outline', title: 'Davranış kaydı ekle', sub: 'Zor bir an mı oldu? Kısaca yaz; uzmanın görür',
-      onPress: () => navigation.navigate('Abc', { new: true }) });
-  }
   if (!todo.length) {
     todo.push({ key: 'self', icon: 'add-outline', title: 'Kendine de görev ver', sub: 'Örnek ol, yaptıkça Güneş Taşı kazan',
       onPress: () => navigation.navigate('CreateTask', { date: today }) });
@@ -118,14 +117,14 @@ export default function MeScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 18 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 18, width: '100%', maxWidth: wide ? undefined : COLUMN, alignSelf: 'center' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <View style={{ flex: 1 }}>
             <Text style={styles.hello} accessibilityRole="header">{hello}</Text>
             <Text style={styles.cap}>{d.getDate()} {MONTHS[d.getMonth()]}, {DAYS[d.getDay()]}</Text>
           </View>
           {guestHidden && (
-            <Pressable onPress={() => navigation.navigate('GuestPass')} hitSlop={8} style={styles.gift} accessibilityRole="button" accessibilityLabel="30 gün hediye kartı">
+            <Pressable onPress={() => navigation.navigate('GuestPass')} hitSlop={8} style={styles.gift} accessibilityRole="button" accessibilityLabel="Aile davet et">
               <Ionicons name="gift-outline" size={20} color={colors.navy} />
             </Pressable>
           )}
@@ -134,29 +133,33 @@ export default function MeScreen({ navigation }: any) {
 
         <TrialBanner style={{ marginHorizontal: 0, marginTop: 0, marginBottom: 0 }} />
 
+        {/* Geniş ekranda (yatay iPad) iki sütun: solda yapılacaklar, sağda program ve ilerleme. Dar ekranda aynı sıra alt alta. */}
+        <View style={wide ? styles.cols : styles.stack}>
+        <View style={wide ? styles.col : styles.stack}>
         {/* Yeni hesapta: İlk adımlar (çocuk ekle → oyuna bağla → görev → onay → ödül; uzman isteğe bağlı) */}
         <FirstSteps navigation={navigation} hasClinician={!!care?.links.length} />
 
         {/* Onay bekleyenler → İnceleme */}
-        <Pressable onPress={() => navigation.navigate('Review')} style={styles.catch} accessibilityRole="button">
+        {/* Bekleyen yoksa sade (beyaz/gri), bekleyen varsa yeşil (kullanıcı isteği 3 Kasım 2026) */}
+        <Pressable onPress={() => navigation.navigate('Review')} style={[styles.catch, !pending && styles.catchIdle]} accessibilityRole="button">
           <View style={{ flex: 1, gap: 2 }}>
-            <Text style={styles.catchLabel}>Onay bekleyen</Text>
-            <Text style={styles.catchTitle}>{pending ? `${pending} görev onayını bekliyor` : 'Onay bekleyen görev yok'}</Text>
+            <Text style={[styles.catchLabel, !pending && { color: colors.muted }]}>Onay bekleyen</Text>
+            <Text style={[styles.catchTitle, !pending && styles.catchTitleIdle]}>{pending ? `${pending} görev onayını bekliyor` : 'Onay bekleyen görev yok'}</Text>
           </View>
-          <View style={styles.catchGo}><Ionicons name="chevron-forward" size={20} color={colors.navy} /></View>
+          <View style={[styles.catchGo, !pending && { backgroundColor: '#F1F2F6' }]}><Ionicons name="chevron-forward" size={20} color={pending ? colors.navy : colors.muted} /></View>
         </Pressable>
 
         {guestHidden === false && (
           <View style={styles.guest}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={[styles.h, { flex: 1 }]}>30 gün ücretsiz: bir aileye hediye et</Text>
+              <Text style={[styles.h, { flex: 1 }]}>Aile davet et: onlara +1 hafta, sana 1 ay</Text>
               <Pressable onPress={hideGuest} hitSlop={10} accessibilityRole="button" accessibilityLabel="Kapat">
                 <Ionicons name="close" size={20} color={colors.navy} />
               </Pressable>
             </View>
-            <Text style={styles.text}>Rutinlerle uğraşan bir ebeveyn tanıyorsan ParentApp'i 30 gün tam erişimle denemesini sağla.</Text>
+            <Text style={styles.text}>Davet ettiğin aile 14 gün ücretsiz dener. Abone olurlarsa sen 1 ay ücretsiz kazanırsın.</Text>
             <Pressable onPress={() => navigation.navigate('GuestPass')} style={styles.guestBtn} accessibilityRole="button">
-              <Text style={styles.guestBtnText}>Hediye kartını paylaş</Text>
+              <Text style={styles.guestBtnText}>Davet kodunu paylaş</Text>
             </Pressable>
           </View>
         )}
@@ -174,6 +177,8 @@ export default function MeScreen({ navigation }: any) {
           ))}
         </Section>
 
+        </View>
+        <View style={wide ? styles.col : styles.stack}>
         <Section title="Programına devam et">
           {care?.todos.length ? care.todos.map((t, i) => (
             <Pressable key={t.module.id} onPress={() => navigation.navigate('CarePlan', { linkId: t.linkId, childName: childName(t.childId), clinician: t.clinician })}
@@ -205,7 +210,12 @@ export default function MeScreen({ navigation }: any) {
                 style={[styles.row, i > 0 && styles.sep]} accessibilityRole="button" accessibilityLabel={`${r.name}: ${r.total ? `yüzde ${pct}` : 'bugün görev yok'}`}>
                 <Avatar id={r.avatar} size={34} />
                 <View style={{ flex: 1, gap: 5 }}>
-                  <Text style={styles.rowTitle}>{r.name}</Text>
+                  {r.id === 'me' ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={styles.rowTitle}>{r.name}</Text>
+                      <Info title="Sen de katıl" text={'Çocuğunla birlikte yaptığınız görevlere kendini de ekle (ör. ailecek piknik).\n\nGörevi aç › Ebeveynler › kendini seç. Yaptıkça Güneş Taşı kazanırsın.'} />
+                    </View>
+                  ) : <Text style={styles.rowTitle}>{r.name}</Text>}
                   {r.total > 0 && <View style={styles.bar}><View style={[styles.barFill, { width: `${pct}%` }]} /></View>}
                 </View>
                 {r.total ? <Text style={styles.pct}>%{pct}</Text> : <View style={styles.setUp}><Text style={styles.setUpText}>Görev ekle</Text></View>}
@@ -217,12 +227,14 @@ export default function MeScreen({ navigation }: any) {
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {([['add-circle-outline', 'Görev ver', () => navigation.navigate('CreateTask', { date: today })],
             ['gift-outline', 'Ödül', () => navigation.navigate('Rewards')],
-            ['pulse-outline', 'Davranış kaydı', () => navigation.navigate('Abc', { new: true })]] as const).map(([icon, label, go]) => (
+            ['journal-outline', 'Davranış kaydı', () => navigation.navigate('Abc', { new: true })]] as const).map(([icon, label, go]) => (
             <Pressable key={label} onPress={go} style={styles.quick} accessibilityRole="button">
               <Ionicons name={icon} size={18} color={colors.navy} />
               <Text style={styles.quickText} numberOfLines={1}>{label}</Text>
             </Pressable>
           ))}
+        </View>
+        </View>
         </View>
       </ScrollView>
       <Onboarding visible={guide} mode="full" onClose={() => setGuide(false)} />
@@ -241,6 +253,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
+  cols: { flexDirection: 'row', alignItems: 'flex-start', gap: 20 },
+  col: { flex: 1, gap: 18 },
+  stack: { gap: 18 },
   hello: { fontSize: 26, fontWeight: '800', color: colors.navy },
   cap: { fontSize: 12, lineHeight: 16, color: colors.muted },
   text: { fontSize: 14, lineHeight: 20, color: '#4A5165' },
@@ -250,6 +265,8 @@ const styles = StyleSheet.create({
   catch: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#DDF1EC', borderRadius: radius.lg, padding: 18 },
   catchLabel: { fontSize: 12, fontWeight: '700', color: '#2F6B5E' },
   catchTitle: { fontSize: 18, fontWeight: '800', color: colors.navy },
+  catchIdle: { backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line },
+  catchTitleIdle: { fontSize: 17, fontWeight: '700', color: '#3D4559' },
   catchGo: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.7)', alignItems: 'center', justifyContent: 'center' },
   guest: { backgroundColor: '#FFF4D6', borderRadius: radius.lg, padding: 16, gap: 10 },
   guestBtn: { height: 46, borderRadius: radius.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },

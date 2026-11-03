@@ -42,7 +42,8 @@ export default function Sheet({ visible, title, onClose, children, header, foote
 }
 
 const styles = StyleSheet.create({
-  sheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 },
+  // iPad'de ortada en çok 640 nokta (telefonda tam genişlik)
+  sheet: { width: '100%', maxWidth: 640, alignSelf: 'center', backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   title: { fontSize: 16, fontWeight: '700', color: colors.navy },
 });

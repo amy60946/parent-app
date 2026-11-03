@@ -30,6 +30,7 @@ ParentApp, ebeveynin kullandığı uygulama (Expo / React Native, TypeScript). �
   Arşivden önce `asc_sign.py prune_dev`, CI'ın birikmiş geliştirme sertifikalarını ("Created via API") iptal eder (kullanıcı onayı 19 Ekim 2026). Xcode'un JS paketleme adımı `.env`'i okumadığı için Supabase değerleri ayrıca ortam değişkeni olarak verilir; derleme başında ve arşivden sonra JS paketinde sunucu adresi denetlenir.
   Secret'lar: `SUPABASE_PUBLISHABLE_KEY`, `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`, `APPLE_TEAM_ID`, isteğe bağlı `EXPO_PUBLIC_REVENUECAT_IOS_KEY` (RevenueCat `appl_…`; `docs/TESTFLIGHT.md`). Elle başlatma: Actions → iOS (TestFlight) ya da commit mesajında `[ios]`.
 - Ödeme: `react-native-purchases` 10.16.x, mağazayla konuşan tek dosya `src/lib/purchases.ts` (RevenueCat `appUserID` = Supabase kullanıcı kimliği, girişte `configure`/`logIn`, çıkışta `logOut`; entitlement `premium`, offering `default`). Anahtar yoksa ödeme "bağlı değil". Web önizlemede `preview/demo-purchases.ts` yerine geçer.
+- iPad (3 Kasım 2026): `supportsTablet: true`; iPhone yalnız dikey, iPad dört yön (Expo eklentisi `UISupportedInterfaceOrientations~ipad`'i doldurur). Ekranlar geniş ekranda ortada en çok 720 noktalık sütunda (`src/components/Column.tsx`, gezinmede `screenLayout`); ana sayfa yatayda iki sütun. Pencere/alt sayfa kartları `maxWidth` ile sınırlı. Pencere genişliği yerine sütun genişliği kullan (ör. Görevler'deki hafta şeridi).
 - İlk TestFlight yüklemesi: 19 Ekim 2026.
 - Durum ve geçmiş: `docs/DURUM.md`.
 

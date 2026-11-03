@@ -9,7 +9,7 @@ import VerifiedBadge from '../components/VerifiedBadge';
 import { CodeBox } from '../components/CodeBox';
 import Info from '../components/Info';
 import PhoneStep from '../components/PhoneStep';
-import { ClinicianAvatar } from './CareScreen';
+import { ClinicianAvatar } from '../components/ClinicianAvatar';
 import { SCOPE_FULL, SHARE_WARNING, SHARE_WARNING_SHORT, TELL_CLINICIAN, historyConsent } from '../data/clinicTexts';
 import { useChildConsent } from '../legal';
 import { useStore, IssuedCode } from '../store';

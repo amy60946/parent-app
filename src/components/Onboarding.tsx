@@ -25,11 +25,13 @@ const DIM = 'rgba(15,27,61,0.62)';
 // Açık zemin (#F5F6F8) üstünde karartmanın görünen rengi: ölçeklenen sahnenin dışındaki boşluk
 const DIM_SOLID = '#666E84';
 
-type StepId = 'task' | 'play' | 'review' | 'rewards' | 'chat' | 'progress' | 'parent' | 'clinic';
-export type GuideMode = 'short' | 'full';
+type StepId = 'task' | 'play' | 'review' | 'rewards' | 'chat' | 'progress' | 'parent' | 'clinic' | 'rEarn' | 'rAdd' | 'rGive';
+// rewards: Ödüller ekranının ilk açılışı ve ⓘ (kullanıcı isteği 3 Kasım 2026: uzun açıklama yerine aynı "kullanıyormuş gibi" kartlar)
+export type GuideMode = 'short' | 'full' | 'rewards';
 const STEPS: Record<GuideMode, StepId[]> = {
   short: ['task', 'play', 'review'],
   full: ['task', 'play', 'review', 'rewards', 'chat', 'progress', 'parent', 'clinic'],
+  rewards: ['rEarn', 'rAdd', 'rGive'],
 };
 
 export async function shouldShowOnboarding(): Promise<boolean> {
@@ -56,12 +58,13 @@ export default function Onboarding({ visible, onClose, mode = 'full', ask = fals
     if (!ask) track('onboarding.start', { mode });
   }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const seen = () => { if (mode !== 'rewards') markOnboardingSeen(); };
   const finish = (done: boolean) => {
     track(done ? 'onboarding.done' : 'onboarding.skip', done ? { mode } : { mode, step: step + 1 });
-    markOnboardingSeen();
+    seen();
     onClose();
   };
-  const later = () => { track('onboarding.later', { mode }); markOnboardingSeen(); onClose(); };
+  const later = () => { track('onboarding.later', { mode }); seen(); onClose(); };
   const show = () => { track('onboarding.start', { mode }); setAsking(false); };
   const total = steps.length;
   const next = () => (step < total - 1 ? setStep(step + 1) : finish(true));
@@ -121,8 +124,9 @@ function Badge({ n, style }: { n: number; style: ViewStyle }) {
 }
 
 // Sekmeler (28 Ekim 2026): Ben · Uzmanım · Görevler · Gelişim · Aile; her biri W/5 = 78 nokta
-const TAB_NAMES = ['Ben', 'Uzmanım', 'Görevler', 'Gelişim', 'Aile'];
-const TAB_ICONS: (keyof typeof Ionicons.glyphMap)[] = ['home-outline', 'medkit-outline', 'list-outline', 'stats-chart-outline', 'people-outline'];
+// Ana sayfa sekmesinin yazısı yok, yalnız ev simgesi (3 Kasım 2026)
+const TAB_NAMES = ['', 'Uzmanım', 'Görevler', 'Gelişim', 'Aile'];
+const TAB_ICONS: (keyof typeof Ionicons.glyphMap)[] = ['home-outline', 'briefcase-outline', 'list-outline', 'stats-chart-outline', 'people-outline'];
 const TAB_W = W / TAB_NAMES.length;
 const tabX = (i: number) => i * TAB_W + TAB_W / 2; // sekmenin ortası
 
@@ -131,8 +135,10 @@ function TabBar({ hide, active }: { hide: number; active?: number }) {
   return (
     <View style={st.tabBar}>
       {TAB_NAMES.map((t, i) => (
-        <View key={t} style={{ flex: 1, alignItems: 'center' }}>
-          {i !== hide && <Text style={[st.tabText, i === active && { color: colors.navy, fontWeight: '800' }]}>{t}</Text>}
+        <View key={i} style={{ flex: 1, alignItems: 'center' }}>
+          {i !== hide && (i === 0
+            ? <Ionicons name={i === active ? 'home' : 'home-outline'} size={22} color={i === active ? colors.navy : colors.muted} />
+            : <Text style={[st.tabText, i === active && { color: colors.navy, fontWeight: '800' }]}>{t}</Text>)}
         </View>
       ))}
     </View>
@@ -142,8 +148,8 @@ function TabBar({ hide, active }: { hide: number; active?: number }) {
 function TabRing({ index }: { index: number }) {
   return (
     <Ring style={{ left: Math.max(14, Math.min(W - 78, tabX(index) - 32)), bottom: 14, width: 64, height: 60 }} radius={16} badge={1} badgeAt={{ top: -12, left: -10 }}>
-      <Ionicons name={TAB_ICONS[index]} size={22} color={colors.navy} />
-      <Text style={{ fontSize: 12, fontWeight: '800', color: colors.navy, marginTop: 3 }}>{TAB_NAMES[index]}</Text>
+      <Ionicons name={TAB_ICONS[index]} size={index === 0 ? 26 : 22} color={colors.navy} />
+      {!!TAB_NAMES[index] && <Text style={{ fontSize: 12, fontWeight: '800', color: colors.navy, marginTop: 3 }}>{TAB_NAMES[index]}</Text>}
     </Ring>
   );
 }
@@ -178,7 +184,7 @@ function Block({ top, height, left = 20, right = 20, children, style }: { top: n
 }
 
 // Açıklama kartı: "n / 5", Atla, başlık, tek satır, noktalar + ileri.
-function Coach({ step, total, title, text, onNext, onSkip, style }: StepProps & { title: string; text: string; style: ViewStyle }) {
+function Coach({ step, total, title, text, note, onNext, onSkip, style }: StepProps & { title: string; text: string; note?: string; style: ViewStyle }) {
   return (
     <View style={[st.card, style]}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -189,6 +195,7 @@ function Coach({ step, total, title, text, onNext, onSkip, style }: StepProps & 
       </View>
       <Text style={st.title} accessibilityRole="header">{title}</Text>
       <Text style={st.text}>{text}</Text>
+      {!!note && <Text style={st.note}>{note}</Text>}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
         <View style={{ flexDirection: 'row', gap: 5 }} accessible accessibilityLabel={`Adım ${step + 1} / ${total}`}>
           {Array.from({ length: total }, (_, i) => (
@@ -303,7 +310,7 @@ function StepReview(p: StepProps) {
         </View>
       </View>
       <TabRing index={0} />
-      <Coach {...p} title="Yaptı mı? Onayla" text="Ben'de 'Onay bekleyen'e dokun, ✓ ile onayla. Onaylayınca çocuğun coin ve Güneş Taşı kazanır; satıra dokunursan not eklersin." style={{ left: 20, right: 20, top: 372 }} />
+      <Coach {...p} title="Yaptı mı? Onayla" text="Ana sayfada 'Onay bekleyen'e dokun, ✓ ile onayla. Onaylayınca çocuğun coin ve Güneş Taşı kazanır; satıra dokunursan not eklersin." style={{ left: 20, right: 20, top: 372 }} />
     </>
   );
 }
@@ -420,7 +427,7 @@ function StepPlay(p: StepProps) {
   );
 }
 
-/* ---------- Ödüller: Ben › Ödül (çocuk Güneş Taşı yetince oyundan ister, sen onaylarsın) ---------- */
+/* ---------- Ödüller: Ana sayfa › Ödül (çocuk Güneş Taşı yetince oyundan ister, sen onaylarsın) ---------- */
 
 function StepRewards(p: StepProps) {
   return (
@@ -454,7 +461,7 @@ function StepRewards(p: StepProps) {
           </View>
         ))}
       </View>
-      <Coach {...p} title="Ödülleri sen belirle" text="Ben'in altındaki 'Ödül': film gecesi, park gibi ödüller koy. Güneş Taşı yetince çocuğun oyundan ister, sen onaylarsın." style={{ left: 20, right: 20, top: 150 }} />
+      <Coach {...p} title="Ödülleri sen belirle" text="Ana sayfanın altındaki 'Ödül': film gecesi, park gibi ödüller koy. Güneş Taşı yetince çocuğun oyundan ister, sen onaylarsın." style={{ left: 20, right: 20, top: 150 }} />
     </>
   );
 }
@@ -513,6 +520,174 @@ function StepProgress(p: StepProps) {
   );
 }
 
+/* ---------- Ödüller ekranı turu (mode: rewards): taş kazanılır → ödül ekle → ödülü ver ---------- */
+
+// Örnek çocuklar: harf ve renkler Ödüller ekranındakiyle aynı düzen
+const KIDS: { name: string; bal: number; tint: [string, string] }[] = [
+  { name: 'Nazlı', bal: 14, tint: ['#FDE7EA', '#B3263E'] },
+  { name: 'Can', bal: 6, tint: ['#E6F4EA', '#2F7D4A'] },
+];
+const R_ROWS: { icon: keyof typeof Ionicons.glyphMap; title: string; price: string; cost: number }[] = [
+  { icon: 'film-outline', title: 'Film gecesi', price: '12 taş', cost: 12 },
+  { icon: 'football-outline', title: 'Parkta oyun', price: '8 taş', cost: 8 },
+  { icon: 'tablet-portrait-outline', title: 'Tablet süresi', price: '1 taş = 10 dk', cost: 1 },
+];
+const R_TOP = { bal: 100, req: 166, sugLabel: 238, sug: 262, title: 322, card: 350 };
+const LETTER = 44;
+// Satırdaki harflerin yeri (sağdan: Can, Nazlı)
+const letterLeft = (k: number) => W - 20 - 14 - LETTER - (KIDS.length - 1 - k) * (LETTER + 8);
+const rowTop = (i: number) => R_TOP.card + i * 64;
+
+function KidLetter({ k, faded, size = LETTER }: { k: number; faded?: boolean; size?: number }) {
+  const [bg, fg] = KIDS[k].tint;
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: faded ? '#F1F2F6' : bg, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ fontSize: size * 0.36, fontWeight: '800', color: faded ? '#B4B9C6' : fg }}>{KIDS[k].name[0]}</Text>
+    </View>
+  );
+}
+
+function Balance({ k }: { k: number }) {
+  return (
+    <>
+      <KidLetter k={k} size={32} />
+      <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: colors.navy }}>{KIDS[k].name}</Text>
+      <Ionicons name="sunny" size={14} color={GOLD} />
+      <Text style={{ fontSize: 16, fontWeight: '800', color: colors.navy }}>{KIDS[k].bal}</Text>
+      <View style={st.minus}><Ionicons name="remove" size={16} color={colors.danger} /></View>
+    </>
+  );
+}
+
+const SUGGEST = [['Dondurma', '6'], ['Kitap okuma', '4'], ['Bisiklet', '10']];
+function Suggestions() {
+  return (
+    <View style={{ flexDirection: 'row', gap: 8 }}>
+      {SUGGEST.map(([t, n]) => (
+        <View key={t} style={st.sugChip}>
+          <Ionicons name="add" size={15} color={colors.navy} />
+          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.navy }}>{t}</Text>
+          <Text style={{ fontSize: 12, fontWeight: '600', color: '#5B6274' }}>{n}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// Ödüller ekranının sade kopyası; hide: halkayla üstte çizilecek parça boş bırakılır
+function RewardsMock({ hide }: { hide?: 'bal' | 'sug' | 'letter' }) {
+  return (
+    <>
+      <View style={{ position: 'absolute', left: 14, right: 14, top: 50, height: 40, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <Ionicons name="chevron-back" size={22} color={colors.navy} />
+        <Text style={{ flex: 1, fontSize: 20, fontWeight: '700', color: colors.navy }}>Ödüller</Text>
+        <Ionicons name="information-circle-outline" size={22} color={colors.navy} />
+        <Ionicons name="time-outline" size={22} color={colors.navy} />
+      </View>
+      {hide !== 'bal' && KIDS.map((_, k) => (
+        <View key={k} style={[st.balance, { left: 20 + k * ((W - 48) / 2 + 8), top: R_TOP.bal, width: (W - 48) / 2 }]}><Balance k={k} /></View>
+      ))}
+      <View style={[st.request, { top: R_TOP.req }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B5300' }}>Nazlı istiyor</Text>
+          <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>Parkta oyun · 8 taş</Text>
+        </View>
+        <View style={[st.round, { backgroundColor: '#fff' }]}><Ionicons name="close" size={18} color={colors.navy} /></View>
+        <View style={[st.round, { backgroundColor: colors.navy }]}><Ionicons name="checkmark" size={18} color="#fff" /></View>
+      </View>
+      <View style={{ position: 'absolute', left: 20, right: 20, top: R_TOP.sugLabel, flexDirection: 'row' }}>
+        <Text style={{ flex: 1, fontSize: 13, fontWeight: '700', color: '#3D4559' }}>Öneriler · dokun, eklensin</Text>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: colors.navy }}>Tümü ›</Text>
+      </View>
+      {hide !== 'sug' && <View style={{ position: 'absolute', left: 20, top: R_TOP.sug }}><Suggestions /></View>}
+      <Text style={{ position: 'absolute', left: 20, top: R_TOP.title, fontSize: 16, fontWeight: '700', color: colors.navy }}>Ödüller</Text>
+      <Block top={R_TOP.card} height={R_ROWS.length * 64} style={{ borderRadius: 14 }}>
+        {R_ROWS.map((r, i) => (
+          <View key={r.title} style={{ height: 64, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, borderTopWidth: i ? 1 : 0, borderTopColor: colors.line }}>
+            <View style={st.rIcon}><Ionicons name={r.icon} size={20} color={colors.navy} /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.navy }}>{r.title}</Text>
+              <Text style={{ fontSize: 12, color: '#5B6274' }}>{r.price}</Text>
+            </View>
+            {KIDS.map((kid, k) => (
+              <View key={k} style={{ opacity: hide === 'letter' && i === 0 && k === 0 ? 0 : 1 }}>
+                <KidLetter k={k} faded={kid.bal < r.cost} />
+              </View>
+            ))}
+          </View>
+        ))}
+      </Block>
+      <View style={st.newReward}>
+        <Ionicons name="add" size={20} color="#fff" />
+        <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Yeni ödül</Text>
+      </View>
+    </>
+  );
+}
+
+function StepEarn(p: StepProps) {
+  return (
+    <>
+      <RewardsMock hide="bal" />
+      <Dim />
+      {KIDS.map((_, k) => (
+        <Ring key={k} style={{ left: 20 + k * ((W - 48) / 2 + 8), top: R_TOP.bal, width: (W - 48) / 2, height: 52 }} radius={14}
+          badge={1} badgeAt={k === 0 ? { top: -12, left: -12 } : { top: -100, left: -100 }}
+          inner={{ flexDirection: 'row', justifyContent: 'flex-start', gap: 6, paddingLeft: 10, paddingRight: 8 }}>
+          <Balance k={k} />
+        </Ring>
+      ))}
+      <Coach {...p} title="Taşlar görevden gelir" text="Onayladığın her görev Güneş Taşı kazandırır: kolay 1, orta 2, zor 3." style={{ left: 20, right: 20, top: 200 }} />
+    </>
+  );
+}
+
+function StepAdd(p: StepProps) {
+  return (
+    <>
+      <RewardsMock hide="sug" />
+      <Dim />
+      <Ring style={{ left: 20, top: R_TOP.sug, width: W - 40, height: 40 }} radius={20} badge={1} badgeAt={{ top: -12, left: -12 }}
+        inner={{ backgroundColor: 'transparent', alignItems: 'flex-start' }}>
+        <View style={{ backgroundColor: '#F5F6F8', borderRadius: 20, padding: 0 }}><Suggestions /></View>
+      </Ring>
+      <Ring style={{ right: 20, bottom: 34, width: 150, height: 56 }} radius={28} badge={2} badgeAt={{ top: -12, left: -12 }}
+        inner={{ backgroundColor: colors.navy, flexDirection: 'row', gap: 8 }}>
+        <Ionicons name="add" size={20} color="#fff" />
+        <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Yeni ödül</Text>
+      </Ring>
+      <Coach {...p} title="Ödülü sen belirle" text="Bir öneriye dokun, eklensin. Ya da 'Yeni ödül' ile kendininkini yaz." style={{ left: 20, right: 20, top: 340 }} />
+    </>
+  );
+}
+
+function StepGive(p: StepProps) {
+  const top = rowTop(0) + 10;
+  return (
+    <>
+      <RewardsMock hide="letter" />
+      <Dim />
+      <Ring style={{ left: letterLeft(0), top, width: LETTER, height: LETTER }} radius={LETTER / 2} badge={1} badgeAt={{ top: -14, left: -14 }}
+        inner={{ backgroundColor: KIDS[0].tint[0] }}>
+        <Text style={{ fontSize: 16, fontWeight: '800', color: KIDS[0].tint[1] }}>N</Text>
+      </Ring>
+      {/* Harfe dokununca çıkan onay kartının önizlemesi */}
+      <View pointerEvents="none" style={[st.preview, { top: top + LETTER + 22, bottom: 'auto', left: 110, right: 20 }]}>
+        <Text style={{ fontSize: 12, fontWeight: '700', color: '#5B6274' }}>Nazlı'ya verilsin mi?</Text>
+        <View style={st.previewRow}>
+          <Ionicons name="film-outline" size={18} color={colors.navy} />
+          <Text style={[st.previewText, { flex: 1 }]}>Film gecesi</Text>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: colors.danger }}>−12 taş</Text>
+        </View>
+        <View style={st.previewBtn}><Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Onayla, ver</Text></View>
+      </View>
+      <Coach {...p} title="Ödülü ver" text="Ödülün yanındaki harfe dokun, onayla. Çocuğun oyundan da isteyebilir; onay senden."
+        note="Coin ve Güneş Taşı'nın parasal değeri yoktur: satın alınamaz, paraya çevrilemez. Ödülün sözünü sen verirsin; biz ödüllerin tarafı değiliz."
+        style={{ left: 20, right: 20, top: 560 }} />
+    </>
+  );
+}
+
 /* ---------- Önce sor: "Göster / Şimdi değil" (kendiliğinden açılınca) ---------- */
 
 function Ask({ total, onShow, onLater }: { total: number; onShow: () => void; onLater: () => void }) {
@@ -543,6 +718,7 @@ function Ask({ total, onShow, onLater }: { total: number; onShow: () => void; on
 
 const SCENES: Record<StepId, (p: StepProps) => React.ReactElement> = {
   task: StepTask, play: StepPlay, review: StepReview, rewards: StepRewards, chat: StepChat, progress: StepProgress, parent: StepParent, clinic: StepClinic,
+  rEarn: StepEarn, rAdd: StepAdd, rGive: StepGive,
 };
 
 const st = StyleSheet.create({
@@ -571,4 +747,12 @@ const st = StyleSheet.create({
   previewBtn: { height: 34, borderRadius: 10, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
   quick: { flex: 1, height: 44, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },
   quickText: { fontSize: 13, fontWeight: '700', color: colors.navy },
+  note: { fontSize: 12, lineHeight: 17, color: '#5B6274' },
+  balance: { position: 'absolute', height: 52, borderRadius: 14, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 10, paddingRight: 8 },
+  minus: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.hard.bg, backgroundColor: '#FFF8F9', alignItems: 'center', justifyContent: 'center' },
+  request: { position: 'absolute', left: 20, right: 20, height: 58, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFF6DE', borderRadius: 14, paddingLeft: 12, paddingRight: 8 },
+  round: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  sugChip: { height: 40, paddingLeft: 10, paddingRight: 14, borderRadius: 20, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center', gap: 6 },
+  rIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F1F2F6', alignItems: 'center', justifyContent: 'center' },
+  newReward: { position: 'absolute', right: 20, bottom: 34, width: 150, height: 56, borderRadius: 28, backgroundColor: colors.navy, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
 });

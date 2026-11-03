@@ -51,7 +51,7 @@ export default function CodeEntry({ onResult, autoFocus }: { onResult: (r: CodeR
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const submit = async () => {
-    if (code.length !== 6 && code.length !== 8) return setError('Kod 6 (hediye kartında 8) karakter olmalı.');
+    if (code.length !== 6 && code.length !== 8) return setError('Kod 6 (aile davet kodunda 8) karakter olmalı.');
     setBusy(true);
     setError(undefined);
     try {

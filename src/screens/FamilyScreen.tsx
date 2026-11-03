@@ -270,7 +270,7 @@ function ChildInfo({ id }: { id: string }) {
       </Pressable>
       <Pressable onPress={() => navigation.navigate('Abc', { new: true, childId: c.id })} style={styles.abcRow}
         accessibilityLabel={`${c.name} için davranış kaydı ekle`}>
-        <Ionicons name="pulse-outline" size={20} color={colors.navy} />
+        <Ionicons name="journal-outline" size={20} color={colors.navy} />
         <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: colors.navy }}>Davranış kaydı ekle</Text>
         <Pressable onPress={() => navigation.navigate('Abc', { childId: c.id })} hitSlop={8}>
           <Text style={{ fontSize: 13, color: colors.muted }}>Geçmiş ›</Text>
@@ -396,7 +396,7 @@ const accountRows: { icon: keyof typeof Ionicons.glyphMap; label: string; id?: A
   { icon: 'person-outline', label: 'Hesabı yönet', id: 'manage' },
   { icon: 'keypad-outline', label: 'Kod gir', id: 'join' },
   { icon: 'notifications-outline', label: 'Bildirimler', id: 'notifications' },
-  { icon: 'medkit-outline', label: 'Uzmanım', id: 'clinic' },
+  { icon: 'briefcase-outline', label: 'Uzmanım', id: 'clinic' },
   { icon: 'compass-outline', label: 'Nasıl kullanılır?', id: 'guide' },
   { icon: 'shield-checkmark-outline', label: 'Yasal ve gizlilik', id: 'legal' },
   { icon: 'create-outline', label: 'Geri bildirim gönder' },
@@ -455,15 +455,15 @@ function CodeSheet({ visible, onClose }: { visible: boolean; onClose: () => void
     onClose();
     if (r.kind === 'invite') afterModal(() => navigation.navigate('Invite', { invite: r.invite }));
     else if (r.kind === 'family') Alert.alert('Aileye katıldın', 'Ailenin çocuklarını, görevlerini ve bildirimlerini artık görüyorsun.');
-    else if (r.kind === 'guest') Alert.alert('Hediye kartı kullanıldı', guestRedeemedText(r.trialEndsAt));
+    else if (r.kind === 'guest') Alert.alert('Davet kodu kullanıldı', guestRedeemedText(r.trialEndsAt));
     else Alert.alert('Bu daveti zaten kabul ettin', `${r.invite.clinician || r.invite.clinic} ile paylaşım Uzmanım sekmesinde.`);
   };
   return (
     <Sheet visible={visible} title="Kod gir" onClose={onClose}>
       <View style={{ gap: 14 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Text style={{ flex: 1, fontSize: 13, color: colors.muted }}>Uzmanından ya da eşinden aldığın kod, hediye kartı</Text>
-          <Info title="Hangi kod?" text={'Uygulama kodun kimden geldiğini kendisi anlar.\n\n• Uzman kodu (6 karakter): uzmanın davet ekranı açılır; onaylarsan çocuğunun görevleri onunla paylaşılır.\n• Eşinin kodu (6 karakter): aynı aileye katılırsın. Eşin kodu Aile › + › Ebeveyn bölümünden üretir; kod 15 dakika geçerlidir.\n• Hediye kartı (8 karakter): başka bir ailenin hediye ettiği 30 günlük tam erişim. ParentApp\'e yeni başlayan ailelerde (ilk 7 gün) geçerlidir.'} />
+          <Text style={{ flex: 1, fontSize: 13, color: colors.muted }}>Uzmanından, eşinden ya da bir aileden aldığın kod</Text>
+          <Info title="Hangi kod?" text={'Uygulama kodun kimden geldiğini kendisi anlar.\n\n• Uzman kodu (6 karakter): uzmanın davet ekranı açılır; onaylarsan çocuğunun görevleri onunla paylaşılır.\n• Eşinin kodu (6 karakter): aynı aileye katılırsın. Eşin kodu Aile › + › Ebeveyn bölümünden üretir; kod 15 dakika geçerlidir.\n• Aile davet kodu (8 karakter): seni davet eden aileden; deneme 7 yerine 14 gün olur. ParentApp\'e yeni başlayan ailelerde (ilk 7 gün) geçerlidir.'} />
         </View>
         <CodeEntry onResult={done} />
       </View>

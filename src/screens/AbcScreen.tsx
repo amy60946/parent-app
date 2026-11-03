@@ -17,6 +17,27 @@ import { ClinicLink, listLinks } from '../lib/clinic';
 import { DayPart, dayPartLabel, dayPartOf } from '../data/dayParts';
 import { Voice, mmss } from './ChatScreen';
 import { useBilling } from '../billing';
+import { useCare } from '../lib/care';
+import { CareGoal } from '../lib/clinic';
+import { track } from '../lib/track';
+
+// Uzmanın bu çocuk için aileye gönderdiği hedefler (çocuk → hedefler); davranış kaydı isteğe bağlı olarak birine bağlanır
+// (kullanıcı kararı 3 Kasım 2026; ortak proposed/20261103120000_abc_goal.sql)
+type ChildGoals = Record<string, (CareGoal & { clinician: string })[]>;
+function useChildGoals(familyId: string | null): { goals: ChildGoals; title: (id: string) => string | undefined } {
+  const { care } = useCare(familyId);
+  return useMemo(() => {
+    const goals: ChildGoals = {};
+    const all = new Map<string, string>();
+    for (const l of care?.links ?? []) {
+      for (const g of care?.plans[l.linkId]?.goals ?? []) {
+        all.set(g.id, g.title);
+        if (g.status === 'active') (goals[l.childId] ??= []).push({ ...g, clinician: l.clinician || l.clinic });
+      }
+    }
+    return { goals, title: (id: string) => all.get(id) };
+  }, [care]);
+}
 
 // Davranış kayıtları (ABC kaydı): yeni kayıt (çok çocuk, gün bölümü seçimi, sesli kayıt) + geçmiş kayıtlar (arşiv).
 // Rızalı paylaşım varsa kayıt o çocuğun uzmanına gider; olmasa da ailenin raporunda kalır.
@@ -26,6 +47,7 @@ export default function AbcScreen({ navigation, route }: any) {
   const [links, setLinks] = useState<ClinicLink[]>([]);
   const [childFilter, setChildFilter] = useState<string | 'all'>(route.params?.childId ?? 'all');
   const [form, setForm] = useState<boolean>(!!route.params?.new);
+  const goals = useChildGoals(familyId);
 
   const load = useCallback(async () => {
     if (!familyId) return;
@@ -61,7 +83,7 @@ export default function AbcScreen({ navigation, route }: any) {
       </View>
 
       {form ? (
-        <AbcForm onDone={() => { setForm(false); load(); }} defaultChild={childFilter === 'all' ? undefined : childFilter} links={links} />
+        <AbcForm onDone={() => { setForm(false); load(); }} defaultChild={childFilter === 'all' ? undefined : childFilter} links={links} goals={goals.goals} />
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }}>
           <Pressable style={styles.cta} onPress={() => setForm(true)}>
@@ -100,6 +122,15 @@ export default function AbcScreen({ navigation, route }: any) {
                     })}
                     <Text style={styles.cap}>{e.childIds.map(name).join(', ')}</Text>
                   </View>
+                  {Object.entries(e.goals).map(([cid, gid]) => {
+                    const t = goals.title(gid);
+                    return t ? (
+                      <View key={cid} style={styles.goalTag}>
+                        <Ionicons name="flag-outline" size={12} color={colors.navy} />
+                        <Text style={styles.goalTagText} numberOfLines={1}>{e.childIds.length > 1 ? `${name(cid)} · ` : ''}{t}</Text>
+                      </View>
+                    ) : null;
+                  })}
                   {!!e.antecedent && <Line k="Öncesinde" v={e.antecedent} />}
                   <Line k="Ne oldu" v={e.behavior} />
                   {!!e.consequence && <Line k="Sonrasında" v={e.consequence} />}
@@ -133,7 +164,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 
 const PARTS: DayPart[] = ['morning', 'noon', 'evening', 'night'];
 
-function AbcForm({ onDone, defaultChild, links }: { onDone: () => void; defaultChild?: string; links: ClinicLink[] }) {
+function AbcForm({ onDone, defaultChild, links, goals }: { onDone: () => void; defaultChild?: string; links: ClinicLink[]; goals: ChildGoals }) {
   const { children, familyId } = useStore();
   const { session } = useAuth();
   const { allow } = useBilling();
@@ -151,6 +182,9 @@ function AbcForm({ onDone, defaultChild, links }: { onDone: () => void; defaultC
   const [c, setC] = useState('');
   const [intensity, setIntensity] = useState(3);
   const [busy, setBusy] = useState(false);
+  // Hangi hedefle ilgili? (isteğe bağlı; seçilmezse "Diğer / emin değilim")
+  const [goalOf, setGoalOf] = useState<Record<string, string>>({});
+  const goalKids = childIds.filter((id) => goals[id]?.length);
 
   // Sesli kayıt
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -189,7 +223,9 @@ function AbcForm({ onDone, defaultChild, links }: { onDone: () => void; defaultC
       await addAbc(familyId, session?.user.id, {
         childIds, date, dayPart: part, antecedent: a, behavior: b.trim() || 'Sesli kayıt', consequence: c, intensity,
         audio: audio ?? undefined,
+        goals: Object.fromEntries(Object.entries(goalOf).filter(([id]) => childIds.includes(id))),
       });
+      if (goalKids.length && !goalKids.some((id) => goalOf[id])) track('observation.goal_skip');
       // Asıl amaç uzmana iletmek: kime gittiğini açıkça söyle
       const nm = (id: string) => children.find((x) => x.id === id)?.name ?? '';
       const shared = childIds.filter((id) => links.some((l) => l.childId === id));
@@ -228,6 +264,31 @@ function AbcForm({ onDone, defaultChild, links }: { onDone: () => void; defaultC
           })}
         </View>
       </View>
+
+      {goalKids.length > 0 && (
+        <View style={{ gap: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={styles.section}>Hangi hedefle ilgili? (isteğe bağlı)</Text>
+            <Info title="Hedef seçimi" text={'Uzmanının belirlediği hedeflerden birini seçersen uzmanın kayıtları hedefe göre izler; raporlar daha tutarlı olur.\n\nEmin değilsen "Diğer / emin değilim" de, kayıt yine uzmanına gider.'} />
+          </View>
+          {goalKids.map((cid) => {
+            const sel = goalOf[cid];
+            const picked = goals[cid].find((g) => g.id === sel);
+            return (
+              <View key={cid} style={{ gap: 6 }}>
+                {goalKids.length > 1 && <Text style={styles.cap}>{children.find((x) => x.id === cid)?.name}</Text>}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {goals[cid].map((g) => (
+                    <Chip key={g.id} label={g.title} on={sel === g.id} onPress={() => setGoalOf((p) => ({ ...p, [cid]: sel === g.id ? '' : g.id }))} />
+                  ))}
+                  <Chip label="Diğer / emin değilim" on={!sel} onPress={() => setGoalOf((p) => ({ ...p, [cid]: '' }))} />
+                </View>
+                {!!picked?.description && <Text style={styles.goalHint}>{picked.description}</Text>}
+              </View>
+            );
+          })}
+        </View>
+      )}
 
       <View>
         <Text style={styles.section}>Ne zaman?</Text>
@@ -323,7 +384,10 @@ const styles = StyleSheet.create({
   body: { fontSize: 13, color: colors.navy, lineHeight: 19 },
   section: { fontSize: 13, fontWeight: '600', color: colors.muted },
   badge: { fontSize: 11, fontWeight: '700', color: colors.hard.fg, backgroundColor: colors.hard.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.pill, overflow: 'hidden' },
-  chip: { height: 34, paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line, justifyContent: 'center' },
+  chip: { minHeight: 34, paddingHorizontal: 14, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line, justifyContent: 'center' },
+  goalHint: { fontSize: 12, lineHeight: 17, color: '#4A5165', backgroundColor: '#fff', borderRadius: radius.sm, padding: 10 },
+  goalTag: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', maxWidth: '100%', backgroundColor: '#EEF1F8', borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 3 },
+  goalTagText: { flexShrink: 1, fontSize: 12, fontWeight: '600', color: colors.navy },
   parts: { flexDirection: 'row', gap: 8, marginTop: 10 },
   part: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: 8, borderRadius: radius.md, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line },
   partOn: { borderColor: colors.navy, borderWidth: 1.5 },

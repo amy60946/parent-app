@@ -18,6 +18,7 @@ import { useBilling } from '../billing';
 import { familyAge, usePlan } from '../lib/plan';
 import { useParentTasks, doneKey, ParentAssign, Member } from '../parentTasks';
 import { difficultyMeta } from '../theme';
+import { COLUMN } from '../components/Column';
 
 const HINT_KEY = 'hint-plus-longpress-v2';
 const NEW_REWARD_KEY = 'hint-reward-new';
@@ -30,7 +31,9 @@ const WEEK_RANGE = 52; // bugünden ±52 hafta
 type DayItem = { task: Task; assigns: Task['assignments']; parents: ParentAssign[] }; // parents: ebeveyn atamaları (akislar.md 18)
 
 export default function TasksScreen({ navigation, route }: any) {
-  const { width } = useWindowDimensions();
+  // Hafta şeridi sayfa genişliği = ekran sütunu (iPad'de en çok COLUMN; Column.tsx). Döndürünce ölçülür, seçili hafta korunur.
+  const win = useWindowDimensions().width;
+  const [width, setWidth] = useState(Math.min(win, COLUMN));
   const { tasks, children, completions, reorderTasks, deleteTask, familyId, parent } = useStore();
   const pt = useParentTasks();
   // Ebeveyn kendini her zaman görür (görevi olmasa da): kendine görev atayabileceğini fark etsin (kullanıcı geri bildirimi 27 Ekim 2026)
@@ -73,6 +76,17 @@ export default function TasksScreen({ navigation, route }: any) {
   }, []);
 
   const today = todayISO();
+  // Genişlik değişince (iPad döndürme) seçili günün haftasına yeniden hizala
+  const weekIndex = useMemo(() => {
+    const base = startOfWeek(new Date()).getTime();
+    return WEEK_RANGE + Math.round((startOfWeek(fromISO(selected)).getTime() - base) / (7 * 864e5));
+  }, [selected]);
+  const firstLayout = useRef(true);
+  React.useEffect(() => {
+    if (firstLayout.current) { firstLayout.current = false; return; }
+    const i = Math.max(0, Math.min(weeks.length - 1, weekIndex));
+    requestAnimationFrame(() => listRef.current?.scrollToOffset({ offset: i * width, animated: false }));
+  }, [width]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // tasks zaten sıra değerine göre dizili geliyor
   const dayTasks = useMemo<DayItem[]>(() => {
@@ -122,7 +136,7 @@ export default function TasksScreen({ navigation, route }: any) {
   );
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top']} onLayout={(e) => { const w = Math.round(e.nativeEvent.layout.width); if (w && w !== width) setWidth(w); }}>
       <View style={[styles.header, { flexDirection: 'row', alignItems: 'center' }]}>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Görevler</Text>
@@ -133,7 +147,7 @@ export default function TasksScreen({ navigation, route }: any) {
       <TrialBanner />
       {suggested > 0 && (
         <Pressable onPress={() => navigation.navigate('Uzmanım')} style={styles.suggest} accessibilityLabel="Uzman önerilerini gör">
-          <Ionicons name="medkit-outline" size={16} color={colors.navy} />
+          <Ionicons name="briefcase-outline" size={16} color={colors.navy} />
           <Text style={{ flex: 1, fontSize: 13, color: colors.navy, fontWeight: '600' }}>Uzmanından {suggested} görev önerisi var</Text>
           <Ionicons name="chevron-forward" size={14} color={colors.muted} />
         </Pressable>
@@ -269,7 +283,7 @@ export default function TasksScreen({ navigation, route }: any) {
           <Pressable style={styles.dialItem} accessibilityLabel="Davranış kaydı ekle"
             onPress={() => go('Abc', { new: true })}>
             <Text style={styles.dialLabel}>Davranış kaydı</Text>
-            <View style={styles.dialIcon}><Ionicons name="create-outline" size={20} color={colors.navy} /></View>
+            <View style={styles.dialIcon}><Ionicons name="journal-outline" size={20} color={colors.navy} /></View>
           </Pressable>
         </View>
       )}

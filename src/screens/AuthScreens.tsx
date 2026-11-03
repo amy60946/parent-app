@@ -276,7 +276,7 @@ export function SignUpScreen({ navigation, route }: any) {
     <Layout title="Kayıt ol" subtitle="Çocuklarına görev ata, gelişimlerini birlikte izleyin." onBack={() => navigation.goBack()}>
       {clinic?.status === 'open' && (
         <View style={styles.inviteBand} accessibilityRole="summary">
-          <Ionicons name="medkit-outline" size={20} color={colors.navy} />
+          <Ionicons name="briefcase-outline" size={20} color={colors.navy} />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={{ fontSize: 14, fontWeight: '700', color: colors.navy }}>{clinic.clinician || clinic.clinic} seni davet etti</Text>
             <Text style={styles.small}>{[clinic.title, clinic.clinic].filter(Boolean).join(' · ') || 'Kayıt olunca davet hazır olacak.'}</Text>
@@ -383,7 +383,7 @@ export function NewPasswordScreen() {
 }
 
 const fairy = StyleSheet.create({
-  content: { flex: 1, paddingHorizontal: 24 },
+  content: { flex: 1, paddingHorizontal: 24, width: '100%', maxWidth: 560, alignSelf: 'center' },
   brand: {
     fontSize: 54, fontWeight: '800', color: '#FFE6A3', letterSpacing: 1,
     textShadowColor: 'rgba(255,214,120,0.6)', textShadowRadius: 18, textShadowOffset: { width: 0, height: 0 },

@@ -47,6 +47,11 @@ export async function storeManage(): Promise<void> {
   Alert.alert('Aboneliği yönet', 'iPhone\'da burada Apple\'ın abonelik sayfası açılır (önizlemede yok).');
 }
 
+export async function storeRedeemCode(): Promise<boolean> {
+  Alert.alert('Kodu kullan', 'iPhone\'da burada Apple\'ın kod kullanma sayfası açılır (önizlemede yok).');
+  return true;
+}
+
 export function onStoreChange(fn: (entitled: boolean) => void): () => void {
   listeners.add(fn);
   fn(bought);

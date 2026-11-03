@@ -128,6 +128,13 @@ export async function storeManage(): Promise<void> {
   Linking.openURL(MANAGE_URL).catch(() => {});
 }
 
+// Apple hediye kodu (offer code; davet ödülü, App Store'dan ödeyen aileye): Apple'ın kod kullanma sayfası açılır.
+// Kod yapıştırılabilsin diye ekran önce panoya kopyalar. Mağaza kapalıysa false (ekran yönergeyi gösterir).
+export async function storeRedeemCode(): Promise<boolean> {
+  if (!(await ready())) return false;
+  try { await Purchases.presentCodeRedemptionSheet(); return true; } catch { return false; }
+}
+
 // Mağazada durum değişince (satın alma, yenileme, iptal) haber ver
 export function onStoreChange(fn: (entitled: boolean) => void): () => void {
   if (!storeEnabled) return () => {};

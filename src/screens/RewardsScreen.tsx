@@ -8,6 +8,7 @@ import { colors, radius } from '../theme';
 import { Avatar, IconButton, Card } from '../components/ui';
 import Sheet from '../components/Sheet';
 import Info, { InfoTitle } from '../components/Info';
+import Onboarding from '../components/Onboarding';
 import { useFirstTip } from '../components/FirstTip';
 import { rewardTips } from '../data/rewardTips';
 import { useStore, Child } from '../store';
@@ -25,7 +26,9 @@ import {
 import { formatTR, toISO } from '../dates';
 import { afterModal } from '../lib/modal';
 
-const INTRO_KEY = 'intro-rewards';
+// İlk açılışta 3 adımlık "kullanıyormuş gibi" tur (kullanıcı isteği 3 Kasım 2026: uzun açıklama yerine); ⓘ yeniden açar.
+// Coin / Güneş Taşı bilgi notu (hukuk/50 §8) turun son kartında.
+const INTRO_KEY = 'intro-rewards-v2';
 const reasons = ['Söz tutmadı', 'Kurala uymadı', 'Kardeşiyle kavga', 'Saygısız davrandı'];
 const amounts = [1, 2, 3, 5];
 // Değiş tokuşta "kaç kez" seçenekleri (taşı yetenler gösterilir)
@@ -366,7 +369,7 @@ export default function RewardsScreen({ navigation }: any) {
           if (await act(() => deductStones(id, n, note), `${nameOf(id)}: taş düşürülemedi`)) setToast({ text: `${nameOf(id)}: −${n} taş${note ? ` · ${note}` : ''}` });
         }} />
       <HistorySheet visible={past} moves={moves} nameOf={nameOf} onClose={() => setPast(false)} />
-      <Intro visible={intro} onClose={closeIntro} />
+      <Onboarding visible={intro} mode="rewards" onClose={closeIntro} />
       {!suggest && tips.element}
     </SafeAreaView>
   );
@@ -837,37 +840,6 @@ function HistorySheet({ visible, moves, nameOf, onClose }: { visible: boolean; m
   );
 }
 
-// Bilgilendirme: ilk açılışta (ve ⓘ ile) gösterilir
-function Intro({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const items: [keyof typeof Ionicons.glyphMap, string, string][] = [
-    ['sunny-outline', 'Görevle kazanılır', 'Onayladığın her görev Güneş Taşı kazandırır: kolay 1, orta 2, zor 3.'],
-    ['gift-outline', 'Ödülü sen belirlersin', 'Önerilere dokunarak ekle ya da kendin oluştur. Vermek için ödülün yanındaki çocuk harfine dokun, sonra onayla.'],
-    ['hand-left-outline', 'Çocuğun da isteyebilir', 'Taşı yetince oyundan ister; istek en üstte çıkar, onayı sen verirsin.'],
-    ['remove-circle-outline', 'Gerektiğinde taş düşür', 'Çocuğun bakiyesindeki − ile. Yalnız önceden konuşulan kurallar için ve seyrek; çocuk nedenini görür.'],
-    // hukuk/50 §8: sanal değer para değildir; ödül ebeveyn–çocuk arasında
-    ['information-circle-outline', 'Parasal değeri yok', 'Coin yalnız Pofi Adası eşyalarına harcanır; satın alınamaz, paraya çevrilemez. Güneş Taşı senin verdiğin ödüllerin sayacıdır; ödülün sözünü sen verirsin, biz bu ödüllerin tarafı değiliz.'],
-  ];
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <View style={styles.introCard}>
-          <Text style={{ fontSize: 20, fontWeight: '800', color: colors.navy }}>Ödüller ve Güneş Taşı</Text>
-          {items.map(([icon, t, d]) => (
-            <View key={t} style={{ flexDirection: 'row', gap: 12 }}>
-              <View style={styles.introIcon}><Ionicons name={icon} size={20} color={colors.navy} /></View>
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>{t}</Text>
-                <Text style={{ fontSize: 13, lineHeight: 18, color: colors.muted }}>{d}</Text>
-              </View>
-            </View>
-          ))}
-          <Pressable style={styles.cta} onPress={onClose}><Text style={styles.ctaText}>Anladım</Text></Pressable>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6 },
@@ -941,11 +913,6 @@ const styles = StyleSheet.create({
   stepInput: { letterSpacing: 0, textAlign: 'center', fontSize: 20, fontWeight: '800', color: colors.navy, backgroundColor: '#F3F4F8', borderRadius: radius.sm, paddingVertical: 10 },
   chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.pill, backgroundColor: '#F1F2F6' },
   chipOn: { backgroundColor: colors.navy },
-  cta: { height: 52, borderRadius: radius.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
-  ctaText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   secondary: { height: 52, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.navy, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
   secondaryText: { color: colors.navy, fontSize: 15, fontWeight: '700' },
-  backdrop: { flex: 1, backgroundColor: 'rgba(15,27,61,0.45)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  introCard: { width: '100%', maxWidth: 420, backgroundColor: '#fff', borderRadius: radius.lg, padding: 22, gap: 16 },
-  introIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F1F2F6', alignItems: 'center', justifyContent: 'center' },
 });

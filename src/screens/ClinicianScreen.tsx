@@ -9,7 +9,7 @@ import RoutinePackCard from '../components/RoutinePackCard';
 import ChangeSuggestionCard from '../components/ChangeSuggestionCard';
 import VerifiedBadge from '../components/VerifiedBadge';
 import { Avatar, IconButton, Toggle } from '../components/ui';
-import { ClinicianAvatar } from './CareScreen';
+import { ClinicianAvatar, EMERGENCY_NOTE } from '../components/ClinicianAvatar';
 import { colors, radius } from '../theme';
 import { useStore } from '../store';
 import { useAuth } from '../lib/auth';
@@ -24,16 +24,30 @@ import { afterModal } from '../lib/modal';
 // Uzmanım › uzman (kullanıcı isteği 28 Ekim 2026, Joon "Care › therapist" örneğinden): bugün yapılacaklar (uzmanın aile
 // programındaki uygulamalar + davranış kaydı), çocuk başına program (takip planı), görev önerileri, paylaşılan çocuklar.
 // Sağ üstteki ayar: çocuğu uzmandan ayır ya da uzmanı tamamen kaldır (revoke_clinic_link; akislar.md 5, 8).
+// 3 Kasım 2026 (kullanıcı isteği): uzman bağlıysa Uzmanım sekmesi doğrudan bu sayfayla açılır (CareScreen, tab modu):
+// geri düğmesi yok, sağ üstte "Uzman bağla"; birden çok uzmanda üstte uzman seçici. Bu ekran bildirimden açılınca kullanılır.
 export default function ClinicianScreen({ navigation, route }: any) {
   // Bildirimden açılınca yalnız paylaşım kimliği gelir (care_plan_shared / clinic_suggestion data.link_id; akislar.md 12.1)
-  const { children, familyId } = useStore();
+  const { familyId } = useStore();
+  const state = useCare(familyId);
+  const clinicId: string | undefined = route.params?.clinicId ?? state.care?.links.find((l) => l.linkId === route.params?.linkId)?.clinicId;
+  return <ClinicianView navigation={navigation} clinicId={clinicId} {...state} />;
+}
+
+type CareHook = ReturnType<typeof useCare>;
+export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab }: CareHook & {
+  navigation: any; clinicId?: string;
+  // Uzmanım sekmesinde: kaydırılan içeriğin başı (uzman seçici, bekleyen davetler) ve "Uzman bağla"
+  tab?: { top?: React.ReactNode; onConnect: () => void };
+}) {
+  const { children } = useStore();
   const { session } = useAuth();
-  const { care, reload, setCare } = useCare(familyId);
   const [manage, setManage] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
-  const clinicId: string | undefined = route.params?.clinicId ?? care?.links.find((l) => l.linkId === route.params?.linkId)?.clinicId;
   const c = groupClinicians(care?.links ?? []).find((x) => x.clinicId === clinicId);
   const childName = (id: string) => children.find((k) => k.id === id)?.name ?? '';
+  // Son çocuk ayrılınca ya da uzman kaldırılınca: sekmede liste yenilenir, ayrı sayfada geri gidilir
+  const leave = () => { if (tab) reload(); else navigation.goBack(); };
 
   if (!care) return <SafeAreaView style={styles.safe}><ActivityIndicator color={colors.navy} style={{ marginTop: 60 }} /></SafeAreaView>;
   if (!c) {
@@ -109,7 +123,7 @@ export default function ClinicianScreen({ navigation, route }: any) {
         await stopSharing(l.linkId);
         track('clinic.unlink', { all: links.length === 1 });
         // Son çocuk da ayrıldı: sayfa kapanır (alttaki sayfa kapanınca; iOS'ta kapanırken geri gitmek dokunuşu kilitleyebilir)
-        if (links.length === 1) { setManage(false); afterModal(() => navigation.goBack()); } else reload();
+        if (links.length === 1) { setManage(false); afterModal(leave); } else reload();
       } catch (e) { Alert.alert('Ayrılamadı', (e as Error).message); } finally { setBusy(null); }
     } },
   ]);
@@ -121,7 +135,7 @@ export default function ClinicianScreen({ navigation, route }: any) {
         for (const l of links) await stopSharing(l.linkId);
         track('clinic.remove', { n: links.length });
         setManage(false);
-        afterModal(() => navigation.goBack());
+        afterModal(leave);
       } catch (e) { reload(); Alert.alert('Kaldırılamadı', (e as Error).message); } finally { setBusy(null); }
     } },
   ]);
@@ -130,17 +144,24 @@ export default function ClinicianScreen({ navigation, route }: any) {
     <View style={styles.safe}>
       <SafeAreaView edges={['top']} style={styles.hero}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingTop: 6, paddingBottom: 18 }}>
-          <IconButton name="chevron-back" label="Geri" onPress={() => navigation.goBack()} color="#fff" style={styles.heroBtn} />
+          {!tab && <IconButton name="chevron-back" label="Geri" onPress={() => navigation.goBack()} color="#fff" style={styles.heroBtn} />}
           <ClinicianAvatar name={c.name} size={46} light />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={styles.heroName} numberOfLines={1}>{c.name}</Text>
             <Text style={styles.heroCap} numberOfLines={1}>{[c.title, c.clinic !== c.name ? c.clinic : ''].filter(Boolean).join(' · ') || 'Uzman'}</Text>
           </View>
           <IconButton name="settings-outline" label="Uzmanı yönet" onPress={() => setManage(true)} color="#fff" style={styles.heroBtn} />
+          {tab && (
+            <Pressable onPress={tab.onConnect} hitSlop={6} style={styles.connect} accessibilityRole="button" accessibilityLabel="Yeni uzman bağla">
+              <Ionicons name="add" size={18} color={colors.navy} />
+              <Text style={styles.connectText}>Uzman bağla</Text>
+            </Pressable>
+          )}
         </View>
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 48, gap: 18 }}>
+        {tab?.top}
         <VerifiedBadge verifiedAs={c.verifiedAs} />
 
         {changes.map((g) => (
@@ -240,6 +261,9 @@ export default function ClinicianScreen({ navigation, route }: any) {
             </View>
           ))}
         </Section>
+
+        {/* Acil durum notu (hukuk/50 §9): Uzmanım sekmesinde her zaman */}
+        {tab && <Text style={styles.foot}>{EMERGENCY_NOTE}</Text>}
       </ScrollView>
 
       {/* Uzmanı yönet: çocuğu ayır / uzmanı kaldır */}
@@ -286,6 +310,9 @@ const styles = StyleSheet.create({
   heroBtn: { backgroundColor: 'rgba(255,255,255,0.14)' },
   heroName: { fontSize: 20, fontWeight: '800', color: '#fff' },
   heroCap: { fontSize: 13, color: 'rgba(255,255,255,0.75)' },
+  connect: { flexDirection: 'row', alignItems: 'center', gap: 2, height: 36, paddingLeft: 8, paddingRight: 12, borderRadius: 18, backgroundColor: '#fff' },
+  connectText: { fontSize: 13, fontWeight: '700', color: colors.navy },
+  foot: { fontSize: 11, lineHeight: 16, color: colors.muted, textAlign: 'center' },
   section: { fontSize: 16, fontWeight: '800', color: colors.navy },
   text: { fontSize: 14, lineHeight: 20, color: '#4A5165' },
   cap: { fontSize: 12, lineHeight: 16, color: colors.muted },
