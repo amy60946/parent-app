@@ -9,7 +9,7 @@ import { colors, radius } from '../theme';
 import { Avatar, DifficultyBadge } from '../components/ui';
 import { useStore, taskOccursOn, completionKey, Task, CompletionStatus } from '../store';
 import { DAY_SHORT, addDays, formatTR, fromISO, monthYear, startOfWeek, toISO, todayISO } from '../dates';
-import { pendingSuggestions } from '../lib/clinic';
+import { SuggestionCounts, countSuggestions, onSuggestionsChange, pendingSuggestions, suggestionsLabel } from '../lib/clinic';
 import NotificationBell from '../components/NotificationBell';
 import { TaskDayPart, dayPartLabel, taskDayPartOf } from '../data/dayParts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -39,12 +39,16 @@ export default function TasksScreen({ navigation, route }: any) {
   // Ebeveyn kendini her zaman görür (görevi olmasa da): kendine görev atayabileceğini fark etsin (kullanıcı geri bildirimi 27 Ekim 2026)
   const showMe = pt.ready && !!pt.me;
   const plan = usePlan(familyAge(children)); // tanışma yanıtlarına göre rutin sırası, çocukların yaşına uyan sürüm (lib/plan.ts)
-  // Uzmandan bekleyen görev önerisi varsa üstte kısa bir bildirim
-  const [suggested, setSuggested] = useState(0);
-  useFocusEffect(React.useCallback(() => {
+  // Uzmandan bekleyen öneri varsa üstte kısa bant. Sayım ve metin Bugün ekranıyla aynı (lib/clinic countSuggestions; kullanıcı isteği
+  // 3 Kasım 2026: önceden değişiklik önerileri de "görev önerisi" sayılıyordu). Ekran açıkken de canlı güncellenir.
+  const [suggested, setSuggested] = useState<SuggestionCounts>({ tasks: 0, changes: 0 });
+  const loadSuggested = React.useCallback(() => {
     if (!familyId) return;
-    pendingSuggestions(familyId).then((l) => setSuggested(l.length)).catch(() => setSuggested(0));
-  }, [familyId]));
+    pendingSuggestions(familyId).then((l) => setSuggested(countSuggestions(l))).catch(() => setSuggested({ tasks: 0, changes: 0 }));
+  }, [familyId]);
+  useFocusEffect(loadSuggested);
+  React.useEffect(() => (familyId ? onSuggestionsChange(familyId, loadSuggested) : undefined), [familyId, loadSuggested]);
+  const suggestedText = suggestionsLabel(suggested);
   const [selected, setSelected] = useState(todayISO());
   const [childFilter, setChildFilter] = useState<string | 'all'>('all');
   // Ben › Bugünün ilerlemesi / Senin görevlerin: kişi ve gün süzgeciyle açılır ('me' = ebeveynin kendisi)
@@ -169,10 +173,10 @@ export default function TasksScreen({ navigation, route }: any) {
         <NotificationBell />
       </View>
       <TrialBanner />
-      {suggested > 0 && (
+      {!!suggestedText && (
         <Pressable onPress={() => navigation.navigate('Uzmanım')} style={styles.suggest} accessibilityLabel="Uzman önerilerini gör">
           <Ionicons name="briefcase-outline" size={16} color={colors.navy} />
-          <Text style={{ flex: 1, fontSize: 13, color: colors.navy, fontWeight: '600' }}>Uzmanından {suggested} görev önerisi var</Text>
+          <Text style={{ flex: 1, fontSize: 13, color: colors.navy, fontWeight: '600' }}>Uzmanından {suggestedText}</Text>
           <Ionicons name="chevron-forward" size={14} color={colors.muted} />
         </Pressable>
       )}

@@ -16,6 +16,7 @@ import { useParentTasks, doneKey } from '../parentTasks';
 import { useAuth } from '../lib/auth';
 import { useCare } from '../lib/care';
 import { intakeStatus } from '../lib/intake';
+import { countSuggestions } from '../lib/clinic';
 import TrialBanner from '../components/TrialBanner';
 import { todayISO } from '../dates';
 
@@ -88,10 +89,9 @@ export default function MeScreen({ navigation }: any) {
     const clinic = [...new Set(list.map((x) => care!.links.find((l) => l.linkId === x.linkId)?.clinicId).filter(Boolean))] as string[];
     navigation.navigate('Uzmanım', clinic.length === 1 ? { clinicId: clinic[0] } : undefined);
   };
-  const newSug = (care?.suggestions ?? []).filter((x) => x.kind === 'new').length;
-  const changeSug = (care?.suggestions ?? []).filter((x) => x.kind === 'change').length;
+  const { tasks: newSug, changes: changeSug } = countSuggestions(care?.suggestions ?? []); // Görevler'deki bantla aynı sayım
   if (changeSug) {
-    todo.push({ key: 'chg', icon: 'swap-horizontal', tint: '#FFF4D6', title: 'Uzmanından değişiklik önerisi', sub: `${changeSug} görevde saat ya da gün değişikliği; uygula ya da şimdilik değil`,
+    todo.push({ key: 'chg', icon: 'swap-horizontal', tint: '#FFF4D6', title: `Uzmanından ${changeSug} değişiklik önerisi`, sub: 'Saat ya da gün değişikliği; uygula ya da şimdilik değil',
       onPress: () => openSug('change') });
   }
   if (newSug) {

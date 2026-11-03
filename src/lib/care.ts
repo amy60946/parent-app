@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
-  ClinicLink, CareGoal, CareModule, CareRoutine, PendingInvite, Suggestion, carePlan, listLinks, pendingInvites, pendingSuggestions, todayLogs,
+  ClinicLink, CareGoal, CareModule, CareRoutine, PendingInvite, Suggestion, carePlan, listLinks, onSuggestionsChange, pendingInvites, pendingSuggestions, todayLogs,
 } from './clinic';
 import { todayISO } from '../dates';
 
@@ -48,5 +48,7 @@ export function useCare(familyId: string | null) {
   const [state, setState] = useState<CareState | null>(null);
   const reload = useCallback(() => loadCare(familyId).then(setState).catch(() => setState(EMPTY)), [familyId]);
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
+  // Öneriler başka yerde değişince (uzman gönderdi, eş kabul etti) ekran açıkken de yenilenir
+  useEffect(() => (familyId ? onSuggestionsChange(familyId, reload) : undefined), [familyId, reload]);
   return { care: state, reload, setCare: setState };
 }

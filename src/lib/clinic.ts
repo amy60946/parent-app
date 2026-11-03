@@ -85,6 +85,30 @@ export async function pendingSuggestions(familyId: string): Promise<Suggestion[]
     }));
 }
 
+// Öneri sayıları ve metni tek yerden (kullanıcı isteği 3 Kasım 2026: Bugün ile Görevler aynı sayıyı göstersin).
+// tasks: yeni görev önerileri (rutin paketindeki her görev ayrı sayılır), changes: ekli görevlerde değişiklik önerileri.
+export type SuggestionCounts = { tasks: number; changes: number };
+export const countSuggestions = (list: Pick<Suggestion, 'kind'>[]): SuggestionCounts => ({
+  tasks: list.filter((s) => s.kind === 'new').length,
+  changes: list.filter((s) => s.kind === 'change').length,
+});
+// "4 görev önerisi · 1 değişiklik önerisi" (boşsa '')
+export const suggestionsLabel = (c: SuggestionCounts) =>
+  [c.tasks ? `${c.tasks} görev önerisi` : '', c.changes ? `${c.changes} değişiklik önerisi` : ''].filter(Boolean).join(' · ');
+
+// Canlı eşitleme: uzman öneri gönderince ya da öneri (bu cihazda, eşte, uzmanda) karara bağlanınca haber verir.
+// Tablo Realtime yayınında (migrations/20261021300000…: clinic_links, clinic_task_suggestions, abc_events). Olaylar 300 ms toplanır.
+let sugChannelSeq = 0;
+export function onSuggestionsChange(familyId: string, fn: () => void): () => void {
+  let t: ReturnType<typeof setTimeout> | undefined;
+  const ch = supabase
+    .channel(`suggestions:${familyId}:${++sugChannelSeq}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'clinic_task_suggestions', filter: `family_id=eq.${familyId}` },
+      () => { clearTimeout(t); t = setTimeout(fn, 300); })
+    .subscribe();
+  return () => { clearTimeout(t); supabase.removeChannel(ch); };
+}
+
 // Kabul edilen önerinin hangi göreve dönüştüğü (uzman izler)
 export async function linkSuggestionTask(id: string, taskId: string) {
   const { error } = await supabase.from('clinic_task_suggestions').update({ task_id: taskId }).eq('id', id);
