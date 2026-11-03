@@ -270,7 +270,7 @@ function ChildInfo({ id }: { id: string }) {
       </Pressable>
       <Pressable onPress={() => navigation.navigate('Abc', { new: true, childId: c.id })} style={styles.abcRow}
         accessibilityLabel={`${c.name} için davranış kaydı ekle`}>
-        <Ionicons name="journal-outline" size={20} color={colors.navy} />
+        <Ionicons name="document-text-outline" size={20} color={colors.navy} />
         <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: colors.navy }}>Davranış kaydı ekle</Text>
         <Pressable onPress={() => navigation.navigate('Abc', { childId: c.id })} hitSlop={8}>
           <Text style={{ fontSize: 13, color: colors.muted }}>Geçmiş ›</Text>

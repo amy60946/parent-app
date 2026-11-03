@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Info from '../components/Info';
@@ -11,6 +11,7 @@ import VerifiedBadge from '../components/VerifiedBadge';
 import { Avatar, IconButton, Toggle } from '../components/ui';
 import { ClinicianAvatar, EMERGENCY_NOTE } from '../components/ClinicianAvatar';
 import { colors, radius } from '../theme';
+import { COLUMN } from '../components/Column';
 import { useStore } from '../store';
 import { useAuth } from '../lib/auth';
 import { useCare, groupClinicians, CareTodo } from '../lib/care';
@@ -48,6 +49,8 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
   const childName = (id: string) => children.find((k) => k.id === id)?.name ?? '';
   // Son çocuk ayrılınca ya da uzman kaldırılınca: sekmede liste yenilenir, ayrı sayfada geri gidilir
   const leave = () => { if (tab) reload(); else navigation.goBack(); };
+  // iPad: ekran sütunu kenardan ayrık; başlık da kartlarla aynı hizada, dört köşesi yuvarlak
+  const wide = useWindowDimensions().width > COLUMN;
 
   if (!care) return <SafeAreaView style={styles.safe}><ActivityIndicator color={colors.navy} style={{ marginTop: 60 }} /></SafeAreaView>;
   if (!c) {
@@ -142,13 +145,13 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
 
   return (
     <View style={styles.safe}>
-      <SafeAreaView edges={['top']} style={styles.hero}>
+      <SafeAreaView edges={['top']} style={[styles.hero, wide && styles.heroWide]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingTop: 6, paddingBottom: 18 }}>
           {!tab && <IconButton name="chevron-back" label="Geri" onPress={() => navigation.goBack()} color="#fff" style={styles.heroBtn} />}
           <ClinicianAvatar name={c.name} size={46} light />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={styles.heroName} numberOfLines={1}>{c.name}</Text>
-            <Text style={styles.heroCap} numberOfLines={1}>{[c.title, c.clinic !== c.name ? c.clinic : ''].filter(Boolean).join(' · ') || 'Uzman'}</Text>
+            <Text style={styles.heroCap} numberOfLines={2}>{[c.title, c.clinic !== c.name ? c.clinic : ''].filter(Boolean).join(' · ') || 'Uzman'}</Text>
           </View>
           <IconButton name="settings-outline" label="Uzmanı yönet" onPress={() => setManage(true)} color="#fff" style={styles.heroBtn} />
           {tab && (
@@ -308,6 +311,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   hero: { backgroundColor: colors.navy, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
   heroBtn: { backgroundColor: 'rgba(255,255,255,0.14)' },
+  heroWide: { marginHorizontal: 20, marginTop: 12, borderRadius: 24 },
   heroName: { fontSize: 20, fontWeight: '800', color: '#fff' },
   heroCap: { fontSize: 13, color: 'rgba(255,255,255,0.75)' },
   connect: { flexDirection: 'row', alignItems: 'center', gap: 2, height: 36, paddingLeft: 8, paddingRight: 12, borderRadius: 18, backgroundColor: '#fff' },

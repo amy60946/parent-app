@@ -283,7 +283,7 @@ export default function TasksScreen({ navigation, route }: any) {
           <Pressable style={styles.dialItem} accessibilityLabel="Davranış kaydı ekle"
             onPress={() => go('Abc', { new: true })}>
             <Text style={styles.dialLabel}>Davranış kaydı</Text>
-            <View style={styles.dialIcon}><Ionicons name="journal-outline" size={20} color={colors.navy} /></View>
+            <View style={styles.dialIcon}><Ionicons name="document-text-outline" size={20} color={colors.navy} /></View>
           </Pressable>
         </View>
       )}

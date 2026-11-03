@@ -101,7 +101,7 @@ function Trail({ d }: { d: string }) {
 
 // Altın halkalı öğe: dışta yumuşak hale (12), içte altın çizgi (4), üstte öğenin kendisi + numara rozeti.
 function Ring({ style, radius, badge, badgeAt, inner, children }: {
-  style: StyleProp<ViewStyle>; radius: number; badge: number; badgeAt: ViewStyle; inner?: StyleProp<ViewStyle>; children?: React.ReactNode;
+  style: StyleProp<ViewStyle>; radius: number; badge?: number; badgeAt?: ViewStyle; inner?: StyleProp<ViewStyle>; children?: React.ReactNode;
 }) {
   return (
     <View pointerEvents="none" style={[{ position: 'absolute' }, style]}>
@@ -110,7 +110,7 @@ function Ring({ style, radius, badge, badgeAt, inner, children }: {
       <View style={[{ flex: 1, borderRadius: radius, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, inner]}>
         {children}
       </View>
-      <Badge n={badge} style={badgeAt} />
+      {!!badge && <Badge n={badge} style={badgeAt ?? {}} />}
     </View>
   );
 }
@@ -559,7 +559,7 @@ function Balance({ k }: { k: number }) {
   );
 }
 
-const SUGGEST = [['Dondurma', '6'], ['Kitap okuma', '4'], ['Bisiklet', '10']];
+const SUGGEST = [['Dondurma', '6'], ['Kitap okuma', '4']];
 function Suggestions() {
   return (
     <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -630,13 +630,12 @@ function StepEarn(p: StepProps) {
     <>
       <RewardsMock hide="bal" />
       <Dim />
-      {KIDS.map((_, k) => (
-        <Ring key={k} style={{ left: 20 + k * ((W - 48) / 2 + 8), top: R_TOP.bal, width: (W - 48) / 2, height: 52 }} radius={14}
-          badge={1} badgeAt={k === 0 ? { top: -12, left: -12 } : { top: -100, left: -100 }}
-          inner={{ flexDirection: 'row', justifyContent: 'flex-start', gap: 6, paddingLeft: 10, paddingRight: 8 }}>
-          <Balance k={k} />
-        </Ring>
-      ))}
+      <Ring style={{ left: 20, top: R_TOP.bal, width: W - 40, height: 52 }} radius={14} badge={1} badgeAt={{ top: -12, left: -12 }}
+        inner={{ flexDirection: 'row', justifyContent: 'flex-start', gap: 6, paddingLeft: 10, paddingRight: 8 }}>
+        <Balance k={0} />
+        <View style={{ width: 1, height: 30, backgroundColor: colors.line, marginHorizontal: 4 }} />
+        <Balance k={1} />
+      </Ring>
       <Coach {...p} title="Taşlar görevden gelir" text="Onayladığın her görev Güneş Taşı kazandırır: kolay 1, orta 2, zor 3." style={{ left: 20, right: 20, top: 200 }} />
     </>
   );
@@ -672,7 +671,7 @@ function StepGive(p: StepProps) {
         <Text style={{ fontSize: 16, fontWeight: '800', color: KIDS[0].tint[1] }}>N</Text>
       </Ring>
       {/* Harfe dokununca çıkan onay kartının önizlemesi */}
-      <View pointerEvents="none" style={[st.preview, { top: top + LETTER + 22, bottom: 'auto', left: 110, right: 20 }]}>
+      <View pointerEvents="none" style={[st.preview, { top: top - 140, bottom: 'auto', left: 110, right: 20 }]}>
         <Text style={{ fontSize: 12, fontWeight: '700', color: '#5B6274' }}>Nazlı'ya verilsin mi?</Text>
         <View style={st.previewRow}>
           <Ionicons name="film-outline" size={18} color={colors.navy} />
@@ -683,7 +682,7 @@ function StepGive(p: StepProps) {
       </View>
       <Coach {...p} title="Ödülü ver" text="Ödülün yanındaki harfe dokun, onayla. Çocuğun oyundan da isteyebilir; onay senden."
         note="Coin ve Güneş Taşı'nın parasal değeri yoktur: satın alınamaz, paraya çevrilemez. Ödülün sözünü sen verirsin; biz ödüllerin tarafı değiliz."
-        style={{ left: 20, right: 20, top: 560 }} />
+        style={{ left: 20, right: 20, top: top + LETTER + 30 }} />
     </>
   );
 }

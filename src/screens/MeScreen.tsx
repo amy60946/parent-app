@@ -227,7 +227,7 @@ export default function MeScreen({ navigation }: any) {
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {([['add-circle-outline', 'Görev ver', () => navigation.navigate('CreateTask', { date: today })],
             ['gift-outline', 'Ödül', () => navigation.navigate('Rewards')],
-            ['journal-outline', 'Davranış kaydı', () => navigation.navigate('Abc', { new: true })]] as const).map(([icon, label, go]) => (
+            ['document-text-outline', 'Davranış kaydı', () => navigation.navigate('Abc', { new: true })]] as const).map(([icon, label, go]) => (
             <Pressable key={label} onPress={go} style={styles.quick} accessibilityRole="button">
               <Ionicons name={icon} size={18} color={colors.navy} />
               <Text style={styles.quickText} numberOfLines={1}>{label}</Text>
