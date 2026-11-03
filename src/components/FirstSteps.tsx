@@ -12,7 +12,9 @@ import { todayISO } from '../dates';
 
 // Ben › "İlk adımlar" (kullanıcı kararı 3 Kasım 2026; benchmark: kurulum kontrol listesi + ilerleme göstergesi,
 // "yaparak öğren"). Yeni hesapta (ilk 30 gün) görünür; her satır ilgili ekranı açar, yapılınca kendiliğinden işaretlenir.
-// Zorunlu 5 adım bitince ya da "Gizle" denince kaybolur. Uzman isteğe bağlıdır, sayıya girmez.
+// Zorunlu 5 adım bitince kaybolur. Uzman isteğe bağlıdır, sayıya girmez.
+// 3 Kasım 2026 (kullanıcı isteği): çarpı yok; başlıktaki ok kartı daraltır/açar (daraltılınca başlık + sayı + çubuk kalır),
+// böylece ebeveyn kalan adımları her zaman görebilir. Eski "gizle" kaydı (HIDE_KEY) daraltılmış olarak açılır.
 const HIDE_KEY = (uid: string) => `first-steps-hidden-${uid}`;
 const DONE_KEY = (uid: string) => `first-steps-done-${uid}`;
 const NEW_DAYS = 30;
@@ -25,13 +27,14 @@ export default function FirstSteps({ navigation, hasClinician }: { navigation: a
   const uid = session?.user.id ?? '';
   const created = session?.user.created_at ? new Date(session.user.created_at).getTime() : 0;
   const isNew = !!created && Date.now() - created < NEW_DAYS * 864e5;
-  const [hidden, setHidden] = useState<boolean | null>(null);
+  const [hidden, setHidden] = useState<boolean | null>(null); // yalnız "hepsi bitti" kaydı
+  const [open, setOpen] = useState(true);
   const [rewards, setRewards] = useState(false);
 
   useEffect(() => {
     if (!uid) return;
     AsyncStorage.multiGet([HIDE_KEY(uid), DONE_KEY(uid)])
-      .then(([[, h], [, d]]) => setHidden(h === '1' || d === '1')).catch(() => setHidden(false));
+      .then(([[, h], [, d]]) => { setOpen(h !== '1'); setHidden(d === '1'); }).catch(() => setHidden(false));
   }, [uid]);
   // Ödül başka ekranda eklenir: Ben'e her dönüşte yeniden bak
   useFocusEffect(useCallback(() => {
@@ -68,28 +71,28 @@ export default function FirstSteps({ navigation, hasClinician }: { navigation: a
 
   if (!isNew || hidden !== false || allDone) return null;
 
-  const hide = () => {
-    track('first_steps.hide', { n: doneCount });
-    setHidden(true);
-    AsyncStorage.setItem(HIDE_KEY(uid), '1').catch(() => {});
+  const toggle = () => {
+    const next = !open;
+    track(next ? 'first_steps.expand' : 'first_steps.collapse', { n: doneCount });
+    setOpen(next);
+    (next ? AsyncStorage.removeItem(HIDE_KEY(uid)) : AsyncStorage.setItem(HIDE_KEY(uid), '1')).catch(() => {});
   };
-  const open = (i: Item) => { track('first_steps.open', { item: i.key }); i.go(); };
+  const go = (i: Item) => { track('first_steps.open', { item: i.key }); i.go(); };
   const pct = Math.round((doneCount / required.length) * 100);
 
   return (
     <View style={styles.card} accessibilityLabel={`İlk adımlar, ${required.length} adımdan ${doneCount} tamam`}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+      <Pressable onPress={toggle} hitSlop={6} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+        accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={open ? 'İlk adımları daralt' : 'İlk adımları aç'}>
         <Text style={[styles.h, { flex: 1 }]} accessibilityRole="header">İlk adımlar</Text>
         <Text style={styles.count}>{doneCount} / {required.length}</Text>
-        <Pressable onPress={hide} hitSlop={10} accessibilityRole="button" accessibilityLabel="İlk adımları gizle">
-          <Ionicons name="close" size={20} color={colors.muted} />
-        </Pressable>
-      </View>
+        <View style={styles.toggle}><Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.navy} /></View>
+      </Pressable>
       <View style={styles.bar}><View style={[styles.barFill, { width: `${pct}%` }]} /></View>
-      {items.map((i) => (
+      {open && items.map((i) => (
         <React.Fragment key={i.key}>
         {i.optional && <Text style={styles.optional}>İsteğe bağlı</Text>}
-        <Pressable onPress={() => open(i)} disabled={i.done} style={styles.row}
+        <Pressable onPress={() => go(i)} disabled={i.done} style={styles.row}
           accessibilityRole="button" accessibilityState={{ disabled: i.done, checked: i.done }} accessibilityLabel={`${i.title}${i.done ? ', tamam' : ''}`}>
           <View style={[styles.dot, i.done && styles.dotOn]}>
             {i.done && <Ionicons name="checkmark" size={14} color="#fff" />}
@@ -109,6 +112,7 @@ export default function FirstSteps({ navigation, hasClinician }: { navigation: a
 const styles = StyleSheet.create({
   card: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 16, gap: 8, borderWidth: 1.5, borderColor: '#F3DFA6' },
   h: { fontSize: 17, fontWeight: '800', color: colors.navy },
+  toggle: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#FFF6DE', alignItems: 'center', justifyContent: 'center' },
   count: { fontSize: 12, fontWeight: '700', color: '#6B5300', backgroundColor: '#FFF6DE', borderRadius: 10, paddingVertical: 3, paddingHorizontal: 9, overflow: 'hidden' },
   bar: { height: 6, borderRadius: 3, backgroundColor: '#EEF0F5', overflow: 'hidden', marginBottom: 2 },
   barFill: { height: 6, borderRadius: 3, backgroundColor: colors.gold },

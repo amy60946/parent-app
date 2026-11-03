@@ -14,10 +14,10 @@ import { useAuth } from '../lib/auth';
 import { track } from '../lib/track';
 import { defaultChildAvatar, parentAvatarId } from '../data/avatars';
 import ParentAvatarPicker from '../components/ParentAvatarPicker';
-import { HEALTH_CONSENT_TEXT, Step, childSteps, familySteps, relateSteps } from '../data/intake';
+import { Step, childSteps, familySteps, relateSteps } from '../data/intake';
 import { myAnswers, saveAnswer } from '../lib/intake';
 import { PendingInvite, openInvite, pendingInvites } from '../lib/clinic';
-import { guestRedeemedText } from '../lib/guestPass';
+import { guestRedeemedText, redeemGuestPass, takePendingGuestCode } from '../lib/guestPass';
 import { clearPendingClinicInvite, getPendingClinicInvite } from '../lib/clinicInvite';
 import { hintOf } from '../lib/errors';
 import { useSetup } from '../setupContext';
@@ -45,6 +45,12 @@ export default function SetupScreen({ navigation, route }: any) {
     if (phase !== 'start') return;
     (async () => {
       let invite: PendingInvite | undefined;
+      // Kayıttan önce yazılan aile davet kodu (3 Kasım 2026): şimdi kullanılır; olmazsa nedeni ve sonra nereye yazılacağı söylenir
+      const guest = await takePendingGuestCode();
+      if (guest) {
+        try { Alert.alert('Davet kodu kullanıldı', guestRedeemedText(await redeemGuestPass(guest))); }
+        catch (e) { Alert.alert('Davet kodu kullanılamadı', `${(e as Error).message}\n\nKodu sonra Aile › Hesap › Kod gir bölümüne yazabilirsin.`); }
+      }
       try {
         const key = await getPendingClinicInvite();
         if (key) {
@@ -313,11 +319,9 @@ export function Questionnaire({ steps, childId, onDone, onBackFirst }: {
               </Pressable>
             );
           })}
+          {/* ⓘ kaldırıldı (kullanıcı kararı 3 Kasım 2026); rıza satırı kalır, tam metin Aile › Hesap › Yasal ve gizlilik › Verdiğin izinler */}
           {step.health && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-              <Text style={[styles.cap, { flex: 1 }]}>İsteğe bağlı. Yanıt verirsen sağlık bilgisi olarak saklanmasına onay vermiş olursun.</Text>
-              <Info title="Sağlık yanıtları" text={HEALTH_CONSENT_TEXT} />
-            </View>
+            <Text style={[styles.cap, { marginTop: 4 }]}>İsteğe bağlı. Yanıt verirsen sağlık bilgisi olarak saklanmasına onay vermiş olursun.</Text>
           )}
         </ScrollView>
         <View style={{ gap: 8 }}>
@@ -402,9 +406,8 @@ function ChildForm({ first, onSaved, onBack }: { first: boolean; onSaved: (id: s
       </ScrollView>
       {!picking && !kb && (
         <>
+          {/* Veli beyanı satırı kaldırıldı (kullanıcı kararı 3 Kasım 2026): beyan Kullanım Koşulları'nda (hukuk/50 §1.4) */}
           <Cta label="Kaydet" onPress={save} busy={busy} disabled={!name.trim()} />
-          {/* veli beyanı (hukuk/50 §1.4) */}
-          <Text style={{ fontSize: 11, lineHeight: 16, color: colors.muted, textAlign: 'center' }}>Çocuğu ekleyerek velisi ya da yasal temsilcisi olduğunu beyan edersin. Doğum günü ve cinsiyet isteğe bağlıdır.</Text>
         </>
       )}
     </Shell>

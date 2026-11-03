@@ -148,7 +148,7 @@ function MyProfile() {
         // Ebeveynin Güneş Taşı (akislar.md 18): kendine atanan görevlerden; hediye dükkânında harcanır
         <>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ flex: 1 }}><InfoTitle title="Güneş Taşım" style={styles.h} info={'Sana atanan görevlerde "Yaptım" dedikçe taş kazanırsın (Kolay 1, Orta 2, Zor 3). Taşlarla Hediye dükkânından çocuğuna oyunda hediye gönderirsin.'} /></View>
+            <View style={{ flex: 1 }}><InfoTitle title="Güneş Taşım" style={styles.h} info={'Sana atanan görevlerde "Yaptım" dedikçe Güneş Taşı kazanırsın (Kolay 1, Orta 2, Zor 3). Güneş Taşlarınla Hediye dükkânından çocuğuna oyunda hediye gönderirsin.'} /></View>
             <Pressable onPress={() => navigation.navigate('Stones')} hitSlop={8}><Text style={styles.link}>Geçmiş ›</Text></Pressable>
           </View>
           <Card style={{ gap: 12 }}>
@@ -599,8 +599,7 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
             <AgeBandPicker value={band ?? undefined} birthday={birthday} onChange={setBand} />
           </View>
           <Pressable style={[styles.cta, busy && { opacity: 0.6 }]} disabled={busy} onPress={save}><Text style={styles.ctaText}>Çocuğu ekle</Text></Pressable>
-          {/* veli beyanı (hukuk/50 §1.4) */}
-          <Text style={{ fontSize: 11, lineHeight: 16, color: colors.muted, textAlign: 'center' }}>Çocuğu ekleyerek velisi ya da yasal temsilcisi olduğunu beyan edersin. Doğum günü ve cinsiyet isteğe bağlıdır.</Text>
+          {/* Veli beyanı satırı kaldırıldı (kullanıcı kararı 3 Kasım 2026): beyan Kullanım Koşulları'nda (hukuk/50 §1.4) */}
         </>
       ) : (
         <>

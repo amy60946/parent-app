@@ -48,8 +48,8 @@ export default function GiftShopScreen({ navigation }: any) {
     setBusy(false);
     if (error) return Alert.alert('Gönderilemedi', error.message);
     const r = data as { ok: boolean; error?: string };
-    if (!r.ok) return Alert.alert(r.error === 'not_enough_stones' ? 'Taş yetmiyor' : 'Gönderilemedi',
-      r.error === 'not_enough_stones' ? 'Sana atanan görevlerde "Yaptım" diyerek taş kazanabilirsin.' : 'Bu eşya artık dükkânda yok.');
+    if (!r.ok) return Alert.alert(r.error === 'not_enough_stones' ? 'Güneş Taşı yetmiyor' : 'Gönderilemedi',
+      r.error === 'not_enough_stones' ? 'Sana atanan görevlerde "Yaptım" diyerek Güneş Taşı kazanabilirsin.' : 'Bu eşya artık dükkânda yok.');
     track('gift.send', { item: chosen.id, stones: chosen.stones });
     pt.reload();
     setSent(`${child.name} Pofi Adası'nı açınca ${giftName(chosen.id)} posta kutusunda olacak.`);
@@ -61,7 +61,7 @@ export default function GiftShopScreen({ navigation }: any) {
       <View style={styles.top}>
         <IconButton name="chevron-back" label="Geri" onPress={() => navigation.goBack()} />
         <Text style={styles.topTitle}>Hediye dükkânı</Text>
-        <View style={styles.bal} accessibilityLabel={`Bakiye ${bal} taş`}>
+        <View style={styles.bal} accessibilityLabel={`Bakiye ${bal} Güneş Taşı`}>
           <View style={styles.stone} />
           <Text style={{ fontSize: 15, fontWeight: '800', color: colors.navy }}>{bal}</Text>
         </View>
@@ -92,8 +92,8 @@ export default function GiftShopScreen({ navigation }: any) {
         ListHeaderComponent={
           <View style={{ gap: 12, marginBottom: 4 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={[styles.cap, { flex: 1, fontSize: 13 }]}>Görevlerinden kazandığın taşla çocuğuna oyunda hediye gönder.</Text>
-              <Info title="Hediye dükkânı" text="Kendine ya da ailece görev ata (Görev ayrıntıları › Ebeveynler), 'Yaptım' de: Kolay 1, Orta 2, Zor 3 taş. Seçtiğin eşya çocuğunun Pofi Adası posta kutusuna düşer; notun da yanında görünür." />
+              <Text style={[styles.cap, { flex: 1, fontSize: 13 }]}>Görevlerinden kazandığın Güneş Taşı ile çocuğuna oyunda hediye gönder.</Text>
+              <Info title="Hediye dükkânı" text="Kendine ya da ailece görev ata (Görev ayrıntıları › Ebeveynler), 'Yaptım' de: Kolay 1, Orta 2, Zor 3 Güneş Taşı. Seçtiğin eşya çocuğunun Pofi Adası posta kutusuna düşer; notun da yanında görünür." />
             </View>
             <Segmented options={giftKinds} value={kind} onChange={setKind} />
             {items === null && <ActivityIndicator color={colors.navy} />}
@@ -106,7 +106,7 @@ export default function GiftShopScreen({ navigation }: any) {
           const short = item.stones > bal;
           return (
             <Pressable onPress={() => setPick(on ? null : item.id)} style={[styles.item, on && { borderColor: colors.navy }]}
-              accessibilityRole="radio" accessibilityState={{ selected: on }} accessibilityLabel={`${giftName(item.id)}, ${item.stones} taş`}>
+              accessibilityRole="radio" accessibilityState={{ selected: on }} accessibilityLabel={`${giftName(item.id)}, ${item.stones} Güneş Taşı`}>
               <View style={styles.icon}><Ionicons name={meta?.icon ?? 'gift-outline'} size={22} color={colors.navy} /></View>
               <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: colors.navy }}>{giftName(item.id)}</Text>
               <View style={[styles.price, short && { opacity: 0.5 }]}>
@@ -123,7 +123,7 @@ export default function GiftShopScreen({ navigation }: any) {
             placeholderTextColor={colors.muted} style={styles.input} />
           <Pressable onPress={send} disabled={busy || chosen.stones > bal} style={[styles.cta, (busy || chosen.stones > bal) && { opacity: 0.5 }]} accessibilityRole="button">
             <Ionicons name="gift-outline" size={18} color="#fff" />
-            <Text style={styles.ctaText}>{chosen.stones > bal ? `Taş yetmiyor · ${chosen.stones - bal} eksik` : `Hediye gönder · ${chosen.stones} taş`}</Text>
+            <Text style={styles.ctaText}>{chosen.stones > bal ? `Güneş Taşı yetmiyor · ${chosen.stones - bal} eksik` : `Hediye gönder · ${chosen.stones} Güneş Taşı`}</Text>
           </Pressable>
         </View>
       )}

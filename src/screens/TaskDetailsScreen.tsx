@@ -239,7 +239,7 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
           <>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <View style={{ flex: 1 }}><Label>Ebeveynler (isteğe bağlı)</Label></View>
-              <Info title="Ebeveyn görevi" text="Ailece ya da senin yapacağın görevlerde kendini ya da eşini de seç. Ebeveyn görevi 'Yaptım' deyince zorluğa göre Güneş Taşı kazanır (Kolay 1, Orta 2, Zor 3). Taşlarla Aile › Ben › Hediye dükkânından çocuğuna oyunda hediye gönderirsin." />
+              <Info title="Ebeveyn görevi" text="Ailece ya da senin yapacağın görevlerde kendini ya da eşini de seç. Ebeveyn görevi 'Yaptım' deyince zorluğa göre Güneş Taşı kazanır (Kolay 1, Orta 2, Zor 3). Güneş Taşlarınla Aile › Ben › Hediye dükkânından çocuğuna oyunda hediye gönderirsin." />
             </View>
             <View style={{ backgroundColor: '#fff', borderRadius: radius.md }}>
               {pt.members.map((m, i) => {

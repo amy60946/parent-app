@@ -8,7 +8,7 @@ import { useStore } from '../store';
 import { useCare, groupClinicians } from '../lib/care';
 import { TELL_CLINICIAN } from '../data/clinicTexts';
 import { ClinicianView } from './ClinicianScreen';
-import { ClinicianAvatar, EMERGENCY_NOTE } from '../components/ClinicianAvatar';
+import { ClinicianAvatar } from '../components/ClinicianAvatar';
 
 // Uzmanım sekmesi (kullanıcı isteği 28 Ekim 2026, Joon "Care" örneğinden; yapay zekâ asistanı şimdilik yok).
 // 3 Kasım 2026 (kullanıcı isteği): uzman bağlıysa sekme doğrudan uzmanın sayfasıyla açılır (program, öneriler, bugün
@@ -104,8 +104,6 @@ export default function CareScreen({ navigation, route }: any) {
           </>
         )}
 
-        {/* Acil durum notu (hukuk/50 §9) */}
-        <Text style={styles.foot}>{EMERGENCY_NOTE}</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -131,5 +129,4 @@ const styles = StyleSheet.create({
   tip: { backgroundColor: '#FFF4D6', borderRadius: radius.lg, padding: 16, gap: 8 },
   tipBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginTop: 4, paddingHorizontal: 14, height: 40, borderRadius: radius.pill, backgroundColor: '#fff' },
   tipBtnText: { fontSize: 14, fontWeight: '700', color: colors.navy },
-  foot: { fontSize: 11, lineHeight: 16, color: colors.muted, textAlign: 'center' },
 });

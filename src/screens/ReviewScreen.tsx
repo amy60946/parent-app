@@ -57,7 +57,7 @@ export default function ReviewScreen({ navigation, route }: any) {
       <View style={styles.header}>
         <IconButton name="chevron-back" label="Geri" onPress={() => navigation.goBack()} />
         <Text style={styles.title} accessibilityRole="header">İnceleme</Text>
-        <Info title="İnceleme" text="Göreve dokun: motive etmek ne kadar zordu, Güneş Taşı, not; ardından Onayla, Tekrar dene ya da Reddet. Sağdaki ✓ hızlı onaydır (taş zorluğa göre)." />
+        <Info title="İnceleme" text="Göreve dokun: motive etmek ne kadar zordu, Güneş Taşı, not; ardından Onayla, Tekrar dene ya da Reddet. Sağdaki ✓ hızlı onaydır (Güneş Taşı zorluğa göre)." />
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, gap: 16 }}>
         <Pressable onPress={() => setFilter('all')} style={{ alignItems: 'center', gap: 4 }}>
@@ -196,7 +196,7 @@ function ReviewSheet({ item, onClose, onDecide }: {
       <View style={{ gap: 8 }}>
         <View style={styles.headRow}>
           <Text style={[styles.h, { flex: 1 }]}>Güneş Taşı</Text>
-          <Info title="Güneş Taşı" text={`Onaylayınca ${child.name} bu kadar taş kazanır. Varsayılan zorluğa göre: Kolay 1, Orta 2, Zor 3. Özenle yaptıysa artır, eksik kaldıysa azalt (0–${MAX_STONES}). Coin ödülü değişmez.`} />
+          <Info title="Güneş Taşı" text={`Onaylayınca ${child.name} bu kadar Güneş Taşı kazanır. Varsayılan zorluğa göre: Kolay 1, Orta 2, Zor 3. Özenle yaptıysa artır, eksik kaldıysa azalt (0–${MAX_STONES}). Coin ödülü değişmez.`} />
         </View>
         <View style={styles.stepper}>
           <Pressable onPress={() => setStones((n) => Math.max(0, n - 1))} disabled={stones <= 0} style={[styles.step, stones <= 0 && { opacity: 0.35 }]} accessibilityLabel="Azalt">

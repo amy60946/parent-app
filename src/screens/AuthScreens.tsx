@@ -11,7 +11,7 @@ import { colors, radius } from '../theme';
 import { IconButton } from '../components/ui';
 import { useAuth, authErrorText } from '../lib/auth';
 import { clearPendingClinicInvite, getPendingClinicInvite, isInviteToken, setPendingClinicInvite } from '../lib/clinicInvite';
-import { normalizeCode } from '../lib/pendingInvite';
+import { GUEST_CODE, setPendingGuestCode } from '../lib/guestPass';
 import { InviteInfo, inviteInfo } from '../lib/clinic';
 import { markSignupConsent } from '../lib/legal';
 
@@ -183,10 +183,11 @@ export function WelcomeScreen({ navigation }: any) {
   );
 }
 
-// Bir uzmandan kod aldın mı? Hayır → kayıt · Evet → kod ekranı → kayıt · Hesabım var → giriş
+// Davet kodun var mı? Hayır → kayıt · Evet → kod ekranı → kayıt · Hesabım var → giriş
+// 3 Kasım 2026: yalnız uzman kodu değil, aile davet kodu da (8 karakter; akislar.md 19). Kodun türünü sistem anlar.
 export function ExpertAskScreen({ navigation }: any) {
   return (
-    <Layout title="Bir uzmandan davet kodu aldın mı?" subtitle="Uzmanın seni davet ettiyse e-postada ya da mesajda 6 haneli bir kod vardır." onBack={() => navigation.goBack()}>
+    <Layout title="Davet kodun var mı?" subtitle="Uzmanından ya da seni davet eden bir aileden aldığın kod." onBack={() => navigation.goBack()}>
       <Cta label="Hayır" onPress={() => navigation.navigate('SignUp')} />
       <Pressable onPress={() => navigation.navigate('ExpertCode')} style={styles.ghost} accessibilityRole="button">
         <Text style={styles.ghostText}>Evet</Text>
@@ -199,15 +200,20 @@ export function ExpertAskScreen({ navigation }: any) {
 export function ExpertCodeScreen({ navigation }: any) {
   const [code, setCode] = useState('');
   const next = async () => {
-    if (code.length !== 6) return Alert.alert('Kod 6 karakter olmalı');
+    if (GUEST_CODE.test(code)) {
+      // Aile davet kodu: kayıttan sonra kurulumun başında kullanılır (SetupScreen), deneme 14 gün olur
+      await setPendingGuestCode(code);
+      return navigation.navigate('SignUp');
+    }
+    if (code.length !== 6) return Alert.alert('Kod 6 ya da 8 karakter olmalı', 'Uzman kodu 6, aile davet kodu 8 karakterdir.');
     // Kayıtta sunucu daveti aileye bağlar (meta clinic_invite); kurulumda "Çocuğunu ekle" uzmanın önerisiyle açılır
     await setPendingClinicInvite(code);
     navigation.navigate('SignUp');
   };
   return (
-    <Layout title="Uzman kodunu yaz" subtitle="Kayıttan sonra uzmanının bilgileri hazır gelir; kontrol edip onaylarsın." onBack={() => navigation.goBack()}>
-      <TextInput value={code} onChangeText={(v) => setCode(normalizeCode(v))} placeholder="KOD" placeholderTextColor={colors.faint}
-        autoCapitalize="characters" autoCorrect={false} autoFocus onSubmitEditing={next} accessibilityLabel="Uzman kodu" style={styles.bigCode} />
+    <Layout title="Davet kodunu yaz" subtitle="Kodun türünü biz anlarız. Uzman kodunda bilgiler kayıttan sonra hazır gelir; aile kodunda deneme 14 gün olur." onBack={() => navigation.goBack()}>
+      <TextInput value={code} onChangeText={(v) => setCode(v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8))} placeholder="KOD" placeholderTextColor={colors.faint}
+        autoCapitalize="characters" autoCorrect={false} autoFocus onSubmitEditing={next} accessibilityLabel="Davet kodu" style={styles.bigCode} />
       <Cta label="Devam" onPress={next} />
       <LinkText onPress={() => navigation.navigate('SignUp')}>Kodsuz devam et</LinkText>
     </Layout>

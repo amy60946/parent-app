@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet, useWindowDimensions, ScrollView, Alert } from 'react-native';
+import { View, Text, FlatList, Pressable, StyleSheet, useWindowDimensions, ScrollView, Alert, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,7 +8,7 @@ import ReanimatedSwipeable, { SwipeableMethods } from 'react-native-gesture-hand
 import { colors, radius } from '../theme';
 import { Avatar, DifficultyBadge } from '../components/ui';
 import { useStore, taskOccursOn, completionKey, Task, CompletionStatus } from '../store';
-import { DAY_SHORT, addDays, fromISO, monthYear, startOfWeek, toISO, todayISO } from '../dates';
+import { DAY_SHORT, addDays, formatTR, fromISO, monthYear, startOfWeek, toISO, todayISO } from '../dates';
 import { pendingSuggestions } from '../lib/clinic';
 import NotificationBell from '../components/NotificationBell';
 import { TaskDayPart, dayPartLabel, taskDayPartOf } from '../data/dayParts';
@@ -102,6 +102,30 @@ export default function TasksScreen({ navigation, route }: any) {
       .filter((x) => x.assigns.length > 0 || x.parents.length > 0);
   }, [tasks, selected, childFilter, part, pt.assigns, pt.me]);
 
+  // Üst süzgeçler (hafta şeridi, günün bölümü, kişi) kaydırınca gizlenir, yukarı kaydırınca geri gelir (kullanıcı isteği 3 Kasım 2026;
+  // "quick return" deseni). Süzgeçler listenin üstünde ayrı katmanda durur, liste aynı yükseklikte boşlukla başlar: gizlenip
+  // açılmak listeyi yeniden ölçtürmez, hareket yerel sürücüde akar. Başlık hep görünür; gizliyken seçili gün başlıkta yazar.
+  const [filtersH, setFiltersH] = useState(0);
+  const [collapsed, setCollapsed] = useState(false);
+  const shift = useRef(new Animated.Value(0)).current; // 0 açık, 1 gizli
+  const lastY = useRef(0);
+  const collapsedRef = useRef(false);
+  const setFilters = React.useCallback((hide: boolean) => {
+    if (collapsedRef.current === hide) return;
+    collapsedRef.current = hide;
+    setCollapsed(hide);
+    Animated.timing(shift, { toValue: hide ? 1 : 0, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [shift]);
+  const onScrollY = React.useCallback((y: number) => {
+    const dy = y - lastY.current;
+    lastY.current = y;
+    if (y < filtersH * 0.6) return setFilters(false); // başa yakın: hep açık (kısa listede titreme olmaz)
+    if (dy > 6) setFilters(true);
+    else if (dy < -6) setFilters(false);
+  }, [filtersH, setFilters]);
+  // Gün ya da süzgeç değişince süzgeçler görünür
+  React.useEffect(() => { setFilters(false); }, [selected, childFilter, part, setFilters]);
+
   const edit = (t: Task) => navigation.navigate('TaskDetails', { taskId: t.id });
 
   const confirmDelete = (t: Task, close: () => void) => {
@@ -140,7 +164,7 @@ export default function TasksScreen({ navigation, route }: any) {
       <View style={[styles.header, { flexDirection: 'row', alignItems: 'center' }]}>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Görevler</Text>
-          <Text style={styles.month}>{monthYear(fromISO(selected))}</Text>
+          <Text style={styles.month}>{collapsed ? formatTR(selected) : monthYear(fromISO(selected))}</Text>
         </View>
         <NotificationBell />
       </View>
@@ -153,6 +177,14 @@ export default function TasksScreen({ navigation, route }: any) {
         </Pressable>
       )}
 
+      <View style={{ flex: 1, overflow: 'hidden' }}>
+      <Animated.View
+        onLayout={(e) => { const h = Math.round(e.nativeEvent.layout.height); if (h !== filtersH) setFiltersH(h); }}
+        pointerEvents={collapsed ? 'none' : 'auto'}
+        style={[styles.filters, {
+          opacity: shift.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
+          transform: [{ translateY: shift.interpolate({ inputRange: [0, 1], outputRange: [0, -Math.max(filtersH, 1)] }) }],
+        }]}>
       <FlatList
         ref={listRef}
         data={weeks}
@@ -215,6 +247,7 @@ export default function TasksScreen({ navigation, route }: any) {
           ))}
         </ScrollView>
       </View>
+      </Animated.View>
 
       <DraggableFlatList
         data={dayTasks}
@@ -223,7 +256,9 @@ export default function TasksScreen({ navigation, route }: any) {
         onDragEnd={({ data }) => reorderTasks(data.map((x) => x.task.id))}
         activationDistance={12}
         containerStyle={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 120 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: filtersH + 4, paddingBottom: 120 }}
+        onScrollOffsetChange={onScrollY}
+        scrollEventThrottle={16}
         ListHeaderComponent={
           dayTasks.length > 0 ? (
             <View style={styles.hint}>
@@ -265,6 +300,7 @@ export default function TasksScreen({ navigation, route }: any) {
           )
         }
       />
+      </View>
 
       {dial && <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(245,246,248,0.7)' }]} onPress={() => setDial(null)} accessibilityLabel="Kapat" />}
       {dial === 'menu' && (
@@ -272,7 +308,7 @@ export default function TasksScreen({ navigation, route }: any) {
           {newReward && (
             <Pressable onPress={seenNewReward} style={styles.newTip} accessibilityLabel="İpucunu kapat">
               <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Yeni: Ödüller</Text>
-              <Text style={{ fontSize: 12, color: '#D6DBEA' }}>Görevlerden taş kazanılır; ödülü sen belirlersin.</Text>
+              <Text style={{ fontSize: 12, color: '#D6DBEA' }}>Görevlerden Güneş Taşı kazanılır; ödülü sen belirlersin.</Text>
             </Pressable>
           )}
           <Pressable style={styles.dialItem} accessibilityLabel="Ödüller ve Güneş Taşı"
@@ -447,6 +483,7 @@ forYou: { fontSize: 11, fontWeight: '700', color: colors.navy, backgroundColor: 
   suggest: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 20, marginBottom: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.md, backgroundColor: '#FFF6DE' },
   safe: { flex: 1, backgroundColor: colors.bg },
   header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 10 },
+  filters: { position: 'absolute', left: 0, right: 0, top: 0, zIndex: 2, backgroundColor: colors.bg, paddingBottom: 4 },
   parts: { flexDirection: 'row', marginHorizontal: 20, marginTop: 10, padding: 3, borderRadius: radius.pill, backgroundColor: '#E9EBF0' },
   part: { flex: 1, height: 30, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   partOn: { backgroundColor: '#fff' },

@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
 import { IconButton } from '../components/ui';
+import Info from '../components/Info';
+import { HEALTH_CONSENT_TEXT } from '../data/intake';
 import { LegalDoc, legalDocs } from '../lib/legal';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
@@ -74,7 +76,11 @@ export default function LegalDocsScreen({ navigation }: any) {
           {health !== null && (
             <View style={styles.row}>
               <View style={{ flex: 1, gap: 2 }}>
-                <Text style={styles.h}>Sağlık yanıtları</Text>
+                {/* Tam rıza metni burada (soru ekranındaki ⓘ kaldırıldı, 3 Kasım 2026) */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={styles.h}>Sağlık yanıtları</Text>
+                  <Info title="Sağlık yanıtları" text={HEALTH_CONSENT_TEXT} />
+                </View>
                 <Text style={styles.cap}>{health > 0 ? 'Verildi (tanı ve ilaç soruları)' : 'Verilmedi'}</Text>
               </View>
               {health > 0 && <Pressable onPress={revokeHealth} hitSlop={8}><Text style={styles.danger}>Geri al</Text></Pressable>}

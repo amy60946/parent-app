@@ -20,8 +20,8 @@ import TrialBanner from '../components/TrialBanner';
 import { todayISO } from '../dates';
 
 // Ben (ana sayfa; kullanıcı isteği 28 Ekim 2026, Joon "Me" örneğinden): onay bekleyenler (İnceleme), aile davet et kartı (3 Kasım 2026),
-// senin görevlerin (uzmanın programı, öneriler, sana atanan görevler; davranış kaydı yalnız alttaki hızlı düğmede), programına devam et,
-// bugünün ilerlemesi. Sekmede adı yok, yalnız ev simgesi (3 Kasım 2026).
+// seni bekleyenler (uzman davetleri, önerileri, uygulamalar, tanışma soruları; boşsa yok), programına devam et (program varsa),
+// bugünün ilerlemesi, hızlı düğmeler, en altta "ParentApp'i tanı". Sekmede adı yok, yalnız ev simgesi (3 Kasım 2026).
 // Her satır ilgili ekranı açar. Misafir kartı kapatılınca sağ üstte hediye simgesi olarak kalır.
 const GUEST_HIDDEN = 'guest-pass-hidden';
 const DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
@@ -68,7 +68,6 @@ export default function MeScreen({ navigation }: any) {
     }
     return rows;
   }, [tasks, children, completions, pt.ready, pt.me, pt.assigns, pt.done, parent.avatar, today]);
-  const myOpen = progress.find((r) => r.id === 'me');
 
   const todo: Row[] = [];
   for (const inv of care?.invites ?? []) {
@@ -99,17 +98,9 @@ export default function MeScreen({ navigation }: any) {
     todo.push({ key: 'sug', icon: 'sparkles-outline', title: `Uzmanından ${newSug} görev önerisi`, sub: 'Kabul edersen görevlere eklenir',
       onPress: () => openSug('new') });
   }
-  if (myOpen && myOpen.total > myOpen.done) {
-    todo.push({ key: 'mine', icon: 'person-outline', title: `Bugün sana ${myOpen.total - myOpen.done} görev`, sub: 'Yapınca "Yaptım" de, Güneş Taşı kazan',
-      onPress: () => navigation.navigate('Görevler', { filter: 'me', date: today }) });
-  }
   if (intakeMissing) {
     todo.push({ key: 'intake', icon: 'clipboard-outline', title: 'Tanışma sorularını tamamla', sub: 'Yaklaşık 3 dakika; öneriler ailene göre kişiselleşir',
       onPress: () => navigation.navigate('Intake') });
-  }
-  if (!todo.length) {
-    todo.push({ key: 'self', icon: 'add-outline', title: 'Kendine de görev ver', sub: 'Örnek ol, yaptıkça Güneş Taşı kazan',
-      onPress: () => navigation.navigate('CreateTask', { date: today }) });
   }
 
   const d = new Date();
@@ -164,7 +155,9 @@ export default function MeScreen({ navigation }: any) {
           </View>
         )}
 
-        <Section title="Senin görevlerin">
+        {/* Seni bekleyenler (eski "Senin görevlerin"; kullanıcı isteği 3 Kasım 2026): yalnız uzman davetleri, önerileri, uygulamalar ve
+            tanışma soruları. Sana atanan görevler ve "Kendine de görev ver" Bugünün ilerlemesi › Kendim satırında; boşsa bölüm görünmez. */}
+        {todo.length > 0 && <Section title="Seni bekleyenler">
           {todo.map((r, i) => (
             <Pressable key={r.key} onPress={r.onPress} style={[styles.row, i > 0 && styles.sep]} accessibilityRole="button">
               <View style={[styles.rowIcon, r.tint ? { backgroundColor: r.tint } : null]}><Ionicons name={r.icon} size={18} color={colors.navy} /></View>
@@ -175,12 +168,13 @@ export default function MeScreen({ navigation }: any) {
               <Ionicons name="chevron-forward" size={16} color={colors.faint} />
             </Pressable>
           ))}
-        </Section>
+        </Section>}
 
         </View>
         <View style={wide ? styles.col : styles.stack}>
-        <Section title="Programına devam et">
-          {care?.todos.length ? care.todos.map((t, i) => (
+        {/* Uzmanın programı varsa (kullanıcı isteği 3 Kasım 2026: program yokken başlık görünmez; rehber satırı en altta) */}
+        {!!care?.todos.length && <Section title="Programına devam et">
+          {care.todos.map((t, i) => (
             <Pressable key={t.module.id} onPress={() => navigation.navigate('CarePlan', { linkId: t.linkId, childName: childName(t.childId), clinician: t.clinician })}
               style={[styles.row, i > 0 && styles.sep]} accessibilityRole="button">
               <View style={{ flex: 1, gap: 6 }}>
@@ -190,17 +184,8 @@ export default function MeScreen({ navigation }: any) {
               </View>
               {t.doneToday ? <Ionicons name="checkmark-circle" size={22} color={colors.easy.fg} /> : <Ionicons name="chevron-forward" size={16} color={colors.faint} />}
             </Pressable>
-          )) : (
-            <Pressable onPress={() => setGuide(true)} style={styles.row} accessibilityRole="button">
-              <View style={styles.rowIcon}><Ionicons name="compass-outline" size={18} color={colors.navy} /></View>
-              <View style={{ flex: 1, gap: 1 }}>
-                <Text style={styles.rowTitle}>ParentApp'i tanı</Text>
-                <Text style={styles.cap}>Adım adım rehber · uzmanın program verince burada görünür</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.faint} />
-            </Pressable>
-          )}
-        </Section>
+          ))}
+        </Section>}
 
         <Section title="Bugünün ilerlemesi">
           {progress.map((r, i) => {
@@ -213,7 +198,7 @@ export default function MeScreen({ navigation }: any) {
                   {r.id === 'me' ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <Text style={styles.rowTitle}>{r.name}</Text>
-                      <Info title="Sen de katıl" text={'Çocuğunla birlikte yaptığınız görevlere kendini de ekle (ör. ailecek piknik).\n\nGörevi aç › Ebeveynler › kendini seç. Yaptıkça Güneş Taşı kazanırsın.'} />
+                      <Info title="Sen de katıl" text={'Çocuğunla birlikte yaptığınız görevlere kendini de ekle (ör. ailecek piknik): görevi aç › Ebeveynler › kendini seç.\n\nYaptıkça Güneş Taşı kazanırsın › Güneş Taşlarınla çocuğuna oyunda hediye gönderirsin (Aile › Ben › Güneş Taşım).'} />
                     </View>
                   ) : <Text style={styles.rowTitle}>{r.name}</Text>}
                   {r.total > 0 && <View style={styles.bar}><View style={[styles.barFill, { width: `${pct}%` }]} /></View>}
@@ -234,6 +219,16 @@ export default function MeScreen({ navigation }: any) {
             </Pressable>
           ))}
         </View>
+
+        {/* Rehber: sayfanın en altında, başlıksız tek satır */}
+        <Pressable onPress={() => setGuide(true)} style={[styles.card, styles.row]} accessibilityRole="button">
+          <View style={styles.rowIcon}><Ionicons name="compass-outline" size={18} color={colors.navy} /></View>
+          <View style={{ flex: 1, gap: 1 }}>
+            <Text style={styles.rowTitle}>ParentApp'i tanı</Text>
+            <Text style={styles.cap}>Adım adım rehber · 1 dakika</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.faint} />
+        </Pressable>
         </View>
         </View>
       </ScrollView>

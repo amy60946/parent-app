@@ -47,7 +47,7 @@ const sameTitle = (a: string, b: string) => a.trim().toLocaleLowerCase('tr-TR') 
 
 // "1 taş = 10 dk" / "12 taş"
 const priceText = (r: Pick<Reward, 'kind' | 'cost' | 'unit' | 'unitAmount'>) =>
-  r.kind === 'exchange' && r.unit ? `${r.cost} taş = ${r.unitAmount} ${unitShort[r.unit]}` : `${r.cost} taş`;
+  r.kind === 'exchange' && r.unit ? `${r.cost} Güneş Taşı = ${r.unitAmount} ${unitShort[r.unit]}` : `${r.cost} Güneş Taşı`;
 
 // Son onay: ödül verme ya da isteğe karar. Onay düğmesine basılmadan hiçbir şey değişmez.
 type Confirm =
@@ -113,7 +113,7 @@ export default function RewardsScreen({ navigation }: any) {
   // Sunucu güncellemesi uygulanmadan işlem yapılamaz; ekran yine görünür
   const ready = () => {
     if (!missing) return true;
-    Alert.alert('Sunucu güncellemesi bekleniyor', 'Ödül vermek, eklemek ve taş düşürmek, ortak SQL dosyaları Supabase\'de çalıştırılınca açılır.');
+    Alert.alert('Sunucu güncellemesi bekleniyor', 'Ödül vermek, eklemek ve Güneş Taşı düşürmek, ortak SQL dosyaları Supabase\'de çalıştırılınca açılır.');
     return false;
   };
   const act = async (op: () => Promise<void>, title: string) => {
@@ -177,7 +177,7 @@ export default function RewardsScreen({ navigation }: any) {
     if (c.type === 'give') {
       const total = c.reward.cost * c.quantity;
       const ok = await act(() => giveReward(c.childId, c.reward.id, c.quantity), 'Ödül verilemedi');
-      if (ok) setToast({ text: `${nameOf(c.childId)}: ${giveTitle(c.reward, c.quantity)} · −${total} taş` });
+      if (ok) setToast({ text: `${nameOf(c.childId)}: ${giveTitle(c.reward, c.quantity)} · −${total} Güneş Taşı` });
     } else {
       const ok = await act(() => decideRequest(c.req.id, c.approve), c.approve ? 'Onaylanamadı' : 'Kaydedilemedi');
       if (ok) setToast({ text: c.approve ? `Onaylandı: ${c.req.title}` : `${nameOf(c.req.childId)}: şimdi olmaz dendi` });
@@ -201,7 +201,7 @@ export default function RewardsScreen({ navigation }: any) {
             <View style={styles.warn}>
               <Ionicons name="cloud-offline-outline" size={18} color="#6B5300" />
               <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: '#6B5300' }}>Sunucu güncellemesi bekleniyor.</Text>
-              <Info title="Sunucu güncellemesi" color="#6B5300" text="Ekranı görebilirsin; ödül verme, ekleme ve taş düşürme sunucu güncellendikten sonra çalışır." />
+              <Info title="Sunucu güncellemesi" color="#6B5300" text="Ekranı görebilirsin; ödül verme, ekleme ve Güneş Taşı düşürme sunucu güncellendikten sonra çalışır." />
             </View>
           )}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, flexGrow: 1 }}>
@@ -215,9 +215,9 @@ export default function RewardsScreen({ navigation }: any) {
                   <Text numberOfLines={1} style={{ flex: 1, fontSize: 14, fontWeight: '600', color: colors.navy }}>{c.name}</Text>
                   <Ionicons name="sunny" size={14} color={colors.gold} />
                   {loading ? <ActivityIndicator color={colors.navy} /> : (
-                    <Text style={{ fontSize: 16, fontWeight: '800', color: colors.navy }} accessibilityLabel={`${bal[c.id] ?? 0} taş`}>{bal[c.id] ?? 0}</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '800', color: colors.navy }} accessibilityLabel={`${bal[c.id] ?? 0} Güneş Taşı`}>{bal[c.id] ?? 0}</Text>
                   )}
-                  <Pressable onPress={() => openDeduct(c.id)} hitSlop={6} style={styles.minus} accessibilityLabel={`${c.name}: taş düşür`}>
+                  <Pressable onPress={() => openDeduct(c.id)} hitSlop={6} style={styles.minus} accessibilityLabel={`${c.name}: Güneş Taşı düşür`}>
                     <Ionicons name="remove" size={18} color={colors.danger} />
                   </Pressable>
                 </View>
@@ -232,15 +232,15 @@ export default function RewardsScreen({ navigation }: any) {
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B5300' }}>{nameOf(q.childId)} istiyor</Text>
                   <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>
-                    {q.title}{q.unit && q.amount ? ` · ${q.amount} ${unitShort[q.unit]}` : ''} · {q.cost} taş
+                    {q.title}{q.unit && q.amount ? ` · ${q.amount} ${unitShort[q.unit]}` : ''} · {q.cost} Güneş Taşı
                   </Text>
-                  {b < q.cost && <Text style={{ fontSize: 12, color: colors.danger }}>{q.cost - b} taş eksik</Text>}
+                  {b < q.cost && <Text style={{ fontSize: 12, color: colors.danger }}>{q.cost - b} Güneş Taşı eksik</Text>}
                 </View>
                 <Pressable onPress={() => decide(q, false)} style={[styles.round, { backgroundColor: '#fff' }]} accessibilityLabel="Şimdi olmaz">
                   <Ionicons name="close" size={20} color={colors.navy} />
                 </Pressable>
                 <Pressable onPress={() => decide(q, true)} disabled={b < q.cost} style={[styles.round, { backgroundColor: b < q.cost ? '#E8EAEF' : colors.navy }]}
-                  accessibilityLabel={b < q.cost ? `${q.cost - b} taş eksik` : 'Onayla'}>
+                  accessibilityLabel={b < q.cost ? `${q.cost - b} Güneş Taşı eksik` : 'Onayla'}>
                   <Ionicons name="checkmark" size={20} color={b < q.cost ? colors.muted : '#fff'} />
                 </Pressable>
               </View>
@@ -267,7 +267,7 @@ export default function RewardsScreen({ navigation }: any) {
             </View>
           )}
 
-          <InfoTitle title="Ödüller" style={styles.h} info="Vermek için ödülün yanındaki çocuk harfine dokun, sonra onayla. Soluk harf: o çocuğun taşı yetmiyor (dokununca eksik taşı gösterir). Silmek için ödülü sola kaydır." />
+          <InfoTitle title="Ödüller" style={styles.h} info="Vermek için ödülün yanındaki çocuk harfine dokun, sonra onayla. Soluk harf: o çocuğun Güneş Taşı yetmiyor (dokununca eksiği gösterir). Silmek için ödülü sola kaydır." />
           {!loading && rewards.length === 0 ? (
             <Card><Text style={{ fontSize: 14, lineHeight: 20, color: colors.muted }}>Henüz ödül yok. Önerilerden ekle ya da "Yeni ödül"e dokun.</Text></Card>
           ) : (
@@ -295,9 +295,9 @@ export default function RewardsScreen({ navigation }: any) {
                         const [bg, fg] = tintOf(c.id);
                         return (
                           <Pressable key={c.id} disabled={loading}
-                            onPress={() => (short ? setToast({ warn: true, text: `${c.name}: taşı yetmiyor. ${r.cost} taş gerekli, ${bal[c.id] ?? 0} taşı var (${r.cost - (bal[c.id] ?? 0)} eksik).` }) : tapKid(r, c.id))}
+                            onPress={() => (short ? setToast({ warn: true, text: `${c.name}: Güneş Taşı yetmiyor. ${r.cost} gerekli, ${bal[c.id] ?? 0} var (${r.cost - (bal[c.id] ?? 0)} eksik).` }) : tapKid(r, c.id))}
                             style={[styles.letter, short ? styles.letterShort : { backgroundColor: bg }, sel(c.id) && styles.letterOn]}
-                            accessibilityLabel={short ? `${c.name}: ${r.cost - (bal[c.id] ?? 0)} taş eksik` : `${r.title}: ${c.name} için ver`}>
+                            accessibilityLabel={short ? `${c.name}: ${r.cost - (bal[c.id] ?? 0)} Güneş Taşı eksik` : `${r.title}: ${c.name} için ver`}>
                             <Text style={{ fontSize: 15, fontWeight: '800', color: short ? '#B4B9C6' : fg }}>{initial(c.name)}</Text>
                           </Pressable>
                         );
@@ -311,7 +311,7 @@ export default function RewardsScreen({ navigation }: any) {
                             const on = confirm?.type === 'give' && confirm.reward.id === r.id && confirm.quantity === q;
                             return (
                               <Pressable key={q} onPress={() => setConfirm({ type: 'give', reward: r, childId: picked!, quantity: q })}
-                                style={[styles.chip, styles.chipLine, on && styles.chipOn]} accessibilityLabel={`${q * r.unitAmount!} ${unitLabel[r.unit!]}, ${q * r.cost} taş`}>
+                                style={[styles.chip, styles.chipLine, on && styles.chipOn]} accessibilityLabel={`${q * r.unitAmount!} ${unitLabel[r.unit!]}, ${q * r.cost} Güneş Taşı`}>
                                 <Text style={{ fontSize: 13, fontWeight: '700', color: on ? '#fff' : colors.navy }}>{q * r.unitAmount!} {unitShort[r.unit!]} · {q * r.cost}</Text>
                               </Pressable>
                             );
@@ -366,7 +366,7 @@ export default function RewardsScreen({ navigation }: any) {
       )}
       <DeductSheet childId={deduct} kids={children} balances={bal} moves={moves} onClose={() => setDeduct(null)}
         onDeduct={async (id, n, note) => {
-          if (await act(() => deductStones(id, n, note), `${nameOf(id)}: taş düşürülemedi`)) setToast({ text: `${nameOf(id)}: −${n} taş${note ? ` · ${note}` : ''}` });
+          if (await act(() => deductStones(id, n, note), `${nameOf(id)}: Güneş Taşı düşürülemedi`)) setToast({ text: `${nameOf(id)}: −${n} Güneş Taşı${note ? ` · ${note}` : ''}` });
         }} />
       <HistorySheet visible={past} moves={moves} nameOf={nameOf} onClose={() => setPast(false)} />
       <Onboarding visible={intro} mode="rewards" onClose={closeIntro} />
@@ -397,12 +397,12 @@ function confirmText(c: Confirm, nameOf: (id: string) => string, bal: Record<str
   if (c.type === 'give') {
     const b = bal[c.childId] ?? 0;
     const total = c.reward.cost * c.quantity;
-    return { title: giveTitle(c.reward, c.quantity), sub: `${nameOf(c.childId)} · ${total} taş düşer · ${b} → ${b - total}`, ok: 'Ödül ver', danger: false };
+    return { title: giveTitle(c.reward, c.quantity), sub: `${nameOf(c.childId)} · ${total} Güneş Taşı düşer · ${b} → ${b - total}`, ok: 'Ödül ver', danger: false };
   }
   const b = bal[c.req.childId] ?? 0;
   return c.approve
-    ? { title: `${c.req.title} isteğini onayla`, sub: `${nameOf(c.req.childId)} · ${c.req.cost} taş düşer · ${b} → ${b - c.req.cost}`, ok: 'Onayla', danger: false }
-    : { title: `${c.req.title}: şimdi olmaz`, sub: `Taş düşmez. ${nameOf(c.req.childId)} oyunda görür; ne zaman olacağını ona söyle.`, ok: 'Şimdi olmaz', danger: false };
+    ? { title: `${c.req.title} isteğini onayla`, sub: `${nameOf(c.req.childId)} · ${c.req.cost} Güneş Taşı düşer · ${b} → ${b - c.req.cost}`, ok: 'Onayla', danger: false }
+    : { title: `${c.req.title}: şimdi olmaz`, sub: `Güneş Taşı düşmez. ${nameOf(c.req.childId)} oyunda görür; ne zaman olacağını ona söyle.`, ok: 'Şimdi olmaz', danger: false };
 }
 
 // Alttaki son onay kartı: Vazgeç hiçbir şeyi değiştirmez
@@ -489,7 +489,7 @@ function SuggestionsModal({ visible, rewards, onClose, onAdd, onCustom, tip }: {
         <ScrollView contentContainerStyle={{ padding: 16, gap: 6, paddingBottom: 32 }} keyboardShouldPersistTaps="handled">
           {groups.map((g) => (
             <View key={g} style={{ gap: 6 }}>
-              <Text style={styles.groupTitle}>{groupLabel[g]}{g === 'exchange' ? ' · taş karşılığı süre ya da harçlık' : ''}</Text>
+              <Text style={styles.groupTitle}>{groupLabel[g]}{g === 'exchange' ? ' · Güneş Taşı karşılığı süre ya da harçlık' : ''}</Text>
               <Card style={{ padding: 0, overflow: 'hidden', marginBottom: 8 }}>
                 {list.filter((t) => t.group === g).map((t, i) => (
                   <View key={t.title} style={[styles.row, i > 0 && styles.sep]}>
@@ -597,7 +597,7 @@ function RewardEditor({ value, kids, moves, balances: bal, onClose, onSave, onDe
   const exchange = mode !== 'item';
   const save = () => {
     if (!title.trim()) return Alert.alert('Ödülün adını yaz');
-    if (cost < 1 || cost > 500) return Alert.alert('Fiyat 1–500 taş olmalı');
+    if (cost < 1 || cost > 500) return Alert.alert('Fiyat 1–500 Güneş Taşı olmalı');
     if (exchange && amount < 1) return Alert.alert(`Kaç ${unitLabel[mode as RewardUnit]} karşılığı olduğunu seç`);
     if (who.length === 0 && !kids.length) return Alert.alert('Önce bir çocuk ekle');
     onSave({
@@ -675,15 +675,15 @@ function RewardEditor({ value, kids, moves, balances: bal, onClose, onSave, onDe
             <View style={{ gap: 10 }}>
               <View style={styles.rate}>
                 <Text style={{ fontSize: 13, color: '#4A5165' }}>Değiş tokuş oranı</Text>
-                <Text style={{ fontSize: 30, fontWeight: '800', color: colors.navy }}>{cost} taş = {amount} {unitShort[mode as RewardUnit]}</Text>
+                <Text style={{ fontSize: 26, fontWeight: '800', color: colors.navy }}>{cost} Güneş Taşı = {amount} {unitShort[mode as RewardUnit]}</Text>
                 <Text style={{ fontSize: 12, color: '#4A5165' }}>Verirken kaç kez verileceğini seçersin.</Text>
               </View>
               <View style={styles.pills}>
                 <Pill on={mode === 'minute'} label="Ekran süresi" onPress={() => setRate('minute')} />
                 <Pill on={mode === 'money'} label="Harçlık" onPress={() => setRate('money')} />
               </View>
-              <Text style={styles.h}>Kaç taş</Text>
-              <View style={styles.pills}>{rateCosts.map((c) => <Pill key={c} on={cost === c} label={String(c)} onPress={() => setCost(c)} a11y={`${c} taş`} />)}</View>
+              <Text style={styles.h}>Kaç Güneş Taşı</Text>
+              <View style={styles.pills}>{rateCosts.map((c) => <Pill key={c} on={cost === c} label={String(c)} onPress={() => setCost(c)} a11y={`${c} Güneş Taşı`} />)}</View>
               <Text style={styles.h}>Karşılığı</Text>
               <View style={styles.pills}>
                 {rateAmounts[mode as RewardUnit].map((a) => <Pill key={a} on={amount === a} label={`${a} ${unitShort[mode as RewardUnit]}`} onPress={() => setAmount(a)} />)}
@@ -696,12 +696,12 @@ function RewardEditor({ value, kids, moves, balances: bal, onClose, onSave, onDe
             <View style={{ gap: 10 }}>
               <Text style={styles.h}>Fiyat <Text style={{ fontWeight: '500', color: colors.muted }}>{suggested ? '(öneriden geldi)' : '(Güneş Taşı)'}</Text></Text>
               <View style={styles.pills}>
-                {prices.map((p) => <Pill key={p} on={!other && cost === p} label={String(p)} onPress={() => { setCost(p); setOther(false); setSuggested(false); }} a11y={`${p} taş`} />)}
+                {prices.map((p) => <Pill key={p} on={!other && cost === p} label={String(p)} onPress={() => { setCost(p); setOther(false); setSuggested(false); }} a11y={`${p} Güneş Taşı`} />)}
                 <Pill on={other} label={other ? `${cost || '…'}` : 'Diğer'} onPress={() => { setOther(true); setSuggested(false); }} a11y="Başka fiyat" />
               </View>
               {other && (
                 <TextInput value={cost ? String(cost) : ''} onChangeText={(t) => setCost(Math.min(500, Number(t.replace(/\D/g, '')) || 0))} autoFocus
-                  keyboardType="number-pad" placeholder="1–500 taş" placeholderTextColor={colors.faint} style={styles.input} accessibilityLabel="Fiyat" />
+                  keyboardType="number-pad" placeholder="1–500 Güneş Taşı" placeholderTextColor={colors.faint} style={styles.input} accessibilityLabel="Fiyat" />
               )}
             </View>
           )}
@@ -710,8 +710,8 @@ function RewardEditor({ value, kids, moves, balances: bal, onClose, onSave, onDe
               {effort.map((e) => (
                 <Text key={e.name} style={{ fontSize: 13, lineHeight: 19, color: '#4A5165' }}>
                   {e.w > 0
-                    ? `${e.name} haftada ortalama ${e.w} taş kazanıyor: ${exchange ? `${cost} taş` : 'bu ödül'} yaklaşık ${e.days} günlük emek.`
-                    : `${e.name} son 4 haftada görevden taş kazanmadı; önce kolay bir ödülle başlamak iyi olabilir.`}
+                    ? `${e.name} haftada ortalama ${e.w} Güneş Taşı kazanıyor: ${exchange ? `${cost} Güneş Taşı` : 'bu ödül'} yaklaşık ${e.days} günlük emek.`
+                    : `${e.name} son 4 haftada görevden Güneş Taşı kazanmadı; önce kolay bir ödülle başlamak iyi olabilir.`}
                 </Text>
               ))}
             </View>
@@ -719,10 +719,10 @@ function RewardEditor({ value, kids, moves, balances: bal, onClose, onSave, onDe
 
           {kids.length > 1 && (
             <View style={{ gap: 10 }}>
-              <Text style={styles.h}>Kimler için <Text style={{ fontWeight: '500', color: colors.muted }}>(yanında harcanabilir taşı)</Text></Text>
+              <Text style={styles.h}>Kimler için <Text style={{ fontWeight: '500', color: colors.muted }}>(yanında harcanabilir Güneş Taşı)</Text></Text>
               <View style={styles.pills}>
                 <Pill on={who.length === 0} label="Herkes" onPress={() => setWho([])} />
-                {kids.map((k) => <Pill key={k.id} on={who.includes(k.id)} label={`${k.name} · ${bal[k.id] ?? 0} taş`} onPress={() => toggle(k.id)} />)}
+                {kids.map((k) => <Pill key={k.id} on={who.includes(k.id)} label={`${k.name} · ${bal[k.id] ?? 0} Güneş Taşı`} onPress={() => toggle(k.id)} />)}
               </View>
             </View>
           )}
@@ -760,7 +760,7 @@ function DeductSheet({ childId, kids, balances: bal, moves, onClose, onDeduct }:
   }, [id, moves, n]);
   const submit = () => { onDeduct(id, n, note); onClose(); };
   return (
-    <Sheet visible={childId !== null} title={name ? `${fromName(name)} taş düşür` : 'Taş düşür'} onClose={onClose}>
+    <Sheet visible={childId !== null} title={name ? `${fromName(name)} Güneş Taşı düşür` : 'Güneş Taşı düşür'} onClose={onClose}>
       <View style={{ gap: 14 }}>
         {kids.length > 1 && (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -771,11 +771,11 @@ function DeductSheet({ childId, kids, balances: bal, moves, onClose, onDeduct }:
             ))}
           </View>
         )}
-        <Text style={styles.boxTitle}>Kaç taş?</Text>
+        <Text style={styles.boxTitle}>Kaç Güneş Taşı?</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {amounts.map((a) => (
             <Pressable key={a} onPress={() => { setN(a); setOther(false); }} style={[styles.chip, styles.chipLine, styles.amount, !other && n === a && styles.chipOn]}
-              accessibilityLabel={`${a} taş`} accessibilityState={{ selected: !other && n === a }}>
+              accessibilityLabel={`${a} Güneş Taşı`} accessibilityState={{ selected: !other && n === a }}>
               <Text style={{ fontSize: 15, fontWeight: '700', color: !other && n === a ? '#fff' : colors.navy }}>{a}</Text>
             </Pressable>
           ))}
@@ -796,22 +796,22 @@ function DeductSheet({ childId, kids, balances: bal, moves, onClose, onDeduct }:
           placeholder="Ya da kendi cümlen" style={styles.input} accessibilityLabel="Neden" />
         <View style={styles.info}>
           <Text style={{ fontSize: 13, lineHeight: 18, color: '#3D4559' }}>
-            {b} → <Text style={{ fontWeight: '800' }}>{Math.max(0, b - n)}</Text> · Adada kazandığı taşlar ve adası etkilenmez; yalnız harcanabilir taş azalır.
+            {b} → <Text style={{ fontWeight: '800' }}>{Math.max(0, b - n)}</Text> · Adada kazandığı Güneş Taşları ve adası etkilenmez; yalnız harcanabilir Güneş Taşı azalır.
           </Text>
         </View>
         {heavy && (
           <View style={styles.warn}>
             <Ionicons name="alert-circle-outline" size={18} color="#6B5300" />
             <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: '#6B5300' }}>
-              {name}: bu hafta düşürülen taş, kazanılanın dörtte birini geçti.
+              {name}: bu hafta düşürülen Güneş Taşı, kazanılanın dörtte birini geçti.
             </Text>
-            <Info title="Taş düşürme" color="#6B5300" text="Önce kazandırmaya ve övmeye ağırlık vermek daha iyi sonuç verir. Taş düşürmeyi yalnız önceden konuşulan kurallar için ve seyrek kullan; çocuk nedenini görür." />
+            <Info title="Güneş Taşı düşürme" color="#6B5300" text="Önce kazandırmaya ve övmeye ağırlık vermek daha iyi sonuç verir. Güneş Taşı düşürmeyi yalnız önceden konuşulan kurallar için ve seyrek kullan; çocuk nedenini görür." />
           </View>
         )}
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Pressable onPress={onClose} style={[styles.btn, { flex: 1, backgroundColor: '#F1F2F6' }]}><Text style={[styles.btnText, { color: colors.navy }]}>Vazgeç</Text></Pressable>
           <Pressable onPress={submit} disabled={!id || b < n} style={[styles.btn, { flex: 2, backgroundColor: colors.danger }, (!id || b < n) && { opacity: 0.45 }]}>
-            <Text style={styles.btnText}>{b < n ? 'Bakiye yetersiz' : `${n} taş düşür`}</Text>
+            <Text style={styles.btnText}>{b < n ? 'Bakiye yetersiz' : `${n} Güneş Taşı düşür`}</Text>
           </Pressable>
         </View>
       </View>
@@ -823,7 +823,7 @@ function DeductSheet({ childId, kids, balances: bal, moves, onClose, onDeduct }:
 function HistorySheet({ visible, moves, nameOf, onClose }: { visible: boolean; moves: StoneMove[]; nameOf: (id: string) => string; onClose: () => void }) {
   return (
     <Sheet visible={visible} title="Geçmiş" onClose={onClose}>
-      {!moves.length ? <Text style={{ fontSize: 14, color: colors.muted }}>Henüz taş hareketi yok.</Text> : (
+      {!moves.length ? <Text style={{ fontSize: 14, color: colors.muted }}>Henüz Güneş Taşı hareketi yok.</Text> : (
         <View style={styles.box}>
           {moves.slice(0, 60).map((m, i) => (
             <View key={m.id} style={[{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 }, i > 0 && styles.sep]}>

@@ -35,11 +35,12 @@ export const familySteps: Step[] = [
   // Giriş: yanıtların ne için kullanıldığı (kullanıcı isteği 28 Ekim 2026; Joon "Parenting Stress Questionnaire" ekranından esinle).
   // Maddeler gerçekten yapılanlar: src/lib/plan.ts (rutin sırası, yaş süzgeci).
   { kind: 'intro', icon: 'clipboard-outline', title: 'Ailene özel planı hazırlayalım',
-    text: 'Birkaç kısa soruyla aileni tanıyalım. Yanıtlarına göre:', cta: 'Başlayalım',
+    // 3 Kasım 2026 (kullanıcı isteği): cümleler kısa ve net
+    text: 'Birkaç soruyla aileni tanıyalım.', cta: 'Başlayalım',
     points: [
-      { icon: 'sparkles-outline', text: 'Hedefine uyan hazır rutinleri öne çıkarırız' },
-      { icon: 'options-outline', text: 'Görev önerilerini çocuğunun yaşına göre süzeriz' },
-      { icon: 'shield-checkmark-outline', text: 'Yanıtların tanı, not ya da puan değildir; yalnız ailen için kullanılır' },
+      { icon: 'sparkles-outline', text: 'Hedefine uygun rutinler' },
+      { icon: 'options-outline', text: 'Çocuğunun yaşına uygun görevler' },
+      { icon: 'shield-checkmark-outline', text: 'Yanıtlar not ya da tanı değildir' },
     ],
     foot: 'Yaklaşık 3 dakika' },
   { kind: 'question', key: 'main_goal', title: 'Şu sıralar en çok neye ihtiyacın var?', options: GOALS },
@@ -67,7 +68,8 @@ export const familySteps: Step[] = [
 // Çocuğu ekleyen ebeveyne, her çocuk için (child_id dolu)
 export const childSteps = (name: string): Step[] => [
   { kind: 'intro', icon: 'clipboard-outline', title: `${name} hakkında birkaç soru`,
-    text: `Yanıtların önerileri ${name} için kişiselleştirmemize yardım eder. İstersen bir soruyu atlayabilirsin.` },
+    // 3 Kasım 2026 (kullanıcı isteği: tek kısa, sıcak cümle; çekindirmesin)
+    text: `Böylece ${name} için en uygun önerileri seçebiliriz.` },
   { kind: 'question', key: 'child_routine', title: `${name} için oturmuş bir günlük düzen var mı?`, options: [
     { key: 'yes', label: 'Evet' },
     { key: 'struggle', label: 'Var ama sürdürmekte zorlanıyoruz' },

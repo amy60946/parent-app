@@ -25,7 +25,7 @@ export const rewardTips = {
   },
   deduct: {
     icon: 'remove-circle-outline',
-    title: 'Taş düşürmeden önce',
+    title: 'Güneş Taşı düşürmeden önce',
     lines: [
       'Yalnız önceden birlikte konuştuğunuz kurallar için kullan.',
       'Seyrek olsun: her düşürmeye karşı en az 4–5 kazanç.',
@@ -37,7 +37,7 @@ export const rewardTips = {
     icon: 'hand-left-outline',
     title: 'Çocuğun bir ödül istedi',
     lines: [
-      'Taşı yetiyorsa sözünü tut; kazanılan ödül geri alınmaz.',
+      'Güneş Taşı yetiyorsa sözünü tut; kazanılan ödül geri alınmaz.',
       'Şimdi olmuyorsa "hayır" yerine ne zaman olacağını söyle.',
     ],
     ok: 'Anladım, devam et',

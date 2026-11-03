@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { AppError } from './errors';
 import { isMissingRpc } from './clinic';
@@ -7,6 +8,13 @@ import { formatTR } from '../dates';
 // kullanmayan bir aileye davet kodu gönderir; o aile 7 + 7 = 14 gün dener. Davet edilen aile mağazadan abone olunca davet eden
 // 1 ay kazanır (yılda en çok 12). Kod 8 karakter (A–Z, 2–9); "Kod gir" kutularından kullanılır.
 export const GUEST_CODE = /^[A-Z2-9]{8}$/;
+
+// Kayıttan önce "Davet kodun var mı?" ekranında yazılan aile davet kodu (3 Kasım 2026): kayıttan sonra kurulumun başında kullanılır
+const PENDING_KEY = 'pending-guest-code';
+export const setPendingGuestCode = (code: string) => AsyncStorage.setItem(PENDING_KEY, code).catch(() => {});
+export const takePendingGuestCode = async () => {
+  try { const c = await AsyncStorage.getItem(PENDING_KEY); if (c) await AsyncStorage.removeItem(PENDING_KEY); return c; } catch { return null; }
+};
 
 export type GuestPass = { code: string; expiresAt: string };
 

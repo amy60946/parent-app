@@ -75,7 +75,8 @@ export default function Onboarding({ visible, onClose, mode = 'full', ask = fals
       <View style={{ flex: 1, backgroundColor: DIM_SOLID, justifyContent: 'flex-end', alignItems: 'center' }}>
         <View style={{ width: W * s, height: H * s }}>
           <View style={{ position: 'absolute', left: (W * s - W) / 2, top: (H * s - H) / 2, width: W, height: H, transform: [{ scale: s }], overflow: 'hidden', backgroundColor: '#F5F6F8' }}>
-            {asking ? <Ask total={total} onShow={show} onLater={later} /> : <Step step={step} total={total} onNext={next} onSkip={() => finish(false)} />}
+            {asking ? <Ask total={total} onShow={show} onLater={later} />
+              : <Step step={step} total={total} onNext={next} onBack={step > 0 ? () => setStep(step - 1) : undefined} onSkip={() => finish(false)} />}
           </View>
         </View>
       </View>
@@ -83,7 +84,8 @@ export default function Onboarding({ visible, onClose, mode = 'full', ask = fals
   );
 }
 
-type StepProps = { step: number; total: number; onNext: () => void; onSkip: () => void };
+// onBack: önceki karta dön (ilk kartta yok; kullanıcı isteği 3 Kasım 2026)
+type StepProps = { step: number; total: number; onNext: () => void; onBack?: () => void; onSkip: () => void };
 
 /* ---------- ortak parçalar ---------- */
 
@@ -184,7 +186,7 @@ function Block({ top, height, left = 20, right = 20, children, style }: { top: n
 }
 
 // Açıklama kartı: "n / 5", Atla, başlık, tek satır, noktalar + ileri.
-function Coach({ step, total, title, text, note, onNext, onSkip, style }: StepProps & { title: string; text: string; note?: string; style: ViewStyle }) {
+function Coach({ step, total, title, text, note, onNext, onBack, onSkip, style }: StepProps & { title: string; text: string; note?: string; style: ViewStyle }) {
   return (
     <View style={[st.card, style]}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -202,11 +204,22 @@ function Coach({ step, total, title, text, note, onNext, onSkip, style }: StepPr
             <View key={i} style={{ width: i === step ? 18 : 7, height: 7, borderRadius: 4, backgroundColor: i === step ? colors.navy : '#D5D9E2' }} />
           ))}
         </View>
-        <Pressable onPress={onNext} accessibilityRole="button" accessibilityLabel={step === total - 1 ? 'Bitir' : 'İleri'} style={st.next}>
-          <Ionicons name={step === total - 1 ? 'checkmark' : 'arrow-forward'} size={20} color="#fff" />
-        </Pressable>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          {onBack && <BackBtn onPress={onBack} />}
+          <Pressable onPress={onNext} accessibilityRole="button" accessibilityLabel={step === total - 1 ? 'Bitir' : 'İleri'} style={st.next}>
+            <Ionicons name={step === total - 1 ? 'checkmark' : 'arrow-forward'} size={20} color="#fff" />
+          </Pressable>
+        </View>
       </View>
     </View>
+  );
+}
+
+function BackBtn({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel="Geri" style={st.back}>
+      <Ionicons name="arrow-back" size={20} color={colors.navy} />
+    </Pressable>
   );
 }
 
@@ -345,14 +358,14 @@ function StepParent(p: StepProps) {
         <Text style={{ fontSize: 13, fontWeight: '800', color: colors.navy }}>Hediye dükkânı</Text>
       </Ring>
       <TabRing index={4} />
-      <Coach {...p} title="Sen de katıl" text="Görevi kendine de ata, 'Yaptım' de, Güneş Taşı kazan. Taşlarla çocuğuna oyunda hediye gönder." style={{ left: 20, right: 32, top: 440 }} />
+      <Coach {...p} title="Sen de katıl" text="Görevi kendine de ata, 'Yaptım' de, Güneş Taşı kazan. Güneş Taşlarıyla çocuğuna oyunda hediye gönder." style={{ left: 20, right: 32, top: 440 }} />
     </>
   );
 }
 
 /* ---------- Uzmanını ekle (isteğe bağlı, tam turun sonu): Uzmanım → Uzman bağla ---------- */
 
-function StepClinic({ onNext, step, total }: StepProps) {
+function StepClinic({ onNext, onBack, step, total }: StepProps) {
   return (
     <>
       <Text style={{ position: 'absolute', left: 20, top: 54, fontSize: 26, fontWeight: '800', color: colors.navy }}>Uzmanım</Text>
@@ -380,9 +393,12 @@ function StepClinic({ onNext, step, total }: StepProps) {
           <Ionicons name="shield-checkmark-outline" size={14} color="#2F7D4A" />
           <Text style={{ fontSize: 12, fontWeight: '600', color: '#2F7D4A' }}>Yalnız senin izninle, istediğinde kapatırsın</Text>
         </View>
-        <Pressable onPress={onNext} accessibilityRole="button" style={st.start}>
-          <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Başla</Text>
-        </Pressable>
+        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-end' }}>
+          {onBack && <BackBtn onPress={onBack} />}
+          <Pressable onPress={onNext} accessibilityRole="button" style={[st.start, { flex: 1 }]}>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Başla</Text>
+          </Pressable>
+        </View>
       </View>
     </>
   );
@@ -528,9 +544,9 @@ const KIDS: { name: string; bal: number; tint: [string, string] }[] = [
   { name: 'Can', bal: 6, tint: ['#E6F4EA', '#2F7D4A'] },
 ];
 const R_ROWS: { icon: keyof typeof Ionicons.glyphMap; title: string; price: string; cost: number }[] = [
-  { icon: 'film-outline', title: 'Film gecesi', price: '12 taş', cost: 12 },
-  { icon: 'football-outline', title: 'Parkta oyun', price: '8 taş', cost: 8 },
-  { icon: 'tablet-portrait-outline', title: 'Tablet süresi', price: '1 taş = 10 dk', cost: 1 },
+  { icon: 'film-outline', title: 'Film gecesi', price: '12 Güneş Taşı', cost: 12 },
+  { icon: 'football-outline', title: 'Parkta oyun', price: '8 Güneş Taşı', cost: 8 },
+  { icon: 'tablet-portrait-outline', title: 'Tablet süresi', price: '1 Güneş Taşı = 10 dk', cost: 1 },
 ];
 const R_TOP = { bal: 100, req: 166, sugLabel: 234, sug: 266, title: 322, card: 350 };
 const LETTER = 44;
@@ -590,7 +606,7 @@ function RewardsMock({ hide }: { hide?: 'bal' | 'sug' | 'letter' }) {
       <View style={[st.request, { top: R_TOP.req }]}>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B5300' }}>Nazlı istiyor</Text>
-          <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>Parkta oyun · 8 taş</Text>
+          <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>Parkta oyun · 8 Güneş Taşı</Text>
         </View>
         <View style={[st.round, { backgroundColor: '#fff' }]}><Ionicons name="close" size={18} color={colors.navy} /></View>
         <View style={[st.round, { backgroundColor: colors.navy }]}><Ionicons name="checkmark" size={18} color="#fff" /></View>
@@ -636,7 +652,7 @@ function StepEarn(p: StepProps) {
         <View style={{ width: 1, height: 30, backgroundColor: colors.line, marginHorizontal: 4 }} />
         <Balance k={1} />
       </Ring>
-      <Coach {...p} title="Taşlar görevden gelir" text="Onayladığın her görev Güneş Taşı kazandırır: kolay 1, orta 2, zor 3." style={{ left: 20, right: 20, top: 200 }} />
+      <Coach {...p} title="Güneş Taşı görevden gelir" text="Onayladığın her görev Güneş Taşı kazandırır: kolay 1, orta 2, zor 3." style={{ left: 20, right: 20, top: 200 }} />
     </>
   );
 }
@@ -676,7 +692,7 @@ function StepGive(p: StepProps) {
         <View style={st.previewRow}>
           <Ionicons name="film-outline" size={18} color={colors.navy} />
           <Text style={[st.previewText, { flex: 1 }]}>Film gecesi</Text>
-          <Text style={{ fontSize: 13, fontWeight: '700', color: colors.danger }}>−12 taş</Text>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: colors.danger }}>−12 Güneş Taşı</Text>
         </View>
         <View style={st.previewBtn}><Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Onayla, ver</Text></View>
       </View>
@@ -729,6 +745,7 @@ const st = StyleSheet.create({
   title: { fontSize: 24, fontWeight: '800', color: colors.navy },
   text: { fontSize: 15, color: '#4A5165' },
   next: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
+  back: { width: 48, height: 48, borderRadius: 24, borderWidth: 1.5, borderColor: colors.line, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   start: { marginTop: 4, height: 50, borderRadius: 14, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
   chip: { alignSelf: 'flex-start', fontSize: 11, fontWeight: '700', color: '#2F7D4A', backgroundColor: '#E6F4EA', borderRadius: 8, paddingVertical: 2, paddingHorizontal: 8, overflow: 'hidden' },
   preview: { position: 'absolute', left: 20, right: 110, bottom: 100, backgroundColor: '#fff', borderRadius: 18, padding: 12, gap: 8, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 10 }, elevation: 8 },

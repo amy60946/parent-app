@@ -9,7 +9,7 @@ import RoutinePackCard from '../components/RoutinePackCard';
 import ChangeSuggestionCard from '../components/ChangeSuggestionCard';
 import VerifiedBadge from '../components/VerifiedBadge';
 import { Avatar, IconButton, Toggle } from '../components/ui';
-import { ClinicianAvatar, EMERGENCY_NOTE } from '../components/ClinicianAvatar';
+import { ClinicianAvatar } from '../components/ClinicianAvatar';
 import { colors, radius } from '../theme';
 import { COLUMN } from '../components/Column';
 import { useStore } from '../store';
@@ -269,8 +269,6 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
           ))}
         </Section>
 
-        {/* Acil durum notu (hukuk/50 §9): Uzmanım sekmesinde her zaman */}
-        {tab && <Text style={styles.foot}>{EMERGENCY_NOTE}</Text>}
       </ScrollView>
 
       {/* Uzmanı yönet: çocuğu ayır / uzmanı kaldır */}
@@ -320,7 +318,6 @@ const styles = StyleSheet.create({
   heroCap: { fontSize: 13, color: 'rgba(255,255,255,0.75)' },
   connect: { flexDirection: 'row', alignItems: 'center', gap: 2, height: 36, paddingLeft: 8, paddingRight: 12, borderRadius: 18, backgroundColor: '#fff' },
   connectText: { fontSize: 13, fontWeight: '700', color: colors.navy },
-  foot: { fontSize: 11, lineHeight: 16, color: colors.muted, textAlign: 'center' },
   section: { fontSize: 16, fontWeight: '800', color: colors.navy },
   text: { fontSize: 14, lineHeight: 20, color: '#4A5165' },
   cap: { fontSize: 12, lineHeight: 16, color: colors.muted },

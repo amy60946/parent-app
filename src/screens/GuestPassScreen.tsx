@@ -28,7 +28,7 @@ export default function GuestPassScreen({ navigation }: any) {
   }, []);
 
   const message = pass
-    ? `Çocukların rutinleri ve görevleri için ParentApp'i kullanıyorum. Bu davet koduyla 7 yerine 14 gün ücretsiz denersin: ${pretty(pass.code)}. ParentApp'i indir, hesap aç, kurulumda "Kodum var"a (ya da Aile › Hesap › Kod gir) yaz. Kod ${formatTR(pass.expiresAt.slice(0, 10))} tarihine kadar geçerli.`
+    ? `Çocukların rutinleri ve görevleri için ParentApp'i kullanıyorum. Bu davet koduyla 7 yerine 14 gün ücretsiz denersin: ${pretty(pass.code)}. ParentApp'i indir, açılışta "Davet kodun var mı?" sorusuna Evet de ve kodu yaz (sonra da Aile › Hesap › Kod gir). Kod ${formatTR(pass.expiresAt.slice(0, 10))} tarihine kadar geçerli.`
     : '';
   const share = async () => {
     if (!pass) return;
@@ -87,7 +87,7 @@ export default function GuestPassScreen({ navigation }: any) {
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Text style={[styles.cap, { flex: 1 }]}>Kod yeni başlayan bir ailede bir kez kullanılır{pass ? `; ${formatTR(pass.expiresAt.slice(0, 10))} tarihine kadar geçerli` : ''}.</Text>
-          <Info title="Aile davet et" text={'Kodu alan aile ParentApp\'i indirip hesap açar, kurulumda "Kodum var"a (ya da Aile › Hesap › Kod gir) kodu yazar; ParentApp 7 yerine 14 gün bütün özellikleriyle açılır. Ödeme bilgisi istenmez.\n\nAile mağazadan abone olursa sen 1 ay ücretsiz kazanırsın: abone değilsen süren hemen uzar; App Store aboneliğin varsa sana 1 aylık Apple hediye kodu gönderilir. Yılda en çok 12 ay.\n\nKod, ParentApp\'i kullanmaya başlayalı 7 günü geçmemiş ve daha önce kod kullanmamış bir ailede geçerlidir. Kimin kullandığı ve kimin abone olduğu gösterilmez.'} />
+          <Info title="Aile davet et" text={'Kodu alan aile ParentApp\'i indirir, açılışta "Davet kodun var mı?" sorusunda (ya da sonra Aile › Hesap › Kod gir) kodu yazar; ParentApp 7 yerine 14 gün bütün özellikleriyle açılır. Ödeme bilgisi istenmez.\n\nAile mağazadan abone olursa sen 1 ay ücretsiz kazanırsın: abone değilsen süren hemen uzar; App Store aboneliğin varsa sana 1 aylık Apple hediye kodu gönderilir. Yılda en çok 12 ay.\n\nKod, ParentApp\'i kullanmaya başlayalı 7 günü geçmemiş ve daha önce kod kullanmamış bir ailede geçerlidir. Kimin kullandığı ve kimin abone olduğu gösterilmez.'} />
         </View>
 
         {/* Davet özeti (sunucu güncellemesi uygulandıysa) */}
