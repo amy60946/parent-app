@@ -291,7 +291,8 @@ function Main() {
       <Stack.Screen name="Intake" component={IntakeScreen} options={{ presentation: 'modal' }} />
     </Stack.Navigator>
     <CodeStep visible={codeStep} onResult={onCode} onSkip={() => { setCodeStep(false); afterModal(() => setGuide('full')); }} />
-    <Onboarding visible={!!guide} steps={guide === 'clinic' ? [1, 2, 3, 4] : guide === 'short' ? [2, 3, 4] : undefined} onClose={endGuide} />
+    {/* Kendiliğinden açılan rehber (3 Kasım 2026): önce sorulur, sonra kısa tur; çocuk ekle / oyuna bağla Ben › İlk adımlar'da */}
+    <Onboarding visible={!!guide} mode="short" ask onClose={endGuide} />
     <PushAsk visible={pushAsk} onDone={() => setPushAsk(false)} />
     </SetupCtx.Provider>
     </BillingProvider>

@@ -5,6 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NotificationBell from '../components/NotificationBell';
+import FirstSteps from '../components/FirstSteps';
 import Onboarding from '../components/Onboarding';
 import { Avatar } from '../components/ui';
 import { colors, radius } from '../theme';
@@ -133,6 +134,9 @@ export default function MeScreen({ navigation }: any) {
 
         <TrialBanner style={{ marginHorizontal: 0, marginTop: 0, marginBottom: 0 }} />
 
+        {/* Yeni hesapta: İlk adımlar (çocuk ekle → oyuna bağla → görev → onay → ödül; uzman isteğe bağlı) */}
+        <FirstSteps navigation={navigation} hasClinician={!!care?.links.length} />
+
         {/* Onay bekleyenler → İnceleme */}
         <Pressable onPress={() => navigation.navigate('Review')} style={styles.catch} accessibilityRole="button">
           <View style={{ flex: 1, gap: 2 }}>
@@ -186,7 +190,7 @@ export default function MeScreen({ navigation }: any) {
               <View style={styles.rowIcon}><Ionicons name="compass-outline" size={18} color={colors.navy} /></View>
               <View style={{ flex: 1, gap: 1 }}>
                 <Text style={styles.rowTitle}>ParentApp'i tanı</Text>
-                <Text style={styles.cap}>6 adımlık kısa rehber · uzmanın program verince burada görünür</Text>
+                <Text style={styles.cap}>Adım adım rehber · uzmanın program verince burada görünür</Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={colors.faint} />
             </Pressable>
@@ -221,7 +225,7 @@ export default function MeScreen({ navigation }: any) {
           ))}
         </View>
       </ScrollView>
-      <Onboarding visible={guide} onClose={() => setGuide(false)} />
+      <Onboarding visible={guide} mode="full" onClose={() => setGuide(false)} />
     </SafeAreaView>
   );
 }

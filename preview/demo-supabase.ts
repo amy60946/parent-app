@@ -215,7 +215,8 @@ function seed(): Db {
   // İki uygulama aynı anda ilk kez açılabilir: hangisi kurarsa kursun her ikisinin hazır oturumu olsun
   db.sessions = {
     clinic: { user: { id: D, email: 'uzman@clinicapp.app' }, access_token: 'demo' },
-    parent: { user: { id: U, email: 'demo@parentapp.app' }, access_token: 'demo' },
+    // created_at: Ben › İlk adımlar yalnız yeni hesapta (ilk 30 gün) görünür
+    parent: { user: { id: U, email: 'demo@parentapp.app', created_at: now() }, access_token: 'demo' },
   };
   return db;
 }

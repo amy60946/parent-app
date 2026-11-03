@@ -11,9 +11,10 @@ import { useParentTasks } from '../parentTasks';
 // İlk kullanım rehberi (kullanıcı onayı 26 Ekim 2026, tasarım G1 "numaralı dokunuş yolu"):
 // gerçek ekranın sade kopyası karartılır, dokunulacak yerler altın halka + 1 → 2 → 3 sırasıyla gösterilir.
 // Tasarım 390×844 noktada çizildi; ekrana sığacak kadar ölçeklenir, alta (sekme çubuğuna) hizalanır.
-// 28 Ekim 2026 (kullanıcı isteği): son sürüme göre yeniden çizildi: Okti avatarları, Görevler'de Ben + hazır rutinler,
-// İnceleme'de ✓ ve ayrıntı sayfası, yeni adım "Sen de katıl" (ebeveyn görevi, Güneş Taşı, hediye dükkânı).
-// Aynı gün (Ben / Uzmanım sekmeleri): onay Ben › Onay bekleyen'den, uzman Uzmanım › Uzman bağla'dan.
+// 3 Kasım 2026 (kullanıcı kararı; benchmark: kısa turlar ve kullanıcının kendi açtığı turlar çok daha çok bitiriliyor,
+// NN/g: sunum tipi turlar görev başarısını artırmıyor): kendiliğinden açılınca önce sorulur ("Göster / Şimdi değil"),
+// sonra KISA tur (3 kart: görev ver → çocuk oyunda yapar → onayla). Aile › Hesap › "Nasıl kullanılır?" TAM turu açar
+// (+ ödüller, mesajlar, gelişim, sen de katıl, uzmanım). Çocuk ekleme ve oyuna bağlama Ben'deki "İlk adımlar" kartında.
 
 const KEY = 'onboarding-v1';
 const W = 390;
@@ -23,7 +24,13 @@ const HALO = 'rgba(233,178,43,0.3)';
 const DIM = 'rgba(15,27,61,0.62)';
 // Açık zemin (#F5F6F8) üstünde karartmanın görünen rengi: ölçeklenen sahnenin dışındaki boşluk
 const DIM_SOLID = '#666E84';
-const ALL = [0, 1, 2, 3, 4, 5];
+
+type StepId = 'task' | 'play' | 'review' | 'rewards' | 'chat' | 'progress' | 'parent' | 'clinic';
+export type GuideMode = 'short' | 'full';
+const STEPS: Record<GuideMode, StepId[]> = {
+  short: ['task', 'play', 'review'],
+  full: ['task', 'play', 'review', 'rewards', 'chat', 'progress', 'parent', 'clinic'],
+};
 
 export async function shouldShowOnboarding(): Promise<boolean> {
   try { return (await AsyncStorage.getItem(KEY)) !== '1'; } catch { return false; }
@@ -33,31 +40,39 @@ export async function markOnboardingSeen() {
   try { await AsyncStorage.setItem(KEY, '1'); } catch { /* yalnız bu cihazda hatırlanır */ }
 }
 
-// steps: gösterilecek adımlar (0 çocuk ekle · 1 oyun kodu · 2 görev ver · 3 onayla · 4 sen de katıl · 5 uzmanını ekle).
-// Uzman davetiyle gelen için [1, 2, 3, 4]: çocuk ve uzman davette eklendi. "Sen de katıl" sunucuda ebeveyn görevleri yoksa atlanır.
-export default function Onboarding({ visible, onClose, steps: wanted = ALL }: { visible: boolean; onClose: () => void; steps?: number[] }) {
+// mode: short (kendiliğinden, kurulumdan sonra) | full (elle, "Nasıl kullanılır?"). ask: önce "Göster / Şimdi değil".
+// "Sen de katıl" sunucuda ebeveyn görevleri yoksa atlanır.
+export default function Onboarding({ visible, onClose, mode = 'full', ask = false }: { visible: boolean; onClose: () => void; mode?: GuideMode; ask?: boolean }) {
   const pt = useParentTasks();
-  const steps = wanted.filter((n) => n !== 4 || pt.ready);
+  const steps = STEPS[mode].filter((n) => n !== 'parent' || pt.ready);
   const [step, setStep] = useState(0);
+  const [asking, setAsking] = useState(ask);
   const { width, height } = useWindowDimensions();
   const s = Math.min(width / W, height / H);
-  React.useEffect(() => { if (visible) setStep(0); }, [visible]);
+  React.useEffect(() => {
+    if (!visible) return;
+    setStep(0);
+    setAsking(ask);
+    if (!ask) track('onboarding.start', { mode });
+  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const finish = (done: boolean) => {
-    track(done ? 'onboarding.done' : 'onboarding.skip', done ? {} : { step: step + 1 });
+    track(done ? 'onboarding.done' : 'onboarding.skip', done ? { mode } : { mode, step: step + 1 });
     markOnboardingSeen();
     onClose();
   };
+  const later = () => { track('onboarding.later', { mode }); markOnboardingSeen(); onClose(); };
+  const show = () => { track('onboarding.start', { mode }); setAsking(false); };
   const total = steps.length;
   const next = () => (step < total - 1 ? setStep(step + 1) : finish(true));
-  const Step = [Step1, Step2, Step3, Step4, StepParent, Step5][steps[step] ?? 0];
+  const Step = SCENES[steps[step] ?? 'task'];
 
   return (
-    <Modal visible={visible} animationType="fade" presentationStyle="overFullScreen" transparent onRequestClose={() => finish(false)}>
+    <Modal visible={visible} animationType="fade" presentationStyle="overFullScreen" transparent onRequestClose={() => (asking ? later() : finish(false))}>
       <View style={{ flex: 1, backgroundColor: DIM_SOLID, justifyContent: 'flex-end', alignItems: 'center' }}>
         <View style={{ width: W * s, height: H * s }}>
           <View style={{ position: 'absolute', left: (W * s - W) / 2, top: (H * s - H) / 2, width: W, height: H, transform: [{ scale: s }], overflow: 'hidden', backgroundColor: '#F5F6F8' }}>
-            <Step step={step} total={total} onNext={next} onSkip={() => finish(false)} />
+            {asking ? <Ask total={total} onShow={show} onLater={later} /> : <Step step={step} total={total} onNext={next} onSkip={() => finish(false)} />}
           </View>
         </View>
       </View>
@@ -126,7 +141,7 @@ function TabBar({ hide, active }: { hide: number; active?: number }) {
 
 function TabRing({ index }: { index: number }) {
   return (
-    <Ring style={{ left: Math.max(14, Math.min(W - 88, tabX(index) - 37)), bottom: 14, width: 74, height: 60 }} radius={16} badge={1} badgeAt={{ top: -12, left: -10 }}>
+    <Ring style={{ left: Math.max(14, Math.min(W - 78, tabX(index) - 32)), bottom: 14, width: 64, height: 60 }} radius={16} badge={1} badgeAt={{ top: -12, left: -10 }}>
       <Ionicons name={TAB_ICONS[index]} size={22} color={colors.navy} />
       <Text style={{ fontSize: 12, fontWeight: '800', color: colors.navy, marginTop: 3 }}>{TAB_NAMES[index]}</Text>
     </Ring>
@@ -180,80 +195,15 @@ function Coach({ step, total, title, text, onNext, onSkip, style }: StepProps & 
             <View key={i} style={{ width: i === step ? 18 : 7, height: 7, borderRadius: 4, backgroundColor: i === step ? colors.navy : '#D5D9E2' }} />
           ))}
         </View>
-        <Pressable onPress={onNext} accessibilityRole="button" accessibilityLabel="İleri" style={st.next}>
-          <Ionicons name="arrow-forward" size={20} color="#fff" />
+        <Pressable onPress={onNext} accessibilityRole="button" accessibilityLabel={step === total - 1 ? 'Bitir' : 'İleri'} style={st.next}>
+          <Ionicons name={step === total - 1 ? 'checkmark' : 'arrow-forward'} size={20} color="#fff" />
         </Pressable>
       </View>
     </View>
   );
 }
 
-/* ---------- 1 · Çocuğunu ekle: Aile → + ---------- */
-
-function Step1(p: StepProps) {
-  return (
-    <>
-      <Person x={20} id={PARENT_FACE} label="Anne" />
-      <View style={{ position: 'absolute', right: 20, top: 66 }}><Ionicons name="notifications-outline" size={24} color={colors.navy} /></View>
-      <Segments active={0} />
-      <Block top={190} height={96} />
-      <Block top={302} height={150} />
-      <TabBar hide={4} />
-      <Dim />
-      <Trail d="M351 760 L362 760 L362 110 Q362 84 336 84 L128 84" />
-      <View pointerEvents="none" style={{ position: 'absolute', left: 90, top: 56, alignItems: 'center', gap: 4 }}>
-        <Ring style={{ position: 'relative', width: 54, height: 54 }} radius={27} badge={2} badgeAt={{ top: -10, right: -12 }} inner={{ backgroundColor: colors.navy }}>
-          <Ionicons name="add" size={28} color="#fff" />
-        </Ring>
-        <Text style={{ fontSize: 11, fontWeight: '700', color: '#fff' }}>Ekle</Text>
-      </View>
-      <TabRing index={4} />
-      <Coach {...p} title="Çocuğunu ekle" text="Aile sekmesi, sonra +. Avatarını Okti'lerden seç ya da fotoğrafını koy." style={{ left: 20, width: 300, top: 300 }} />
-    </>
-  );
-}
-
-/* ---------- 2 · Oyun kodu: çocuk → Giriş kodu üret ---------- */
-
-function Step2(p: StepProps) {
-  return (
-    <>
-      <Person x={20} id={PARENT_FACE} label="Anne" />
-      <View style={{ position: 'absolute', left: 160, top: 56, alignItems: 'center', gap: 4 }}>
-        <View style={[st.avatar, { backgroundColor: colors.navy }]}><Ionicons name="add" size={24} color="#fff" /></View>
-        <Text style={{ fontSize: 11, fontWeight: '600', color: 'transparent' }}>.</Text>
-      </View>
-      <Segments active={0} />
-      <Block top={186} height={76} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 }}>
-        <Face id={CHILD_FACE} size={44} />
-        <Text style={{ flex: 1, fontSize: 16, fontWeight: '700', color: colors.navy }}>Nazlı</Text>
-        <View style={st.coin}><View style={st.coinDot} /><Text style={{ fontSize: 14, fontWeight: '800', color: colors.navy }}>0</Text></View>
-      </Block>
-      <Block top={274} height={52} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16 }}>
-        <View style={st.coinDot} /><Text style={{ fontSize: 15, fontWeight: '600', color: colors.navy }}>Güneş Taşı · 0</Text>
-      </Block>
-      <Block top={338} height={52} />
-      <Block top={402} height={128} style={{ padding: 16 }}>
-        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>Giriş kodu</Text>
-      </Block>
-      <TabBar hide={-1} active={4} />
-      <Dim />
-      <Trail d="M117 134 L117 160 Q117 172 129 172 L362 172 Q374 172 374 186 L374 470 Q374 484 360 484 L356 484" />
-      <View pointerEvents="none" style={{ position: 'absolute', left: 90, top: 56, alignItems: 'center', gap: 4 }}>
-        <Ring style={{ position: 'relative', width: 54, height: 54 }} radius={27} badge={1} badgeAt={{ top: -10, right: -12 }}>
-          <Face id={CHILD_FACE} size={50} />
-        </Ring>
-        <Text style={{ fontSize: 11, fontWeight: '700', color: '#fff' }}>Nazlı</Text>
-      </View>
-      <Ring style={{ left: 36, right: 36, top: 458, height: 50 }} radius={14} badge={2} badgeAt={{ top: -12, right: -12 }} inner={{ backgroundColor: colors.navy }}>
-        <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Giriş kodu üret</Text>
-      </Ring>
-      <Coach {...p} title="Oyun kodunu al" text="Kısa veli onayından sonra kodu oyuna yaz ya da QR'ı okut" style={{ left: 20, right: 20, top: 560 }} />
-    </>
-  );
-}
-
-/* ---------- 3 · Görev ver: Görevler → + (hazır rutinler) ---------- */
+/* ---------- Görev ver: Görevler → + (hazır rutinler) ---------- */
 
 const WEEK = [['Pzt', '26'], ['Sal', '27'], ['Çar', '28'], ['Per', '29'], ['Cum', '30'], ['Cmt', '31'], ['Paz', '1']];
 
@@ -267,7 +217,7 @@ function Chips({ top, on }: { top: number; on: 'all' | 'me' }) {
   );
 }
 
-function Step3(p: StepProps) {
+function StepTask(p: StepProps) {
   return (
     <>
       <View style={{ position: 'absolute', left: 20, top: 54, gap: 2 }}>
@@ -311,14 +261,14 @@ function Step3(p: StepProps) {
         </View>
         <Text style={{ fontSize: 11, color: '#5B6274' }}>ya da listeden tek tek seç</Text>
       </View>
-      <Coach {...p} title="Görev ver" text="Görevler, sonra +. Hazır rutinle birkaç görevi tek seferde ekle." style={{ left: 20, right: 20, top: 250 }} />
+      <Coach {...p} title="Görev ver" text="Görevler'de + ile görev ekle. Hazır rutinle birkaç görevi tek seferde verirsin." style={{ left: 20, right: 20, top: 250 }} />
     </>
   );
 }
 
-/* ---------- 4 · İncele ve onayla: Ben → Onay bekleyen → ✓ (ya da satıra dokun) ---------- */
+/* ---------- İncele ve onayla: Ben → Onay bekleyen → ✓ (ya da satıra dokun) ---------- */
 
-function Step4(p: StepProps) {
+function StepReview(p: StepProps) {
   return (
     <>
       <View style={{ position: 'absolute', left: 20, top: 54, gap: 2 }}>
@@ -329,7 +279,7 @@ function Step4(p: StepProps) {
       <Block top={350} height={150} />
       <TabBar hide={0} />
       <Dim />
-      <Trail d="M39 760 L39 214" />
+      <Trail d="M24 770 L8 770 L8 176 Q8 162 16 162" />
       <Ring style={{ left: 20, right: 20, top: 122, height: 80 }} radius={20} badge={2} badgeAt={{ top: -12, right: -12 }}
         inner={{ backgroundColor: '#DDF1EC', flexDirection: 'row', justifyContent: 'flex-start', paddingHorizontal: 18, gap: 12 }}>
         <View style={{ flex: 1, gap: 2 }}>
@@ -353,12 +303,12 @@ function Step4(p: StepProps) {
         </View>
       </View>
       <TabRing index={0} />
-      <Coach {...p} title="Yaptı mı? Onayla" text="Ben'de 'Onay bekleyen'e dokun. ✓ ile hemen onayla; satıra dokunursan Güneş Taşı ve not ekler, gerekirse 'Tekrar dene' dersin." style={{ left: 20, right: 20, top: 372 }} />
+      <Coach {...p} title="Yaptı mı? Onayla" text="Ben'de 'Onay bekleyen'e dokun, ✓ ile onayla. Onaylayınca çocuğun coin ve Güneş Taşı kazanır; satıra dokunursan not eklersin." style={{ left: 20, right: 20, top: 372 }} />
     </>
   );
 }
 
-/* ---------- 5 · Sen de katıl: kendine görev ver, Güneş Taşı kazan, hediye gönder ---------- */
+/* ---------- Sen de katıl: kendine görev ver, Güneş Taşı kazan, hediye gönder ---------- */
 
 function StepParent(p: StepProps) {
   return (
@@ -382,20 +332,20 @@ function StepParent(p: StepProps) {
       </Block>
       <TabBar hide={4} />
       <Dim />
-      <Trail d="M351 760 L376 760 L376 380 Q376 366 362 366 L356 366" />
+      <Trail d="M351 760 L380 760 L380 380 Q380 366 366 366 L356 366" />
       <Ring style={{ right: 32, top: 344, width: 140, height: 44 }} radius={22} badge={2} badgeAt={{ top: -12, right: -12 }} inner={{ backgroundColor: '#FFF4D6', flexDirection: 'row', gap: 6 }}>
         <Ionicons name="gift-outline" size={16} color={colors.navy} />
         <Text style={{ fontSize: 13, fontWeight: '800', color: colors.navy }}>Hediye dükkânı</Text>
       </Ring>
       <TabRing index={4} />
-      <Coach {...p} title="Sen de katıl" text="Görevi kendine de ata, 'Yaptım' de, Güneş Taşı kazan. Taşlarla çocuğuna oyunda hediye gönder." style={{ left: 20, right: 20, top: 440 }} />
+      <Coach {...p} title="Sen de katıl" text="Görevi kendine de ata, 'Yaptım' de, Güneş Taşı kazan. Taşlarla çocuğuna oyunda hediye gönder." style={{ left: 20, right: 32, top: 440 }} />
     </>
   );
 }
 
-/* ---------- 6 · Uzmanını ekle (isteğe bağlı): Uzmanım → Uzman bağla ---------- */
+/* ---------- Uzmanını ekle (isteğe bağlı, tam turun sonu): Uzmanım → Uzman bağla ---------- */
 
-function Step5({ onNext, step, total }: StepProps) {
+function StepClinic({ onNext, step, total }: StepProps) {
   return (
     <>
       <Text style={{ position: 'absolute', left: 20, top: 54, fontSize: 26, fontWeight: '800', color: colors.navy }}>Uzmanım</Text>
@@ -431,6 +381,170 @@ function Step5({ onNext, step, total }: StepProps) {
   );
 }
 
+/* ---------- Çocuk oyunda yapar: Pofi Adası › Ev Görevleri › Yaptım → ebeveyne bildirim ---------- */
+
+function StepPlay(p: StepProps) {
+  return (
+    <>
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: '#CFE8F7' }]} />
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 300, backgroundColor: '#BFE3A8', borderTopLeftRadius: 200, borderTopRightRadius: 200 }} />
+      <Text style={{ position: 'absolute', left: 20, top: 54, fontSize: 13, fontWeight: '700', color: '#2C5A78' }}>Pofi Adası · çocuğunun oyunu</Text>
+      <Block top={240} height={250} style={{ padding: 16, gap: 12 }}>
+        <Text style={{ fontSize: 18, fontWeight: '800', color: colors.navy }}>Ev Görevleri</Text>
+        {['Dişlerini fırçala', 'Yatağını topla'].map((t, i) => (
+          <View key={t} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, height: 52 }}>
+            <Face id={CHILD_FACE} size={36} />
+            <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: colors.navy }}>{t}</Text>
+            {i === 0 && <View style={{ width: 92 }} />}
+          </View>
+        ))}
+      </Block>
+      <Dim />
+      <Ring style={{ right: 36, top: 290, width: 92, height: 40 }} radius={20} badge={1} badgeAt={{ top: -12, left: -12 }} inner={{ backgroundColor: '#2F7D4A' }}>
+        <Text style={{ fontSize: 14, fontWeight: '800', color: '#fff' }}>Yaptım</Text>
+      </Ring>
+      <Trail d="M308 276 L308 194" />
+      {/* Ebeveynin telefonuna gelen bildirim */}
+      <Ring style={{ left: 20, right: 20, top: 108, height: 72 }} radius={18} badge={2} badgeAt={{ top: -12, right: -12 }}
+        inner={{ flexDirection: 'row', justifyContent: 'flex-start', gap: 12, paddingHorizontal: 14 }}>
+        <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="notifications" size={18} color="#fff" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 14, fontWeight: '800', color: colors.navy }}>Nazlı görevi yaptı</Text>
+          <Text style={{ fontSize: 12, color: '#5B6274' }}>Dişlerini fırçala · onayını bekliyor</Text>
+        </View>
+      </Ring>
+      <Coach {...p} title="Çocuğun oyunda yapar" text="Verdiğin görevler Pofi Adası'nda 'Ev Görevleri'nde görünür. Bitirince 'Yaptım'a basar, sana bildirim gelir." style={{ left: 20, right: 20, top: 520 }} />
+    </>
+  );
+}
+
+/* ---------- Ödüller: Ben › Ödül (çocuk Güneş Taşı yetince oyundan ister, sen onaylarsın) ---------- */
+
+function StepRewards(p: StepProps) {
+  return (
+    <>
+      <View style={{ position: 'absolute', left: 20, top: 54, gap: 2 }}>
+        <Text style={{ fontSize: 26, fontWeight: '800', color: colors.navy }}>Merhaba!</Text>
+        <Text style={{ fontSize: 13, color: '#5B6274' }}>Bugün</Text>
+      </View>
+      <Block top={122} height={80} style={{ backgroundColor: '#DDF1EC' }} />
+      <Block top={216} height={150} />
+      <Block top={380} height={150} />
+      <View style={{ position: 'absolute', left: 20, right: 20, top: 646, flexDirection: 'row', gap: 8 }}>
+        {['Görev ver', '', 'Davranış kaydı'].map((t, i) => (
+          <View key={i} style={[st.quick, !t && { backgroundColor: 'transparent', borderColor: 'transparent' }]}><Text style={st.quickText}>{t}</Text></View>
+        ))}
+      </View>
+      <TabBar hide={-1} active={0} />
+      <Dim />
+      <Ring style={{ left: 20 + (W - 56) / 3 + 8 + 14, top: 646, width: (W - 56) / 3 - 28, height: 44 }} radius={12} badge={1} badgeAt={{ top: -12, right: -12 }}
+        inner={{ flexDirection: 'row', gap: 6 }}>
+        <Ionicons name="gift-outline" size={18} color={colors.navy} />
+        <Text style={st.quickText}>Ödül</Text>
+      </Ring>
+      <View pointerEvents="none" style={[st.preview, { top: 470, bottom: 'auto', right: 20 }]}>
+        <Text style={{ fontSize: 12, fontWeight: '700', color: colors.navy }}>Ödüller</Text>
+        {[['film-outline', 'Film gecesi', '12'], ['football-outline', 'Parkta oyun', '8']].map(([ic, t, n]) => (
+          <View key={t} style={st.previewRow}>
+            <Ionicons name={ic as keyof typeof Ionicons.glyphMap} size={18} color={colors.navy} />
+            <Text style={[st.previewText, { flex: 1 }]}>{t}</Text>
+            <View style={st.coinDot} /><Text style={st.previewText}>{n}</Text>
+          </View>
+        ))}
+      </View>
+      <Coach {...p} title="Ödülleri sen belirle" text="Ben'in altındaki 'Ödül': film gecesi, park gibi ödüller koy. Güneş Taşı yetince çocuğun oyundan ister, sen onaylarsın." style={{ left: 20, right: 20, top: 150 }} />
+    </>
+  );
+}
+
+/* ---------- Mesajlar: Aile › Mesajlar ---------- */
+
+function StepChat(p: StepProps) {
+  return (
+    <>
+      <Person x={20} id={PARENT_FACE} label="Anne" />
+      <Person x={90} id={CHILD_FACE} label="Nazlı" />
+      <Segments active={0} hide={1} />
+      <Block top={190} height={300} style={{ padding: 16, gap: 10 }}>
+        <View style={{ alignSelf: 'flex-start', backgroundColor: '#EEF1F6', borderRadius: 14, paddingVertical: 8, paddingHorizontal: 12 }}>
+          <Text style={{ fontSize: 14, color: colors.navy }}>Anne bugün çok eğlendim!</Text>
+        </View>
+        <View style={{ alignSelf: 'flex-end', backgroundColor: colors.navy, borderRadius: 14, paddingVertical: 8, paddingHorizontal: 12 }}>
+          <Text style={{ fontSize: 14, color: '#fff' }}>Seninle gurur duyuyorum 🌟</Text>
+        </View>
+      </Block>
+      <TabBar hide={4} />
+      <Dim />
+      <Trail d="M351 760 L380 760 L380 210 Q380 198 368 198 L205 198 Q193 198 193 186" />
+      <Ring style={{ left: 150, top: 140, width: 86, height: 32 }} radius={16} badge={2} badgeAt={{ top: -14, right: -14 }}>
+        <Text style={{ fontSize: 15, fontWeight: '800', color: colors.navy }}>Mesajlar</Text>
+      </Ring>
+      <TabRing index={4} />
+      <Coach {...p} title="Mesajlaş" text="Aile › Mesajlar: yazı, fotoğraf, sesli mesaj ya da çıkartma gönder. Çocuğun oyunda okur, sana yazıyla ya da çıkartmayla döner." style={{ left: 20, right: 32, top: 400 }} />
+    </>
+  );
+}
+
+/* ---------- Gelişim: alışkanlıklar, seri, haftalık tamamlama ---------- */
+
+const BARS = [40, 70, 55, 90, 65, 80, 100];
+
+function StepProgress(p: StepProps) {
+  return (
+    <>
+      <Text style={{ position: 'absolute', left: 20, top: 54, fontSize: 26, fontWeight: '800', color: colors.navy }}>Gelişim</Text>
+      <Block top={330} height={120} />
+      <TabBar hide={3} />
+      <Dim />
+      <Ring style={{ left: 20, right: 20, top: 110, height: 190 }} radius={18} badge={2} badgeAt={{ top: -12, right: -12 }} inner={{ alignItems: 'stretch', justifyContent: 'flex-start', padding: 16, gap: 10 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <Text style={{ fontSize: 15, fontWeight: '800', color: colors.navy }}>Günlük tutarlılık</Text>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: '#2F7D4A' }}>Seri: 4 gün</Text>
+        </View>
+        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', gap: 10 }}>
+          {BARS.map((h, i) => <View key={i} style={{ flex: 1, height: `${h}%`, borderRadius: 6, backgroundColor: i === BARS.length - 1 ? GOLD : '#C9D3E6' }} />)}
+        </View>
+      </Ring>
+      <TabRing index={3} />
+      <Coach {...p} title="Gelişimi izle" text="Gelişim sekmesinde günlük tutarlılık, seri ve haftalık tamamlama. Hangi alışkanlığın oturduğunu görürsün." style={{ left: 20, right: 20, top: 400 }} />
+    </>
+  );
+}
+
+/* ---------- Önce sor: "Göster / Şimdi değil" (kendiliğinden açılınca) ---------- */
+
+function Ask({ total, onShow, onLater }: { total: number; onShow: () => void; onLater: () => void }) {
+  return (
+    <>
+      <View style={{ position: 'absolute', left: 20, top: 54 }}>
+        <Text style={{ fontSize: 26, fontWeight: '800', color: colors.navy }}>Merhaba!</Text>
+      </View>
+      <Block top={122} height={80} style={{ backgroundColor: '#DDF1EC' }} />
+      <Block top={216} height={150} />
+      <TabBar hide={-1} active={0} />
+      <Dim />
+      <View style={[st.card, { left: 20, right: 20, top: 300 }]}>
+        <Text style={[st.counter, { alignSelf: 'flex-start' }]}>{total} adım · 30 saniye</Text>
+        <Text style={st.title} accessibilityRole="header">ParentApp nasıl çalışır?</Text>
+        <Text style={st.text}>Görev verirsin, çocuğun oyunda yapar, sen onaylarsın. Kısaca göstereyim mi?</Text>
+        <Pressable onPress={onShow} accessibilityRole="button" style={st.start}>
+          <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Göster</Text>
+        </Pressable>
+        <Pressable onPress={onLater} accessibilityRole="button" hitSlop={8} style={{ alignSelf: 'center', paddingVertical: 4 }}>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: '#5B6274' }}>Şimdi değil</Text>
+        </Pressable>
+        <Text style={{ fontSize: 12, color: '#5B6274', textAlign: 'center' }}>İstediğin zaman: Aile › Hesap › Nasıl kullanılır?</Text>
+      </View>
+    </>
+  );
+}
+
+const SCENES: Record<StepId, (p: StepProps) => React.ReactElement> = {
+  task: StepTask, play: StepPlay, review: StepReview, rewards: StepRewards, chat: StepChat, progress: StepProgress, parent: StepParent, clinic: StepClinic,
+};
+
 const st = StyleSheet.create({
   tabBar: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 84, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: colors.line, flexDirection: 'row', paddingTop: 10 },
   tabText: { fontSize: 11, fontWeight: '600', color: colors.muted },
@@ -455,4 +569,6 @@ const st = StyleSheet.create({
   tile: { flex: 1, borderRadius: 12, padding: 10, gap: 6, height: 70 },
   tileText: { fontSize: 12, fontWeight: '700', color: colors.navy },
   previewBtn: { height: 34, borderRadius: 10, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
+  quick: { flex: 1, height: 44, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },
+  quickText: { fontSize: 13, fontWeight: '700', color: colors.navy },
 });

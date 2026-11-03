@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Alert, StyleSheet, ActivityIndicator } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import NotificationBell from '../components/NotificationBell';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,6 +40,15 @@ export default function FamilyScreen({ onLogout }: { onLogout?: () => void }) {
   const [who, setWho] = useState<string>('me');
   const [tab, setTab] = useState<Tab>('general');
   const [sheet, setSheet] = useState(false);
+  // Ben › İlk adımlar › "Çocuğunu ekle": Aile sekmesi { add } ile açılır, Ekle sayfası kendiliğinden gelir
+  const route = useRoute<any>();
+  const nav = useNavigation<any>();
+  const addReq = route.params?.add;
+  useEffect(() => {
+    if (!addReq) return;
+    nav.setParams({ add: undefined });
+    afterModal(() => setSheet(true));
+  }, [addReq]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -433,7 +442,7 @@ function Account({ onLogout }: { onLogout?: () => void }) {
       </Pressable>
       <ManageSheet visible={open === 'manage'} onClose={() => setOpen(null)} />
       <CodeSheet visible={open === 'join'} onClose={() => setOpen(null)} />
-      <Onboarding visible={open === 'guide'} onClose={() => setOpen(null)} />
+      <Onboarding visible={open === 'guide'} mode="full" onClose={() => setOpen(null)} />
     </ScrollView>
   );
 }

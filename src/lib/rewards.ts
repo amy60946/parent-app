@@ -109,3 +109,10 @@ export const weeklyEarned = (moves: StoneMove[], childId: string) => {
 };
 
 export const rewardAvailableFor = (r: Reward, childId: string) => !r.childIds.length || r.childIds.includes(childId);
+
+// Ailede etkin ödül var mı (Ben › İlk adımlar: "Bir ödül belirle")
+export async function hasRewards(familyId: string): Promise<boolean> {
+  const { count, error } = await supabase.from('rewards').select('id', { count: 'exact', head: true })
+    .eq('family_id', familyId).eq('active', true);
+  return !error && (count ?? 0) > 0;
+}
