@@ -28,9 +28,11 @@ import { uploadChildPhoto } from '../lib/avatarPhoto';
 // İlk kurulum (kullanıcı kararları 27 Ekim 2026; ortak/sozlesme/akislar.md 16):
 // aile soruları → sıradaki (çocuğunu ekle / kodum var) → çocuk (uzman daveti ya da form) → çocuk soruları → çocukların
 // → hazırlanıyor → seni nasıl görsün → tanıdık mı ×3 → uygulama. Eşinin koduyla katılan çocuk adımlarını görmez.
-// Uzman davetiyle (bağlantı ya da kayıttan önce yazılan kod) gelen aile önce "Uzman bağla"yı görür; bağlanınca tanışma
-// soruları atlanır, Ben'de "Tanışma sorularını tamamla" olarak kalır (kullanıcı isteği 28 Ekim 2026, Joon örneği).
-type Phase = 'start' | 'family' | 'next' | 'join' | 'childForm' | 'child' | 'children' | 'loading' | 'nickname' | 'relate';
+// Uzman davetiyle (bağlantı ya da kayıttan önce yazılan kod) gelen aile önce "Uzman bağla"yı görür. Bağlanınca (kullanıcı kararı
+// 3 Kasım 2026; benchmark NN/g: kısa, atlanabilir, nedeni söylenen sorular) "Aileni tanıyalım" sorulur: Başlayalım → aile soruları →
+// her çocuğun soruları → "seni nasıl görsün"; Sonra → doğrudan "seni nasıl görsün", sorular Ben'de "Tanışma sorularını tamamla"da kalır.
+// Böylece sorular uygulama rehberinden önce biter.
+type Phase = 'start' | 'askIntake' | 'family' | 'next' | 'join' | 'childForm' | 'child' | 'children' | 'loading' | 'nickname' | 'relate';
 
 export default function SetupScreen({ navigation, route }: any) {
   const { children } = useStore();
@@ -38,6 +40,8 @@ export default function SetupScreen({ navigation, route }: any) {
   const [phase, setPhase] = useState<Phase>(children.length ? 'children' : 'start');
   const [childId, setChildId] = useState<string | undefined>();
   const [joined, setJoined] = useState(false);
+  const [invited, setInvited] = useState(false); // uzman daveti bağlandı: sorular bağlantıdan sonra
+  const [queue, setQueue] = useState<string[]>([]); // davetli akışta sırası gelecek çocuklar
   const [busy, setBusy] = useState(false);
 
   // Başlangıç: bekleyen uzman daveti varsa "Uzman bağla" (kod hazır); kapatılırsa aile sorularıyla sürer
@@ -70,12 +74,21 @@ export default function SetupScreen({ navigation, route }: any) {
     })();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // "Uzman bağla"dan dönüş: bağlandıysa sorular sonraya (Ben), kurulum "seni nasıl görsün" ile sürer
+  // "Uzman bağla"dan dönüş: bağlandıysa önce "Aileni tanıyalım" (Başlayalım / Sonra), sonra "seni nasıl görsün"
   useEffect(() => {
     if (!route.params?.linked) return;
     navigation.setParams({ linked: undefined });
-    setPhase('nickname');
+    setInvited(true);
+    setPhase('askIntake');
   }, [route.params?.linked]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Davetli akış: aile sorularından sonra çocukların soruları sırayla, bitince "seni nasıl görsün"
+  const nextChild = (rest: string[]) => {
+    if (!rest.length) { setChildId(undefined); setPhase('nickname'); return; }
+    setChildId(rest[0]);
+    setQueue(rest.slice(1));
+    setPhase('child');
+  };
 
   // "Çocuğunu ekle": uzman daveti bekliyorsa önerisiyle davet ekranı, yoksa form
   const addChild = async () => {
@@ -111,10 +124,23 @@ export default function SetupScreen({ navigation, route }: any) {
   const done = () => finish(joined ? 'joined' : 'children');
 
   if (phase === 'start') return <Shell><ActivityIndicator color={colors.navy} style={{ flex: 1 }} /></Shell>;
-  if (phase === 'family') return <Questionnaire key="family" steps={familySteps} childId={null} onDone={() => setPhase('next')} />;
+  if (phase === 'askIntake') {
+    return (
+      <Center icon="clipboard-outline" title="Aileni tanıyalım" text="Birkaç kısa soru; öneriler ailene göre gelsin."
+        foot="Yaklaşık 3 dakika"
+        primary={{ label: 'Başlayalım', onPress: () => { track('intake.invited', { start: true }); setPhase('family'); } }}
+        secondary={{ label: 'Sonra', onPress: () => { track('intake.invited', { start: false }); setPhase('nickname'); } }} />
+    );
+  }
+  if (phase === 'family') {
+    return <Questionnaire key="family" steps={familySteps} childId={null}
+      onDone={() => (invited ? nextChild(children.map((c) => c.id)) : setPhase('next'))}
+      onBackFirst={invited ? () => setPhase('askIntake') : undefined} />;
+  }
   if (phase === 'child' && childId) {
-    return <Questionnaire key={childId} steps={childSteps(child?.name ?? 'Çocuğun')} childId={childId} onDone={() => setPhase('children')}
-      onBackFirst={() => setPhase('children')} />;
+    return <Questionnaire key={childId} steps={childSteps(child?.name ?? 'Çocuğun')} childId={childId}
+      onDone={() => (invited ? nextChild(queue) : setPhase('children'))}
+      onBackFirst={() => (invited ? setPhase('family') : setPhase('children'))} />;
   }
   if (phase === 'next') {
     return (

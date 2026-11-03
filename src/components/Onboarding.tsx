@@ -126,8 +126,8 @@ function Badge({ n, style }: { n: number; style: ViewStyle }) {
 }
 
 // Sekmeler (28 Ekim 2026): Ben · Uzmanım · Görevler · Gelişim · Aile; her biri W/5 = 78 nokta
-// Ana sayfa sekmesinin yazısı yok, yalnız ev simgesi (3 Kasım 2026)
-const TAB_NAMES = ['', 'Uzmanım', 'Görevler', 'Gelişim', 'Aile'];
+// Ana sayfa sekmesi "Bugün" (3 Kasım 2026, ev simgesiyle)
+const TAB_NAMES = ['Bugün', 'Uzmanım', 'Görevler', 'Gelişim', 'Aile'];
 const TAB_ICONS: (keyof typeof Ionicons.glyphMap)[] = ['home-outline', 'briefcase-outline', 'list-outline', 'stats-chart-outline', 'people-outline'];
 const TAB_W = W / TAB_NAMES.length;
 const tabX = (i: number) => i * TAB_W + TAB_W / 2; // sekmenin ortası
@@ -138,9 +138,7 @@ function TabBar({ hide, active }: { hide: number; active?: number }) {
     <View style={st.tabBar}>
       {TAB_NAMES.map((t, i) => (
         <View key={i} style={{ flex: 1, alignItems: 'center' }}>
-          {i !== hide && (i === 0
-            ? <Ionicons name={i === active ? 'home' : 'home-outline'} size={22} color={i === active ? colors.navy : colors.muted} />
-            : <Text style={[st.tabText, i === active && { color: colors.navy, fontWeight: '800' }]}>{t}</Text>)}
+          {i !== hide && <Text style={[st.tabText, i === active && { color: colors.navy, fontWeight: '800' }]}>{t}</Text>}
         </View>
       ))}
     </View>
@@ -150,7 +148,7 @@ function TabBar({ hide, active }: { hide: number; active?: number }) {
 function TabRing({ index }: { index: number }) {
   return (
     <Ring style={{ left: Math.max(14, Math.min(W - 78, tabX(index) - 32)), bottom: 14, width: 64, height: 60 }} radius={16} badge={1} badgeAt={{ top: -12, left: -10 }}>
-      <Ionicons name={TAB_ICONS[index]} size={index === 0 ? 26 : 22} color={colors.navy} />
+      <Ionicons name={TAB_ICONS[index]} size={22} color={colors.navy} />
       {!!TAB_NAMES[index] && <Text style={{ fontSize: 12, fontWeight: '800', color: colors.navy, marginTop: 3 }}>{TAB_NAMES[index]}</Text>}
     </Ring>
   );
@@ -570,7 +568,7 @@ function Balance({ k }: { k: number }) {
       <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: colors.navy }}>{KIDS[k].name}</Text>
       <Ionicons name="sunny" size={14} color={GOLD} />
       <Text style={{ fontSize: 16, fontWeight: '800', color: colors.navy }}>{KIDS[k].bal}</Text>
-      <View style={st.minus}><Ionicons name="remove" size={16} color={colors.danger} /></View>
+      <Ionicons name="chevron-forward" size={14} color={colors.faint} />
     </>
   );
 }
@@ -765,7 +763,6 @@ const st = StyleSheet.create({
   quickText: { fontSize: 13, fontWeight: '700', color: colors.navy },
   note: { fontSize: 12, lineHeight: 17, color: '#5B6274' },
   balance: { position: 'absolute', height: 52, borderRadius: 14, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 10, paddingRight: 8 },
-  minus: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.hard.bg, backgroundColor: '#FFF8F9', alignItems: 'center', justifyContent: 'center' },
   request: { position: 'absolute', left: 20, right: 20, height: 58, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFF6DE', borderRadius: 14, paddingLeft: 12, paddingRight: 8 },
   round: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   sugChip: { height: 40, paddingLeft: 10, paddingRight: 14, borderRadius: 20, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center', gap: 6 },

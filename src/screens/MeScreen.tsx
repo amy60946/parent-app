@@ -57,7 +57,7 @@ export default function MeScreen({ navigation }: any) {
     const rows: { id: string; name: string; avatar: string; done: number; total: number }[] = [];
     if (pt.ready && pt.me) {
       const mine = todays.filter((t) => (pt.assigns[t.id] ?? []).some((a) => a.userId === pt.me));
-      rows.push({ id: 'me', name: 'Sen', avatar: parent.avatar, total: mine.length,
+      rows.push({ id: 'me', name: 'Ben', avatar: parent.avatar, total: mine.length, // "Ben": Görevler'deki süzgeçle aynı (kullanıcı kararı 3 Kasım 2026)
         done: mine.filter((t) => pt.done[doneKey(t.id, pt.me!, today)]).length });
     }
     for (const c of children) {

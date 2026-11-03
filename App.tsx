@@ -103,12 +103,13 @@ function Tabs() {
         ),
       })}
     >
-      {/* Ana sayfa: sekmede yazı yok, yalnız ev simgesi (kullanıcı isteği 3 Kasım 2026); ekran okuyucu "Ana sayfa" der */}
+      {/* Ana sayfa sekmesi "Bugün" (kullanıcı kararı 3 Kasım 2026; benchmark: Headspace, Cozi; Apple/Google: simgeler ya hep yazılı
+          ya hep yazısız). Rota adı "Ben" kalır (bağlantılar ve gezinme bu adı kullanır). */}
       <Tab.Screen
         name="Ben"
         component={MeScreen}
         options={{
-          tabBarLabel: () => null, tabBarAccessibilityLabel: 'Ana sayfa',
+          tabBarLabel: 'Bugün', tabBarAccessibilityLabel: 'Bugün, ana sayfa',
           tabBarBadge: pending || undefined, tabBarBadgeStyle: { backgroundColor: colors.gold, color: colors.navy },
         }}
       />

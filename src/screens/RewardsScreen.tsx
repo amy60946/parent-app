@@ -55,7 +55,9 @@ type Confirm =
   | { type: 'request'; req: RewardRequest; approve: boolean };
 
 // Ödüller ve Güneş Taşı: ebeveyn ödül koyar (önerilerden ya da kendisi), çocuğun harfine dokunup onaylayarak verir,
-// "−" ile taş düşürür. Çocuğun oyundaki istekleri üstte bant olarak görünür.
+// Çocuğun bakiyesine dokununca o çocuğun Güneş Taşı hesabı açılır; düşürme oradaki küçük bağlantıda (kullanıcı kararı 3 Kasım 2026:
+// "−" en üstte çelişkili ve fazla görünürdü; benchmark Greenlight / ClassDojo: düşürme hesabın içinde, düzeltme gibi).
+// Çocuğun oyundaki istekleri üstte bant olarak görünür.
 export default function RewardsScreen({ navigation }: any) {
   const { familyId, children } = useStore();
   const { allow } = useBilling();
@@ -68,6 +70,7 @@ export default function RewardsScreen({ navigation }: any) {
   const [editor, setEditor] = useState<{ reward?: Reward; template?: RewardTemplate } | null>(null);
   const [suggest, setSuggest] = useState(false);
   const [past, setPast] = useState(false);
+  const [account, setAccount] = useState<string | null>(null); // bakiyesine dokunulan çocuğun hesabı
   const [deduct, setDeduct] = useState<string | null>(null); // taş düşürülecek çocuk
   const [pick, setPick] = useState<{ rewardId: string; childId: string } | null>(null); // değiş tokuşta süre seçimi
   const [confirm, setConfirm] = useState<Confirm | null>(null);
@@ -208,19 +211,18 @@ export default function RewardsScreen({ navigation }: any) {
             {children.map((c) => {
               const [bg, fg] = tintOf(c.id);
               return (
-                <View key={c.id} style={[styles.balance, children.length <= 2 && { flex: 1 }]}>
+                <Pressable key={c.id} onPress={() => setAccount(c.id)} style={[styles.balance, children.length <= 2 && { flex: 1 }]}
+                  accessibilityRole="button" accessibilityLabel={`${c.name}: ${bal[c.id] ?? 0} Güneş Taşı, hesabı aç`}>
                   <View style={[styles.letter, { width: 32, height: 32, borderRadius: 16, backgroundColor: bg }]}>
                     <Text style={{ fontWeight: '800', color: fg }}>{initial(c.name)}</Text>
                   </View>
                   <Text numberOfLines={1} style={{ flex: 1, fontSize: 14, fontWeight: '600', color: colors.navy }}>{c.name}</Text>
                   <Ionicons name="sunny" size={14} color={colors.gold} />
                   {loading ? <ActivityIndicator color={colors.navy} /> : (
-                    <Text style={{ fontSize: 16, fontWeight: '800', color: colors.navy }} accessibilityLabel={`${bal[c.id] ?? 0} Güneş Taşı`}>{bal[c.id] ?? 0}</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '800', color: colors.navy }}>{bal[c.id] ?? 0}</Text>
                   )}
-                  <Pressable onPress={() => openDeduct(c.id)} hitSlop={6} style={styles.minus} accessibilityLabel={`${c.name}: Güneş Taşı düşür`}>
-                    <Ionicons name="remove" size={18} color={colors.danger} />
-                  </Pressable>
-                </View>
+                  <Ionicons name="chevron-forward" size={14} color={colors.faint} />
+                </Pressable>
               );
             })}
           </ScrollView>
@@ -369,6 +371,9 @@ export default function RewardsScreen({ navigation }: any) {
           if (await act(() => deductStones(id, n, note), `${nameOf(id)}: Güneş Taşı düşürülemedi`)) setToast({ text: `${nameOf(id)}: −${n} Güneş Taşı${note ? ` · ${note}` : ''}` });
         }} />
       <HistorySheet visible={past} moves={moves} nameOf={nameOf} onClose={() => setPast(false)} />
+      <HistorySheet visible={account !== null} childId={account ?? undefined} balance={account ? bal[account] ?? 0 : 0}
+        moves={moves} nameOf={nameOf} onClose={() => setAccount(null)}
+        onDeduct={() => { const id = account!; setAccount(null); afterModal(() => openDeduct(id)); }} />
       <Onboarding visible={intro} mode="rewards" onClose={closeIntro} />
       {!suggest && tips.element}
     </SafeAreaView>
@@ -819,22 +824,34 @@ function DeductSheet({ childId, kids, balances: bal, moves, onClose, onDeduct }:
   );
 }
 
-// Geçmiş: son taş hareketleri (sağ üstteki saat simgesi)
-function HistorySheet({ visible, moves, nameOf, onClose }: { visible: boolean; moves: StoneMove[]; nameOf: (id: string) => string; onClose: () => void }) {
+// Geçmiş: son Güneş Taşı hareketleri (sağ üstteki saat simgesi). childId verilirse o çocuğun hesabı: bakiye, hareketleri ve
+// en altta küçük "Güneş Taşı düşür" bağlantısı (bakiyeye dokununca açılır).
+function HistorySheet({ visible, moves: all, nameOf, onClose, childId, balance, onDeduct }: {
+  visible: boolean; moves: StoneMove[]; nameOf: (id: string) => string; onClose: () => void;
+  childId?: string; balance?: number; onDeduct?: () => void;
+}) {
+  const moves = childId ? all.filter((m) => m.childId === childId) : all;
   return (
-    <Sheet visible={visible} title="Geçmiş" onClose={onClose}>
+    <Sheet visible={visible} title={childId ? `${nameOf(childId)} · ${balance ?? 0} Güneş Taşı` : 'Geçmiş'} onClose={onClose}>
       {!moves.length ? <Text style={{ fontSize: 14, color: colors.muted }}>Henüz Güneş Taşı hareketi yok.</Text> : (
         <View style={styles.box}>
           {moves.slice(0, 60).map((m, i) => (
             <View key={m.id} style={[{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 }, i > 0 && styles.sep]}>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 14, color: colors.navy }}>{moveLabel[m.reason]}{m.note ? `: ${m.note}` : ''}</Text>
-                <Text style={{ fontSize: 11, color: colors.muted }}>{nameOf(m.childId)} · {formatTR(toISO(new Date(m.at)))}</Text>
+                <Text style={{ fontSize: 11, color: colors.muted }}>{childId ? '' : `${nameOf(m.childId)} · `}{formatTR(toISO(new Date(m.at)))}</Text>
               </View>
               <Text style={{ fontSize: 15, fontWeight: '700', color: m.amount > 0 ? colors.easy.fg : colors.danger }}>{m.amount > 0 ? `+${m.amount}` : m.amount}</Text>
             </View>
           ))}
         </View>
+      )}
+      {onDeduct && (
+        <Pressable onPress={onDeduct} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 12 }}
+          accessibilityRole="button">
+          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.muted }}>Güneş Taşı düşür</Text>
+          <Ionicons name="chevron-forward" size={14} color={colors.muted} />
+        </Pressable>
       )}
     </Sheet>
   );
@@ -870,7 +887,6 @@ const styles = StyleSheet.create({
   check: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderRadius: radius.sm, backgroundColor: '#fff', borderWidth: 1.5, borderColor: colors.line },
   iconPick: { width: 64, height: 64, borderRadius: 32, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.navy, backgroundColor: '#E6EAF5', alignItems: 'center', justifyContent: 'center' },
   iconCell: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#fff', borderWidth: 1.5, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },
-  minus: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: colors.hard.bg, backgroundColor: '#FFF8F9', alignItems: 'center', justifyContent: 'center' },
   warn: { flexDirection: 'row', gap: 8, padding: 12, borderRadius: radius.sm, backgroundColor: '#FFF6DE' },
   balance: { minWidth: 150, height: 52, borderRadius: radius.md, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 10, paddingRight: 8 },
   letter: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
