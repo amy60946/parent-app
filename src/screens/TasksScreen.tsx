@@ -182,7 +182,6 @@ export default function TasksScreen({ navigation, route }: any) {
         onLayout={(e) => { const h = Math.round(e.nativeEvent.layout.height); if (h !== filtersH) setFiltersH(h); }}
         pointerEvents={collapsed ? 'none' : 'auto'}
         style={[styles.filters, {
-          opacity: shift.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
           transform: [{ translateY: shift.interpolate({ inputRange: [0, 1], outputRange: [0, -Math.max(filtersH, 1)] }) }],
         }]}>
       <FlatList
@@ -460,7 +459,9 @@ function StoneBadge({ d }: { d: ParentAssign['difficulty'] }) {
   const c = d === 'easy' ? colors.easy : d === 'medium' ? colors.medium : colors.hard;
   return (
     <View style={[styles.status, { backgroundColor: c.bg }]}>
-      <Text style={{ fontSize: 11, fontWeight: '600', color: c.fg }}>{difficultyMeta[d].label} · {STONE_BY[d]} taş</Text>
+      <Text style={{ fontSize: 11, fontWeight: '600', color: c.fg }} accessibilityLabel={`${difficultyMeta[d].label}, ${STONE_BY[d]} Güneş Taşı`}>
+        {difficultyMeta[d].label} · {STONE_BY[d]} <Ionicons name="sunny" size={11} color={colors.gold} />
+      </Text>
     </View>
   );
 }

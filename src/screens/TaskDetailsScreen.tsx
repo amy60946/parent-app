@@ -262,7 +262,7 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
                         </View>
                         <View style={styles.coinBox}>
                           <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.gold, borderWidth: 2, borderColor: '#F6D77A' }} />
-                          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.navy }}>{({ easy: 1, medium: 2, hard: 3 } as const)[r.difficulty]} taş</Text>
+                          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.navy }}>{({ easy: 1, medium: 2, hard: 3 } as const)[r.difficulty]} Güneş Taşı</Text>
                         </View>
                       </View>
                     )}
