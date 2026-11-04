@@ -1,0 +1,9 @@
+[
+ {"name": "home"},
+ {"name": "create", "steps": ["Görev ver"]},
+ {"name": "tasks", "steps": ["Görevler"], "dismiss": ["Kapat"]},
+ {"name": "reviewDetail", "steps": ["~1 görev onayını bekliyor", "@Yatağını topla, Nazlı: incele", "Şimdi değil", "@Yatağını topla, Nazlı: incele"]},
+ {"name": "rewards", "steps": ["Ödül"], "dismiss": ["Atla"], "hide": ["[aria-label^=\"Harçlık ekle\"]"]},
+ {"name": "progress", "steps": ["Gelişim"], "dismiss": ["Kapat"], "scroll": 260},
+ {"name": "care", "clinic": true, "steps": ["Uzmanım"], "dismiss": ["Kapat"]}
+]

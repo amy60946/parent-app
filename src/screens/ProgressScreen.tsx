@@ -7,6 +7,7 @@ import { colors, radius } from '../theme';
 import { Avatar, Card } from '../components/ui';
 import { useStore, taskOccursOn, completionKey } from '../store';
 import { DAY_SHORT, addDays, toISO, startOfWeek } from '../dates';
+import { genitive } from '../lib/tr';
 
 export default function ProgressScreen({ navigation }: any) {
   const { children, tasks, completions } = useStore();
@@ -89,7 +90,7 @@ export default function ProgressScreen({ navigation }: any) {
           ))}
         </View>
 
-        <Text style={styles.title}>{child.name}'in gelişimi</Text>
+        <Text style={styles.title}>{genitive(child.name)} gelişimi</Text>
 
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <Card style={{ flex: 1, padding: 14 }}>
