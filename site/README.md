@@ -29,3 +29,7 @@ Kullanıcı isteği 4 Kasım 2026: ParentApp ve Pofi Adası için tek tanıtım 
 ## Benchmark notu (Joon, 4 Kasım 2026; sayfa doğrudan incelendi)
 
 Sıra: iddialı ebeveyn manşeti + yaş + "ücretsiz kayıt" → basın logoları → 4 fayda kartı (dert → çözüm) → 3 adım → araştırma → aile sayısı ve yorumlar → SSS → sonuç çağrısı. Bizde alınanlar: dert → çözüm ana mesajı, "Tanıdık mı?" kartları, hedef yaş, "Ücretsiz hesap oluştur", menüde "Uzmanlar". Alınmayanlar (hukuk/45): sağlık konumlandırması (DEHB vb.), belgesiz yüzdeler ve sonuç iddiaları, "hatırlatmayı biz yaparız" (çocuğa bildirim henüz yok). Yayından sonra eklenecek güven öğeleri: gerçek ve yazılı izinli ebeveyn yorumları (hukuk/45 5.2), mağaza puanı, varsa basın.
+
+## Metin ilkeleri (kullanıcı 4 Kasım 2026 + Marketing penceresi)
+
+Slogan yok; nazik, profesyonel, çok açık ve kısa dil; karar verici ebeveyn, çocuğa hitap yok; ParentApp önde, oyun ikinci planda; "aile uygulaması" kullanılmaz; Joon kalıpları işleyiş referansı, birebir çeviri değil. Marketing'in kaçınılacak kelimeleri: tedavi, iyileştirir, düzeltir, çözer, tanı adları, kanıtlanmış, bilimsel, belgesiz "uzmanlar öneriyor", garanti, en iyi / ilk, disiplin, itaat, takip / izleme / kontrol, para / kazan / harçlık, gerçek değilse "ücretsiz", rakip adı, "yaramaz / uslu / sorunlu çocuk". Düğme "7 gün ücretsiz deneyin" (ParentApp'te gerçek olan deneme; "ücretsiz" yalnız Pofi Adası için), yanında yenileme satırı. Yayından önce `hukuk/45` §7.1 kontrolü.
