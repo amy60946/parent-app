@@ -23,6 +23,10 @@ module.exports.prep = async (p, { clinic = false } = {}) => {
     db.parent_assignments = []; db.parent_completions = [];
     // Örnek ödüllerden "Ekran süresi" çıkar (mağaza görselinde tartışma yaratmasın)
     db.rewards = db.rewards.filter(r => r.title !== 'Ekran süresi');
+    // Ödül listesi biraz daha dolu: aileye özgü iki ödül (öneri listesinde olmayan)
+    const rw = (id, title, cost, icon) => db.rewards.push({ id, family_id: 'demo-family', title, kind: 'item', cost, unit: null, unit_amount: null, child_ids: [], icon, active: true, created_at: new Date(Date.now() - 6000 * 6e4).toISOString() });
+    rw('st-kahvalti', 'Pazar kahvaltısını o seçsin', 8, 'restaurant');
+    rw('st-oyun', 'Arkadaşıyla oyun günü', 15, 'people');
     // Son 6 haftanın tamamlanan görevleri: grafikler dolu, seri gerçekçi (eskiden yeniye artan oran)
     const iso = d => { const x = new Date(); x.setDate(x.getDate() + d); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
     db.tasks.forEach(t => { if (t.recurring) t.start_date = iso(-42); });

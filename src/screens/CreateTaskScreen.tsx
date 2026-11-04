@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   },
   hint: { fontSize: 12, color: colors.muted, paddingHorizontal: 20, marginTop: 10, marginBottom: 2 },
   section: { fontSize: 13, fontWeight: '700', color: colors.navy, paddingHorizontal: 20 },
-  routine: { width: 140, height: 104, borderRadius: radius.md, padding: 12, gap: 4, justifyContent: 'space-between' },
+  routine: { width: 140, minHeight: 104, borderRadius: radius.md, padding: 12, gap: 4, justifyContent: 'space-between' }, // iki satırlık adda alt yazı taşmasın
   routineTitle: { fontSize: 14, fontWeight: '700', color: colors.navy },
   routineSub: { fontSize: 11, color: '#4A5165' },
   strip: { position: 'absolute', left: 0, right: 0, top: 0, height: 50, justifyContent: 'center', backgroundColor: colors.bg,

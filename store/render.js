@@ -24,19 +24,19 @@ const TOP = { care: ['#0F1B3D', '#fff'], reviewDetail: ['#A4A9B6', '#0F1B3D'] };
    from: ekranın üstten kaç noktası atlanır (alt sayfa / kaydırılmış görünüm) */
 const SLIDES = [
   { shot: 'home', h: 'Çocuğunuzun günlük rutini <em>tek ekranda</em>', s: 'Görev verin, yapılanları görün, onaylayın.',
-    crop: [14, 79, 412, 88], cut: 557, eyebrow: 'ParentApp' },
+    crop: [14, 79, 412, 88], anchor: 'top', cut: 557, eyebrow: 'ParentApp' },
   { shot: 'create', h: 'Rutini <em>birkaç dakikada</em> oluşturun', s: 'Yaşına uygun hazır rutinlerden seçin ya da kendi görevinizi yazın.',
-    crop: [12, 150, 306, 120], cut: 702, eyebrow: '1 · Plan' },
+    crop: [16, 154, 298, 126], cut: 716, eyebrow: '1 · Plan' },
   { shot: 'tasks', h: 'Görevler <em>Pofi Adası’nda</em> görünür', s: 'Çocuğunuz görevini oyunda görür, yapınca işaretler.',
     note: 'Pofi Adası, çocuğunuzun cihazına kurulan ayrı bir uygulamadır.', cut: 436, game: 'iskele.jpg', eyebrow: '2 · Oyun' },
   { shot: 'reviewDetail', from: 150, h: 'Yapılan görevi <em>onaylayın</em>', s: 'Onayladığınızda çocuğunuz oyunda Güneş Taşı alır.',
     crop: [12, 772, 416, 68], cut: 868, eyebrow: '3 · Onay' },
   { shot: 'rewards', h: 'Ödülleri <em>birlikte</em> seçin', s: 'Çocuğunuz biriktirdiği Güneş Taşı’yla ödül ister, siz onaylarsınız.',
-    crop: [10, 112, 420, 72], cut: 562, eyebrow: '4 · Ödül' },
+    crop: [10, 112, 420, 72], anchor: 'top', cut: 712, eyebrow: '4 · Ödül' },
   { shot: 'progress', h: 'Gelişimi <em>gün gün</em> görün', s: 'Hangi alışkanlığın yerleştiğini haftalık özetle görün.',
-    crop: [14, 341, 412, 184], cut: 790, cFrom: 100, eyebrow: '5 · Gelişim' },
+    crop: [14, 341, 412, 184], anchor: 'bottom', from: 40, cut: 790, eyebrow: '5 · Gelişim' },
   { shot: 'care', h: 'Dilerseniz <em>uzmanınızla</em> paylaşın', s: 'Paylaşım yalnız sizin onayınızla açılır, istediğiniz an kapanır.',
-    crop: [14, 480, 412, 230], cut: 712, trust: true, eyebrow: 'İsteğe bağlı · Uzman' },
+    crop: [16, 480, 408, 226], cut: 712, trust: true, eyebrow: 'İsteğe bağlı · Uzman' },
 ];
 const TRUST = ['Reklam yok', 'Veri satışı yok', 'Hesabınızı istediğiniz an silebilirsiniz'];
 const FOOT = 'Bazı özellikler Premium üyelik gerektirir. Örnekteki adlar kurgusaldır.';
@@ -64,7 +64,7 @@ const cardH = (w, from, cut) => (54 + cut - from) * w / PT; // tam görünen ekr
 // Ekrandan büyütülmüş kart: [x, y, w, h] nokta, k px/nokta
 const crop = (shot, [x, y, w, h], k, style = '') =>
   `<div class="crop" style="width:${w * k}px;height:${h * k}px;border-radius:${18 * k}px;background:url('${real(shot)}') ${-x * k}px ${-y * k}px/${PT * k}px auto no-repeat;${style}"></div>`;
-const game = (file, w, style = '') => `<div class="game" style="width:${w}px;height:${Math.round(w * 768 / 1376)}px;border-radius:${w * 0.05}px;background:url('${img(file)}') center/cover;${style}"></div>`;
+const game = (file, w, style = '') => `<div class="game" style="width:${w}px;height:${Math.round(w * 0.48)}px;border-radius:${w * 0.05}px;background:url('${img(file)}') center top/cover;${style}"></div>`;
 const brand = (size, color) => `<div class="brand" style="font-size:${size * 0.52}px;color:${color}"><img src="${img('parentapp-simge.png')}" style="width:${size}px;height:${size}px;border-radius:${size * 0.225}px">ParentApp</div>`;
 const pofi = () => `<p class="note pofi"><img src="${img('pofi-simge.png')}">${POFI}</p>`;
 const chips = (c) => `<div class="chips">${TRUST.map((x) => `<span class="chip">${check(c)}${x}</span>`).join('')}</div>`;
@@ -138,10 +138,12 @@ function B() {
   const body = SLIDES.map((sl, i) => {
     const q = place(sl), k = q.w / PT, ck = sl.trust ? 2.6 : 2.95;
     let mid = screen(sl.shot, q.w, { from: q.from, cut: q.cut, maxPx: H - q.top, style: `left:${(W - q.w) / 2}px;top:${q.top}px` });
-    if (sl.game) mid += game(sl.game, 1100, `left:${(W - 1100) / 2}px;top:${q.gameTop}px`);
+    if (sl.game) mid += game(sl.game, 1040, `left:${(W - 1040) / 2}px;top:${q.gameTop - 20}px`);
     else {
       const [, cy, cw, ch] = sl.crop;
-      const ctop = q.top + (54 + cy - q.from + ch / 2) * k - ck * ch / 2; // büyütülen kart kendi yerinin üstüne ortalanır
+      // büyütülen kart kendi yerinin üstüne oturur: ortalanır ya da üst/alt kenarı hizalanır (üstündeki/altındaki yazıyı örtmesin)
+      const y0 = q.top + (54 + cy - q.from) * k, y1 = y0 + ch * k;
+      const ctop = sl.anchor === 'top' ? y0 - 6 : sl.anchor === 'bottom' ? y1 - ck * ch + 6 : (y0 + y1) / 2 - ck * ch / 2;
       mid += crop(sl.shot, sl.crop, ck, `left:${(W - cw * ck) / 2}px;top:${Math.round(ctop)}px`);
     }
     return `<section class="p" style="left:${i * W}px">${text(sl, i, '#fff', '#F2BE3D')}${mid}${sl.trust ? `<p class="foot">${FOOT}</p>` : ''}</section>`;
@@ -171,7 +173,7 @@ function C() {
   const dots = pts.map(([x, y], i) => i === 3 ? '' : `<circle cx="${x}" cy="${y}" r="22" fill="#E9B22B"/><circle cx="${x}" cy="${y}" r="10" fill="#fff"/>`).join('');
   const layer = `<svg class="layer" viewBox="0 0 ${TW} ${H}"><path d="${d}" fill="none" stroke="#E9B22B" stroke-width="10" stroke-linecap="round" stroke-dasharray="2 30"/>${dots}</svg>`;
   const body = SLIDES.map((sl, i) => {
-    const w = sl.trust ? 860 : 1000, from = sl.from ?? sl.cFrom ?? 0;
+    const w = sl.trust ? 860 : 1000, from = sl.from ?? 0;
     const top = Math.round(END - cardH(w, from, sl.cut));
     let mid = screen(sl.shot, w, { from, cut: sl.cut, style: `left:${(W - w) / 2}px;top:${top}px` });
     if (sl.game) mid += game(sl.game, 960, `left:${(W - 960) / 2}px;top:760px`);
