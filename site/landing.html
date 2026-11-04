@@ -26,18 +26,8 @@
   /* Uygulama ekranları ParentApp'in kendi (açık) renkleriyle, iki temada da aynı */
   --app-bg: #F5F6F8; --app-ink: #0F1B3D; --app-muted: #8A91A3; --app-line: #E8EAEF; --app-green: #3FA98D; --app-mint: #DDF1EC;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --ink: #EEF2FA; --ink-2: #C3CBDF; --ink-3: #8E98B4; --paper: #0B1430; --card: #121D3F; --line: #24315A; --tint: #101C40;
-    --sun: #F2C14E; --ok: #7FD39B; --shadow: 0 24px 60px -24px rgba(0, 0, 0, .7); --ring: 0 0 0 1.5px #2C3B6B;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --ink: #EEF2FA; --ink-2: #C3CBDF; --ink-3: #8E98B4; --paper: #0B1430; --card: #121D3F; --line: #24315A; --tint: #101C40;
-  --sun: #F2C14E; --ok: #7FD39B; --shadow: 0 24px 60px -24px rgba(0, 0, 0, .7); --ring: 0 0 0 1.5px #2C3B6B;
-  color-scheme: dark;
-}
+/* Kullanıcı kararı (4 Kasım 2026): yalnız açık zemin; cihazın koyu teması sayfayı değiştirmez */
+:root { color-scheme: light; }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }

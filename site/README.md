@@ -35,3 +35,8 @@ Sıra: iddialı ebeveyn manşeti + yaş + "ücretsiz kayıt" → basın logolar�
 Slogan yok; nazik, profesyonel, çok açık ve kısa dil; karar verici ebeveyn, çocuğa hitap yok; ParentApp önde, oyun ikinci planda; "aile uygulaması" kullanılmaz; Joon kalıpları işleyiş referansı, birebir çeviri değil. Marketing'in kaçınılacak kelimeleri: tedavi, iyileştirir, düzeltir, çözer, tanı adları, kanıtlanmış, bilimsel, belgesiz "uzmanlar öneriyor", garanti, en iyi / ilk, disiplin, itaat, takip / izleme / kontrol, para / kazan / harçlık, gerçek değilse "ücretsiz", rakip adı, "yaramaz / uslu / sorunlu çocuk". Düğme "7 gün ücretsiz deneyin" (ParentApp'te gerçek olan deneme; "ücretsiz" yalnız Pofi Adası için), yanında yenileme satırı. Yayından önce `hukuk/45` §7.1 kontrolü.
 
 Kullanıcı kararı (4 Kasım 2026, akşam): Marketing önerili sürüm yerine **Joon kalıplarının Türkçesiyle yazılan sürüm** kullanılır (başlık "Çocuğunuzun günlük görevlerini düzenli yapmasına yardımcı olan uygulama", kartlar "Rutini birkaç dakikada oluşturun · Sürekli hatırlatmak zorunda kalmayın · Görev yapmayı keyifli hâle getirin · Sorumluluk almayı öğretin", düğme "Ücretsiz kaydolun"). Yukarıdaki kelime listesi bilgi olarak kalır.
+
+## Sürümler (4 Kasım 2026)
+
+- **A** `landing.html` (https://claude.ai/artifact/2tHXF5iD7HUpTGeCNHtPAW): Joon kalıplı metin, yalnız açık zemin (kullanıcı isteği; koyu tema yok).
+- **B** `landing-b.html` (https://claude.ai/artifact/PQzj8snEtfDvdHB1bC36Px): aynı metin; üstte oyun yatay telefon çerçevesinde, ParentApp dikey telefonda, ziyaretçi dokunarak dener (Yaptım → bildirim → ✓ onay → +1 Güneş Taşı). Oyundaki görev paneli maket ("Örnek gösterim"); gerçek oyun ekran görüntüsü gelince yerine konur. Hangisi seçilirse `build.sh` onu `index.html` yapar (şimdilik A).
