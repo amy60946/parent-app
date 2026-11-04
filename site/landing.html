@@ -30,6 +30,7 @@
   --r-lg: 22px;
   --r-md: 14px;
   /* Uygulama maketleri ParentApp'in kendi (açık) renkleriyle çizilir, iki temada da aynı */
+  --ring: 0 0 0 0 transparent;
   --app-bg: #F5F6F8; --app-ink: #0F1B3D; --app-muted: #8A91A3; --app-line: #E8EAEF; --app-green: #3FA98D; --app-mint: #DDF1EC;
 }
 @media (prefers-color-scheme: dark) {
@@ -40,6 +41,7 @@
     --hero-veil: linear-gradient(180deg, rgba(11,20,48,.35) 0%, rgba(11,20,48,.55) 55%, var(--paper) 100%);
     --hero-text-veil: radial-gradient(closest-side, rgba(11,20,48,.85) 0%, rgba(11,20,48,.55) 55%, rgba(11,20,48,0) 100%);
     --shadow: 0 24px 60px -24px rgba(0, 0, 0, .7);
+    --ring: 0 0 0 1.5px #2C3B6B;
     color-scheme: dark;
   }
 }
@@ -50,6 +52,7 @@
   --hero-veil: linear-gradient(180deg, rgba(11,20,48,.35) 0%, rgba(11,20,48,.55) 55%, var(--paper) 100%);
   --hero-text-veil: radial-gradient(closest-side, rgba(11,20,48,.85) 0%, rgba(11,20,48,.55) 55%, rgba(11,20,48,0) 100%);
   --shadow: 0 24px 60px -24px rgba(0, 0, 0, .7);
+  --ring: 0 0 0 1.5px #2C3B6B;
   color-scheme: dark;
 }
 
@@ -93,7 +96,7 @@ a { color: inherit; }
 @media (max-width: 380px) { .brand > span { display: none; } }
 
 /* ---------- Uygulama maketleri (ParentApp ekranlarının sade kopyası) ---------- */
-.phone { position: relative; width: 100%; aspect-ratio: 9 / 19; border-radius: 34px; background: #0E1630; padding: 9px; box-shadow: var(--shadow); container-type: inline-size; }
+.phone { position: relative; width: 100%; aspect-ratio: 9 / 19; border-radius: 34px; background: #0E1630; padding: 9px; box-shadow: var(--ring), var(--shadow); container-type: inline-size; }
 .screen { width: 100%; height: 100%; border-radius: 26px; background: var(--app-bg); overflow: hidden; display: flex; flex-direction: column; color: var(--app-ink); font-size: 4.3cqw; line-height: 1.3; }
 .screen .bar { display: flex; justify-content: space-between; padding: 1.1em 1.6em .4em; font-weight: 700; font-size: .95em; }
 .screen .pad { padding: .6em 1.2em; display: grid; gap: .8em; align-content: start; }
@@ -132,7 +135,7 @@ a { color: inherit; }
 .sunchip img { width: 1.2em; height: 1.2em; }
 .fab { position: absolute; right: 7%; bottom: 13%; width: 13%; aspect-ratio: 1; border-radius: 50%; background: var(--app-ink); color: #fff; display: grid; place-items: center; font-size: 1.6em; font-weight: 400; box-shadow: 0 .6em 1.2em -.4em rgba(15,27,61,.5); }
 
-.tablet { position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 26px; background: #0E1630; padding: 12px; box-shadow: var(--shadow); }
+.tablet { position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 26px; background: #0E1630; padding: 12px; box-shadow: var(--ring), var(--shadow); }
 .tablet img { width: 100%; height: 100%; object-fit: cover; border-radius: 16px; display: block; }
 .tag { position: absolute; font-size: .75rem; font-weight: 700; color: #0F1B3D; background: rgba(255,255,255,.9); padding: 4px 10px; border-radius: 999px; }
 
@@ -161,6 +164,7 @@ a { color: inherit; }
 .hero-copy { position: relative; display: grid; gap: 22px; }
 .hero-copy::before { content: ""; position: absolute; inset: -110px -140px -110px -180px; z-index: -1; background: var(--hero-text-veil); pointer-events: none; }
 .hero-copy .sub { color: var(--ink); font-size: clamp(1.1rem, 1.7vw, 1.3rem); }
+.hero-copy .eyebrow { justify-self: start; color: var(--ink); background: color-mix(in srgb, var(--card) 82%, transparent); padding: 5px 12px; border-radius: 999px; }
 .cta-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .fine { font-size: .9rem; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 6px 14px; font-weight: 600; }
 .fine span { display: inline-flex; align-items: center; gap: 6px; }
@@ -171,9 +175,9 @@ a { color: inherit; }
 .stage .tablet { position: absolute; right: 0; top: 4%; width: 78%; }
 .stage .tablet .tag { right: 22px; top: 22px; }
 .stage .phone { position: absolute; left: 0; bottom: 0; width: 42%; }
-.note { position: absolute; left: 3%; top: 66%; width: 36%; background: var(--card); color: var(--ink); border-radius: 16px; padding: 10px 12px; display: flex; gap: 10px; align-items: center; box-shadow: var(--shadow); border: 1px solid var(--line); font-size: .82rem; line-height: 1.35; }
-.note img { width: 30px; height: 30px; border-radius: 8px; flex: none; box-shadow: 0 0 0 1px var(--line); }
-.note b { display: block; font-size: .78rem; color: var(--ink-3); font-weight: 700; }
+.note { position: absolute; left: 3%; top: 66%; width: 36%; background: rgba(255,255,255,.96); color: var(--app-ink); border-radius: 16px; padding: 10px 12px; display: flex; gap: 10px; align-items: center; box-shadow: var(--ring), var(--shadow); font-size: .82rem; line-height: 1.35; }
+.note img { width: 30px; height: 30px; border-radius: 8px; flex: none; box-shadow: 0 0 0 1px var(--app-line); }
+.note b { display: block; font-size: .78rem; color: var(--app-muted); font-weight: 700; }
 .path { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
 .path path { fill: none; stroke: var(--sun); stroke-width: 3; stroke-dasharray: 7 8; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .halo { position: absolute; transform: translate(-50%, -50%); }
@@ -185,16 +189,27 @@ a { color: inherit; }
   .path path { animation: dash 14s linear infinite; }
   @keyframes dash { to { stroke-dashoffset: -300; } }
 }
-@media (max-width: 560px) { .halo i { width: 22px; height: 22px; font-size: .72rem; box-shadow: 0 0 0 5px var(--halo); } .note .d, .note b { display: none; } .note { font-size: .68rem; padding: 7px 8px; gap: 7px; border-radius: 12px; } .note img { width: 22px; height: 22px; } }
+@media (max-width: 560px) {
+  .stage { aspect-ratio: .8; }
+  .stage .phone { width: 60%; }
+  .stage .tablet { width: 74%; top: 0; }
+  .stage .tablet .tag { display: none; }
+  .path, .halo { display: none; }
+  .note .d, .note b { display: none; }
+  .note { left: 4%; top: 68%; width: 52%; font-size: .74rem; padding: 8px 10px; gap: 8px; border-radius: 12px; white-space: nowrap; }
+  .note img { width: 22px; height: 22px; }
+}
 
 /* Güven şeridi */
 .trust { border-block: 1px solid var(--line); background: var(--card); }
-.trust .wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px 20px; padding-block: 18px; }
+.trust .wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 20px; padding-block: 18px; }
+@media (max-width: 420px) { .trust span { font-size: .85rem; } }
 .trust span { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--ink); font-size: .95rem; }
 .trust svg { width: 18px; height: 18px; stroke: var(--ok); flex: none; }
 
 /* İki uygulama, tek aile */
-.duo { display: grid; grid-template-columns: minmax(0, .8fr) auto minmax(0, 1.5fr); gap: clamp(16px, 3vw, 40px); align-items: center; }
+.duo { display: grid; grid-template-columns: minmax(0, .8fr) auto minmax(0, 1.5fr); gap: clamp(16px, 3vw, 40px); align-items: start; }
+.duo .link { align-self: center; }
 .dev { display: grid; gap: 16px; justify-items: center; min-width: 0; }
 .dev .phone { max-width: 290px; }
 .label { display: flex; align-items: center; gap: 10px; }
@@ -218,7 +233,10 @@ a { color: inherit; }
 
 /* Adımlar */
 .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
-.steps li { display: grid; gap: 14px; align-content: start; min-width: 0; }
+.steps li { display: grid; gap: 14px; grid-template-rows: auto 1fr; min-width: 0; }
+.steps .mini { height: 100%; }
+.mini .grow { flex: 1; min-width: 0; }
+.mini .one { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .steps .st { display: flex; align-items: center; gap: 12px; }
 .steps .num { width: 34px; height: 34px; box-shadow: 0 0 0 7px var(--halo); }
 @media (max-width: 960px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 32px; } }
@@ -226,8 +244,8 @@ a { color: inherit; }
 
 /* Özellik ekranları */
 .shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
-.shot { display: grid; gap: 14px; align-content: start; min-width: 0; }
-.shot .mini { min-height: 230px; }
+.shot { display: grid; gap: 14px; grid-template-rows: 1fr auto; min-width: 0; }
+.shot .mini { min-height: 230px; height: 100%; }
 .shot h3 { text-align: center; }
 .bars { display: grid; grid-template-columns: repeat(7, 1fr); align-items: end; gap: 6px; height: 120px; padding-top: 6px; }
 .bars i { display: block; height: var(--h); background: var(--app-green); border-radius: 6px 6px 3px 3px; opacity: .9; }
@@ -262,19 +280,20 @@ a { color: inherit; }
 .band h2, .band h3 { color: var(--band-ink); }
 .band .eyebrow { color: var(--sun); }
 .safe { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-.safe div { display: flex; gap: 14px; align-items: center; border: 1px solid rgba(255,255,255,.14); border-radius: var(--r-md); padding: 16px 18px; min-width: 0; }
+.safe div { display: flex; gap: 12px; align-items: center; border: 1px solid rgba(255,255,255,.14); border-radius: var(--r-md); padding: 16px 18px; min-width: 0; }
+.safe h3 { font-size: 1.05rem; }
 .safe svg { width: 26px; height: 26px; stroke: var(--sun); flex: none; }
 .safe p { color: var(--band-ink-2); font-size: .9rem; }
 .limit { margin-top: 26px; text-align: center; color: var(--band-ink); font-weight: 600; }
 @media (max-width: 860px) { .safe { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 540px) { .safe { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 540px) { .safe { gap: 10px; } .safe div { padding: 12px; gap: 10px; } .safe svg { width: 22px; height: 22px; } .safe h3 { font-size: .92rem; } }
 
 /* Uzman */
 .expert { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 56px); align-items: center; }
 .share { background: var(--app-bg); color: var(--app-ink); border-radius: 20px; padding: 18px; display: grid; gap: 10px; box-shadow: 0 0 0 1px var(--line), var(--shadow); }
 .share .who { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 14px; padding: 12px; }
 .share .ini { width: 40px; height: 40px; border-radius: 50%; background: #E6EAF5; display: grid; place-items: center; font-weight: 800; }
-.share .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #fff; border-radius: 12px; padding: 11px 12px; font-weight: 600; }
+.share .row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; background: #fff; border-radius: 12px; padding: 11px 12px; font-weight: 600; }
 .toggle { width: 42px; height: 24px; border-radius: 12px; background: var(--app-green); position: relative; flex: none; }
 .toggle::after { content: ""; position: absolute; right: 3px; top: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; }
 .share small { color: var(--app-muted); }
@@ -353,7 +372,7 @@ footer a:hover { color: var(--ink); text-decoration: underline; }
       <div class="hero-visual">
         <div class="stage" role="img" aria-label="Solda ParentApp'in Bugün ekranı, sağda tablette Pofi Adası. Altın çizgi görevin yolunu gösteriyor: 1 görev ver, 2 çocuk Yaptım der, 3 siz onaylarsınız.">
           <div class="tablet">
-            <img src="img/adalilar.jpg" alt="" width="1376" height="768">
+            <img src="img/iskele.jpg" alt="" width="1376" height="768">
             <span class="tag">Pofi Adası</span>
           </div>
           <div class="phone">
@@ -373,14 +392,14 @@ footer a:hover { color: var(--ink); text-decoration: underline; }
               <div class="tabs"><span class="on">Bugün</span><span>Uzmanım</span><span>Görevler</span><span>Gelişim</span><span>Aile</span></div>
             </div>
           </div>
-          <svg class="path" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M5 56 C10 78 42 82 56 62 S68 42 71 38 C69 22 52 13 39 21"/></svg>
+          <svg class="path" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M5 56 C10 78 42 82 56 62 S68 42 71 38 C69 22 52 13 40.5 21"/></svg>
           <div class="note" aria-hidden="true">
             <img src="img/parentapp-simge.png" alt="">
             <div><b>ParentApp · şimdi</b>Nazlı "Yaptım" dedi<span class="d">: Dişlerini fırçala</span></div>
           </div>
           <div class="halo" style="left:3.6%; top:54%" aria-hidden="true"><i>1</i></div>
           <div class="halo" style="left:71%; top:38%" aria-hidden="true"><i>2</i></div>
-          <div class="halo" style="left:39%; top:21%" aria-hidden="true"><i>3</i></div>
+          <div class="halo" style="left:40.5%; top:21%" aria-hidden="true"><i>3</i></div>
         </div>
         <ol class="legend" aria-label="Görevin yolu">
           <li><i>1</i>Görev verin</li>
@@ -484,7 +503,7 @@ footer a:hover { color: var(--ink); text-decoration: underline; }
           <div class="st"><span class="num">4</span><h3>Onaylayın</h3></div>
           <div class="mini" aria-hidden="true">
             <b>Onay bekleyen</b>
-            <div class="box"><img class="av" src="img/okti_kiz_4.jpg" alt="" style="width:36px;height:36px"><span style="flex:1;min-width:0">Dişlerini fırçala<br><span class="muted">Nazlı · "Yaptım" 20:06</span></span><span class="round r-no">✕</span><span class="round r-yes">✓</span></div>
+            <div class="box" style="gap:8px"><img class="av" src="img/okti_kiz_4.jpg" alt="" style="width:32px;height:32px"><span class="grow"><span class="one">Dişlerini fırçala</span><span class="one muted">Nazlı · 20:06</span></span><span class="round r-no" style="width:30px;height:30px">✕</span><span class="round r-yes" style="width:30px;height:30px">✓</span></div>
             <div class="box" style="justify-content:center;gap:16px"><span class="sunchip"><img src="img/inci.png" alt="">+5</span><span class="sunchip"><img src="img/gunes-tasi.png" alt="">+1</span></div>
             <span class="muted" style="text-align:center">Onayla, oyunda İnci ve Güneş Taşı gelsin</span>
           </div>
@@ -503,7 +522,7 @@ footer a:hover { color: var(--ink); text-decoration: underline; }
       <div class="shots">
         <div class="shot">
           <div class="mini" aria-label="Ödüller ekranı örneği">
-            <b>Ödüller</b>
+            <b>Nazlı · 24 Güneş Taşı</b>
             <div class="box">Film gecesi<span class="sunchip" style="margin-left:auto"><img src="img/gunes-tasi.png" alt="">12</span></div>
             <div class="box">Parkta oyun<span class="sunchip" style="margin-left:auto"><img src="img/gunes-tasi.png" alt="">8</span></div>
             <div class="box">Tablet süresi<span class="sunchip" style="margin-left:auto"><img src="img/gunes-tasi.png" alt="">1 = 10 dk</span></div>
@@ -521,7 +540,7 @@ footer a:hover { color: var(--ink); text-decoration: underline; }
         </div>
         <div class="shot">
           <div class="mini" aria-label="Mesajlar ekranı örneği">
-            <b>Mesajlar · Nazlı</b>
+            <b>Nazlı</b>
             <div class="bubble b-me">Çantanı hazırlamışsın, bravo!</div>
             <div class="bubble b-kid"><img src="img/okti_kiz_4.jpg" alt="">Çıkartma gönderdi</div>
             <div class="bubble b-me">Yarın parka gidiyoruz.</div>
@@ -565,12 +584,12 @@ footer a:hover { color: var(--ink); text-decoration: underline; }
         <h2 id="safe-title">Çocuğunuzun verisi, sizin kararınız.</h2>
       </div>
       <div class="safe">
-        <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span><h3>Çocuk hesabı yok</h3><p>E-posta yok, şifre yok</p></span></div>
-        <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span><h3>15 dakikalık kod</h3><p>Tek kullanımlık bağlama</p></span></div>
-        <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span><h3>Kamera yalnız QR</h3><p>Görüntü saklanmaz</p></span></div>
-        <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg><span><h3>İzleme yok</h3><p>Reklam ve analiz aracı yok</p></span></div>
-        <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6M15 13l2 2 4-4"/></svg><span><h3>Paylaşım izninizle</h3><p>İstediğiniz an kapatın</p></span></div>
-        <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg><span><h3>Silmek elinizde</h3><p>Hesap ve veri, uygulamadan</p></span></div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><h3>Çocuk hesabı yok</h3></div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><h3>15 dakikalık kod</h3></div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><h3>Kamera yalnız QR</h3></div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg><h3>İzleme yok</h3></div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6M15 13l2 2 4-4"/></svg><h3>Paylaşım izninizle</h3></div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg><h3>Silmek elinizde</h3></div>
       </div>
       <p class="limit">Tanı koymaz, tedavi yerine geçmez. Göstergeler puan değildir.</p>
     </div>
@@ -605,7 +624,7 @@ footer a:hover { color: var(--ink); text-decoration: underline; }
         <div class="plan main"><h3>ParentApp</h3><p class="price">7 gün deneme</p><p>Bütün özellikler, kart istenmez</p><a class="btn btn-primary" href="app/index.html#kayit" style="justify-self:start; margin-top:6px">Hesap oluştur</a></div>
         <div class="plan"><h3>Sonra</h3><p class="price">Aylık · Yıllık</p><p>Ya da sınırlı ücretsiz plan</p></div>
       </div>
-      <p class="terms">Fiyatlar App Store yayınında. Abonelik App Store'dan alınır, kendiliğinden yenilenir, istediğiniz an iptal edilir. Davetle gelen aileye 14 gün deneme.</p>
+      <p class="terms">Fiyatlar App Store yayınında · Otomatik yenilenir, App Store'dan iptal · Davetle gelen aileye 14 gün</p>
     </div>
   </section>
 
