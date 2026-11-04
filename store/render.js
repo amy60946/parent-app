@@ -24,19 +24,19 @@ const TOP = { care: ['#0F1B3D', '#fff'], reviewDetail: ['#A4A9B6', '#0F1B3D'] };
    from: ekranın üstten kaç noktası atlanır (alt sayfa / kaydırılmış görünüm) */
 const SLIDES = [
   { shot: 'home', h: 'Çocuğunuzun günlük rutini <em>tek ekranda</em>', s: 'Görev verin, yapılanları görün, onaylayın.',
-    crop: [14, 84, 412, 76], eyebrow: 'ParentApp' },
+    crop: [14, 79, 412, 88], cut: 557, eyebrow: 'ParentApp' },
   { shot: 'create', h: 'Rutini <em>birkaç dakikada</em> oluşturun', s: 'Yaşına uygun hazır rutinlerden seçin ya da kendi görevinizi yazın.',
-    crop: [12, 150, 316, 128], eyebrow: '1 · Plan' },
+    crop: [12, 150, 306, 120], cut: 702, eyebrow: '1 · Plan' },
   { shot: 'tasks', h: 'Görevler <em>Pofi Adası’nda</em> görünür', s: 'Çocuğunuz görevini oyunda görür, yapınca işaretler.',
-    note: 'Pofi Adası, çocuğunuzun cihazına kurulan ayrı bir uygulamadır.', crop: [14, 241, 412, 113], game: 'iskele.jpg', eyebrow: '2 · Oyun' },
-  { shot: 'reviewDetail', from: 200, h: 'Yapılan görevi <em>onaylayın</em>', s: 'Onayladığınızda çocuğunuz oyunda Güneş Taşı alır.',
-    crop: [12, 772, 416, 68], eyebrow: '3 · Onay' },
+    note: 'Pofi Adası, çocuğunuzun cihazına kurulan ayrı bir uygulamadır.', cut: 436, game: 'iskele.jpg', eyebrow: '2 · Oyun' },
+  { shot: 'reviewDetail', from: 150, h: 'Yapılan görevi <em>onaylayın</em>', s: 'Onayladığınızda çocuğunuz oyunda Güneş Taşı alır.',
+    crop: [12, 772, 416, 68], cut: 868, eyebrow: '3 · Onay' },
   { shot: 'rewards', h: 'Ödülleri <em>birlikte</em> seçin', s: 'Çocuğunuz biriktirdiği Güneş Taşı’yla ödül ister, siz onaylarsınız.',
-    crop: [12, 112, 416, 70], eyebrow: '4 · Ödül' },
+    crop: [10, 112, 420, 72], cut: 562, eyebrow: '4 · Ödül' },
   { shot: 'progress', h: 'Gelişimi <em>gün gün</em> görün', s: 'Hangi alışkanlığın yerleştiğini haftalık özetle görün.',
-    crop: [14, 341, 412, 184], cFrom: 120, eyebrow: '5 · Gelişim' },
+    crop: [14, 341, 412, 184], cut: 790, cFrom: 100, eyebrow: '5 · Gelişim' },
   { shot: 'care', h: 'Dilerseniz <em>uzmanınızla</em> paylaşın', s: 'Paylaşım yalnız sizin onayınızla açılır, istediğiniz an kapanır.',
-    crop: [14, 482, 412, 203], trust: true, eyebrow: 'İsteğe bağlı · Uzman' },
+    crop: [14, 480, 412, 230], cut: 712, trust: true, eyebrow: 'İsteğe bağlı · Uzman' },
 ];
 const TRUST = ['Reklam yok', 'Veri satışı yok', 'Hesabınızı istediğiniz an silebilirsiniz'];
 const FOOT = 'Bazı özellikler Premium üyelik gerektirir. Örnekteki adlar kurgusaldır.';
@@ -53,13 +53,14 @@ const statusBar = (k, shot) => {
       <rect x="50.5" y=".9" width="22" height="11.2" rx="3.2" fill="none" stroke="${fg}" stroke-opacity=".4" stroke-width="1"/><rect x="52.3" y="2.7" width="18.4" height="7.6" rx="1.8"/><path d="M74 4.6v3.8a2 2 0 0 0 0-3.8z" fill-opacity=".45"/>
     </svg></div>`;
 };
-// Gerçek ekran (cihaz çerçevesi yok): genişlik px; görünen alan, durum çubuğunun altında en çok `maxPx` piksele kadar
-const screen = (shot, w, { maxPx, from = 0, fade = false, style = '' }) => {
+// Gerçek ekran (cihaz çerçevesi yok): genişlik px; görünen alan `from`..`cut` nokta, gerekirse tuvalin altıyla (maxPx) kırpılır
+const screen = (shot, w, { from = 0, cut = SCREEN_PT, maxPx = Infinity, style = '' }) => {
   const k = w / PT;
-  const viewPt = Math.min(maxPx / k - 54, SCREEN_PT - from);
-  return `<div class="scr${fade ? ' fade' : ''}" style="width:${w}px;border-radius:${50 * k}px;${style}">${statusBar(k, shot)}
+  const viewPt = Math.min(cut - from, maxPx / k - 54);
+  return `<div class="scr" style="width:${w}px;border-radius:${50 * k}px;${style}">${statusBar(k, shot)}
     <div style="height:${viewPt * k}px;background:url('${real(shot)}') 0 ${-from * k}px/${w}px auto no-repeat"></div></div>`;
 };
+const cardH = (w, from, cut) => (54 + cut - from) * w / PT; // tam görünen ekranın yüksekliği (px)
 // Ekrandan büyütülmüş kart: [x, y, w, h] nokta, k px/nokta
 const crop = (shot, [x, y, w, h], k, style = '') =>
   `<div class="crop" style="width:${w * k}px;height:${h * k}px;border-radius:${18 * k}px;background:url('${real(shot)}') ${-x * k}px ${-y * k}px/${PT * k}px auto no-repeat;${style}"></div>`;
@@ -84,42 +85,41 @@ h1{font-family:'Inter Display',Inter,sans-serif;font-weight:800;font-size:104px;
 h1 em{font-style:normal}
 .s{font-weight:500;font-size:46px;line-height:1.36;margin-top:34px;text-wrap:pretty}
 .scr{position:absolute;overflow:hidden;background:#F5F6F8;z-index:1}
-.scr.fade::after{content:"";position:absolute;left:0;right:0;bottom:0;height:200px;background:linear-gradient(rgba(245,246,248,0),#F5F6F8 85%)}
 .sb{display:flex;align-items:center;justify-content:space-between;font-weight:600;letter-spacing:-.2px}
 .crop,.game{position:absolute;z-index:2}
 .brand{display:flex;align-items:center;gap:.5em;font-family:'Inter Display',Inter,sans-serif;font-weight:800;letter-spacing:-.5px;margin-bottom:56px}
 .chips{display:flex;flex-wrap:wrap;gap:18px;margin-top:40px}
 .chip{display:flex;align-items:center;gap:14px;font-weight:600;font-size:34px;padding:16px 28px;border-radius:999px}
 .chip svg{width:34px;height:34px}
-.note{font-size:32px;font-weight:500;line-height:1.4;margin-top:24px}
+.note{font-size:36px;font-weight:500;line-height:1.4;margin-top:24px}
 .pofi{display:flex;align-items:center;gap:20px;margin-top:34px}
 .pofi img{width:68px;height:68px;border-radius:16px;flex:none}
 .foot{position:absolute;left:110px;right:110px;bottom:70px;font-size:28px;font-weight:500;text-align:center;z-index:3}
-.bottom{position:absolute;left:0;right:0;bottom:0;height:300px;z-index:2;pointer-events:none}
 `;
-// Son kare: ekran tam görünür, dipnot altta düz zeminde
-const LAST_END = 2640;
+// Ortak yerleşim (A ve B): ekranlar aynı üst çizgide (900) başlar, aynı genişlikte, tuvalin altında kesilir (alt kısımda sekme çubuğu).
+// Oyun karesinde oyun görseli başlığın altında, ekran onun altında. Son karede ekran tam görünür, dipnot altta düz zeminde.
+const TOP_Y = 900, SW = 958, LAST_TOP = 1130, LAST_END = 2640;
+function place(sl) {
+  if (sl.trust) { const w = Math.round(SW * (LAST_END - LAST_TOP) / cardH(SW, 0, sl.cut)); return { w, top: LAST_TOP, cut: sl.cut, from: 0 }; }
+  if (sl.game) return { w: SW, top: 1250, cut: SCREEN_PT, from: 0, gameTop: 700 };
+  return { w: SW, top: TOP_Y, cut: SCREEN_PT, from: sl.from || 0 };
+}
 
 // A · Sakin ve kurumsal: açık zemin, lacivert başlık, tam ekran (Structured, Acorns Early, GoHenry, Khan Academy Kids)
 function A() {
-  const bg = '#F6F8FB';
   const css = `${BASE}
-  .p{background:linear-gradient(180deg,#E7ECF6 0%,${bg} 45%)}
+  .p{background:linear-gradient(180deg,#E7ECF6 0%,#F6F8FB 45%)}
   h1,h1 em{color:#0F1B3D}
   .s{color:#5A6380}
   .scr{box-shadow:0 0 0 2px rgba(15,27,61,.07),0 50px 110px rgba(15,27,61,.16)}
-  .game{border:12px solid #fff;box-shadow:0 40px 90px rgba(15,27,61,.22)}
+  .game{border:12px solid #fff;box-shadow:0 40px 90px rgba(15,27,61,.2)}
   .chip{background:#fff;color:#0F1B3D;box-shadow:0 0 0 2px rgba(15,27,61,.08)}
-  .note,.foot{color:#6E7690}
-  .bottom{background:linear-gradient(rgba(246,248,251,0),${bg} 80%)}`;
+  .note,.foot{color:#6E7690}`;
   const body = SLIDES.map((sl, i) => {
-    const w = 1060, top = sl.trust ? 1130 : i === 0 ? 1010 : 830;
-    const left = (W - w) / 2;
-    let mid = screen(sl.shot, w, { maxPx: (sl.trust ? LAST_END : H) - top, from: sl.from, fade: !!sl.trust, style: `left:${left}px;top:${top}px` });
-    if (i === 0) mid += game('adalilar.jpg', 760, `left:${W - 760 - 70}px;top:2330px`); // ana sayfanın boş alt kısmında oyun
-    if (sl.game) mid += game(sl.game, 900, `left:${W - 900 - 60}px;top:2170px`); // görev listesinin altında
-    return `<section class="p" style="left:${i * W}px">${text(sl, i, '#0F1B3D', '#2F7D4A')}${mid}
-      ${sl.trust ? `<p class="foot">${FOOT}</p>` : '<div class="bottom"></div>'}</section>`;
+    const q = place(sl);
+    let mid = screen(sl.shot, q.w, { from: q.from, cut: q.cut, maxPx: H - q.top, style: `left:${(W - q.w) / 2}px;top:${q.top}px` });
+    if (sl.game) mid += game(sl.game, 920, `left:${(W - 920) / 2}px;top:${q.gameTop}px`);
+    return `<section class="p" style="left:${i * W}px">${text(sl, i, '#0F1B3D', '#2F7D4A')}${mid}${sl.trust ? `<p class="foot">${FOOT}</p>` : ''}</section>`;
   }).join('');
   return { css, body };
 }
@@ -134,25 +134,23 @@ function B() {
   .crop{box-shadow:0 40px 90px rgba(0,0,0,.42),0 0 0 3px rgba(255,255,255,.9)}
   .game{border:12px solid #fff;box-shadow:0 50px 110px rgba(0,0,0,.45)}
   .chip{background:rgba(255,255,255,.1);color:#fff;box-shadow:inset 0 0 0 2px rgba(255,255,255,.18)}
-  .note,.foot{color:#AEB7D3}
-  .scr.fade::after{display:none}
-  .bottom{background:linear-gradient(rgba(15,27,61,0),#0F1B3D 85%)}`;
+  .note,.foot{color:#AEB7D3}`;
   const body = SLIDES.map((sl, i) => {
-    const w = 940, k = w / PT, top = sl.trust ? 1210 : i === 0 ? 1100 : 900, ck = 2.95;
-    const [cx, cy, cw, ch] = sl.crop, from = sl.from || 0;
-    let mid = screen(sl.shot, w, { maxPx: (sl.trust ? LAST_END : H) - top, from, style: `left:${(W - w) / 2}px;top:${top}px` });
-    if (sl.game) mid += game(sl.game, 1160, `left:${(W - 1160) / 2}px;top:1830px`); // büyütülen "ayrıntı" oyunun kendisi
+    const q = place(sl), k = q.w / PT, ck = sl.trust ? 2.6 : 2.95;
+    let mid = screen(sl.shot, q.w, { from: q.from, cut: q.cut, maxPx: H - q.top, style: `left:${(W - q.w) / 2}px;top:${q.top}px` });
+    if (sl.game) mid += game(sl.game, 1100, `left:${(W - 1100) / 2}px;top:${q.gameTop}px`);
     else {
-      const ctop = top + (54 + cy - from) * k - (ck - k) * ch / 2; // büyütülen kart kendi yerinin üstüne ortalanır
+      const [, cy, cw, ch] = sl.crop;
+      const ctop = q.top + (54 + cy - q.from + ch / 2) * k - ck * ch / 2; // büyütülen kart kendi yerinin üstüne ortalanır
       mid += crop(sl.shot, sl.crop, ck, `left:${(W - cw * ck) / 2}px;top:${Math.round(ctop)}px`);
     }
-    return `<section class="p" style="left:${i * W}px">${text(sl, i, '#fff', '#F2BE3D')}${mid}
-      ${sl.trust ? `<p class="foot">${FOOT}</p>` : '<div class="bottom"></div>'}</section>`;
+    return `<section class="p" style="left:${i * W}px">${text(sl, i, '#fff', '#F2BE3D')}${mid}${sl.trust ? `<p class="foot">${FOOT}</p>` : ''}</section>`;
   }).join('');
   return { css, body };
 }
 
-// C · Bağlı hikâye: tek parça zemin, adım etiketleri, kareleri birleştiren yol (ClassDojo, Joon 3–4, Structured 1–2)
+// C · Bağlı hikâye: tek parça zemin, adım etiketleri, kareleri birleştiren yol (ClassDojo, Joon 3–4, Structured 1–2).
+// Ekranlar bileşen sınırında temiz kesilir ve yolun üstünde (END) biter.
 function C() {
   const n = SLIDES.length, TW = W * n, END = 2560;
   const css = `${BASE}
@@ -163,26 +161,24 @@ function C() {
   .eb{display:inline-flex;align-items:center;gap:16px;font-weight:700;font-size:34px;letter-spacing:.06em;text-transform:uppercase;color:#1B2A55;margin-bottom:36px}
   .eb i{width:18px;height:18px;border-radius:50%;background:#E9B22B;display:block}
   .scr{box-shadow:0 0 0 2px rgba(15,27,61,.06),0 50px 110px rgba(15,27,61,.18)}
-  .game{border:12px solid #fff;box-shadow:0 40px 90px rgba(15,27,61,.22)}
+  .game{border:12px solid #fff;box-shadow:0 40px 90px rgba(15,27,61,.2)}
   .chip{background:#fff;color:#0F1B3D;box-shadow:0 0 0 2px rgba(15,27,61,.08)}
   .note,.foot{color:#6E7690}
-  .p{overflow:visible}
   .layer{position:absolute;left:0;top:0;width:${TW}px;height:${H}px;pointer-events:none}`;
-  // Yol: ekranların altından geçen kesik sarı çizgi, her karede bir durak
   const pts = SLIDES.map((_, i) => [i * W + W / 2, i % 2 ? 2720 : 2650]);
   let d = 'M -40 2690';
   pts.forEach(([x, y], i) => { const px = i ? pts[i - 1][0] : -40; d += ` C ${px + W / 2} ${y - 110}, ${x - W / 2} ${y + 110}, ${x} ${y}`; });
-  const dots = pts.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="22" fill="#E9B22B"/><circle cx="${x}" cy="${y}" r="10" fill="#fff"/>`).join('');
+  const dots = pts.map(([x, y], i) => i === 3 ? '' : `<circle cx="${x}" cy="${y}" r="22" fill="#E9B22B"/><circle cx="${x}" cy="${y}" r="10" fill="#fff"/>`).join('');
   const layer = `<svg class="layer" viewBox="0 0 ${TW} ${H}"><path d="${d}" fill="none" stroke="#E9B22B" stroke-width="10" stroke-linecap="round" stroke-dasharray="2 30"/>${dots}</svg>`;
   const body = SLIDES.map((sl, i) => {
-    const w = sl.game ? 920 : 1000, top = sl.trust ? 1160 : i === 0 ? 1130 : 940 + (i % 2) * 40;
-    const left = sl.game ? 80 : (W - w) / 2;
-    let mid = screen(sl.shot, w, { maxPx: END - top, from: sl.from ?? sl.cFrom, fade: true, style: `left:${left}px;top:${top}px` });
-    if (sl.game) mid += game(sl.game, 860, `left:${W - 860 - 50}px;top:1980px;transform:rotate(-3deg)`);
-    if (i === 3) mid += `<img src="${img('gunes-tasi.png')}" style="position:absolute;z-index:2;left:${W - 300}px;top:2260px;width:200px;height:200px;filter:drop-shadow(0 20px 30px rgba(15,27,61,.25))">`;
+    const w = sl.trust ? 860 : 1000, from = sl.from ?? sl.cFrom ?? 0;
+    const top = Math.round(END - cardH(w, from, sl.cut));
+    let mid = screen(sl.shot, w, { from, cut: sl.cut, style: `left:${(W - w) / 2}px;top:${top}px` });
+    if (sl.game) mid += game(sl.game, 960, `left:${(W - 960) / 2}px;top:760px`);
+    // Onay karesinde yolun durağı Güneş Taşı
+    if (i === 3) mid += `<img src="${img('gunes-tasi.png')}" style="position:absolute;z-index:2;left:${W / 2 - 90}px;top:${2720 - 90}px;width:180px;height:180px;filter:drop-shadow(0 16px 24px rgba(15,27,61,.25))">`;
     const eb = `<span class="eb"><i></i>${sl.eyebrow}</span>`;
-    return `<section class="p" style="left:${i * W}px">${text(sl, i, '#0F1B3D', '#2F7D4A', eb)}${mid}
-      ${sl.trust ? `<p class="foot" style="bottom:40px">${FOOT}</p>` : ''}</section>`;
+    return `<section class="p" style="left:${i * W}px">${text(sl, i, '#0F1B3D', '#2F7D4A', eb)}${mid}${sl.trust ? `<p class="foot" style="bottom:40px">${FOOT}</p>` : ''}</section>`;
   }).join('');
   return { css, body: layer + body };
 }

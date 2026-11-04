@@ -124,7 +124,8 @@ export default function ProgressScreen({ navigation }: any) {
 
         <Card>
           <Text style={styles.h}>Haftalık tamamlama</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 110, gap: 10, marginTop: 14 }}>
+          {/* Satır öğeleri dikeyde uzamalı (varsayılan stretch); 'flex-end' öğelerin yüksekliğini sıfırlıyor, çubuklar görünmüyordu */}
+          <View style={{ flexDirection: 'row', height: 110, gap: 10, marginTop: 14 }}>
             {data.weekly.map((w, i) => (
               <View key={i} style={{ flex: 1, alignItems: 'center', gap: 6 }}>
                 <View style={{ flex: 1, width: '100%', justifyContent: 'flex-end', backgroundColor: '#F1F3F8', borderRadius: 6, overflow: 'hidden' }}>
