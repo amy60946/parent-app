@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import * as Linking from 'expo-linking';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session, EmailOtpType } from '@supabase/supabase-js';
@@ -8,8 +8,10 @@ import { unregisterPush } from './notifications';
 import { storeLogOut } from './purchases';
 
 // E-postadaki bağlantılar uygulamayı bu adresle açar:
-// geliştirmede exp://…/--/auth (Expo Go), derlenmiş uygulamada parentapp://auth
-export const authRedirectUrl = () => Linking.createURL('auth');
+// geliştirmede exp://…/--/auth (Expo Go), derlenmiş uygulamada parentapp://auth.
+// Web sürümünde (site /app/, 4 Kasım 2026) aynı sayfaya döner; Supabase Auth › Redirect URLs'e https://<alan adı>/app/** eklenir.
+export const authRedirectUrl = () =>
+  Platform.OS === 'web' && typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : Linking.createURL('auth');
 
 // Yeni kayıt işareti: ilk oturumda bir kez okunur ve silinir
 const SIGNUP_KEY = 'after-signup';
@@ -112,6 +114,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const p = urlParams(url);
     const isAuthLink = p.access_token || p.code || p.token_hash || p.error || p.error_description;
     if (!isAuthLink) return;
+    // Web: bağlantıdaki anahtarlar adres çubuğunda ve geçmişte kalmasın
+    if (Platform.OS === 'web' && typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname);
 
     if (p.error || p.error_description) {
       Alert.alert('Bağlantı açılamadı', p.error_code === 'otp_expired'

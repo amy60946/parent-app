@@ -165,6 +165,16 @@ export function LoginScreen({ navigation }: any) {
 export function WelcomeScreen({ navigation }: any) {
   // Uzman davet bağlantısıyla gelindiyse kod sorusu atlanır
   const start = async () => navigation.navigate((await getPendingClinicInvite()) ? 'SignUp' : 'ExpertAsk');
+  // Web (tanıtım sayfasındaki "Ücretsiz başla" / "Giriş yap", 4 Kasım 2026): /app/?kayit ya da #kayit → kayıt akışı, ?giris / #giris → giriş
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const q = new URLSearchParams(window.location.search);
+    const h = window.location.hash.replace('#', '');
+    const giris = q.has('giris') || h === 'giris', kayit = q.has('kayit') || h === 'kayit';
+    if (!giris && !kayit) return;
+    window.history.replaceState(null, '', window.location.pathname);
+    if (giris) navigation.navigate('Login'); else start();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />

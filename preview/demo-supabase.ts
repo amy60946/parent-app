@@ -246,6 +246,10 @@ const setSess = (s: Row | null) => { db.sessions[APP] = s; };
 const save = () => {
   try { localStorage.setItem(KEY, JSON.stringify(db)); } catch { /* sığmazsa (ör. büyük fotoğraflar) yalnızca bu oturumda kalır */ }
 };
+// Tanıtım sayfasından (site/public: "Ücretsiz başla" / "Giriş yap") gelindiyse oturumsuz başla: kayıt ve giriş denenebilsin
+try {
+  if (APP === 'parent' && /^#(kayit|giris)$/.test((globalThis as any).location?.hash ?? '')) { db.sessions.parent = null; save(); }
+} catch { /* yok say */ }
 
 /* ---------- Tablo sorguları ---------- */
 

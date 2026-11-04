@@ -44,7 +44,7 @@ export default function PaywallScreen({ navigation, route }: any) {
     try {
       const r = await purchase(plan);
       if (r.ok) { refreshAfterPurchase(); navigation.goBack(); Alert.alert('Premium üyeliğin başladı'); }
-      else if (r.reason === 'not_connected') Alert.alert('Yakında', NOT_CONNECTED);
+      else if (r.reason === 'not_connected') Alert.alert(r.message ? 'Uygulamadan başlat' : 'Yakında', r.message ?? NOT_CONNECTED); // web: purchases.web.ts
       else if (r.reason === 'unavailable') Alert.alert('Şu an alınamıyor', UNAVAILABLE);
       else if (r.reason === 'pending') Alert.alert('Onay bekleniyor', PENDING);
       else if (r.reason === 'failed') Alert.alert('Satın alınamadı', r.message ?? 'Tekrar dene.');
@@ -58,7 +58,7 @@ export default function PaywallScreen({ navigation, route }: any) {
     try {
       const r = await restorePurchases();
       if (r.ok) { refreshAfterPurchase(); Alert.alert('Satın alımların geri yüklendi'); }
-      else Alert.alert('Geri yükleme', r.reason === 'not_connected' ? NOT_CONNECTED
+      else Alert.alert('Geri yükleme', r.reason === 'not_connected' ? (r.message ?? NOT_CONNECTED)
         : r.reason === 'failed' ? (r.message ?? 'Geri yüklenemedi. Tekrar dene.')
         : 'Bu Apple Kimliği ile etkin bir üyelik bulunamadı.');
     } finally {

@@ -22,6 +22,8 @@ if [ ! -d "$WORK/node_modules/expo-notifications" ]; then
   (cd "$WORK" && npm install $PKGS @supabase/supabase-js react-native-draggable-flatlist qrcode-generator >/dev/null)
 fi
 [ -d "$WORK/node_modules/qrcode-generator" ] || (cd "$WORK" && npm install qrcode-generator >/dev/null)
+# site/build.sh aynı Expo projesini kullanır: yalnız hazırlık
+[ "${PREVIEW_PREPARE_ONLY:-}" = "1" ] && exit 0
 
 echo "› Kaynaklar kopyalanıyor"
 rm -rf "$WORK/src" "$WORK/App.tsx" "$WORK/assets/avatars"
@@ -29,6 +31,7 @@ cp -r "$ROOT/App.tsx" "$ROOT/src" "$WORK/"
 mkdir -p "$WORK/assets" && cp -r "$ROOT/assets/." "$WORK/assets/"
 cp "$ROOT/preview/demo-supabase.ts" "$WORK/src/lib/supabase.ts"
 cp "$ROOT/preview/demo-purchases.ts" "$WORK/src/lib/purchases.ts"  # mağaza (RevenueCat) taklidi
+cp "$ROOT/preview/demo-purchases.ts" "$WORK/src/lib/purchases.web.ts"  # web derlemesi .web.ts'yi seçer
 
 echo "› Tip kontrolü"
 (cd "$WORK" && npx tsc --noEmit)
