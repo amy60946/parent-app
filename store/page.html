@@ -1,0 +1,232 @@
+<title>ParentApp Mağaza Görselleri</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Düzen: tek sütun okuma alanı; her alternatif bir bant, içinde 7 karelik yatay kaydırmalı şerit (mağazadaki sırayla). Yalnız açık zemin (kullanıcı tercihi). */
+:root {
+  --bg: #F4F6FA;
+  --paper: #FFFFFF;
+  --ink: #0F1B3D;
+  --muted: #5A6380;
+  --line: #DDE2EC;
+  --gold: #E9B22B;
+  --good: #2F7D4A;
+  --display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --body: Inter, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  color-scheme: light;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.55; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 72px; display: grid; gap: 56px; }
+h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; }
+h2 { font-size: clamp(24px, 3.4vw, 32px); line-height: 1.15; }
+h3 { font-size: 17px; margin: 0; }
+p { margin: 0; max-width: 68ch; }
+.lead { color: var(--muted); font-size: 18px; margin-top: 14px; }
+.eyebrow { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+header { display: grid; gap: 6px; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.tag { font-size: 13px; font-weight: 600; padding: 5px 12px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); }
+.tag.pick { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+.alt { display: grid; gap: 18px; }
+.alt-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 16px; }
+.letter { font-family: var(--display); font-size: 40px; line-height: 1; color: var(--gold); }
+.alt-head .tag { margin-left: auto; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.facts div { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; min-width: 0; }
+.facts b { display: block; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.strip { display: flex; gap: 12px; overflow-x: auto; padding: 4px 2px 14px; scroll-snap-type: x proximity; }
+.strip button { flex: 0 0 auto; width: 168px; padding: 0; border: 0; background: none; cursor: zoom-in; scroll-snap-align: start; border-radius: 14px; }
+.strip img { display: block; width: 168px; height: auto; aspect-ratio: 660 / 1434; border-radius: 14px; box-shadow: 0 0 0 1px var(--line), 0 6px 18px rgba(15, 27, 61, .08); }
+.strip button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.strip.c { gap: 0; }
+.strip.c img { border-radius: 0; box-shadow: none; }
+.strip.c button:first-child img { border-radius: 14px 0 0 14px; }
+.strip.c button:last-child img { border-radius: 0 14px 14px 0; }
+.hint { font-size: 13px; color: var(--muted); }
+
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 24px; display: grid; gap: 14px; }
+.card.rec { border-color: var(--ink); box-shadow: inset 4px 0 0 var(--gold); }
+ol, ul { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+th { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.scroll { overflow-x: auto; }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.ok { color: var(--good); font-weight: 600; }
+a { color: var(--ink); }
+.src { font-size: 13px; color: var(--muted); }
+.src a { color: var(--muted); }
+
+dialog { border: 0; padding: 0; background: transparent; max-width: min(92vw, 520px); }
+dialog::backdrop { background: rgba(15, 27, 61, .72); }
+dialog img { display: block; width: 100%; height: auto; max-height: 86vh; object-fit: contain; border-radius: 16px; }
+dialog form { text-align: center; margin-top: 10px; }
+dialog button { font: inherit; font-weight: 600; padding: 8px 18px; border-radius: 999px; border: 0; background: #fff; color: var(--ink); cursor: pointer; }
+
+@media (max-width: 720px) {
+  .facts, .cols { grid-template-columns: 1fr; }
+  .strip button, .strip img { width: 138px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">ParentApp · App Store ürün sayfası</span>
+    <h1>Mağaza ekran görüntüleri: üç alternatif</h1>
+    <p class="lead">Her alternatif 7 kare. Karelerin hepsinde ParentApp'in gerçek ekranı var, adlar kurgusal. Metinler üçünde aynı, siz diliyle yazıldı. Aramada ilk 3 kare göründüğü için hikâye ilk 3 karede tamamlanıyor.</p>
+    <div class="meta"><span class="tag">iPhone 6.9" 1320×2868 + 6.3" 1206×2622</span><span class="tag">Türkçe</span><span class="tag">Benchmark: 24 uygulama</span></div>
+  </header>
+
+  <section class="alt" aria-labelledby="a-t">
+    <div class="alt-head"><span class="letter">A</span><h2 id="a-t">Sakin ve kurumsal</h2><span class="tag" id="tagA">Açık zemin</span></div>
+    <p>Açık zemin, lacivert başlık, uygulamanın tam ekranı. Web sitesiyle aynı görünüm.</p>
+    <div class="strip" data-set="A"></div>
+    <div class="facts">
+      <div><b>Örnek aldığı</b>Structured, Acorns Early, GoHenry, Khan Academy Kids</div>
+      <div><b>Güçlü yanı</b>En sakin ve en kurumsal görünen set; uygulamanın ekranı olduğu gibi okunuyor.</div>
+      <div><b>Zayıf yanı</b>App Store'un beyaz zemininde öteki ikisi kadar göze çarpmıyor.</div>
+    </div>
+  </section>
+
+  <section class="alt" aria-labelledby="b-t">
+    <div class="alt-head"><span class="letter">B</span><h2 id="b-t">Lacivert ve büyütülmüş ayrıntı</h2><span class="tag" id="tagB">Koyu zemin</span></div>
+    <p>Lacivert zemin, başlıkta tek sarı vurgu sözcüğü. Her karede o anın önemli parçası (onay kartı, Güneş Taşı, ödül isteği) büyütülerek ekranın önüne çıkıyor.</p>
+    <div class="strip" data-set="B"></div>
+    <div class="facts">
+      <div><b>Örnek aldığı</b>Chorsee, Understood, Life360, Tiimo</div>
+      <div><b>Güçlü yanı</b>Küçük boyutta en iyi okunan ve en çok dikkat çeken set.</div>
+      <div><b>Zayıf yanı</b>Koyu zemin, açık zeminli web sitesinden ayrılıyor.</div>
+    </div>
+  </section>
+
+  <section class="alt" aria-labelledby="c-t">
+    <div class="alt-head"><span class="letter">C</span><h2 id="c-t">Bağlı hikâye</h2><span class="tag" id="tagC">Panorama</span></div>
+    <p>Yedi kare tek parça zemin üzerinde. Üstte adım etiketi (Plan, Oyun, Onay, Ödül, Gelişim), altta kareleri birbirine bağlayan sarı bir yol var. Başlıklar serif yazı tipinde.</p>
+    <div class="strip c" data-set="C"></div>
+    <p class="hint">Bu şerit kareleri boşluksuz gösterir; mağazada aralarında küçük bir boşluk olur.</p>
+    <div class="facts">
+      <div><b>Örnek aldığı</b>ClassDojo, Joon (3–4), Structured (1–2), Calm</div>
+      <div><b>Güçlü yanı</b>Akış (planla → yapar → onayla → ödül) en açık bu sette anlaşılıyor.</div>
+      <div><b>Zayıf yanı</b>Koyu B kadar göze çarpmıyor; yol ve etiketler yalnız kareler yan yana görülünce anlam kazanıyor.</div>
+    </div>
+  </section>
+
+  <section class="card rec" aria-labelledby="rec-t" id="rec">
+    <span class="eyebrow">Öneri</span>
+    <h2 id="rec-t">Önerim</h2>
+    <p id="recText"></p>
+  </section>
+
+  <section class="alt" aria-labelledby="txt-t">
+    <h2 id="txt-t">Kare metinleri</h2>
+    <div class="card">
+      <ol>
+        <li><b>Çocuğunuzun günlük rutini tek ekranda.</b> Görev verin, yapılanları görün, onaylayın.</li>
+        <li><b>Rutini birkaç dakikada oluşturun.</b> Yaşına uygun hazır rutinlerden seçin ya da kendi görevinizi yazın.</li>
+        <li><b>Görevler Pofi Adası'nda görünür.</b> Çocuğunuz görevini oyunda görür, yapınca işaretler. <span class="src">Not: Pofi Adası, çocuğunuzun cihazına kurulan ayrı bir uygulamadır.</span></li>
+        <li><b>Yapılan görevi onaylayın.</b> Onayladığınızda çocuğunuz oyunda Güneş Taşı alır.</li>
+        <li><b>Ödülleri birlikte seçin.</b> Çocuğunuz biriktirdiği Güneş Taşı'yla ödül ister, siz onaylarsınız.</li>
+        <li><b>Gelişimi gün gün görün.</b> Hangi alışkanlığın yerleştiğini haftalık özetle görün.</li>
+        <li><b>Dilerseniz uzmanınızla paylaşın.</b> Paylaşım yalnız sizin onayınızla açılır, istediğiniz an kapanır. Reklam yok · Veri satışı yok · Hesabınızı istediğiniz an silebilirsiniz. <span class="src">Dipnot: Bazı özellikler Premium üyelik gerektirir. Örnekteki adlar kurgusaldır.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="alt" aria-labelledby="bm-t">
+    <h2 id="bm-t">Benchmark: ne aldık, ne almadık</h2>
+    <p>24 uygulamanın App Store görselleri sırasıyla incelendi (4 Kasım 2026). Üç grup vardı: aynı işi yapanlar, aile güvenliği ve ebeveynlik uygulamaları, tasarımıyla öne çıkanlar.</p>
+    <div class="cols">
+      <div class="card">
+        <h3>Aldıklarımız</h3>
+        <ul>
+          <li>Tek marka zemini ve sabit şablon: her karede aynı yerde 2 satır başlık ve kısa bir alt satır (Greenlight, GoHenry, Acorns Early, Structured).</li>
+          <li>Döngünün tamamı ilk 3 karede ve fiille anlatılıyor (Homey "Assign Chores / Approve Progress", Joon, Chorsee).</li>
+          <li>Arayüzden büyütülmüş tek parça (Tiimo, Google Family Link, Life360).</li>
+          <li>Çocuk fotoğrafı yok; oyun görseli ve karakter var (ClassDojo, Understood).</li>
+          <li>Rozet ve sayı yerine olgu: "Reklam yok · Veri satışı yok", rıza cümlesi, dipnot (Khan Academy Kids, Huckleberry).</li>
+          <li>Tam Türkçe. Life360, Family Link, Qustodio, Headspace, Calm ve Joon, Türkiye mağazasında İngilizce görünüyor.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Almadıklarımız</h3>
+        <ul>
+          <li>"#1 app", "5 milyon aile", Apple ödülü, basın logoları, yıldızlı yorumlar. Bunlar elimizde yok, uydurulmaz.</li>
+          <li>Sağlık ve DEHB konumlandırması (Joon, Understood: "psikologlar geliştirdi", "davranışı iyileştirir").</li>
+          <li>Korku ve gözetim dili (Bark, Qustodio, Life360: "takip et", "nerede olduğunu bil").</li>
+          <li>Para ve "kazan" dili, görev başına TL (GoHenry, Acorns, Chorsee).</li>
+          <li>"Çocuklar için" ifadesi (Apple 2.3.8 bunu Kids kategorisine ayırıyor).</li>
+          <li>Eski telefon çerçevesi ve kalabalık özellik listesi (Goally, Brightwheel, BusyKid).</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card scroll">
+      <table>
+        <thead><tr><th>Grup</th><th>En iyi örnek</th><th>Neden</th></tr></thead>
+        <tbody>
+          <tr><td>Aynı işi yapanlar</td><td>Chorsee</td><td>Tek koyu mavi zemin, fiille başlayan kısa başlıklar, rozet ve sayı olmadan temiz ve kurumsal.</td></tr>
+          <tr><td>Aile güvenliği ve ebeveynlik</td><td>Huckleberry · Understood</td><td>İlk karede sakin bir fayda cümlesi. Understood'un lacivert ve çizim düzeni bize en kolay uyarlanıyor; sağlık iddiaları hariç.</td></tr>
+          <tr><td>Tasarımıyla öne çıkanlar</td><td>Structured</td><td>Tek düz zemin, iki ağırlıklı başlık, kare başına tek işlev. Ürün ilk iki saniyede anlaşılıyor.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="alt" aria-labelledby="ap-t">
+    <h2 id="ap-t">Apple kuralları</h2>
+    <div class="card">
+      <ul>
+        <li>iPhone için 6.3" set (1206×2622) zorunlu. 6.9" (1320×2868) verilirse büyük ekranlarda o gösterilir. İkisi de hazır.</li>
+        <li>ParentApp iPad'i desteklediği için 13" iPad seti (2064×2752) de gerekiyor. Seçimden sonra hazırlanacak.</li>
+        <li>Görselde fiyat, "7 gün ücretsiz", indirim ya da web adresi olmaz (2.3.7). Deneme bilgisi tanıtım metnine yazılır.</li>
+        <li>Karelerin yarısından fazlası uygulamanın kullanımını göstermeli (2.3.3). Bizde 7 karenin hepsinde gerçek ekran var.</li>
+        <li>Apple cihaz çerçevesi yalnız olduğu gibi kullanılabilir. Bu yüzden telefon çizmedik, yalnız ekranı gösterdik.</li>
+        <li>Türkiye mağazasının varsayılan dili İngilizce. Görseller Türkçe yerelleştirmeye ayrıca yüklenmeli.</li>
+        <li>Yayından sonra Ürün Sayfası Optimizasyonu ile en çok 3 alternatif A/B testinden geçirilebilir.</li>
+      </ul>
+    </div>
+    <p class="src">Kaynaklar: <a href="https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications" target="_blank" rel="noopener">Screenshot specifications</a> · <a href="https://developer.apple.com/app-store/review/guidelines/" target="_blank" rel="noopener">App Review Guidelines</a> · <a href="https://developer.apple.com/app-store/product-page/" target="_blank" rel="noopener">Product page</a> · <a href="https://developer.apple.com/app-store/marketing/guidelines/" target="_blank" rel="noopener">Marketing guidelines</a> · <a href="https://developer.apple.com/app-store/product-page-optimization/" target="_blank" rel="noopener">Product page optimization</a></p>
+  </section>
+
+  <section class="alt" aria-labelledby="nx-t">
+    <h2 id="nx-t">Sonraki adımlar</h2>
+    <div class="card">
+      <ol>
+        <li>Alternatifi siz seçersiniz.</li>
+        <li>Seçilen tasarımla 13" iPad seti hazırlanır. iPad'deki gerçek düzen kullanılır: ortada sütun, yatayda iki sütun.</li>
+        <li>3. karedeki oyun görseli şu an oyunun yükleme ekranı. Görev panelinin göründüğü gerçek oyun ekranı GameApp penceresinden gelince değiştirilir.</li>
+        <li>Yüklemeden önce pazarlama kuralları kontrol edilir (hukuk/45 §7.1). Ardından App Store Connect'te Türkçe yerelleştirmeye 6.9" ve 6.3" setler yüklenir.</li>
+      </ol>
+    </div>
+  </section>
+</div>
+
+<dialog id="big" aria-label="Büyük görünüm"><img id="bigImg" alt=""><form method="dialog"><button>Kapat</button></form></dialog>
+
+<script>
+  const ALT = {
+    A: ['Ana sayfa', 'Rutin oluşturma', 'Görevler ve oyun', 'Onay', 'Ödüller', 'Gelişim', 'Uzmanla paylaşım'],
+  };
+  const names = ALT.A;
+  document.querySelectorAll('.strip').forEach((s) => {
+    const set = s.dataset.set;
+    names.forEach((n, i) => {
+      const k = String(i + 1).padStart(2, '0');
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('aria-label', `${set} ${i + 1}. kare: ${n}, büyüt`);
+      b.innerHTML = `<img src="img/${set}/${k}.jpg" alt="${set} seti ${i + 1}. kare: ${n}" loading="lazy">`;
+      b.addEventListener('click', () => {
+        const d = document.getElementById('big');
+        const im = document.getElementById('bigImg');
+        im.src = `img/${set}/${k}.jpg`; im.alt = `${set} seti ${i + 1}. kare: ${n}`;
+        d.showModal();
+      });
+      s.appendChild(b);
+    });
+  });
+  document.getElementById('big').addEventListener('click', (e) => { if (e.target.id === 'big') e.target.close(); });
+</script>
