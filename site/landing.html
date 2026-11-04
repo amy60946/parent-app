@@ -27,7 +27,7 @@
   --band-ink: #EEF2FA;
   --band-ink-2: #B9C3DB;
   --hero-veil: linear-gradient(180deg, rgba(244,247,250,0) 0%, rgba(244,247,250,0) 55%, var(--paper) 100%);
-  --hero-text-veil: radial-gradient(120% 90% at 0% 30%, rgba(255,255,255,.72) 0%, rgba(255,255,255,.35) 45%, rgba(255,255,255,0) 70%);
+  --hero-text-veil: radial-gradient(closest-side, rgba(255,255,255,.82) 0%, rgba(255,255,255,.5) 55%, rgba(255,255,255,0) 100%);
   --shadow: 0 24px 60px -24px rgba(15, 27, 61, .35);
   --font-display: "Bricolage Grotesque", "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-body: "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -40,7 +40,7 @@
     --sky: #5FB4EA; --sea: #5CC3D2; --sand: #8A6F45; --sun: #F2C14E; --sun-ink: #F7D98A; --halo: rgba(242, 193, 78, .25);
     --ok: #7FD39B; --ok-bg: #173A2A; --band: #060C22; --band-ink: #EEF2FA; --band-ink-2: #A9B4CF;
     --hero-veil: linear-gradient(180deg, rgba(11,20,48,.35) 0%, rgba(11,20,48,.55) 55%, var(--paper) 100%);
-    --hero-text-veil: radial-gradient(120% 90% at 0% 30%, rgba(11,20,48,.78) 0%, rgba(11,20,48,.45) 50%, rgba(11,20,48,0) 75%);
+    --hero-text-veil: radial-gradient(closest-side, rgba(11,20,48,.85) 0%, rgba(11,20,48,.55) 55%, rgba(11,20,48,0) 100%);
     --shadow: 0 24px 60px -24px rgba(0, 0, 0, .7);
     color-scheme: dark;
   }
@@ -50,7 +50,7 @@
   --sky: #5FB4EA; --sea: #5CC3D2; --sand: #8A6F45; --sun: #F2C14E; --sun-ink: #F7D98A; --halo: rgba(242, 193, 78, .25);
   --ok: #7FD39B; --ok-bg: #173A2A; --band: #060C22; --band-ink: #EEF2FA; --band-ink-2: #A9B4CF;
   --hero-veil: linear-gradient(180deg, rgba(11,20,48,.35) 0%, rgba(11,20,48,.55) 55%, var(--paper) 100%);
-  --hero-text-veil: radial-gradient(120% 90% at 0% 30%, rgba(11,20,48,.78) 0%, rgba(11,20,48,.45) 50%, rgba(11,20,48,0) 75%);
+  --hero-text-veil: radial-gradient(closest-side, rgba(11,20,48,.85) 0%, rgba(11,20,48,.55) 55%, rgba(11,20,48,0) 100%);
   --shadow: 0 24px 60px -24px rgba(0, 0, 0, .7);
   color-scheme: dark;
 }
@@ -83,8 +83,8 @@ a { color: inherit; }
 /* Üst bar */
 .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: saturate(1.4) blur(12px); -webkit-backdrop-filter: saturate(1.4) blur(12px); border-bottom: 1px solid var(--line); }
 .top .wrap { display: flex; align-items: center; gap: 20px; min-height: 68px; }
-.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); }
-.brand img { width: 34px; height: 34px; border-radius: 9px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); flex: none; }
+.brand img { width: 34px; height: 34px; border-radius: 9px; box-shadow: 0 0 0 1px var(--line); }
 .brand b { font-family: var(--font-display); font-size: 1.2rem; font-weight: 800; letter-spacing: -0.01em; }
 .brand small { display: block; font-size: .72rem; color: var(--ink-3); font-weight: 600; line-height: 1; margin-top: 2px; }
 .nav { display: flex; gap: 4px; margin-left: 12px; }
@@ -93,7 +93,8 @@ a { color: inherit; }
 .top-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
 .top-actions .btn { min-height: 42px; padding: 0 18px; font-size: .95rem; }
 @media (max-width: 920px) { .nav { display: none; } }
-@media (max-width: 420px) { .brand small { display: none; } .top-actions .btn-text { padding: 0 6px; } .top-actions .btn { padding: 0 14px; } }
+@media (max-width: 420px) { .brand small { display: none; } .top .wrap { gap: 10px; } .top-actions .btn-text { padding: 0 6px; } .top-actions .btn { padding: 0 14px; font-size: .9rem; } }
+@media (max-width: 380px) { .brand > span { display: none; } }
 
 /* Hero */
 .hero { position: relative; overflow: hidden; isolation: isolate; }
@@ -101,7 +102,7 @@ a { color: inherit; }
 .hero-bg::after { content: ""; position: absolute; inset: 0; background: var(--hero-veil); }
 .hero .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); gap: clamp(24px, 4vw, 56px); align-items: center; padding-block: clamp(48px, 7vw, 96px) clamp(40px, 6vw, 72px); }
 .hero-copy { position: relative; display: grid; gap: 22px; }
-.hero-copy::before { content: ""; position: absolute; inset: -40px -60px -40px -80px; z-index: -1; background: var(--hero-text-veil); pointer-events: none; }
+.hero-copy::before { content: ""; position: absolute; inset: -110px -140px -110px -180px; z-index: -1; background: var(--hero-text-veil); pointer-events: none; }
 .hero-copy .lead { font-size: clamp(1.08rem, 1.6vw, 1.25rem); color: var(--ink); }
 .cta-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .fine { font-size: .9rem; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 6px 14px; }
@@ -113,7 +114,7 @@ a { color: inherit; }
 .stage { position: relative; aspect-ratio: 1.12; max-width: 100%; width: 100%; }
 .tablet { position: absolute; right: 0; top: 4%; width: 78%; aspect-ratio: 4 / 3; border-radius: 26px; background: #0E1630; padding: 12px; box-shadow: var(--shadow); }
 .tablet img { width: 100%; height: 100%; object-fit: cover; border-radius: 16px; display: block; }
-.tablet .cap { position: absolute; left: 22px; bottom: 22px; font-size: .75rem; font-weight: 700; color: #0F1B3D; background: rgba(255,255,255,.88); padding: 4px 10px; border-radius: 999px; }
+.tablet .cap { position: absolute; right: 22px; top: 22px; font-size: .75rem; font-weight: 700; color: #0F1B3D; background: rgba(255,255,255,.88); padding: 4px 10px; border-radius: 999px; }
 .phone { position: absolute; left: 0; bottom: 0; width: 42%; aspect-ratio: 9 / 19; border-radius: 34px; background: #0E1630; padding: 9px; box-shadow: var(--shadow); container-type: inline-size; }
 .screen { width: 100%; height: 100%; border-radius: 26px; background: #F5F6F8; overflow: hidden; display: flex; flex-direction: column; color: #0F1B3D; font-size: 4.3cqw; }
 .screen .bar { display: flex; justify-content: space-between; padding: 1.1em 1.6em .4em; font-weight: 700; font-size: .95em; }
@@ -138,31 +139,35 @@ a { color: inherit; }
 .screen .quick span { background: #fff; border: 1px solid #E8EAEF; border-radius: .9em; padding: .7em .2em; text-align: center; font-weight: 700; font-size: .85em; }
 .screen .tabs { margin-top: auto; display: grid; grid-template-columns: repeat(5, 1fr); background: #fff; border-top: 1px solid #E8EAEF; padding: .7em 0 1.4em; text-align: center; font-size: .78em; font-weight: 600; color: #8A91A3; }
 .screen .tabs .on { color: #0F1B3D; font-weight: 800; }
-.note { position: absolute; left: 30%; top: 58%; width: 44%; min-width: 180px; background: var(--card); color: var(--ink); border-radius: 16px; padding: 10px 12px; display: flex; gap: 10px; align-items: center; box-shadow: var(--shadow); border: 1px solid var(--line); font-size: .82rem; line-height: 1.35; }
-.note img { width: 30px; height: 30px; border-radius: 8px; flex: none; }
+.note { position: absolute; left: var(--note-x, 3%); top: var(--note-y, 66%); width: 36%; background: var(--card); color: var(--ink); border-radius: 16px; padding: 10px 12px; display: flex; gap: 10px; align-items: center; box-shadow: var(--shadow); border: 1px solid var(--line); font-size: .82rem; line-height: 1.35; }
+.note img { width: 30px; height: 30px; border-radius: 8px; flex: none; box-shadow: 0 0 0 1px var(--line); }
 .note b { display: block; font-size: .78rem; color: var(--ink-3); font-weight: 700; }
 .path { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
-.path path { fill: none; stroke: var(--sun); stroke-width: 3; stroke-dasharray: 7 8; stroke-linecap: round; }
-.halo { position: absolute; display: flex; align-items: center; gap: 8px; transform: translate(-50%, -50%); font-weight: 700; font-size: .85rem; color: var(--ink); white-space: nowrap; }
+.path path { fill: none; stroke: var(--sun); stroke-width: 3; stroke-dasharray: 7 8; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.halo { position: absolute; transform: translate(-50%, -50%); }
 .halo i { width: 30px; height: 30px; border-radius: 50%; background: var(--sun); color: #0F1B3D; font-style: normal; font-weight: 800; display: grid; place-items: center; box-shadow: 0 0 0 8px var(--halo); }
-.halo span { background: var(--card); border: 1px solid var(--line); padding: 3px 10px; border-radius: 999px; }
+.halo i, .legend i { flex: none; }
+.hero-visual { display: grid; gap: 18px; min-width: 0; }
+.legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 18px; font-weight: 600; font-size: .92rem; color: var(--ink); }
+.legend li { display: inline-flex; align-items: center; gap: 8px; }
+.legend i { width: 22px; height: 22px; border-radius: 50%; background: var(--sun); color: #0F1B3D; font-style: normal; font-weight: 800; font-size: .75rem; display: grid; place-items: center; }
 @media (prefers-reduced-motion: no-preference) {
   .path path { animation: dash 14s linear infinite; }
   @keyframes dash { to { stroke-dashoffset: -300; } }
 }
-@media (max-width: 560px) { .halo span { display: none; } .note { left: 26%; width: 56%; } }
+@media (max-width: 560px) { .halo i { width: 22px; height: 22px; font-size: .72rem; box-shadow: 0 0 0 5px var(--halo); } .note .d, .note b { display: none; } .note { font-size: .68rem; padding: 7px 8px; gap: 7px; border-radius: 12px; } .note img { width: 22px; height: 22px; } .note b { font-size: .64rem; } }
 
 /* Güven şeridi */
 .trust { border-block: 1px solid var(--line); background: var(--card); }
-.trust .wrap { display: flex; flex-wrap: wrap; gap: 10px 28px; padding-block: 18px; justify-content: center; }
+.trust .wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px 24px; padding-block: 18px; }
 .trust span { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: var(--ink); font-size: .95rem; }
 .trust svg { width: 18px; height: 18px; stroke: var(--ok); flex: none; }
 
 /* İki uygulama */
-.apps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.apps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
 .app { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: clamp(22px, 3vw, 34px); display: grid; gap: 18px; align-content: start; min-width: 0; }
 .app-head { display: flex; align-items: center; gap: 14px; }
-.app-head img { width: 56px; height: 56px; border-radius: 14px; flex: none; }
+.app-head img { width: 56px; height: 56px; border-radius: 14px; flex: none; box-shadow: 0 0 0 1px var(--line); }
 .app-head small { display: block; font-weight: 700; color: var(--ink-3); font-size: .85rem; }
 .app ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .app li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; }
@@ -192,9 +197,10 @@ a { color: inherit; }
 /* Çocuğunuz ne görüyor */
 .kid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 56px); align-items: center; }
 .kid figure { margin: 0; position: relative; }
-.kid figure img.scene { width: 100%; border-radius: var(--r-lg); display: block; box-shadow: var(--shadow); aspect-ratio: 1376 / 768; object-fit: cover; }
+.kid .pic { position: relative; }
+.kid figure img.scene { width: 100%; height: auto; border-radius: var(--r-lg); display: block; box-shadow: var(--shadow); aspect-ratio: 1376 / 768; object-fit: cover; }
 .kid figcaption { font-size: .85rem; color: var(--ink-3); margin-top: 10px; }
-.kid .chips { position: absolute; right: -10px; bottom: -18px; display: flex; gap: 8px; }
+.kid .chips { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 8px; }
 .kid .chips span { display: inline-flex; align-items: center; gap: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px 6px 6px; font-weight: 700; font-size: .85rem; color: var(--ink); box-shadow: var(--shadow); }
 .kid .chips img { width: 26px; height: 26px; }
 .facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
@@ -202,7 +208,8 @@ a { color: inherit; }
 .facts svg { width: 22px; height: 22px; stroke: var(--ok); margin-top: 3px; }
 .gate { margin-top: 6px; font-size: .95rem; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; color: var(--ink-2); }
 .gate q { font-weight: 700; color: var(--ink); quotes: "“" "”"; }
-@media (max-width: 900px) { .kid { grid-template-columns: minmax(0, 1fr); } .kid .chips { right: 8px; } }
+@media (max-width: 900px) { .kid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 480px) { .kid .chips span { font-size: .75rem; padding: 4px 9px 4px 4px; } .kid .chips img { width: 20px; height: 20px; } }
 
 /* Güvenlik bandı */
 .band { background: var(--band); color: var(--band-ink-2); }
@@ -248,7 +255,7 @@ a { color: inherit; }
 .final { text-align: center; display: grid; gap: 18px; justify-items: center; }
 .stores { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
 .store { display: inline-flex; align-items: center; gap: 10px; border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 8px 14px; font-size: .85rem; color: var(--ink-2); }
-.store img { width: 28px; height: 28px; border-radius: 7px; }
+.store img { width: 28px; height: 28px; border-radius: 7px; box-shadow: 0 0 0 1px var(--line); }
 .store b { display: block; color: var(--ink); font-size: .95rem; }
 footer { border-top: 1px solid var(--line); background: var(--card); }
 footer .wrap { display: grid; grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr)); gap: 28px; padding-block: 44px 28px; font-size: .95rem; }
@@ -295,6 +302,7 @@ footer a:hover { color: var(--ink); text-decoration: underline; }
         <p class="fine"><span>ParentApp 7 gün bütün özellikleriyle açık</span><span>Ödeme bilgisi istenmez</span><span>Pofi Adası ücretsiz</span></p>
       </div>
 
+      <div class="hero-visual">
       <div class="stage" role="img" aria-label="Solda ParentApp'in Bugün ekranı, sağda tablette Pofi Adası. Altın çizgi görevin yolunu gösteriyor: 1 görev ver, 2 çocuk Yaptım der, 3 siz onaylarsınız.">
         <div class="tablet">
           <img src="img/adalilar.jpg" alt="" width="1376" height="768">
@@ -317,14 +325,20 @@ footer a:hover { color: var(--ink); text-decoration: underline; }
             <div class="tabs"><span class="on">Bugün</span><span>Uzmanım</span><span>Görevler</span><span>Gelişim</span><span>Aile</span></div>
           </div>
         </div>
+        <svg class="path" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M5 62 C14 80 42 82 56 62 S68 42 71 38 C69 22 52 15 39.5 22.7"/></svg>
         <div class="note" aria-hidden="true">
           <img src="img/parentapp-simge.png" alt="">
-          <div><b>ParentApp · şimdi</b>Nazlı "Yaptım" dedi: Dişlerini fırçala</div>
+          <div><b>ParentApp · şimdi</b>Nazlı "Yaptım" dedi<span class="d">: Dişlerini fırçala</span></div>
         </div>
-        <svg class="path" viewBox="0 0 100 89" preserveAspectRatio="none" aria-hidden="true"><path d="M21 52 C 30 30, 46 20, 60 30 S 70 60, 52 66"/></svg>
-        <div class="halo" style="left:21%; top:52%" aria-hidden="true"><i>1</i><span>Görev ver</span></div>
-        <div class="halo" style="left:60%; top:30%" aria-hidden="true"><i>2</i><span>Yaptım</span></div>
-        <div class="halo" style="left:52%; top:74%" aria-hidden="true"><i>3</i><span>Onayla</span></div>
+        <div class="halo" style="left:3.6%; top:58.5%" aria-hidden="true"><i>1</i></div>
+        <div class="halo" style="left:71%; top:38%" aria-hidden="true"><i>2</i></div>
+        <div class="halo" style="left:39.5%; top:22.7%" aria-hidden="true"><i>3</i></div>
+      </div>
+      <ol class="legend" aria-label="Görevin yolu">
+        <li><i>1</i>Görevi siz verirsiniz</li>
+        <li><i>2</i>Çocuğunuz yapınca "Yaptım" der</li>
+        <li><i>3</i>Bildirim gelir, siz onaylarsınız</li>
+      </ol>
       </div>
     </div>
   </section>
@@ -416,8 +430,10 @@ footer a:hover { color: var(--ink); text-decoration: underline; }
   <section class="section" id="pofi" aria-labelledby="kid-title" style="padding-top:0">
     <div class="wrap kid">
       <figure>
-        <img class="scene" src="img/adalilar.jpg" alt="Pofi Adası'ndan bir sahne: kumsalda ahtapot Okti, yengeç, postacı martı ve olta tutan kaplumbağa." width="1376" height="768" loading="lazy">
-        <div class="chips" aria-hidden="true"><span><img src="img/inci.png" alt="">İnci</span><span><img src="img/gunes-tasi.png" alt="">Güneş Taşı</span></div>
+        <div class="pic">
+          <img class="scene" src="img/adalilar.jpg" alt="Pofi Adası'ndan bir sahne: kumsalda ahtapot Okti, yengeç, postacı martı ve olta tutan kaplumbağa." width="1376" height="768" loading="lazy">
+          <div class="chips" aria-hidden="true"><span><img src="img/inci.png" alt="">İnci</span><span><img src="img/gunes-tasi.png" alt="">Güneş Taşı</span></div>
+        </div>
         <figcaption>Oyun görseli. Görevler, adlar ve sayılar ekranlarda örnektir.</figcaption>
       </figure>
       <div style="display:grid; gap:20px; min-width:0">
