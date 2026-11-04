@@ -54,6 +54,12 @@ Metinler (üçünde aynı, "siz" dili; web sitesiyle uyumlu):
 6. Gelişimi gün gün görün · Hangi alışkanlığın yerleştiğini haftalık özetle görün.
 7. Dilerseniz uzmanınızla paylaşın · Paylaşım yalnız sizin onayınızla açılır, istediğiniz an kapanır. (Reklam yok · Veri satışı yok · Hesabınızı istediğiniz an silebilirsiniz; dipnot: Bazı özellikler Premium üyelik gerektirir. Örnekteki adlar kurgusaldır.)
 
+## Sonuç (4 Kasım 2026)
+
+Karşılaştırma sayfası: https://claude.ai/artifact/NQJJwjx1rBYFzH66bFQWwL (`store/page.html`, görseller `out/*/NN_onizleme.jpg`).
+Dört tur görsel denetim (alt ajan): sıralama **C > A > B**. Son tur puanları (güven / tasarım / anlaşılırlık): C 4/4/5, A 4/3/4, B 3/4/4. Öneri **C**; yayından sonra Ürün Sayfası Optimizasyonu ile C'ye karşı B denenebilir. Kullanıcı seçimi bekleniyor.
+Denetimde bulunan iki uygulama hatası düzeltildi: Gelişim'de haftalık tamamlama çubukları görünmüyordu (satırda `alignItems: 'flex-end'`), Görev Oluştur'da hazır rutin kartı iki satırlık adda alt yazıyı taşırıyordu; ayrıca "Nazlı'in" → `genitive`.
+
 ## Seçimden sonra
 
 - Seçilen tasarımın iPad 13" seti (gerçek iPad düzeni: ortada sütun, yatayda iki sütun).
