@@ -1,6 +1,6 @@
 <title>ParentApp ve Pofi Adası</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Görevi ParentApp'te verin, çocuğunuz Pofi Adası'nda yapınca 'Yaptım' desin, onay sizde. Reklamsız çocuk oyunu, tek aile aboneliği.">
+<meta name="description" content="Her akşam aynı hatırlatmalar yerine görevi oyuna verin: ebeveyn uygulaması ParentApp ve reklamsız çocuk oyunu Pofi Adası birbirine bağlı, tek aile aboneliğinde.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap">
@@ -207,6 +207,17 @@ a { color: inherit; }
 .trust span { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--ink); font-size: .95rem; }
 .trust svg { width: 18px; height: 18px; stroke: var(--ok); flex: none; }
 
+/* Tanıdık mı */
+.pains { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.pain { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 24px; display: grid; gap: 18px; align-content: space-between; min-width: 0; }
+.pain blockquote { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; line-height: 1.25; color: var(--ink); text-wrap: balance; }
+.pain figcaption { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--ok); border-top: 1px dashed var(--line); padding-top: 14px; }
+.pain figcaption .num { width: 26px; height: 26px; font-size: .8rem; box-shadow: none; background: var(--ok-bg); color: var(--ok); }
+.stat { margin-top: 26px; display: flex; align-items: center; justify-content: center; gap: 16px; text-align: left; color: var(--ink-2); font-weight: 600; }
+.stat b { font-family: var(--font-display); font-size: 2.6rem; color: var(--ink); line-height: 1; }
+.stat small { display: block; color: var(--ink-3); font-weight: 500; font-size: .8rem; margin-top: 2px; }
+@media (max-width: 860px) { .pains { grid-template-columns: minmax(0, 1fr); max-width: 520px; margin-inline: auto; } }
+
 /* İki uygulama, tek aile */
 .duo { display: grid; grid-template-columns: minmax(0, .8fr) auto minmax(0, 1.5fr); gap: clamp(16px, 3vw, 40px); align-items: start; }
 .duo .link { align-self: center; }
@@ -359,9 +370,9 @@ footer a:hover { color: var(--ink); text-decoration: underline; }
     <div class="hero-bg" aria-hidden="true"></div>
     <div class="wrap">
       <div class="hero-copy">
-        <p class="eyebrow">Aileler için ev rutinleri</p>
-        <h1 id="hero-title">Siz görevi verin, o yapsın, adası büyüsün.</h1>
-        <p class="sub">Görev ParentApp'ten Pofi Adası'na gider. Çocuğunuz "Yaptım" der, onay sizde.</p>
+        <p class="eyebrow">Her akşam aynı hatırlatmalar mı?</p>
+        <h1 id="hero-title">Hatırlatmayı bırakın, görevi oyuna verin.</h1>
+        <p class="sub">Ebeveyn uygulaması ve reklamsız çocuk oyunu birbirine bağlı: görevi siz verirsiniz, çocuğunuz kendi adasında görür ve kendisi yapar.</p>
         <div class="cta-row">
           <a class="btn btn-primary" href="app/index.html#kayit">Hesap oluştur</a>
           <a class="btn btn-ghost" href="#nasil">Nasıl çalışır?</a>
@@ -420,8 +431,24 @@ footer a:hover { color: var(--ink); text-decoration: underline; }
     </div>
   </div>
 
+  <!-- Tanıdık mı: ebeveynin derdi (ParentApp tanışma sorularındaki üç cümle) → çözüm -->
+  <section class="section" id="tanidik" aria-labelledby="pain-title">
+    <div class="wrap">
+      <div class="head">
+        <p class="eyebrow">Tanıdık mı?</p>
+        <h2 id="pain-title">Yorulan siz olmayın.</h2>
+      </div>
+      <div class="pains">
+        <figure class="pain"><blockquote>“Bir işin yapılması için defalarca hatırlatıyorum.”</blockquote><figcaption><i class="num">✓</i>Görev çocuğunuzun oyununda, gözünün önünde.</figcaption></figure>
+        <figure class="pain"><blockquote>“Çizelgeler bir süre işe yarıyor, sonra unutuluyor.”</blockquote><figcaption><i class="num">✓</i>Her onay adada yeni bir yer açar.</figcaption></figure>
+        <figure class="pain"><blockquote>“Akşam kendime ayıracak enerjim kalmıyor.”</blockquote><figcaption><i class="num">✓</i>Hazır rutin tek seferde, onay tek dokunuşla.</figcaption></figure>
+      </div>
+      <p class="stat"><b>%62</b><span>ABD'deki ebeveynlerin %62'si ebeveynliği beklediğinden zor buluyor. Yalnız değilsiniz.<small>Pew Research Center, 2023 · 3.757 ebeveyn</small></span></p>
+    </div>
+  </section>
+
   <!-- İki uygulama, tek aile: iki cihaz, aralarında görevin yolu -->
-  <section class="section" id="uygulamalar" aria-labelledby="duo-title">
+  <section class="section" id="uygulamalar" aria-labelledby="duo-title" style="padding-top:0">
     <div class="wrap">
       <div class="head">
         <p class="eyebrow">İki uygulama</p>
