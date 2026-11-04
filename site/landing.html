@@ -1,6 +1,6 @@
 <title>ParentApp ve Pofi Adası</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Her akşam aynı hatırlatmalar yerine görevi oyuna verin: ebeveyn uygulaması ParentApp ve reklamsız çocuk oyunu Pofi Adası birbirine bağlı, tek aile aboneliğinde.">
+<meta name="description" content="6–12 yaş için motivasyon ve günlük rutin uygulaması: dır dır yerine oyun. Görevi ParentApp'te verin, çocuğunuz Pofi Adası'nda yapsın, onay sizde.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap">
@@ -207,16 +207,19 @@ a { color: inherit; }
 .trust span { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--ink); font-size: .95rem; }
 .trust svg { width: 18px; height: 18px; stroke: var(--ok); flex: none; }
 
-/* Tanıdık mı */
-.pains { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
-.pain { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 24px; display: grid; gap: 18px; align-content: space-between; min-width: 0; }
-.pain blockquote { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; line-height: 1.25; color: var(--ink); text-wrap: balance; }
-.pain figcaption { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--ok); border-top: 1px dashed var(--line); padding-top: 14px; }
-.pain figcaption .num { width: 26px; height: 26px; font-size: .8rem; box-shadow: none; background: var(--ok-bg); color: var(--ok); }
+/* Faydalar (Joon kalıbı: dört kart, her biri bir ebeveyn derdine çözüm) */
+.gains { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.gain { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 22px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.gain h3 { font-size: 1.2rem; line-height: 1.2; }
+.gain p { color: var(--ink-2); font-size: .95rem; }
+.gain .chip { justify-self: start; display: inline-flex; align-items: center; gap: 8px; background: var(--app-bg); color: var(--app-ink); border-radius: 999px; padding: 6px 12px 6px 6px; font-weight: 700; font-size: .85rem; box-shadow: 0 0 0 1px var(--line); }
+.gain .chip img { width: 24px; height: 24px; border-radius: 7px; }
+.gain .chip i { font-style: normal; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--app-green); color: #fff; font-size: .75rem; }
 .stat { margin-top: 26px; display: flex; align-items: center; justify-content: center; gap: 16px; text-align: left; color: var(--ink-2); font-weight: 600; }
 .stat b { font-family: var(--font-display); font-size: 2.6rem; color: var(--ink); line-height: 1; }
 .stat small { display: block; color: var(--ink-3); font-weight: 500; font-size: .8rem; margin-top: 2px; }
-@media (max-width: 860px) { .pains { grid-template-columns: minmax(0, 1fr); max-width: 520px; margin-inline: auto; } }
+@media (max-width: 1000px) { .gains { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 540px) { .gains { grid-template-columns: minmax(0, 1fr); } }
 
 /* İki uygulama, tek aile */
 .duo { display: grid; grid-template-columns: minmax(0, .8fr) auto minmax(0, 1.5fr); gap: clamp(16px, 3vw, 40px); align-items: start; }
@@ -242,16 +245,30 @@ a { color: inherit; }
 }
 @media (max-width: 420px) { .link span { font-size: .78rem; padding: 4px 10px 4px 4px; } .link .num { width: 20px; height: 20px; } .link .arrow { width: 10px; } }
 
-/* Adımlar */
-.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
-.steps li { display: grid; gap: 14px; grid-template-rows: auto 1fr; min-width: 0; }
-.steps .mini { height: 100%; }
 .mini .grow { flex: 1; min-width: 0; }
 .mini .one { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.steps .st { display: flex; align-items: center; gap: 12px; }
-.steps .num { width: 34px; height: 34px; box-shadow: 0 0 0 7px var(--halo); }
-@media (max-width: 960px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 32px; } }
-@media (max-width: 540px) { .steps { grid-template-columns: minmax(0, 1fr); } }
+
+/* Nasıl çalışır: yatay kaydırmalı üç adım (her adımda ekran maketi) */
+.rail { display: grid; grid-auto-flow: column; grid-auto-columns: min(86%, 760px); gap: 18px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 2px; padding: 4px 2px 14px; scrollbar-width: none; overscroll-behavior-x: contain; }
+.rail::-webkit-scrollbar { display: none; }
+.rail:focus-visible { outline: 3px solid var(--sun); outline-offset: 4px; border-radius: var(--r-lg); }
+.slide { scroll-snap-align: start; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: clamp(20px, 3vw, 32px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: clamp(18px, 3vw, 32px); align-items: center; min-width: 0; }
+.slide .txt { display: grid; gap: 12px; align-content: center; min-width: 0; }
+.slide .num { width: 38px; height: 38px; box-shadow: 0 0 0 8px var(--halo); }
+.slide h3 { font-size: clamp(1.35rem, 2.4vw, 1.75rem); font-weight: 800; letter-spacing: -0.015em; }
+.slide p { color: var(--ink-2); }
+.slide .mini { min-height: 0; }
+.slide .art { position: relative; border-radius: 16px; overflow: hidden; box-shadow: 0 0 0 1px var(--line); }
+.slide .art img { display: block; width: 100%; height: auto; aspect-ratio: 1376 / 768; object-fit: cover; }
+.slide .art .tag { position: absolute; }
+.rail-ctl { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 18px; }
+.rail-ctl button { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--card); color: var(--ink); font-size: 1.1rem; font-weight: 800; cursor: pointer; }
+.rail-ctl button:disabled { opacity: .35; cursor: default; }
+.dots { display: flex; gap: 8px; }
+.dots span { width: 8px; height: 8px; border-radius: 4px; background: var(--line); transition: width .2s ease, background-color .2s ease; }
+.dots span.on { width: 22px; background: var(--ink); }
+@media (max-width: 720px) { .slide { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .rail { scroll-behavior: auto; } }
 
 /* Özellik ekranları */
 .shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
@@ -371,9 +388,9 @@ footer a:hover { color: var(--ink); text-decoration: underline; }
     <div class="hero-bg" aria-hidden="true"></div>
     <div class="wrap">
       <div class="hero-copy">
-        <p class="eyebrow">Her akşam aynı hatırlatmalar mı?</p>
-        <h1 id="hero-title">Hatırlatmayı bırakın, görevi oyuna verin.</h1>
-        <p class="sub">Ebeveyn uygulaması ve reklamsız çocuk oyunu birbirine bağlı: görevi siz verirsiniz, çocuğunuz kendi adasında görür ve kendisi yapar.</p>
+        <p class="eyebrow">6–12 yaş için motivasyon ve günlük rutin uygulaması</p>
+        <h1 id="hero-title">Dır dır yerine oyun.</h1>
+        <p class="sub">Günlük rutinleri eğlenceli hâle getiren ada oyunuyla tanışın. Görevi siz verirsiniz, çocuğunuz kendi adasında yapar, olumlu alışkanlıklar birlikte büyür.</p>
         <div class="cta-row">
           <a class="btn btn-primary" href="app/index.html#kayit">Ücretsiz hesap oluştur</a>
           <a class="btn btn-ghost" href="#nasil">Nasıl çalışır?</a>
@@ -432,17 +449,18 @@ footer a:hover { color: var(--ink); text-decoration: underline; }
     </div>
   </div>
 
-  <!-- Tanıdık mı: ebeveynin derdi (ParentApp tanışma sorularındaki üç cümle) → çözüm -->
-  <section class="section" id="tanidik" aria-labelledby="pain-title">
+  <!-- Faydalar (Joon kalıbı): her kart bir ebeveyn derdine çözüm -->
+  <section class="section" id="faydalar" aria-labelledby="gain-title">
     <div class="wrap">
       <div class="head">
-        <p class="eyebrow">Tanıdık mı?</p>
-        <h2 id="pain-title">Yorulan siz olmayın.</h2>
+        <p class="eyebrow">Olumlu davranışı destekleyen aile uygulaması</p>
+        <h2 id="gain-title">Çocuğunuzu günlük rutinine motive edin.</h2>
       </div>
-      <div class="pains">
-        <figure class="pain"><blockquote>“Bir işin yapılması için defalarca hatırlatıyorum.”</blockquote><figcaption><i class="num">✓</i>Görev çocuğunuzun oyununda, gözünün önünde.</figcaption></figure>
-        <figure class="pain"><blockquote>“Çizelgeler bir süre işe yarıyor, sonra unutuluyor.”</blockquote><figcaption><i class="num">✓</i>Her onay adada yeni bir yer açar.</figcaption></figure>
-        <figure class="pain"><blockquote>“Akşam kendime ayıracak enerjim kalmıyor.”</blockquote><figcaption><i class="num">✓</i>Hazır rutin tek seferde, onay tek dokunuşla.</figcaption></figure>
+      <div class="gains">
+        <article class="gain"><h3>Günlük rutini dakikalar içinde kurun</h3><p>Yaşına uygun hazır rutinler, tek seferde.</p><span class="chip"><i>✓</i>Akşam rutini · 3 görev</span></article>
+        <article class="gain"><h3>Dır dır yerine oyun</h3><p>Görev çocuğunuzun oyununda; siz söylemek yerine onaylarsınız.</p><span class="chip"><img src="img/pofi-simge.png" alt="">Ev Görevleri</span></article>
+        <article class="gain"><h3>Motivasyonu oyunla destekleyin</h3><p>Her onay adada yeni bir yer açar, Okti büyür.</p><span class="chip"><img src="img/gunes-tasi.png" alt="">+1 Güneş Taşı</span></article>
+        <article class="gain"><h3>Bağımsızlığı adım adım öğretin</h3><p>Görevini kendisi görür, kendisi "Yaptım" der.</p><span class="chip"><img src="img/okti_kiz_4.jpg" alt="" style="border-radius:50%">Nazlı: "Yaptım"</span></article>
       </div>
       <p class="stat"><b>%62</b><span>ABD'deki ebeveynlerin %62'si ebeveynliği beklediğinden zor buluyor. Yalnız değilsiniz.<small>Pew Research Center, 2023 · 3.757 ebeveyn</small></span></p>
     </div>
@@ -492,53 +510,59 @@ footer a:hover { color: var(--ink); text-decoration: underline; }
     </div>
   </section>
 
-  <!-- Nasıl çalışır: dört gerçek ekran -->
+  <!-- Nasıl çalışır (Joon kalıbı üç adım, burada yatay kaydırmalı) -->
   <section class="section" id="nasil" aria-labelledby="how-title" style="padding-top:0">
     <div class="wrap">
       <div class="head">
         <p class="eyebrow">Nasıl çalışır</p>
-        <h2 id="how-title">İlk rutin, dört adımda.</h2>
+        <h2 id="how-title">Görevi verin, gerisini oyun yapsın.</h2>
       </div>
-      <ol class="steps">
-        <li>
-          <div class="st"><span class="num">1</span><h3>Hesap oluşturun</h3></div>
+      <div class="rail" id="rail" tabindex="0" role="region" aria-roledescription="kaydırmalı liste" aria-label="Nasıl çalışır: üç adım">
+        <article class="slide" aria-label="Adım 1 / 3">
+          <div class="txt"><span class="num">1</span><h3>Yaşına uygun rutinle başlayın</h3><p>Hazır rutini seçin ya da kendi görevinizi yazın.</p></div>
           <div class="mini" aria-hidden="true">
-            <div class="field"><small>Adın</small>Ayşe</div>
-            <div class="field"><small>E-posta</small>ayse@ornek.com</div>
-            <div class="box" style="background:transparent;padding:0"><span class="check on">✓</span><span>Kullanım Koşulları'nı kabul ediyorum</span></div>
-            <div class="cta">Hesap oluştur</div>
-          </div>
-        </li>
-        <li>
-          <div class="st"><span class="num">2</span><h3>Cihazı bağlayın</h3></div>
-          <div class="mini" aria-hidden="true">
-            <b>Nazlı'nın giriş kodu</b>
-            <div class="box"><span class="code">K7Q4M2</span></div>
-            <div class="box"><span class="qr"><i></i><i></i><i></i><i class="o"></i><i></i><i></i><i></i><i></i><i class="o"></i><i></i><i></i><i class="o"></i><i class="o"></i><i></i><i></i><i></i><i></i><i class="o"></i><i></i><i></i><i></i><i class="o"></i><i></i><i class="o"></i><i></i><i class="o"></i><i></i><i class="o"></i><i></i><i></i><i></i><i class="o"></i><i></i><i></i><i></i><i class="o"></i><i class="o"></i><i></i><i class="o"></i><i></i><i class="o"></i><i></i><i></i><i></i><i></i><i class="o"></i><i></i><i></i><i></i></span><span class="muted">QR'ı okutun ya da kodu yazın<br><b style="color:var(--app-ink)">14:52</b> kaldı</span></div>
-          </div>
-        </li>
-        <li>
-          <div class="st"><span class="num">3</span><h3>Görev verin</h3></div>
-          <div class="mini" aria-hidden="true">
-            <b>Akşam rutini</b>
+            <div style="display:flex;justify-content:space-between;align-items:center"><b>Akşam rutini</b><span class="pill p-easy">6–8 yaş</span></div>
             <div class="box"><span class="check on">✓</span>Dişlerini fırçala<span class="pill p-easy" style="margin-left:auto">20:00</span></div>
             <div class="box"><span class="check on">✓</span>Kitap oku, 15 dk<span class="pill p-easy" style="margin-left:auto">20:30</span></div>
             <div class="box"><span class="check on">✓</span>Çantanı hazırla<span class="pill p-easy" style="margin-left:auto">21:00</span></div>
             <div class="cta">3 görevi ekle</div>
           </div>
-        </li>
-        <li>
-          <div class="st"><span class="num">4</span><h3>Onaylayın</h3></div>
+        </article>
+        <article class="slide" aria-label="Adım 2 / 3">
+          <div class="txt"><span class="num">2</span><h3>Oyun motive etsin</h3><p>Görev Pofi Adası'nda görünür. Çocuğunuz yapınca "Yaptım" der, Okti'ye bakar, adayı açar.</p></div>
+          <div class="art"><img src="img/adalilar.jpg" alt="Pofi Adası'ndan bir sahne: Okti ve adalılar." width="1376" height="768" loading="lazy"><span class="tag" style="left:12px; top:12px">Ev Görevleri</span><span class="tag" style="right:12px; bottom:12px">"Yaptım"</span></div>
+        </article>
+        <article class="slide" aria-label="Adım 3 / 3">
+          <div class="txt"><span class="num">3</span><h3>Onaylayın, ödülü siz verin</h3><p>Onayınızla İnci ve Güneş Taşı gelir. Ödülü çocuğunuz ister, siz verirsiniz.</p></div>
           <div class="mini" aria-hidden="true">
-            <b>Onay bekleyen</b>
             <div class="box" style="gap:8px"><img class="av" src="img/okti_kiz_4.jpg" alt="" style="width:32px;height:32px"><span class="grow"><span class="one">Dişlerini fırçala</span><span class="one muted">Nazlı · 20:06</span></span><span class="round r-no" style="width:30px;height:30px">✕</span><span class="round r-yes" style="width:30px;height:30px">✓</span></div>
             <div class="box" style="justify-content:center;gap:16px"><span class="sunchip"><img src="img/inci.png" alt="">+5</span><span class="sunchip"><img src="img/gunes-tasi.png" alt="">+1</span></div>
-            <span class="muted" style="text-align:center">Onayla, oyunda İnci ve Güneş Taşı gelsin</span>
+            <div class="box" style="background:#FFF6DE"><span class="grow"><span class="one">Nazlı Film gecesi istiyor</span><span class="one muted">12 Güneş Taşı</span></span><span class="pill p-ok">Onayla</span></div>
           </div>
-        </li>
-      </ol>
+        </article>
+      </div>
+      <div class="rail-ctl">
+        <button type="button" id="railPrev" aria-label="Önceki adım">‹</button>
+        <div class="dots" aria-hidden="true"><span class="on"></span><span></span><span></span></div>
+        <button type="button" id="railNext" aria-label="Sonraki adım">›</button>
+      </div>
     </div>
   </section>
+  <script>
+  (() => {
+    const rail = document.getElementById('rail'); if (!rail) return;
+    const slides = [...rail.querySelectorAll('.slide')], dots = [...document.querySelectorAll('.dots span')];
+    const prev = document.getElementById('railPrev'), next = document.getElementById('railNext');
+    const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const current = () => { const x = rail.scrollLeft; let k = 0, best = Infinity; slides.forEach((s, i) => { const d = Math.abs(s.offsetLeft - rail.offsetLeft - x); if (d < best) { best = d; k = i; } }); return k; };
+    const go = (i) => { const s = slides[Math.max(0, Math.min(slides.length - 1, i))]; rail.scrollTo({ left: s.offsetLeft - rail.offsetLeft, behavior: smooth ? 'smooth' : 'auto' }); };
+    const sync = () => { const k = current(); dots.forEach((d, i) => d.classList.toggle('on', i === k)); prev.disabled = k === 0; next.disabled = k === slides.length - 1 || rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 2; };
+    prev.addEventListener('click', () => go(current() - 1));
+    next.addEventListener('click', () => go(current() + 1));
+    rail.addEventListener('scroll', () => requestAnimationFrame(sync), { passive: true });
+    addEventListener('resize', sync); sync();
+  })();
+  </script>
 
   <!-- ParentApp: üç ekran -->
   <section class="section" id="ebeveyn" aria-labelledby="feat-title" style="padding-top:0">
@@ -673,7 +697,7 @@ footer a:hover { color: var(--ink); text-decoration: underline; }
   <section class="section" style="padding-top:0">
     <div class="wrap final">
       <img src="img/pofi-simge.png" alt="" width="72" height="72" style="border-radius:18px">
-      <h2>İlk rutini bu akşam kurun.</h2>
+      <h2>Olumlu alışkanlıklara bugün başlayın.</h2>
       <div class="cta-row" style="justify-content:center">
         <a class="btn btn-primary" href="app/index.html#kayit">Hesap oluştur</a>
         <a class="btn btn-ghost" href="app/index.html#giris">Giriş yap</a>
