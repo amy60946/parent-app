@@ -72,7 +72,14 @@ export function extract() {
       if (m[2]) {
         const i = m.index + m[0].length;
         if (s[i] === '{') topKeys(balanced(s, i, '{', '}') ?? '').forEach((k) => args.add(k));
-        else dynamic.add(name); // argümanlar değişkenden: yalnız işlevin varlığı denetlenir
+        else {
+          // argümanlar değişkenden: aynı dosyada `const <ad> = { … }` tanımı varsa onun anahtarları (en kısa çağrı biçimi)
+          const call = balanced(s, m.index + m[0].indexOf('('), '(', ')') ?? '';
+          const ids = [...call.slice(call.indexOf(',') + 1).matchAll(/\b([a-z][A-Za-z0-9]*)\b/g)].map((x) => x[1]);
+          const def = ids.map((id) => s.match(new RegExp(`const\\s+${id}\\s*=\\s*\\{`))).find(Boolean);
+          if (def) topKeys(balanced(s, def.index + def[0].length - 1, '{', '}') ?? '').forEach((k) => args.add(k));
+          else dynamic.add(name); // çözülemedi: yalnız işlevin varlığı denetlenir
+        }
       }
       rpcs.set(name, args); note('rpc:' + name, f);
     }
