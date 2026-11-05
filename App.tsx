@@ -43,6 +43,7 @@ import ChatScreen from './src/screens/ChatScreen';
 import NotificationsScreen, { openNotification } from './src/screens/NotificationsScreen';
 import AbcScreen from './src/screens/AbcScreen';
 import LessonScreen from './src/screens/LessonScreen';
+import { SessionReminderSync } from './src/components/SessionsSection';
 import PaywallScreen from './src/screens/PaywallScreen';
 import RewardsScreen from './src/screens/RewardsScreen';
 import InviteScreen from './src/screens/InviteScreen';
@@ -349,6 +350,7 @@ function Root() {
           onStateChange={() => trackScreen(navRef.getCurrentRoute()?.name)}>
           <StatusBar style="dark" />
           <Tracking userId={session.user.id} />
+          <SessionReminderSync />
           <Main />
         </NavigationContainer>
       </NotificationsProvider>

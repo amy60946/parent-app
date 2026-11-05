@@ -14,6 +14,7 @@ const icon: Record<string, keyof typeof Ionicons.glyphMap> = {
   parent_joined: 'person-add-outline', reward_request: 'gift-outline', reward_given: 'gift-outline',
   reward_decided: 'gift-outline', stones_deducted: 'sunny-outline', guest_pass_used: 'gift-outline', referral_reward: 'gift-outline', care_plan_shared: 'clipboard-outline',
   lesson_assigned: 'school-outline',
+  session_scheduled: 'calendar-outline', session_changed: 'calendar-outline', session_cancelled: 'calendar-outline', session_offer: 'calendar-outline',
 };
 
 // Bildirime dokununca ilgili ekran. Gösterilecek bir ekran yoksa hiçbir şey olmaz (false döner):
@@ -29,6 +30,8 @@ export function notificationTarget(n: Pick<AppNotification, 'kind' | 'data'>): [
   if (n.kind === 'clinic_suggestion') return ['Tabs', { screen: 'Uzmanım' }];
   // Aile davet et: davet kullanıldı / davet ödülü (akislar.md 19) → davet sayfası (özet ve Apple hediye kodu)
   if (n.kind === 'guest_pass_used' || n.kind === 'referral_reward') return ['GuestPass'];
+  // Seans (akislar.md 20): uzmanın sayfasında Randevular, o seans vurgulu; cihazdaki hatırlatma da aynı yere
+  if ((n.kind.startsWith('session_')) && n.data?.session_id) return ['Clinician', { sessionId: n.data.session_id }];
   // Uzmanın ders önerisi (akislar.md 22) → Gelişim › Ben
   if (n.kind === 'lesson_assigned') return ['Tabs', { screen: 'Gelişim', params: { who: 'me' } }];
   if (n.kind === 'kvkk_answered') return ['Kvkk', { tab: 'list' }]; // KVKK başvurusu yanıtlandı (ortak P17)

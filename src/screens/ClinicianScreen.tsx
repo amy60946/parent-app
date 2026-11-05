@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +21,8 @@ import { formatTR, todayISO } from '../dates';
 import { genitive } from '../lib/tr';
 import { track } from '../lib/track';
 import { afterModal } from '../lib/modal';
+import SessionsSection from '../components/SessionsSection';
+import { familySessions, syncSessionReminders } from '../lib/sessions';
 
 // Uzmanım › uzman (kullanıcı isteği 28 Ekim 2026, Joon "Care › therapist" örneğinden): bugün yapılacaklar (uzmanın aile
 // programındaki uygulamalar + davranış kaydı), çocuk başına program (takip planı), görev önerileri, paylaşılan çocuklar.
@@ -31,13 +33,21 @@ export default function ClinicianScreen({ navigation, route }: any) {
   // Bildirimden açılınca yalnız paylaşım kimliği gelir (care_plan_shared / clinic_suggestion data.link_id; akislar.md 12.1)
   const { familyId } = useStore();
   const state = useCare(familyId);
-  const clinicId: string | undefined = route.params?.clinicId ?? state.care?.links.find((l) => l.linkId === route.params?.linkId)?.clinicId;
-  return <ClinicianView navigation={navigation} clinicId={clinicId} {...state} />;
+  // Seans bildiriminden yalnız seans kimliği gelir (data.session_id): paylaşımı randevulardan bul
+  const sessionId: string | undefined = route.params?.sessionId;
+  const [sessionLink, setSessionLink] = useState<string | undefined>();
+  useEffect(() => {
+    if (!sessionId || route.params?.linkId || route.params?.clinicId) return;
+    familySessions().then((l) => setSessionLink(l?.find((s) => s.id === sessionId)?.linkId)).catch(() => {});
+  }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const linkId = route.params?.linkId ?? sessionLink;
+  const clinicId: string | undefined = route.params?.clinicId ?? state.care?.links.find((l) => l.linkId === linkId)?.clinicId;
+  return <ClinicianView navigation={navigation} clinicId={clinicId} sessionId={sessionId} {...state} />;
 }
 
 type CareHook = ReturnType<typeof useCare>;
-export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab }: CareHook & {
-  navigation: any; clinicId?: string;
+export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab, sessionId }: CareHook & {
+  navigation: any; clinicId?: string; sessionId?: string;
   // Uzmanım sekmesinde: kaydırılan içeriğin başı (uzman seçici, bekleyen davetler) ve "Uzman bağla"
   tab?: { top?: React.ReactNode; onConnect: () => void };
 }) {
@@ -124,6 +134,7 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
       setBusy(l.linkId);
       try {
         await stopSharing(l.linkId);
+        syncSessionReminders();
         track('clinic.unlink', { all: links.length === 1 });
         // Son çocuk da ayrıldı: sayfa kapanır (alttaki sayfa kapanınca; iOS'ta kapanırken geri gitmek dokunuşu kilitleyebilir)
         if (links.length === 1) { setManage(false); afterModal(leave); } else reload();
@@ -136,6 +147,7 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
       setBusy('all');
       try {
         for (const l of links) await stopSharing(l.linkId);
+        syncSessionReminders(); // paylaşım bitince randevular kalkar; hatırlatmalar da
         track('clinic.remove', { n: links.length });
         setManage(false);
         afterModal(leave);
@@ -174,6 +186,8 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
         {changes.map((g) => (
           <ChangeSuggestionCard key={g[0].routine?.group ?? g[0].id} items={g} childName={childName(g[0].childId)} onDecided={dropSuggestions} />
         ))}
+
+        <SessionsSection links={links} childName={childName} highlight={sessionId} />
 
         <Section title="Bugün yapılacaklar" info="Uzmanının seninle paylaştığı evde uygulamalar. Uyguladığın gün kutuyu işaretle; nasıl geçtiğini takip planında yazabilirsin. Zor bir an olduysa davranış kaydı ekle; uzmanın görür.">
           {todos.map((t, i) => (

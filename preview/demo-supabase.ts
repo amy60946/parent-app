@@ -20,7 +20,7 @@ const TABLES = ['profiles', 'families', 'children', 'tasks', 'task_assignments',
   'care_modules', 'care_module_logs', 'clinic_link_history', 'intake_answers',
   'parent_assignments', 'parent_completions', 'parent_stone_ledger', 'gift_items', 'child_gifts',
   'legal_documents', 'legal_acceptances', 'kvkk_requests',
-  'parent_lessons', 'parent_lesson_assignments', 'parent_lesson_progress', 'parent_lesson_practice'];
+  'parent_lessons', 'parent_lesson_assignments', 'parent_lesson_progress', 'parent_lesson_practice', 'clinic_sessions'];
 
 const uuid = () =>
   'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -47,6 +47,23 @@ const DEMO_LESSONS = [
     try_text: 'Bu hafta zor bir anda konuşmayı tek cümleye indir ve önce kendi nefesini yavaşlat.',
     body_md: '## Neden işe yarar?\nZor anda uzun açıklama çocuğa ulaşmaz; sakin bir yetişkin ortamı da sakinleştirir.\n\n## Nasıl?\n- Önce dur, bir nefes al.\n- Tek cümle: "Kızgınsın. Yanındayım."\n- Konuşmayı sakinleşince yap.' },
 ];
+// Örnek randevular (öneri 20261105100000_sessions.sql; ParentApp yalnız family_* işlevleriyle görür)
+function seedSessions(x: Db) {
+  if (x.sessions_seeded) return;
+  x.sessions_seeded = true;
+  const link = (x.clinic_links ?? []).find((l: Row) => l.id === 'demo-link' && l.status === 'active');
+  if (!link) return;
+  const at = (days: number, h: number, m = 0) => { const d = new Date(); d.setDate(d.getDate() + days); d.setHours(h, m, 0, 0); return d.toISOString(); };
+  const base = { link_id: link.id, clinic_id: link.clinic_id, clinician_id: link.clinician_id, duration_min: 45, kind: 'individual', mode: 'in_person',
+    room: 'Oda 2', location: 'Kadıköy', family_response: null, family_note: null, booked_by: 'clinic', offer_expires_at: null, series: true };
+  x.clinic_sessions.push(
+    { ...base, id: 'demo-ses-1', starts_at: at(-14, 15), status: 'done' },
+    { ...base, id: 'demo-ses-2', starts_at: at(-7, 15), status: 'late_cancel' },
+    { ...base, id: 'demo-ses-3', starts_at: at(1, 15), status: 'planned' },
+    { ...base, id: 'demo-ses-4', starts_at: at(8, 15), status: 'planned', family_response: 'ok' },
+    { ...base, id: 'demo-ses-5', starts_at: at(3, 11), status: 'offered', series: false, offer_expires_at: at(2, 12), kind: 'parent', mode: 'online', room: null, location: null },
+  );
+}
 function seedLessons(x: Db) {
   if (x.lessons_seeded) return;
   x.lessons_seeded = true;
@@ -246,6 +263,7 @@ function seed(): Db {
     parent: { user: { id: U, email: 'demo@parentapp.app', created_at: now() }, access_token: 'demo' },
   };
   seedLessons(db);
+  seedSessions(db);
   return db;
 }
 
@@ -256,6 +274,7 @@ function load(): Db {
       const x = JSON.parse(raw);
       TABLES.forEach((t) => { x[t] = x[t] ?? []; });
       seedLessons(x);
+      seedSessions(x);
       x.sessions = x.sessions ?? {};
       return x;
     }
@@ -904,6 +923,51 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
   if (name === 'my_kvkk_requests') return { data: db.kvkk_requests.filter((r: Row) => r.user_id === uid).reverse(), error: null };
   // Ebeveyn görevi işareti ve hediye (ortak 20261027140000_parent_tasks_gifts.sql)
   const pbal = () => Math.max(0, db.parent_stone_ledger.filter((l: Row) => l.user_id === uid).reduce((a: number, l: Row) => a + l.amount, 0));
+  // Seans planlama (öneri 20261105100000_sessions.sql; akislar.md 20)
+  if (name.startsWith('family_session') || name === 'family_offer_respond' || name === 'family_booking_slots' || name === 'family_book_slot') {
+    const fam = me?.family_id;
+    const KIND: Row = { individual: 'Bireysel seans', family: 'Aile görüşmesi', parent: 'Ebeveyn görüşmesi', group: 'Grup seansı', intake: 'İlk görüşme' };
+    const visible = (db.clinic_sessions as Row[]).filter((x) => db.clinic_links.some((l: Row) => l.id === x.link_id && l.status === 'active' && l.family_id === fam)
+      && (x.status !== 'offered' || x.offer_expires_at > now()));
+    const slotsFor = () => {
+      const out: Row[] = [];
+      for (let d = 2; d <= 9; d++) for (const h of [10, 11, 16]) {
+        const t = new Date(); t.setDate(t.getDate() + d); t.setHours(h, 0, 0, 0);
+        if (t.getDay() === 0 || t.getDay() === 6) continue;
+        const iso2 = t.toISOString();
+        if (!(db.clinic_sessions as Row[]).some((x) => x.starts_at === iso2 && x.status === 'planned')) out.push({ starts_at: iso2, duration_min: 45 });
+      }
+      return out;
+    };
+    const find = () => visible.find((x) => x.id === args.p_id);
+    if (name === 'family_sessions') return { data: visible.sort((a, b) => (a.starts_at < b.starts_at ? -1 : 1)).map((x) => {
+      const l = db.clinic_links.find((k: Row) => k.id === x.link_id);
+      return { ...x, child_id: l.child_id, child: db.children.find((c: Row) => c.id === l.child_id)?.name ?? '',
+        clinician: db.clinicians.find((c: Row) => c.id === x.clinician_id)?.name ?? '', clinic: db.clinics.find((c: Row) => c.id === x.clinic_id)?.name ?? '',
+        kind_label: KIND[x.kind] ?? 'Görüşme', reminders: [1440, 120] };
+    }), error: null };
+    if (name === 'family_session_respond') {
+      const x = find(); if (!x) return err('session_not_found');
+      if (x.status !== 'planned' || x.starts_at <= now()) return err('session_closed');
+      x.family_response = args.p_response; x.family_note = (args.p_note ?? '').trim().slice(0, 300) || null; save(); return { data: null, error: null };
+    }
+    if (name === 'family_offer_respond') {
+      const x = find(); if (!x || x.status !== 'offered') return err('offer_not_found');
+      x.status = args.p_accept ? 'planned' : 'cancelled'; x.family_response = args.p_accept ? 'ok' : null; x.offer_expires_at = null; save();
+      return { data: x.status, error: null };
+    }
+    if (name === 'family_booking_slots') return { data: db.clinic_links.some((l: Row) => l.id === args.p_link_id && l.family_id === fam && l.status === 'active') ? slotsFor() : [], error: null };
+    if (name === 'family_book_slot') {
+      if (!slotsFor().some((x) => x.starts_at === args.p_starts_at)) return err('slot_not_available');
+      if ((db.clinic_sessions as Row[]).filter((x) => x.link_id === args.p_link_id && x.booked_by === 'family' && x.status === 'planned' && x.starts_at > now()).length >= 2) return err('too_many_bookings');
+      const l = db.clinic_links.find((k: Row) => k.id === args.p_link_id);
+      const id = uuid();
+      db.clinic_sessions.push({ id, link_id: l.id, clinic_id: l.clinic_id, clinician_id: l.clinician_id, starts_at: args.p_starts_at, duration_min: 45,
+        kind: 'individual', mode: 'in_person', room: 'Oda 2', location: 'Kadıköy', status: 'planned', family_response: 'ok', family_note: null,
+        booked_by: 'family', offer_expires_at: null, series: false });
+      save(); return { data: id, error: null };
+    }
+  }
   // Ebeveyn dersleri (öneri 20261105200000_parent_lessons.sql): hafta Pzt–Paz, uygulanan gün başına 1 taş, haftada en çok 3
   if (name.startsWith('parent_lesson_') || name === 'family_lessons') {
     const today = iso(new Date());

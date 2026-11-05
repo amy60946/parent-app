@@ -151,11 +151,11 @@ export default function ParentLessons({ navigation }: { navigation: any }) {
             <Info title="Güneş Taşı" text={STONE_INFO} size={20} color={colors.navy} />
           </View>
           <View style={styles.footRow}>
-            <Pressable onPress={finish} disabled={busy === 'finish'} hitSlop={8} accessibilityRole="button">
+            <Pressable onPress={finish} disabled={busy === 'finish'} hitSlop={12} style={{ paddingVertical: 6 }} accessibilityRole="button">
               <Text style={styles.link}>Öğrendim</Text>
             </Pressable>
             {library.length > 0 && (
-              <Pressable onPress={() => setShowLib((v) => !v)} hitSlop={8} style={styles.row} accessibilityRole="button">
+              <Pressable onPress={() => setShowLib((v) => !v)} hitSlop={12} style={[styles.row, { paddingVertical: 6 }]} accessibilityRole="button">
                 <Text style={styles.link}>Başka beceri seç</Text>
                 <Ionicons name={showLib ? 'chevron-up' : 'chevron-down'} size={14} color={colors.navy} />
               </Pressable>
@@ -269,5 +269,5 @@ const styles = StyleSheet.create({
   chip: { backgroundColor: colors.medium.bg, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 3 },
   chipText: { fontSize: 11, fontWeight: '700', color: colors.medium.fg },
   soonIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.today, alignItems: 'center', justifyContent: 'center' },
-  foot: { fontSize: 11, lineHeight: 16, color: colors.muted, textAlign: 'center' },
+  foot: { fontSize: 11, lineHeight: 16, color: '#6B7285', textAlign: 'center' },
 });
