@@ -83,7 +83,7 @@ export default function RoutinePackCard({ items, childName, goal, onDecided }: {
       {!!goal && (
         <View style={styles.goal}>
           <Ionicons name="flag-outline" size={13} color="#2F6B5E" />
-          <Text style={styles.goalText} numberOfLines={2}>Hedef: {goal}</Text>
+          <Text style={styles.goalText} numberOfLines={2}>Davranış hedefi: {goal}</Text>
         </View>
       )}
 

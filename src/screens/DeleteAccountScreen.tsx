@@ -68,7 +68,7 @@ export default function DeleteAccountScreen({ navigation }: any) {
               'görevler, onaylar, ödüller, coin ve Güneş Taşı geçmişi,',
               'mesajlar, fotoğraflar ve sesli mesajlar,',
               'davranış kayıtları (zor anlar) ve tanışma yanıtları,',
-              'uzman paylaşımları (uzmanın erişimi hemen biter) ve uzmanın bu çocuklar için tuttuğu notlar, hedefler ve takip planı,',
+              'uzman paylaşımları (uzmanın erişimi hemen biter) ve uzmanın bu çocuklar için tuttuğu notlar, davranış hedefleri ve takip planı,',
               'oyun yedekleri.',
             ].map((t) => (
               <View key={t} style={{ flexDirection: 'row', gap: 8 }}><Text style={styles.text}>•</Text><Text style={[styles.text, { flex: 1 }]}>{t}</Text></View>

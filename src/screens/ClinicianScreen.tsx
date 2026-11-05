@@ -197,7 +197,7 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
           </Pressable>
         </Section>
 
-        <Section title="Program" info="Uzmanının her çocuk için paylaştığı hedefler ve aile programı (eğitimler). İlerlemeyi buradan takip edersin; uzmanın da görür. Bu bilgiler tanı ya da puan değildir.">
+        <Section title="Program" info="Uzmanının her çocuk için paylaştığı davranış hedefleri ve aile programı (eğitimler). İlerlemeyi buradan takip edersin; uzmanın da görür. Bu bilgiler tanı ya da puan değildir.">
           {links.map((l, i) => {
             const p = care.plans[l.linkId];
             const active = p?.modules.filter((m) => m.status === 'active') ?? [];
@@ -205,7 +205,7 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
             const pct = active.length ? Math.round((week / (active.length * 7)) * 100) : 0;
             const sub = !l.planReady ? 'Takip planı bu sürümde açık değil'
               : !p || (!p.modules.length && !p.goals.length) ? 'Uzmanın henüz plan paylaşmadı'
-              : [active.length ? `${active.length} uygulama` : '', p.goals.length ? `${p.goals.length} hedef` : '', active.length ? `bu hafta %${pct}` : ''].filter(Boolean).join(' · ');
+              : [active.length ? `${active.length} uygulama` : '', p.goals.length ? `${p.goals.length} davranış hedefi` : '', active.length ? `bu hafta %${pct}` : ''].filter(Boolean).join(' · ');
             return (
               <Pressable key={l.linkId} onPress={() => openPlan(l)} disabled={!l.planReady} style={[styles.row, i > 0 && styles.sep]} accessibilityRole="button">
                 <View style={{ flex: 1, gap: 6 }}>

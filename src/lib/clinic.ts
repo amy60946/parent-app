@@ -40,7 +40,8 @@ export async function listLinks(): Promise<ClinicLink[]> {
   const { data, error } = await supabase.rpc('family_clinic_links');
   fail(error);
   return (data ?? []).map((r: any) => ({
-    linkId: r.link_id, clinicId: r.clinic_id, childId: r.child_id, clinic: r.clinic, clinician: r.clinician, title: r.title, consentAt: r.consent_at,
+    // Kendi bireysel alanındaki uzman (independent, öneri 20261105090000_workspaces): klinik adı yok, yalnız unvan ve ad (kullanıcı kararı 5 Kasım 2026: ek etiket yok)
+    linkId: r.link_id, clinicId: r.clinic_id, childId: r.child_id, clinic: r.independent ? '' : r.clinic, clinician: r.clinician, title: r.title, consentAt: r.consent_at,
     historyShared: !!r.history_shared, historyAvailable: !!r.history_available, verifiedAs: r.verified_as ?? undefined,
     planReady: 'history_available' in r,
   }));
@@ -134,7 +135,7 @@ export type PendingInvite = {
 };
 
 const toInvite = (r: any): PendingInvite => ({
-  code: r.code, clinic: r.clinic ?? '', clinician: r.clinician ?? '', title: r.title ?? '',
+  code: r.code, clinic: r.independent ? '' : r.clinic ?? '', clinician: r.clinician ?? '', title: r.title ?? '', // bireysel alan: yalnız unvan ve ad
   childName: r.child_name ?? undefined, childAgeGroup: ['K', 'A', 'B', 'C'].includes(r.child_age_group) ? r.child_age_group : undefined,
   hasPlan: !!r.has_plan, verifiedAs: r.verified_as ?? undefined,
 });
@@ -214,7 +215,7 @@ export async function inviteInfo(token: string): Promise<InviteInfo | null> {
     const r = await fetch(`${url}/functions/v1/invite-info?t=${token.toLowerCase()}`, { headers: key ? { apikey: key } : {} });
     if (!r.ok) return null;
     const j = await r.json();
-    return { status: j.status, clinic: j.clinic, clinician: j.clinician, title: j.title, code: j.code, verifiedAs: j.verified_as ?? undefined };
+    return { status: j.status, clinic: j.independent ? undefined : j.clinic, clinician: j.clinician, title: j.title, code: j.code, verifiedAs: j.verified_as ?? undefined };
   } catch {
     return null;
   }

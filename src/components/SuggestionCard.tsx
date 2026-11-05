@@ -48,7 +48,7 @@ export default function SuggestionCard({ s, childName, goal, onDecided }: { s: S
         </View>
       </View>
       <Text style={styles.cap}>{scheduleText(s)}</Text>
-      {!!goal && <Text style={[styles.cap, { color: '#2F6B5E', fontWeight: '600' }]}>Hedef: {goal}</Text>}
+      {!!goal && <Text style={[styles.cap, { color: '#2F6B5E', fontWeight: '600' }]}>Davranış hedefi: {goal}</Text>}
       {!!s.description && <Text style={styles.body}>{s.description}</Text>}
       {!!s.note && <Text style={[styles.body, { fontStyle: 'italic' }]}>Uzmanın notu: {s.note}</Text>}
       <View style={{ flexDirection: 'row', gap: 10 }}>

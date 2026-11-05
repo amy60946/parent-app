@@ -93,7 +93,7 @@ export default function CarePlanScreen({ navigation, route }: any) {
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text style={styles.title}>Takip planı</Text>
-            <Info title="Takip planı" text={'Uzmanının seninle paylaştığı hedefler ve evde uygulama. Uyguladığın gün "Bugün uyguladım"a dokun; nasıl geçtiğini ya da engeli isteğe bağlı seç. Uzmanın bu kayıtları görür.\n\nBu bilgiler tanı ya da puan değildir. Uzmanın yalnız senin paylaştığın çocuk için görür.'} />
+            <Info title="Takip planı" text={'Uzmanının seninle paylaştığı davranış hedefleri ve evde uygulama. Uyguladığın gün "Bugün uyguladım"a dokun; nasıl geçtiğini ya da engeli isteğe bağlı seç. Uzmanın bu kayıtları görür.\n\nBu bilgiler tanı ya da puan değildir. Uzmanın yalnız senin paylaştığın çocuk için görür.'} />
           </View>
           {!!(childName || clinician) && <Text style={styles.cap}>{[childName, clinician].filter(Boolean).join(' · ')}</Text>}
         </View>
@@ -126,7 +126,7 @@ export default function CarePlanScreen({ navigation, route }: any) {
               })}
               {(free.length > 0 || freeRts.length > 0) && (
                 <View style={{ gap: 10 }}>
-                  <Text style={styles.section}>{plan.goals.length ? 'Hedefe bağlı olmayanlar' : 'Evde uygulama'}</Text>
+                  <Text style={styles.section}>{plan.goals.length ? 'Davranış hedefine bağlı olmayanlar' : 'Evde uygulama'}</Text>
                   {free.map((m) => <Module key={m.id} m={m} log={logs[m.id]} onSave={save} />)}
                   {freeRts.length > 0 && (
                     <Card style={{ gap: 4 }}>
@@ -146,7 +146,7 @@ export default function CarePlanScreen({ navigation, route }: any) {
               )}
               {plan.goals.length > 0 && (
                 <View style={{ gap: 10 }}>
-                  <Text style={styles.section}>Hedefler</Text>
+                  <Text style={styles.section}>Davranış hedefleri</Text>
                   {plan.goals.map((g) => <Card key={g.id} style={{ gap: 6 }}><GoalHead g={g} /></Card>)}
                 </View>
               )}
@@ -167,7 +167,7 @@ function GoalHead({ g }: { g: CareGoal }) {
         <Text style={[styles.tag, g.status === 'achieved' && { backgroundColor: colors.easy.bg, color: colors.easy.fg }]}>{goalStatus[g.status] ?? ''}</Text>
       </View>
       {!!g.description && <Text style={styles.body}>{g.description}</Text>}
-      {!!g.target && <Text style={styles.cap}>Hedef: {g.target}</Text>}
+      {!!g.target && <Text style={styles.cap}>Hedef düzey: {g.target}</Text>}
       {!!g.homeSupport && <Text style={styles.body}><Text style={{ fontWeight: '700' }}>Evde: </Text>{g.homeSupport}</Text>}
     </View>
   );

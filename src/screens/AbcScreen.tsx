@@ -268,8 +268,8 @@ function AbcForm({ onDone, defaultChild, links, goals }: { onDone: () => void; d
       {goalKids.length > 0 && (
         <View style={{ gap: 8 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={styles.section}>Hangi hedefle ilgili? (isteğe bağlı)</Text>
-            <Info title="Hedef seçimi" text={'Uzmanının belirlediği hedeflerden birini seçersen uzmanın kayıtları hedefe göre izler; raporlar daha tutarlı olur.\n\nEmin değilsen "Diğer / emin değilim" de, kayıt yine uzmanına gider.'} />
+            <Text style={styles.section}>Hangi davranış hedefiyle ilgili? (isteğe bağlı)</Text>
+            <Info title="Davranış hedefi seçimi" text={'Uzmanının belirlediği davranış hedeflerinden birini seçersen uzmanın kayıtları davranış hedefine göre izler; raporlar daha tutarlı olur.\n\nEmin değilsen "Diğer / emin değilim" de, kayıt yine uzmanına gider.'} />
           </View>
           {goalKids.map((cid) => {
             const sel = goalOf[cid];
