@@ -1,0 +1,86 @@
+name: Denetim (tür, web, tarif, canlı)
+# Her push'ta, her gün ve elle: ParentApp bozulmadan önce yakalansın (kullanıcı isteği 5 Kasım 2026).
+#  1. tur-web: TypeScript tür denetimi + web derlemesi (expo export) — telefon/iPad/web aynı kod.
+#  2. tarif:   ortak deposunun göçleri boş PostgreSQL'e uygulanır; uygulamanın çağırdığı her işlev (argüman adlarıyla),
+#              tablo ve sütun tarifte var ve girişli kullanıcıya açık mı (tools/contract/check-db.mjs).
+#  3. canli:   aynı liste canlı Supabase'de var mı + giriş ayarları (e-posta kaydı, anonim giriş) + Edge Function'lar
+#              (tools/contract/check.mjs; yalnız okur, satır yazmaz, oturum açmaz; publishable anahtar).
+# Kırmızı biterse GitHub e-posta gönderir. Bildirim, zamanlamayı en son değiştiren hesaba gider.
+on:
+  push:
+    paths-ignore: ['docs/**', 'store/**', 'site/**', '**/*.md']
+  schedule:
+    - cron: '23 4 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: denetim-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  SUPABASE_URL: https://uhelhxqgpcjemadhsifx.supabase.co
+jobs:
+  tur-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Tür denetimi
+        run: npx tsc --noEmit
+      - name: Web derlemesi
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ env.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_KEY: derleme-denetimi
+        run: CI=1 npx expo export --platform web --output-dir dist-denetim > /dev/null
+
+  tarif:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: ortak deposu (aynı adlı dal varsa o, yoksa main)
+        run: |
+          ref=main
+          if git ls-remote --exit-code --heads https://github.com/amy60946/ortak.git "$GITHUB_REF_NAME" > /dev/null; then ref="$GITHUB_REF_NAME"; fi
+          echo "ortak: $ref"
+          git clone --depth 1 --branch "$ref" https://github.com/amy60946/ortak.git ../ortak
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Göçleri uygula
+        run: |
+          createdb tarif
+          for f in ../ortak/supabase/test/supabase_stub.sql ../ortak/supabase/migrations/*.sql; do
+            psql -q -t -o /dev/null -v ON_ERROR_STOP=1 -d tarif -f "$f" 2> err.txt || { echo "::error::$f uygulanamadı"; grep ERROR err.txt; exit 1; }
+          done
+      - name: Uygulama ↔ tarif
+        run: node tools/contract/check-db.mjs "dbname=tarif"
+
+  canli:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Uygulama ↔ canlı Supabase
+        env:
+          SUPABASE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: node tools/contract/check.mjs
