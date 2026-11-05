@@ -13,7 +13,7 @@ import { useParentTasks } from '../parentTasks';
 // Tasarım 390×844 noktada çizildi; ekrana sığacak kadar ölçeklenir, alta (sekme çubuğuna) hizalanır.
 // 3 Kasım 2026 (kullanıcı kararı; benchmark: kısa turlar ve kullanıcının kendi açtığı turlar çok daha çok bitiriliyor,
 // NN/g: sunum tipi turlar görev başarısını artırmıyor): kendiliğinden açılınca önce sorulur ("Göster / Şimdi değil"),
-// sonra KISA tur (3 kart: görev ver → çocuk oyunda yapar → onayla). Aile › Hesap › "Nasıl kullanılır?" TAM turu açar
+// sonra KISA tur (2 kart: görev ver → onayla; çocuğun oyunda 'Yaptım'a basması onay kartında yazıyla). Aile › Hesap › "Nasıl kullanılır?" TAM turu açar
 // (+ ödüller, mesajlar, gelişim, sen de katıl, uzmanım). Çocuk ekleme ve oyuna bağlama Ben'deki "İlk adımlar" kartında.
 
 const KEY = 'onboarding-v1';
@@ -25,12 +25,13 @@ const DIM = 'rgba(15,27,61,0.62)';
 // Açık zemin (#F5F6F8) üstünde karartmanın görünen rengi: ölçeklenen sahnenin dışındaki boşluk
 const DIM_SOLID = '#666E84';
 
-type StepId = 'task' | 'play' | 'review' | 'rewards' | 'chat' | 'progress' | 'parent' | 'clinic' | 'rEarn' | 'rAdd' | 'rGive';
+type StepId = 'task' | 'review' | 'rewards' | 'chat' | 'progress' | 'parent' | 'clinic' | 'rEarn' | 'rAdd' | 'rGive';
 // rewards: Ödüller ekranının ilk açılışı ve ⓘ (kullanıcı isteği 3 Kasım 2026: uzun açıklama yerine aynı "kullanıyormuş gibi" kartlar)
 export type GuideMode = 'short' | 'full' | 'rewards';
 const STEPS: Record<GuideMode, StepId[]> = {
-  short: ['task', 'play', 'review'],
-  full: ['task', 'play', 'review', 'rewards', 'chat', 'progress', 'parent', 'clinic'],
+  // Oyun içi görsel adım (play) çıkarıldı (kullanıcı isteği 5 Kasım 2026); oyundaki 'Yaptım' onay kartının metninde anlatılır
+  short: ['task', 'review'],
+  full: ['task', 'review', 'rewards', 'chat', 'progress', 'parent', 'clinic'],
   rewards: ['rEarn', 'rAdd', 'rGive'],
 };
 
@@ -321,7 +322,7 @@ function StepReview(p: StepProps) {
         </View>
       </View>
       <TabRing index={0} />
-      <Coach {...p} title="Yaptı mı? Onayla" text="Ana sayfada 'Onay bekleyen'e dokun, ✓ ile onayla. Onaylayınca çocuğun coin ve Güneş Taşı kazanır; satıra dokunursan not eklersin." style={{ left: 20, right: 20, top: 372 }} />
+      <Coach {...p} title="Yaptı mı? Onayla" text="Çocuğun görevi Pofi Adası'nda görür, bitirince 'Yaptım'a basar; sana bildirim gelir. Ana sayfada 'Onay bekleyen'e dokun, ✓ ile onayla. Onaylayınca çocuğun coin ve Güneş Taşı kazanır; satıra dokunursan not eklersin." style={{ left: 20, right: 20, top: 372 }} />
     </>
   );
 }
@@ -398,45 +399,6 @@ function StepClinic({ onNext, onBack, step, total }: StepProps) {
           </Pressable>
         </View>
       </View>
-    </>
-  );
-}
-
-/* ---------- Çocuk oyunda yapar: Pofi Adası › Ev Görevleri › Yaptım → ebeveyne bildirim ---------- */
-
-function StepPlay(p: StepProps) {
-  return (
-    <>
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: '#CFE8F7' }]} />
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 300, backgroundColor: '#BFE3A8', borderTopLeftRadius: 200, borderTopRightRadius: 200 }} />
-      <Text style={{ position: 'absolute', left: 20, top: 54, fontSize: 13, fontWeight: '700', color: '#2C5A78' }}>Pofi Adası · çocuğunun oyunu</Text>
-      <Block top={240} height={250} style={{ padding: 16, gap: 12 }}>
-        <Text style={{ fontSize: 18, fontWeight: '800', color: colors.navy }}>Ev Görevleri</Text>
-        {['Dişlerini fırçala', 'Yatağını topla'].map((t, i) => (
-          <View key={t} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, height: 52 }}>
-            <Face id={CHILD_FACE} size={36} />
-            <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: colors.navy }}>{t}</Text>
-            {i === 0 && <View style={{ width: 92 }} />}
-          </View>
-        ))}
-      </Block>
-      <Dim />
-      <Ring style={{ right: 36, top: 290, width: 92, height: 40 }} radius={20} badge={1} badgeAt={{ top: -12, left: -12 }} inner={{ backgroundColor: '#2F7D4A' }}>
-        <Text style={{ fontSize: 14, fontWeight: '800', color: '#fff' }}>Yaptım</Text>
-      </Ring>
-      <Trail d="M308 276 L308 194" />
-      {/* Ebeveynin telefonuna gelen bildirim */}
-      <Ring style={{ left: 20, right: 20, top: 108, height: 72 }} radius={18} badge={2} badgeAt={{ top: -12, right: -12 }}
-        inner={{ flexDirection: 'row', justifyContent: 'flex-start', gap: 12, paddingHorizontal: 14 }}>
-        <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name="notifications" size={18} color="#fff" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 14, fontWeight: '800', color: colors.navy }}>Nazlı görevi yaptı</Text>
-          <Text style={{ fontSize: 12, color: '#5B6274' }}>Dişlerini fırçala · onayını bekliyor</Text>
-        </View>
-      </Ring>
-      <Coach {...p} title="Çocuğun oyunda yapar" text="Verdiğin görevler Pofi Adası'nda 'Ev Görevleri'nde görünür. Bitirince 'Yaptım'a basar, sana bildirim gelir." style={{ left: 20, right: 20, top: 520 }} />
     </>
   );
 }
@@ -730,7 +692,7 @@ function Ask({ total, onShow, onLater }: { total: number; onShow: () => void; on
 }
 
 const SCENES: Record<StepId, (p: StepProps) => React.ReactElement> = {
-  task: StepTask, play: StepPlay, review: StepReview, rewards: StepRewards, chat: StepChat, progress: StepProgress, parent: StepParent, clinic: StepClinic,
+  task: StepTask, review: StepReview, rewards: StepRewards, chat: StepChat, progress: StepProgress, parent: StepParent, clinic: StepClinic,
   rEarn: StepEarn, rAdd: StepAdd, rGive: StepGive,
 };
 
