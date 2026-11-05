@@ -46,10 +46,10 @@ Alınmayanlar: "#1", "N milyon aile", ödül ve basın logoları, yıldız ve yo
 
 Metinler (üçünde aynı, "siz" dili; web sitesiyle uyumlu):
 
-1. Çocuğunuzun günlük rutini tek ekranda · Görev verin, yapılanları görün, onaylayın.
-2. Rutini birkaç dakikada oluşturun · Yaşına uygun hazır rutinlerden seçin ya da kendi görevinizi yazın.
-3. Görevler Pofi Adası'nda görünür · Çocuğunuz görevini oyunda görür, yapınca işaretler. (Not: Pofi Adası, çocuğunuzun cihazına kurulan ayrı bir uygulamadır.)
-4. Yapılan görevi onaylayın · Onayladığınızda çocuğunuz oyunda Güneş Taşı alır.
+1. Çocuğunuzun günlük rutini tek ekranda · Macera ekleyin, yapılanları görün, onaylayın.
+2. Rutini birkaç dakikada oluşturun · Yaşına uygun hazır rutinlerden seçin ya da kendi maceranızı yazın.
+3. Maceralar Pofi Adası'nda görünür · Çocuğunuz sorumluluğunu oyunda macera olarak görür, yapınca işaretler. (Not: Pofi Adası, çocuğunuzun cihazına kurulan ayrı bir uygulamadır.)
+4. Tamamlanan macerayı onaylayın · Onayladığınızda çocuğunuz oyunda Güneş Taşı alır.
 5. Ödülleri birlikte seçin · Çocuğunuz biriktirdiği Güneş Taşı'yla ödül ister, siz onaylarsınız.
 6. Gelişimi gün gün görün · Hangi alışkanlığın yerleştiğini haftalık özetle görün.
 7. Dilerseniz uzmanınızla paylaşın · Paylaşım yalnız sizin onayınızla açılır, istediğiniz an kapanır. (Reklam yok · Veri satışı yok · Hesabınızı istediğiniz an silebilirsiniz; dipnot: Bazı özellikler Premium üyelik gerektirir. Örnekteki adlar kurgusaldır.)

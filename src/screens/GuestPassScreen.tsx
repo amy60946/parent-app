@@ -28,7 +28,7 @@ export default function GuestPassScreen({ navigation }: any) {
   }, []);
 
   const message = pass
-    ? `Çocukların rutinleri ve görevleri için ParentApp'i kullanıyorum. Bu davet koduyla 7 yerine 14 gün ücretsiz denersin: ${pretty(pass.code)}. ParentApp'i indir, açılışta "Davet kodun var mı?" sorusuna Evet de ve kodu yaz (sonra da Aile › Hesap › Kod gir). Kod ${formatTR(pass.expiresAt.slice(0, 10))} tarihine kadar geçerli.`
+    ? `Çocukların rutinleri ve sorumlulukları için ParentApp'i kullanıyorum. Bu davet koduyla 7 yerine 14 gün ücretsiz denersin: ${pretty(pass.code)}. ParentApp'i indir, açılışta "Davet kodun var mı?" sorusuna Evet de ve kodu yaz (sonra da Aile › Hesap › Kod gir). Kod ${formatTR(pass.expiresAt.slice(0, 10))} tarihine kadar geçerli.`
     : '';
   const share = async () => {
     if (!pass) return;

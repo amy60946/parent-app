@@ -65,7 +65,7 @@ export default function DeleteAccountScreen({ navigation }: any) {
             <Text style={styles.text}>Ailende başka ebeveyn olmadığı için şunlar kalıcı olarak silinir:</Text>
             {[
               'hesabın ve çocuk profillerin,',
-              'görevler, onaylar, ödüller, coin ve Güneş Taşı geçmişi,',
+              'maceralar, onaylar, ödüller, coin ve Güneş Taşı geçmişi,',
               'mesajlar, fotoğraflar ve sesli mesajlar,',
               'davranış kayıtları (zor anlar) ve tanışma yanıtları,',
               'uzman paylaşımları (uzmanın erişimi hemen biter) ve uzmanın bu çocuklar için tuttuğu notlar, davranış hedefleri ve takip planı,',

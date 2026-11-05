@@ -48,7 +48,7 @@ export default function FirstSteps({ navigation, hasClinician }: { navigation: a
       go: () => navigation.navigate('Aile', { add: Date.now() }) },
     { key: 'link', title: 'Oyuna bağla', sub: 'Çocuğunun cihazında kodu yaz ya da QR\'ı okut', done: children.some((c) => c.linked),
       go: () => (kids ? navigation.navigate('DeviceSetup') : navigation.navigate('Aile', { add: Date.now() })) },
-    { key: 'task', title: 'İlk görevi ver', sub: 'Hazır rutinle birkaç görev tek seferde', done: tasks.length > 0,
+    { key: 'task', title: 'İlk macerayı ekle', sub: 'Hazır rutinle birkaç macera tek seferde', done: tasks.length > 0,
       go: () => navigation.navigate('CreateTask', { date: todayISO() }) },
     { key: 'approve', title: 'İlk onayı yap', sub: 'Çocuğun "Yaptım" deyince Onay bekleyen\'den', done: Object.values(completions).includes('approved'),
       go: () => navigation.navigate('Review') },

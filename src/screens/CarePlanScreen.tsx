@@ -85,7 +85,7 @@ export default function CarePlanScreen({ navigation, route }: any) {
     const [taskId, cid, day] = k.split('|');
     return st === 'approved' && r.taskIds.includes(taskId) && (!childId || cid === childId) && day >= weekStart && day <= today;
   }).length;
-  const openTasks = () => navigation.navigate('Tabs', { screen: 'Görevler', params: childId ? { filter: childId, date: today } : { date: today } });
+  const openTasks = () => navigation.navigate('Tabs', { screen: 'Maceralar', params: childId ? { filter: childId, date: today } : { date: today } });
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
@@ -177,13 +177,13 @@ function GoalHead({ g }: { g: CareGoal }) {
 function RoutineRow({ r, approved, onPress }: { r: CareRoutine; approved: number; onPress: () => void }) {
   const icon = r.icon && /^[a-z0-9-]+$/.test(r.icon) ? (r.icon as keyof typeof Ionicons.glyphMap) : undefined;
   return (
-    <Pressable onPress={onPress} style={styles.rt} accessibilityRole="button" accessibilityLabel={`${r.title}, görevler`}>
+    <Pressable onPress={onPress} style={styles.rt} accessibilityRole="button" accessibilityLabel={`${r.title}, maceralar`}>
       <View style={styles.rtIcon}>{icon ? <Ionicons name={icon} size={16} color={colors.navy} /> : <Text style={{ fontSize: 15 }}>{r.icon ?? '•'}</Text>}</View>
       <View style={{ flex: 1, gap: 1 }}>
         <Text style={styles.h}>{r.title}</Text>
-        <Text style={styles.cap}>{r.single ? 'Görev' : `${r.taskIds.length} görev`} · bu hafta {approved} onay</Text>
+        <Text style={styles.cap}>{r.single ? 'Macera' : `${r.taskIds.length} macera`} · bu hafta {approved} onay</Text>
       </View>
-      <Text style={styles.cap}>Görevler ›</Text>
+      <Text style={styles.cap}>Maceralar ›</Text>
     </Pressable>
   );
 }

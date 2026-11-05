@@ -22,7 +22,7 @@ const FREQ: Option[] = [
 ];
 
 const GOALS: Option[] = [
-  { key: 'motivation', label: 'Çocuğumun görevlerini isteyerek yapması' },
+  { key: 'motivation', label: 'Çocuğumun sorumluluklarını isteyerek yapması' },
   { key: 'structure', label: 'Evde daha düzenli ve tutarlı bir akış' },
   { key: 'behavior', label: 'Çocuğumun davranışlarında olumlu değişim' },
   { key: 'executive', label: 'Planlama, sıraya koyma ve odaklanma becerileri' },
@@ -39,7 +39,7 @@ export const familySteps: Step[] = [
     text: 'Birkaç soruyla aileni tanıyalım.', cta: 'Başlayalım',
     points: [
       { icon: 'sparkles-outline', text: 'Hedefine uygun rutinler' },
-      { icon: 'options-outline', text: 'Çocuğunun yaşına uygun görevler' },
+      { icon: 'options-outline', text: 'Çocuğunun yaşına uygun maceralar' },
       { icon: 'shield-checkmark-outline', text: 'Yanıtlar not ya da tanı değildir' },
     ],
     foot: 'Yaklaşık 3 dakika' },
@@ -56,7 +56,7 @@ export const familySteps: Step[] = [
     { key: 'other', label: 'Diğer' },
   ] },
   { kind: 'intro', icon: 'clipboard-outline', title: 'Ailenin temposu', text: 'Üç kısa soru, evdeki günlük akışı anlamamıza ve önerileri ailene göre kişiselleştirmemize yardım eder.' },
-  { kind: 'question', key: 'task_conflict_freq', title: 'Görevler ve ev işleri yüzünden ne sıklıkla tartışma çıkıyor?', options: FREQ },
+  { kind: 'question', key: 'task_conflict_freq', title: 'Sorumluluklar ve ev işleri yüzünden ne sıklıkla tartışma çıkıyor?', options: FREQ },
   { kind: 'question', key: 'reminder_freq', title: 'Bir şeyi yapması için çocuğuna ne sıklıkla hatırlatman gerekiyor?', options: FREQ },
   // Veri bazlı tek cümle (kullanıcı isteği 28 Ekim 2026). Kaynak: Pew Research Center, "Parenting in America Today" (24 Ocak 2023;
   // ABD, 3.757 ebeveyn, Eylül–Ekim 2022): %62 ebeveynliği beklediğinden en az biraz daha zor buluyor.
@@ -104,7 +104,7 @@ export const childSteps = (name: string): Step[] => [
   { kind: 'question', key: 'child_feelings', prefix: `Geçen hafta ${name} ne sıklıkla…`, title: 'duygularını anlamakta ya da anlatmakta zorlandı?', options: FREQ },
   { kind: 'question', key: 'child_worry', prefix: `Geçen hafta ${name} ne sıklıkla…`, title: 'olmadan önce bir şeyler için endişelendi?', options: FREQ },
   { kind: 'question', key: 'child_goals', title: `${name} için hedeflerin neler?`, multi: true, options: [
-    { key: 'chores', label: 'Görevlerini düzenli tamamlamak' },
+    { key: 'chores', label: 'Sorumluluklarını düzenli tamamlamak' },
     { key: 'focus', label: 'Yaptığı işe odaklanmak' },
     { key: 'impulses', label: 'Ani davranışlarını yönetmek' },
     { key: 'bedtime', label: 'Uyku saatine uymak' },

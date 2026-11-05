@@ -146,7 +146,7 @@ export function LoginScreen({ navigation }: any) {
   };
 
   return (
-    <Layout title="Ebeveyn girişi" subtitle="Ailenin görevlerine kaldığın yerden devam et.">
+    <Layout title="Ebeveyn girişi" subtitle="Ailenin maceralarına kaldığın yerden devam et.">
       <Input value={email} onChangeText={setEmail} placeholder="E-posta" keyboardType="email-address"
         autoCapitalize="none" autoComplete="email" textContentType="emailAddress" />
       <Input value={password} onChangeText={setPassword} placeholder="Şifre" secure
@@ -289,7 +289,7 @@ export function SignUpScreen({ navigation, route }: any) {
   }
 
   return (
-    <Layout title="Kayıt ol" subtitle="Çocuklarına görev ata, gelişimlerini birlikte izleyin." onBack={() => navigation.goBack()}>
+    <Layout title="Kayıt ol" subtitle="Çocuklarına sorumluluk ver, gelişimlerini birlikte izleyin." onBack={() => navigation.goBack()}>
       {clinic?.status === 'open' && (
         <View style={styles.inviteBand} accessibilityRole="summary">
           <Ionicons name="briefcase-outline" size={20} color={colors.navy} />

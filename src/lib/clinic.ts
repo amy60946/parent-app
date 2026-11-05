@@ -95,7 +95,7 @@ export const countSuggestions = (list: Pick<Suggestion, 'kind'>[]): SuggestionCo
 });
 // "4 görev önerisi · 1 değişiklik önerisi" (boşsa '')
 export const suggestionsLabel = (c: SuggestionCounts) =>
-  [c.tasks ? `${c.tasks} görev önerisi` : '', c.changes ? `${c.changes} değişiklik önerisi` : ''].filter(Boolean).join(' · ');
+  [c.tasks ? `${c.tasks} macera önerisi` : '', c.changes ? `${c.changes} değişiklik önerisi` : ''].filter(Boolean).join(' · ');
 
 // Canlı eşitleme: uzman öneri gönderince ya da öneri (bu cihazda, eşte, uzmanda) karara bağlanınca haber verir.
 // Tablo Realtime yayınında (migrations/20261021300000…: clinic_links, clinic_task_suggestions, abc_events). Olaylar 300 ms toplanır.

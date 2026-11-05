@@ -23,13 +23,13 @@ const TOP = { care: ['#0F1B3D', '#fff'], reviewDetail: ['#A4A9B6', '#0F1B3D'] };
    crop: büyütülecek kart [x, y, w, h] nokta (gerçek ekranda ölçüldü, kart sınırı + birkaç nokta pay)
    from: ekranın üstten kaç noktası atlanır (alt sayfa / kaydırılmış görünüm) */
 const SLIDES = [
-  { shot: 'home', h: 'Çocuğunuzun günlük rutini <em>tek ekranda</em>', s: 'Görev verin, yapılanları görün, onaylayın.',
+  { shot: 'home', h: 'Çocuğunuzun günlük rutini <em>tek ekranda</em>', s: 'Macera ekleyin, yapılanları görün, onaylayın.',
     crop: [14, 79, 412, 88], anchor: 'top', cut: 557, eyebrow: 'ParentApp' },
-  { shot: 'create', h: 'Rutini <em>birkaç dakikada</em> oluşturun', s: 'Yaşına uygun hazır rutinlerden seçin ya da kendi görevinizi yazın.',
+  { shot: 'create', h: 'Rutini <em>birkaç dakikada</em> oluşturun', s: 'Yaşına uygun hazır rutinlerden seçin ya da kendi maceranızı yazın.',
     crop: [16, 154, 298, 126], cut: 716, eyebrow: '1 · Plan' },
-  { shot: 'tasks', h: 'Görevler <em>Pofi Adası’nda</em> görünür', s: 'Çocuğunuz görevini oyunda görür, yapınca işaretler.',
+  { shot: 'tasks', h: 'Maceralar <em>Pofi Adası’nda</em> görünür', s: 'Çocuğunuz sorumluluğunu oyunda macera olarak görür, yapınca işaretler.',
     note: 'Pofi Adası, çocuğunuzun cihazına kurulan ayrı bir uygulamadır.', cut: 436, game: 'iskele.jpg', eyebrow: '2 · Oyun' },
-  { shot: 'reviewDetail', from: 150, h: 'Yapılan görevi <em>onaylayın</em>', s: 'Onayladığınızda çocuğunuz oyunda Güneş Taşı alır.',
+  { shot: 'reviewDetail', from: 150, h: 'Tamamlanan macerayı <em>onaylayın</em>', s: 'Onayladığınızda çocuğunuz oyunda Güneş Taşı alır.',
     crop: [12, 772, 416, 68], cut: 868, eyebrow: '3 · Onay' },
   { shot: 'rewards', h: 'Ödülleri <em>birlikte</em> seçin', s: 'Çocuğunuz biriktirdiği Güneş Taşı’yla ödül ister, siz onaylarsınız.',
     crop: [10, 112, 420, 72], anchor: 'top', cut: 712, eyebrow: '4 · Ödül' },

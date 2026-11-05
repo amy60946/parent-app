@@ -19,7 +19,7 @@ export default function PushAsk({ visible, childName, onDone }: { visible: boole
       badge="notifications"
       // Kısa metin (kullanıcı isteği 3 Kasım 2026; ana fikir aynı)
       title="Haber verelim mi?"
-      text={`${childName ?? 'Çocuğun'} görevi bitirince bildirim gelsin; hemen onayla, ödülü gecikmesin.`}
+      text={`${childName ?? 'Çocuğun'} bir macerayı bitirince bildirim gelsin; hemen onayla, ödülü gecikmesin.`}
       primary="Evet, haber ver"
       onPrimary={() => answer(true)}
       secondary="Şimdi değil"

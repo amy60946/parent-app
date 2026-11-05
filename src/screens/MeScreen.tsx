@@ -95,7 +95,7 @@ export default function MeScreen({ navigation }: any) {
       onPress: () => openSug('change') });
   }
   if (newSug) {
-    todo.push({ key: 'sug', icon: 'sparkles-outline', title: `Uzmanından ${newSug} görev önerisi`, sub: 'Kabul edersen görevlere eklenir',
+    todo.push({ key: 'sug', icon: 'sparkles-outline', title: `Uzmanından ${newSug} macera önerisi`, sub: 'Kabul edersen Maceralar\'a eklenir',
       onPress: () => openSug('new') });
   }
   if (intakeMissing) {
@@ -135,7 +135,7 @@ export default function MeScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.navigate('Review')} style={[styles.catch, !pending && styles.catchIdle]} accessibilityRole="button">
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={[styles.catchLabel, !pending && { color: colors.muted }]}>Onay bekleyen</Text>
-            <Text style={[styles.catchTitle, !pending && styles.catchTitleIdle]}>{pending ? `${pending} görev onayını bekliyor` : 'Onay bekleyen görev yok'}</Text>
+            <Text style={[styles.catchTitle, !pending && styles.catchTitleIdle]}>{pending ? `${pending} macera onayını bekliyor` : 'Onay bekleyen macera yok'}</Text>
           </View>
           <View style={[styles.catchGo, !pending && { backgroundColor: '#F1F2F6' }]}><Ionicons name="chevron-forward" size={20} color={pending ? colors.navy : colors.muted} /></View>
         </Pressable>
@@ -191,26 +191,26 @@ export default function MeScreen({ navigation }: any) {
           {progress.map((r, i) => {
             const pct = r.total ? Math.round((r.done / r.total) * 100) : 0;
             return (
-              <Pressable key={r.id} onPress={() => (r.total ? navigation.navigate('Görevler', { filter: r.id, date: today }) : navigation.navigate('CreateTask', { date: today }))}
-                style={[styles.row, i > 0 && styles.sep]} accessibilityRole="button" accessibilityLabel={`${r.name}: ${r.total ? `yüzde ${pct}` : 'bugün görev yok'}`}>
+              <Pressable key={r.id} onPress={() => (r.total ? navigation.navigate('Maceralar', { filter: r.id, date: today }) : navigation.navigate('CreateTask', { date: today }))}
+                style={[styles.row, i > 0 && styles.sep]} accessibilityRole="button" accessibilityLabel={`${r.name}: ${r.total ? `yüzde ${pct}` : 'bugün macera yok'}`}>
                 <Avatar id={r.avatar} size={34} />
                 <View style={{ flex: 1, gap: 5 }}>
                   {r.id === 'me' ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <Text style={styles.rowTitle}>{r.name}</Text>
-                      <Info title="Sen de katıl" text={'Çocuğunla birlikte yaptığınız görevlere kendini de ekle (ör. ailecek piknik): görevi aç › Ebeveynler › kendini seç.\n\nYaptıkça Güneş Taşı kazanırsın › Güneş Taşlarınla çocuğuna oyunda hediye gönderirsin (Aile › Ben › Güneş Taşım).'} />
+                      <Info title="Sen de katıl" text={'Çocuğunla birlikte yaptığınız maceralara kendini de ekle (ör. ailecek piknik): macerayı aç › Ebeveynler › kendini seç.\n\nYaptıkça Güneş Taşı kazanırsın › Güneş Taşlarınla çocuğuna oyunda hediye gönderirsin (Aile › Ben › Güneş Taşım).'} />
                     </View>
                   ) : <Text style={styles.rowTitle}>{r.name}</Text>}
                   {r.total > 0 && <View style={styles.bar}><View style={[styles.barFill, { width: `${pct}%` }]} /></View>}
                 </View>
-                {r.total ? <Text style={styles.pct}>%{pct}</Text> : <View style={styles.setUp}><Text style={styles.setUpText}>Görev ekle</Text></View>}
+                {r.total ? <Text style={styles.pct}>%{pct}</Text> : <View style={styles.setUp}><Text style={styles.setUpText}>Macera ekle</Text></View>}
               </Pressable>
             );
           })}
         </Section>
 
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          {([['add-circle-outline', 'Görev ver', () => navigation.navigate('CreateTask', { date: today })],
+          {([['add-circle-outline', 'Macera ekle', () => navigation.navigate('CreateTask', { date: today })],
             ['gift-outline', 'Ödül', () => navigation.navigate('Rewards')],
             ['document-text-outline', 'Davranış kaydı', () => navigation.navigate('Abc', { new: true })]] as const).map(([icon, label, go]) => (
             <Pressable key={label} onPress={go} style={styles.quick} accessibilityRole="button">

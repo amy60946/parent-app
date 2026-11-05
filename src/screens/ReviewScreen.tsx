@@ -57,7 +57,7 @@ export default function ReviewScreen({ navigation, route }: any) {
       <View style={styles.header}>
         <IconButton name="chevron-back" label="Geri" onPress={() => navigation.goBack()} />
         <Text style={styles.title} accessibilityRole="header">İnceleme</Text>
-        <Info title="İnceleme" text="Göreve dokun: motive etmek ne kadar zordu, Güneş Taşı, not; ardından Onayla, Tekrar dene ya da Reddet. Sağdaki ✓ hızlı onaydır (Güneş Taşı zorluğa göre)." />
+        <Info title="İnceleme" text="Maceraya dokun: motive etmek ne kadar zordu, Güneş Taşı, not; ardından Onayla, Tekrar dene ya da Reddet. Sağdaki ✓ hızlı onaydır (Güneş Taşı zorluğa göre)." />
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, gap: 16 }}>
         <Pressable onPress={() => setFilter('all')} style={{ alignItems: 'center', gap: 4 }}>
@@ -77,7 +77,7 @@ export default function ReviewScreen({ navigation, route }: any) {
         {pending.length === 0 ? (
           <View style={styles.empty}>
             <Text style={{ color: colors.muted, textAlign: 'center', fontSize: 13 }}>
-              Onay bekleyen görev yok.
+              Onay bekleyen macera yok.
             </Text>
           </View>
         ) : (
@@ -135,7 +135,7 @@ function ReviewSheet({ item, onClose, onDecide }: {
 
   const go = async (d: ReviewDecision) => {
     if (d === 'retry' && !today) {
-      Alert.alert('Yalnız bugünün görevi', 'Geçmiş günün görevi oyunda kapanmış olur; tekrar denenemez. Onaylayabilir ya da reddedebilirsin.');
+      Alert.alert('Yalnız bugünün macerası', 'Geçmiş günün macerası oyunda kapanmış olur; tekrar denenemez. Onaylayabilir ya da reddedebilirsin.');
       return;
     }
     setBusy(true);
@@ -147,7 +147,7 @@ function ReviewSheet({ item, onClose, onDecide }: {
   return (
     <Sheet
       visible
-      title="Görevi incele"
+      title="Macerayı incele"
       onClose={onClose}
       footer={
         <View style={styles.actions}>
@@ -165,7 +165,7 @@ function ReviewSheet({ item, onClose, onDecide }: {
         <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>{child.name}</Text>
       </View>
       <View style={styles.taskCard}>
-        <Text style={styles.cap}>{today ? 'Bugünün görevi' : formatTR(date)}</Text>
+        <Text style={styles.cap}>{today ? 'Bugünün macerası' : formatTR(date)}</Text>
         <Text style={{ fontSize: 16, fontWeight: '700', color: colors.navy }}>{task.title}</Text>
         {time && <Text style={styles.cap}>Yaptım dedi: {time}</Text>}
       </View>
@@ -173,7 +173,7 @@ function ReviewSheet({ item, onClose, onDecide }: {
       <View style={{ gap: 8 }}>
         <View style={styles.headRow}>
           <Text style={[styles.h, { flex: 1 }]}>Motive etmek ne kadar zordu?</Text>
-          <Info title="Motive etmek ne kadar zordu?" text="İsteğe bağlı. Hangi görevlerde desteğe ihtiyaç olduğunu zamanla gösterir; uzmanla paylaşım açıksa uzmanın da görür. Bir puan ya da tanı değildir; çocuğun görmez." />
+          <Info title="Motive etmek ne kadar zordu?" text="İsteğe bağlı. Hangi sorumluluklarda desteğe ihtiyaç olduğunu zamanla gösterir; uzmanla paylaşım açıksa uzmanın da görür. Bir puan ya da tanı değildir; çocuğun görmez." />
         </View>
         <View style={styles.scale} accessibilityRole="adjustable" accessibilityLabel="Motive etme zorluğu" accessibilityValue={{ text: motivation ? `${motivation} / 5` : 'seçilmedi' }}>
           <View style={styles.track} />

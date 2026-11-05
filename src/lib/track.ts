@@ -64,7 +64,7 @@ export function startTracking() {
 
 // Ekran adları (sekme adları Türkçe; olay adında ASCII)
 const screenName: Record<string, string> = {
-  Görevler: 'tasks', İnceleme: 'review', Gelişim: 'progress', Aile: 'family',
+  Maceralar: 'tasks', İnceleme: 'review', Gelişim: 'progress', Aile: 'family',
   CreateTask: 'create_task', TaskDetails: 'task_details', Chat: 'chat', Notifications: 'notifications',
   Abc: 'observation', Rewards: 'rewards', Paywall: 'paywall',
 };

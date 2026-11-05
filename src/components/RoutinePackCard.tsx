@@ -42,7 +42,7 @@ export default function RoutinePackCard({ items, childName, goal, onDecided }: {
     : { recurring: true, repeatKind: 'weekly' as const, repeatDays: WEEKDAYS };
 
   const add = async () => {
-    if (!kept.length) return Alert.alert('En az bir görev seç');
+    if (!kept.length) return Alert.alert('En az bir macera seç');
     setBusy(true);
     try {
       const dropped = list.filter((s) => !kept.includes(s));
@@ -52,14 +52,14 @@ export default function RoutinePackCard({ items, childName, goal, onDecided }: {
       });
       track('routine.pack_accept', { n: kept.length, dropped: dropped.length, repeat });
       onDecided(list.map((s) => s.id));
-      Alert.alert('Rutin eklendi', `${r.title}: ${kept.length} görev ${childName} için görevlerde. Her görev ayrı onaylanır.`);
+      Alert.alert('Rutin eklendi', `${r.title}: ${kept.length} macera ${childName} için Maceralar'da. Her macera ayrı onaylanır.`);
     } catch (e) {
       Alert.alert('Kaydedilemedi', (e as Error).message);
     } finally {
       setBusy(false);
     }
   };
-  const declineAll = () => Alert.alert(`${r.title} eklenmesin mi?`, 'Paketteki görevlerin hepsi kapanır; uzmanın görür.', [
+  const declineAll = () => Alert.alert(`${r.title} eklenmesin mi?`, 'Paketteki maceraların hepsi kapanır; uzmanın görür.', [
     { text: 'Vazgeç', style: 'cancel' },
     { text: 'Şimdilik değil', onPress: async () => {
       setBusy(true);
@@ -77,7 +77,7 @@ export default function RoutinePackCard({ items, childName, goal, onDecided }: {
         <View style={styles.icon}><Ionicons name={(r.icon as keyof typeof Ionicons.glyphMap) || 'repeat-outline'} size={20} color={colors.navy} /></View>
         <View style={{ flex: 1, gap: 2 }}>
           <Text style={styles.h}>{r.title}</Text>
-          <Text style={styles.cap}>{[childName, `${list.length} görev`, span, repeatText(list[0])].filter(Boolean).join(' · ')}</Text>
+          <Text style={styles.cap}>{[childName, `${list.length} macera`, span, repeatText(list[0])].filter(Boolean).join(' · ')}</Text>
         </View>
       </View>
       {!!goal && (
@@ -118,7 +118,7 @@ export default function RoutinePackCard({ items, childName, goal, onDecided }: {
             <Text style={styles.ghostText}>Vazgeç</Text>
           </Pressable>
           <Pressable style={[styles.cta, { flex: 1.4 }, !kept.length && { opacity: 0.45 }]} onPress={add} accessibilityRole="button">
-            <Text style={styles.ctaText}>{kept.length} görevi ekle</Text>
+            <Text style={styles.ctaText}>{kept.length} macerayı ekle</Text>
           </Pressable>
         </View>
       ) : (

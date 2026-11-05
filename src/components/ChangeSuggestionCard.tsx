@@ -26,7 +26,7 @@ function repeatText(t: Pick<Task, 'recurring' | 'repeatKind' | 'repeatDays'>) {
 
 // Görevin bugünkü hâliyle önerilen hâlinin farkı: "07:00 → 07:15", "Hafta içi → Her gün", "Bitiş: 30 Kasım"
 function diffs(t: Task, s: Suggestion): { old?: string; now: string }[] {
-  if (s.changeRemove) return [{ now: 'Görevden çıkar' }];
+  if (s.changeRemove) return [{ now: 'Maceralardan çıkar' }];
   const out: { old?: string; now: string }[] = [];
   if ((t.reminder ?? '') !== (s.reminder ?? '')) out.push({ old: t.reminder ?? 'saatsiz', now: s.reminder ?? 'saatsiz' });
   const a = repeatText(t), b = repeatText(s);
@@ -86,7 +86,7 @@ export default function ChangeSuggestionCard({ items, childName, onDecided }: { 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Ionicons name="swap-horizontal" size={18} color={colors.navy} />
         <Text style={[styles.h, { flex: 1 }]}>Uzmanın değişiklik önerisi</Text>
-        <Text style={styles.pill}>{r ? `${r.title}` : 'Görev'}</Text>
+        <Text style={styles.pill}>{r ? `${r.title}` : 'Macera'}</Text>
       </View>
       <Text style={styles.cap}>{childName}{list[0].note ? ` · ${list[0].note}` : ''}</Text>
       <View style={{ gap: 6 }}>
@@ -99,12 +99,12 @@ export default function ChangeSuggestionCard({ items, childName, onDecided }: { 
                 <Text key={i} style={styles.diff}>
                   {d.old ? <Text style={styles.old}>{d.old}</Text> : null}{d.old ? ' → ' : ''}<Text style={{ fontWeight: '700', color: s.changeRemove ? colors.danger : colors.navy }}>{d.now}</Text>
                 </Text>
-              )) : <Text style={styles.cap}>Bu görev artık listende yok</Text>}
+              )) : <Text style={styles.cap}>Bu macera artık listende yok</Text>}
             </View>
           );
         })}
       </View>
-      <Text style={styles.cap}>Uygulanınca aynı görevler güncellenir; yapılanlar, onaylar ve coin değişmez.</Text>
+      <Text style={styles.cap}>Uygulanınca aynı maceralar güncellenir; yapılanlar, onaylar ve coin değişmez.</Text>
       {busy ? <ActivityIndicator color={colors.navy} style={{ marginVertical: 8 }} /> : (
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Pressable style={[styles.ghost, { flex: 1 }]} onPress={decline} accessibilityRole="button"><Text style={styles.ghostText}>Şimdilik değil</Text></Pressable>

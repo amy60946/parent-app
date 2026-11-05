@@ -128,7 +128,7 @@ function Badge({ n, style }: { n: number; style: ViewStyle }) {
 
 // Sekmeler (28 Ekim 2026): Ben · Uzmanım · Görevler · Gelişim · Aile; her biri W/5 = 78 nokta
 // Ana sayfa sekmesi "Bugün" (3 Kasım 2026, ev simgesiyle)
-const TAB_NAMES = ['Bugün', 'Uzmanım', 'Görevler', 'Gelişim', 'Aile'];
+const TAB_NAMES = ['Bugün', 'Uzmanım', 'Maceralar', 'Gelişim', 'Aile'];
 const TAB_ICONS: (keyof typeof Ionicons.glyphMap)[] = ['home-outline', 'briefcase-outline', 'list-outline', 'stats-chart-outline', 'people-outline'];
 const TAB_W = W / TAB_NAMES.length;
 const tabX = (i: number) => i * TAB_W + TAB_W / 2; // sekmenin ortası
@@ -240,7 +240,7 @@ function StepTask(p: StepProps) {
   return (
     <>
       <View style={{ position: 'absolute', left: 20, top: 54, gap: 2 }}>
-        <Text style={{ fontSize: 26, fontWeight: '800', color: colors.navy }}>Görevler</Text>
+        <Text style={{ fontSize: 26, fontWeight: '800', color: colors.navy }}>Maceralar</Text>
         <Text style={{ fontSize: 13, color: '#5B6274' }}>Ekim 2026</Text>
       </View>
       <View style={{ position: 'absolute', left: 20, right: 20, top: 124, flexDirection: 'row' }}>
@@ -280,7 +280,7 @@ function StepTask(p: StepProps) {
         </View>
         <Text style={{ fontSize: 11, color: '#5B6274' }}>ya da listeden tek tek seç</Text>
       </View>
-      <Coach {...p} title="Görev ver" text="Görevler'de + ile görev ekle. Hazır rutinle birkaç görevi tek seferde verirsin." style={{ left: 20, right: 20, top: 250 }} />
+      <Coach {...p} title="Macera ekle" text="Maceralar'da + ile macera ekle. Hazır rutinle birkaç macerayı tek seferde eklersin." style={{ left: 20, right: 20, top: 250 }} />
     </>
   );
 }
@@ -303,7 +303,7 @@ function StepReview(p: StepProps) {
         inner={{ backgroundColor: '#DDF1EC', flexDirection: 'row', justifyContent: 'flex-start', paddingHorizontal: 18, gap: 12 }}>
         <View style={{ flex: 1, gap: 2 }}>
           <Text style={{ fontSize: 12, fontWeight: '700', color: '#2F6B5E' }}>Onay bekleyen</Text>
-          <Text style={{ fontSize: 18, fontWeight: '800', color: colors.navy }}>1 görev onayını bekliyor</Text>
+          <Text style={{ fontSize: 18, fontWeight: '800', color: colors.navy }}>1 macera onayını bekliyor</Text>
         </View>
         <Ionicons name="chevron-forward" size={20} color={colors.navy} />
       </Ring>
@@ -322,7 +322,7 @@ function StepReview(p: StepProps) {
         </View>
       </View>
       <TabRing index={0} />
-      <Coach {...p} title="Yaptı mı? Onayla" text="Çocuğun görevi Pofi Adası'nda görür, bitirince 'Yaptım'a basar; sana bildirim gelir. Ana sayfada 'Onay bekleyen'e dokun, ✓ ile onayla. Onaylayınca çocuğun coin ve Güneş Taşı kazanır; satıra dokunursan not eklersin." style={{ left: 20, right: 20, top: 372 }} />
+      <Coach {...p} title="Yaptı mı? Onayla" text="Verdiğin sorumluluklar Pofi Adası'nda macera olarak görünür; çocuğun bitirince 'Yaptım'a basar, sana bildirim gelir. Ana sayfada 'Onay bekleyen'e dokun, ✓ ile onayla. Onaylayınca çocuğun coin ve Güneş Taşı kazanır; satıra dokunursan not eklersin." style={{ left: 20, right: 20, top: 372 }} />
     </>
   );
 }
@@ -357,7 +357,7 @@ function StepParent(p: StepProps) {
         <Text style={{ fontSize: 13, fontWeight: '800', color: colors.navy }}>Hediye dükkânı</Text>
       </Ring>
       <TabRing index={4} />
-      <Coach {...p} title="Sen de katıl" text="Görevi kendine de ata, 'Yaptım' de, Güneş Taşı kazan. Güneş Taşlarıyla çocuğuna oyunda hediye gönder." style={{ left: 20, right: 32, top: 440 }} />
+      <Coach {...p} title="Sen de katıl" text="Bir macerayı kendine de ata, 'Yaptım' de, Güneş Taşı kazan. Güneş Taşlarıyla çocuğuna oyunda hediye gönder." style={{ left: 20, right: 32, top: 440 }} />
     </>
   );
 }
@@ -416,7 +416,7 @@ function StepRewards(p: StepProps) {
       <Block top={216} height={150} />
       <Block top={380} height={150} />
       <View style={{ position: 'absolute', left: 20, right: 20, top: 646, flexDirection: 'row', gap: 8 }}>
-        {['Görev ver', '', 'Davranış kaydı'].map((t, i) => (
+        {['Macera ekle', '', 'Davranış kaydı'].map((t, i) => (
           <View key={i} style={[st.quick, !t && { backgroundColor: 'transparent', borderColor: 'transparent' }]}><Text style={st.quickText}>{t}</Text></View>
         ))}
       </View>
@@ -612,7 +612,7 @@ function StepEarn(p: StepProps) {
         <View style={{ width: 1, height: 30, backgroundColor: colors.line, marginHorizontal: 4 }} />
         <Balance k={1} />
       </Ring>
-      <Coach {...p} title="Güneş Taşı görevden gelir" text="Onayladığın her görev Güneş Taşı kazandırır: kolay 1, orta 2, zor 3." style={{ left: 20, right: 20, top: 200 }} />
+      <Coach {...p} title="Güneş Taşı maceradan gelir" text="Onayladığın her macera Güneş Taşı kazandırır: kolay 1, orta 2, zor 3." style={{ left: 20, right: 20, top: 200 }} />
     </>
   );
 }
@@ -678,7 +678,7 @@ function Ask({ total, onShow, onLater }: { total: number; onShow: () => void; on
       <View style={[st.card, { left: 20, right: 20, top: 300 }]}>
         <Text style={[st.counter, { alignSelf: 'flex-start' }]}>{total} adım · 30 saniye</Text>
         <Text style={st.title} accessibilityRole="header">ParentApp nasıl çalışır?</Text>
-        <Text style={st.text}>Görev verirsin, çocuğun oyunda yapar, sen onaylarsın. Kısaca göstereyim mi?</Text>
+        <Text style={st.text}>Sorumluluk verirsin, çocuğun oyunda macera olarak yapar, sen onaylarsın. Kısaca göstereyim mi?</Text>
         <Pressable onPress={onShow} accessibilityRole="button" style={st.start}>
           <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Göster</Text>
         </Pressable>

@@ -221,7 +221,7 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
 
         {suggestions.length > 0 && (
           <View style={{ gap: 8 }}>
-            <Text style={styles.section}>Görev önerileri</Text>
+            <Text style={styles.section}>Macera önerileri</Text>
             {packs.map((p) => (
               <RoutinePackCard key={p[0].routine!.group} items={p} childName={childName(p[0].childId)} goal={goalTitle(p[0])} onDecided={dropSuggestions} />
             ))}

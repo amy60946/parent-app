@@ -89,7 +89,7 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
       }));
     const parentList = pt.members.filter((m) => prows[m.id]?.on).map((m) => ({ userId: m.id, difficulty: prows[m.id].difficulty }));
     if (assignments.length === 0 && parentList.length === 0) return Alert.alert('En az bir kişi seçin');
-    if (canTitle && !title.trim()) return Alert.alert('Görev adı gerekli');
+    if (canTitle && !title.trim()) return Alert.alert('Macera adı gerekli');
     if (recurring && endDate && endDate < startDate) return Alert.alert('Son tarih başlangıçtan önce olamaz');
     if (recurring && repeatKind !== 'daily' && repeatDays.length === 0) {
       return Alert.alert(repeatKind === 'weekly' ? 'Haftanın en az bir gününü seç' : 'Ayın en az bir gününü seç');
@@ -127,8 +127,8 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
   const confirmDelete = () => {
     if (!editing) return;
     Alert.alert(
-      'Görev silinsin mi?',
-      editing.recurring ? 'Tekrarlayan görev tüm günlerden silinir.' : 'Bu işlem geri alınamaz.',
+      'Macera silinsin mi?',
+      editing.recurring ? 'Tekrarlayan macera tüm günlerden silinir.' : 'Bu işlem geri alınamaz.',
       [
         { text: 'Vazgeç', style: 'cancel' },
         { text: 'Sil', style: 'destructive', onPress: () => { deleteTask(editing.id); navigation.goBack(); } },
@@ -140,7 +140,7 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
     <SafeAreaView style={styles.safe}>
       <View style={styles.top}>
         <IconButton name="chevron-back" label="Geri" onPress={() => navigation.goBack()} />
-        <Text style={styles.topTitle}>{editing ? 'Görevi düzenle' : 'Görev ayrıntıları'}</Text>
+        <Text style={styles.topTitle}>{editing ? 'Macerayı düzenle' : 'Macera ayrıntıları'}</Text>
         <IconButton name="close" label="Kapat" onPress={() => navigation.popToTop()} />
       </View>
 
@@ -161,7 +161,7 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
       >
         {canTitle ? (
           <>
-            <Label>Görev adı</Label>
+            <Label>Macera adı</Label>
             <TextInput value={title} onChangeText={setTitle} placeholder="Örn. Çantanı hazırla" placeholderTextColor={colors.muted} style={styles.input} />
             {isCustom && !editing && (
               <>
@@ -183,7 +183,7 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
           </>
         ) : (
           <>
-            <Label>Seçilen görevler</Label>
+            <Label>Seçilen maceralar</Label>
             {picked.map((t: any) => (
               <Text key={t.id} style={{ fontSize: 15, color: colors.navy, marginBottom: 4 }}>{t.title}</Text>
             ))}
@@ -239,7 +239,7 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
           <>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <View style={{ flex: 1 }}><Label>Ebeveynler (isteğe bağlı)</Label></View>
-              <Info title="Ebeveyn görevi" text="Ailece ya da senin yapacağın görevlerde kendini ya da eşini de seç. Ebeveyn görevi 'Yaptım' deyince zorluğa göre Güneş Taşı kazanır (Kolay 1, Orta 2, Zor 3). Güneş Taşlarınla Aile › Ben › Hediye dükkânından çocuğuna oyunda hediye gönderirsin." />
+              <Info title="Ebeveynler" text="Ailece ya da senin yapacağın maceralarda kendini ya da eşini de seç. Ebeveyn 'Yaptım' deyince zorluğa göre Güneş Taşı kazanır (Kolay 1, Orta 2, Zor 3). Güneş Taşlarınla Aile › Ben › Hediye dükkânından çocuğuna oyunda hediye gönderirsin." />
             </View>
             <View style={{ backgroundColor: '#fff', borderRadius: radius.md }}>
               {pt.members.map((m, i) => {
@@ -308,7 +308,7 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
                   ))}
                 </View>
                 {repeatDays.some((x) => x > 28) && (
-                  <Text style={styles.sub}>29, 30 ve 31 olmayan aylarda görev ayın son gününe atanır.</Text>
+                  <Text style={styles.sub}>29, 30 ve 31 olmayan aylarda macera ayın son gününe atanır.</Text>
                 )}
               </>
             )}
@@ -325,13 +325,13 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 20, marginBottom: 8 }}>
           <Text style={{ fontSize: 13, fontWeight: '600', color: colors.muted }}>Hatırlatma saati (isteğe bağlı)</Text>
-          <Info title="Hatırlatma saati" text="Bir saat seçersen görev günü o saatte çocuğuna hatırlatma gider. Boş bırakırsan hatırlatma gönderilmez." />
+          <Info title="Hatırlatma saati" text="Bir saat seçersen macera günü o saatte çocuğuna hatırlatma gider. Boş bırakırsan hatırlatma gönderilmez." />
         </View>
         <DateField mode="time" value={reminder} onChange={pickReminder} placeholder="Saat seç (ör. 19:00)" clearable />
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 20, marginBottom: 8 }}>
           <Text style={{ fontSize: 13, fontWeight: '600', color: colors.muted }}>Günün bölümü</Text>
-          <Info title="Günün bölümü" text={'Görevler ekranındaki Sabah / Öğlen / Akşam süzgeci için. Belli bir saati yoksa "Herhangi" kalsın.'} />
+          <Info title="Günün bölümü" text={'Maceralar ekranındaki Sabah / Öğlen / Akşam süzgeci için. Belli bir saati yoksa "Herhangi" kalsın.'} />
         </View>
         <Segmented<TaskDayPart | 'any'>
           options={[
@@ -362,14 +362,14 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
 
         {editing && (
           <Pressable onPress={confirmDelete} style={{ marginTop: 32, alignItems: 'center', padding: 12 }}>
-            <Text style={{ color: colors.danger, fontWeight: '600' }}>Görevi sil</Text>
+            <Text style={{ color: colors.danger, fontWeight: '600' }}>Macerayı sil</Text>
           </Pressable>
         )}
       </ScrollView>
 
       <View style={styles.bottom}>
         <Pressable style={styles.cta} onPress={submit}>
-          <Text style={styles.ctaText}>{editing ? 'Kaydet' : 'Görevi ata'}</Text>
+          <Text style={styles.ctaText}>{editing ? 'Kaydet' : 'Macerayı ekle'}</Text>
         </Pressable>
       </View>
     </SafeAreaView>
