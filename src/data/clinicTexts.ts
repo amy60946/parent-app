@@ -16,10 +16,12 @@ export const SCOPE_FULL = [
   '• Görevler ve tamamlanma durumu (saatiyle)',
   '• "Yapamam" yanıtları ve nedenleri',
   '• Bu uygulamada eklediğin davranış kayıtları',
+  '• Takip planında uyguladığın günler ve uzmanının önerdiği derslerde uyguladığın günler',
   '',
   'Paylaşılmaz:',
   '• Mesajlar, fotoğraf ve sesler',
   '• Coin bakiyesi ve oyun içi bilgiler',
+  '• Kendi seçtiğin dersler',
   '',
   'Uzman verileri yalnız okur ve sana görev önerebilir; görev eklemek senin kararındır. Paylaşımı istediğin an Uzmanım bölümünden durdurabilirsin.',
 ].join('\n');

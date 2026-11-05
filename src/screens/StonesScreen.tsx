@@ -40,7 +40,9 @@ export default function StonesScreen({ navigation, route }: any) {
   const myMoves = useMemo<Move[]>(() => (childId ? [] : pt.ledger.filter((r) => r.userId === pt.me).map((r) => {
     const task = tasks.find((t) => t.id === r.ref.split('|')[0])?.title ?? 'Macera';
     const kid = children.find((c) => c.id === r.childId)?.name;
-    const text = r.reason === 'task' ? task : r.reason === 'task_undo' ? `Geri alındı · ${task}` : `Hediye: ${giftName(r.itemId)}${kid ? ` → ${kid}` : ''}`;
+    // Ders uygulaması (akislar.md 22, ekonomi.md 5C): haftalık hesap satırı
+    const text = r.reason === 'lesson' ? 'Ders uygulaması' : r.reason === 'lesson_undo' ? 'Ders uygulaması geri alındı'
+      : r.reason === 'task' ? task : r.reason === 'task_undo' ? `Geri alındı · ${task}` : `Hediye: ${giftName(r.itemId)}${kid ? ` → ${kid}` : ''}`;
     return { id: String(r.id), at: r.createdAt, amount: r.amount, text };
   })), [childId, pt.ledger, pt.me, tasks, children]);
 

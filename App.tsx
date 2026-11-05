@@ -42,6 +42,7 @@ import { acceptSignupConsent, legalPending } from './src/lib/legal';
 import ChatScreen from './src/screens/ChatScreen';
 import NotificationsScreen, { openNotification } from './src/screens/NotificationsScreen';
 import AbcScreen from './src/screens/AbcScreen';
+import LessonScreen from './src/screens/LessonScreen';
 import PaywallScreen from './src/screens/PaywallScreen';
 import RewardsScreen from './src/screens/RewardsScreen';
 import InviteScreen from './src/screens/InviteScreen';
@@ -289,6 +290,7 @@ function Main() {
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="Abc" component={AbcScreen} />
+      <Stack.Screen name="Lesson" component={LessonScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="Rewards" component={RewardsScreen} />
       <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="Invite" component={InviteScreen} options={{ presentation: 'modal', gestureEnabled: false }} />

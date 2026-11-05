@@ -19,7 +19,8 @@ const TABLES = ['profiles', 'families', 'children', 'tasks', 'task_assignments',
   'clinic_task_suggestions', 'family_subscriptions', 'notifications', 'push_tokens', 'rewards', 'reward_requests', 'sun_stone_ledger',
   'care_modules', 'care_module_logs', 'clinic_link_history', 'intake_answers',
   'parent_assignments', 'parent_completions', 'parent_stone_ledger', 'gift_items', 'child_gifts',
-  'legal_documents', 'legal_acceptances', 'kvkk_requests'];
+  'legal_documents', 'legal_acceptances', 'kvkk_requests',
+  'parent_lessons', 'parent_lesson_assignments', 'parent_lesson_progress', 'parent_lesson_practice'];
 
 const uuid = () =>
   'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -30,6 +31,30 @@ const now = () => new Date().toISOString();
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const day = (n: number) => { const d = new Date(); d.setDate(d.getDate() + n); return iso(d); };
 const ago = (min: number) => new Date(Date.now() - min * 60e3).toISOString();
+
+/* ---------- Örnek ebeveyn dersleri (yalnız önizleme; gerçek içerik sonra, ortak akislar.md 22) ---------- */
+const DEMO_LESSONS = [
+  { key: 'fark_et', title: 'Fark et ve söyle', summary: 'İstediğin davranışı görünce adıyla söyle.', minutes: 4, position: 1,
+    try_text: 'Bu hafta günde üç kez, çocuğun istediğin bir şeyi yaptığı anı yakala ve ne yaptığını söyle: "Ayakkabılarını rafa koymuşsun."',
+    body_md: '## Neden işe yarar?\nÇocuklar en çok ilgi gören davranışı tekrar eder. "Aferin" yerine **ne yaptığını** söylemek, hangi davranışı beğendiğini açıkça gösterir.\n\n## Nasıl?\n- Davranışı gördüğün anda söyle, sonraya bırakma.\n- Kısa ve somut ol: "Kardeşine sıra verdin."\n- Abartma; sakin ve içten bir ses yeter.\n\n## Dikkat\nÖvgüyü bir istekle bitirme ("…ama keşke hep böyle yapsan"). Övgü kendi başına kalsın.' },
+  { key: 'kisa_net', title: 'Kısa ve net iste', summary: 'Tek adımlı, yakından ve olumlu cümleyle iste.', minutes: 3, position: 2,
+    try_text: 'Bir isteği çocuğunun yanına gidip göz hizasında, tek cümleyle söyle: "Çantanı kapının yanına koy."',
+    body_md: '## Neden işe yarar?\nUzak, uzun ya da soru biçimindeki istekler ("Odanı toplar mısın artık?") kolayca duyulmaz.\n\n## Nasıl?\n- Yanına git, adını söyle, göz göze gel.\n- **Ne yapmasını** istediğini söyle; ne yapmamasını değil.\n- Bir seferde tek adım.\n- Sonra birkaç saniye bekle.' },
+  { key: 'once_sonra', title: 'Önce–sonra', summary: 'Sevdiği etkinliği yapılacak işin arkasına koy.', minutes: 4, position: 3,
+    try_text: 'Günün zor bir geçişinde dene: "Önce dişlerini fırçala, sonra masal okuyalım."',
+    body_md: '## Neden işe yarar?\nSıra açık olunca pazarlık azalır; çocuk ne olacağını bilir.\n\n## Nasıl?\n- "Sonra"yı gerçekten olacak, küçük bir şey seç.\n- Önce gelen işi kısa tut.\n- İş bitince sözünü hemen tut.' },
+  { key: 'sakin_bekle', title: 'Sakin kal, kısa konuş', summary: 'Zor anda az söz, sakin ses.', minutes: 5, position: 4,
+    try_text: 'Bu hafta zor bir anda konuşmayı tek cümleye indir ve önce kendi nefesini yavaşlat.',
+    body_md: '## Neden işe yarar?\nZor anda uzun açıklama çocuğa ulaşmaz; sakin bir yetişkin ortamı da sakinleştirir.\n\n## Nasıl?\n- Önce dur, bir nefes al.\n- Tek cümle: "Kızgınsın. Yanındayım."\n- Konuşmayı sakinleşince yap.' },
+];
+function seedLessons(x: Db) {
+  if (x.lessons_seeded) return;
+  x.lessons_seeded = true;
+  x.parent_lessons = DEMO_LESSONS.map((l) => ({ ...l, domain: 'general', sources: '', status: 'published', updated_at: now() }));
+  const link = (x.clinic_links ?? []).find((l: Row) => l.id === 'demo-link' && l.status === 'active');
+  if (link) x.parent_lesson_assignments.push({ id: 'demo-lesson-asg', clinic_id: link.clinic_id, link_id: link.id, family_id: link.family_id,
+    lesson_key: 'kisa_net', note: 'Sabah hazırlığında deneyelim; haftaya konuşuruz.', status: 'active', assigned_by: link.clinician_id, created_at: ago(1440) });
+}
 
 /* ---------- Örnek aile ---------- */
 
@@ -220,6 +245,7 @@ function seed(): Db {
     // created_at: Ben › İlk adımlar yalnız yeni hesapta (ilk 30 gün) görünür
     parent: { user: { id: U, email: 'demo@parentapp.app', created_at: now() }, access_token: 'demo' },
   };
+  seedLessons(db);
   return db;
 }
 
@@ -229,6 +255,7 @@ function load(): Db {
     if (raw) {
       const x = JSON.parse(raw);
       TABLES.forEach((t) => { x[t] = x[t] ?? []; });
+      seedLessons(x);
       x.sessions = x.sessions ?? {};
       return x;
     }
@@ -877,9 +904,73 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
   if (name === 'my_kvkk_requests') return { data: db.kvkk_requests.filter((r: Row) => r.user_id === uid).reverse(), error: null };
   // Ebeveyn görevi işareti ve hediye (ortak 20261027140000_parent_tasks_gifts.sql)
   const pbal = () => Math.max(0, db.parent_stone_ledger.filter((l: Row) => l.user_id === uid).reduce((a: number, l: Row) => a + l.amount, 0));
+  // Ebeveyn dersleri (öneri 20261105200000_parent_lessons.sql): hafta Pzt–Paz, uygulanan gün başına 1 taş, haftada en çok 3
+  if (name.startsWith('parent_lesson_') || name === 'family_lessons') {
+    const today = iso(new Date());
+    const wsOf = (d: string) => { const x = new Date(`${d}T12:00:00`); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return iso(x); };
+    const ws = wsOf(today);
+    const fam = me?.family_id;
+    if (!fam) return err('Önce ebeveyn olarak giriş yapmalısın');
+    const prog = db.parent_lesson_progress as Row[], prac = db.parent_lesson_practice as Row[];
+    const weekStones = (w: string) => (db.parent_stone_ledger as Row[]).filter((l) => l.user_id === uid && (l.reason === 'lesson' || l.reason === 'lesson_undo') && l.ref.split('|')[1] === w).reduce((a, l) => a + l.amount, 0);
+    const resync = (w: string) => {
+      const end = iso(new Date(new Date(`${w}T12:00:00`).getTime() + 6 * 864e5));
+      const want = Math.min(3, new Set(prac.filter((x) => x.user_id === uid && x.day >= w && x.day <= end).map((x) => x.day)).size);
+      const have = weekStones(w);
+      if (want !== have) db.parent_stone_ledger.push({ id: db.parent_stone_ledger.reduce((m: number, l: Row) => Math.max(m, l.id), 0) + 1, family_id: fam, user_id: uid,
+        amount: want - have, reason: want > have ? 'lesson' : 'lesson_undo', ref: `lesson|${w}|${Date.now()}`, created_at: now() });
+      return want;
+    };
+    const activeAsg = () => (db.parent_lesson_assignments as Row[]).filter((a) => a.family_id === fam && a.status === 'active'
+      && db.clinic_links.some((k: Row) => k.id === a.link_id && k.status === 'active'));
+    const view = () => ({
+      today, week_start: ws,
+      catalog: (db.parent_lessons as Row[]).filter((l) => l.status !== 'draft').sort((a, b) => a.position - b.position)
+        .map(({ key, title, summary, minutes, try_text, domain, status }) => ({ key, title, summary, minutes, try_text, domain, status })),
+      assigned: activeAsg().map((a) => ({ id: a.id, lesson_key: a.lesson_key, link_id: a.link_id, note: a.note, created_at: a.created_at })),
+      mine: prog.filter((p) => p.user_id === uid).sort((a, b) => (a.started_at < b.started_at ? 1 : -1)).map((p) => ({ ...p,
+        days: prac.filter((x) => x.user_id === uid && x.lesson_key === p.lesson_key).length,
+        week_days: prac.filter((x) => x.user_id === uid && x.lesson_key === p.lesson_key && x.day >= ws).map((x) => x.day).sort() })),
+      week_practiced: new Set(prac.filter((x) => x.user_id === uid && x.day >= ws).map((x) => x.day)).size,
+      week_stones: weekStones(ws), week_cap: 3, balance: pbal(),
+    });
+    const k = args.p_key;
+    const p = prog.find((x) => x.user_id === uid && x.lesson_key === k);
+    const fail = (m: string, hint: string) => ({ data: null, error: { message: m, hint } });
+    if (name === 'family_lessons') return { data: view(), error: null };
+    if (name === 'parent_lesson_start') {
+      if (!db.parent_lessons.some((l: Row) => l.key === k && l.status === 'published')) return fail('Ders bulunamadı', 'lesson_not_found');
+      prog.filter((x) => x.user_id === uid && x.status === 'current' && x.lesson_key !== k).forEach((x) => {
+        const used = prac.some((y) => y.user_id === uid && y.lesson_key === x.lesson_key);
+        x.status = used ? 'learned' : 'paused'; if (used) x.learned_at = x.learned_at ?? now();
+      });
+      const asg = activeAsg().find((a) => a.lesson_key === k)?.id ?? null;
+      if (p) { if (p.status !== 'current') p.started_at = now(); p.status = 'current'; p.assignment_id = p.assignment_id ?? asg; }
+      else prog.push({ user_id: uid, lesson_key: k, family_id: fam, assignment_id: asg, status: 'current', started_at: now(), opened_at: null, learned_at: null });
+      save(); return { data: view(), error: null };
+    }
+    if (name === 'parent_lesson_open') { if (p && !p.opened_at) { p.opened_at = now(); save(); } return { data: null, error: null }; }
+    if (name === 'parent_lesson_finish') {
+      if (!p) return fail('Bu derse başlamadın', 'lesson_not_started');
+      p.status = 'learned'; p.learned_at = p.learned_at ?? now(); save(); return { data: view(), error: null };
+    }
+    if (name === 'parent_lesson_practice') {
+      if (!p) return fail('Önce bu derse başla', 'lesson_not_started');
+      const d = args.p_day ?? today;
+      if (d > today || d < day(-6)) return fail('Yalnız son bir haftanın günü işaretlenebilir', 'date_range');
+      const w = wsOf(d), before = weekStones(w);
+      const i = prac.findIndex((x) => x.user_id === uid && x.lesson_key === k && x.day === d);
+      if (args.p_done !== false && i < 0) prac.push({ user_id: uid, lesson_key: k, family_id: fam, day: d, created_at: now() });
+      if (args.p_done === false && i >= 0) prac.splice(i, 1);
+      const after = resync(w); save();
+      return { data: { ok: true, day: d, week_start: w, week_days: prac.filter((x) => x.user_id === uid && x.lesson_key === k && wsOf(x.day) === w).map((x) => x.day).sort(),
+        week_practiced: new Set(prac.filter((x) => x.user_id === uid && wsOf(x.day) === w).map((x) => x.day)).size,
+        week_stones: after, week_cap: 3, stone_given: after - before, balance: pbal() }, error: null };
+    }
+  }
   if (name === 'parent_task_done') {
     const a = db.parent_assignments.find((x: Row) => x.task_id === args.p_task_id && x.user_id === uid);
-    if (!a) return err('Bu görev sana atanmamış');
+    if (!a) return err('Bu macera sana atanmamış');
     const k = `${args.p_task_id}|${args.p_date}`;
     const i = db.parent_completions.findIndex((x: Row) => x.task_id === args.p_task_id && x.user_id === uid && x.date === args.p_date);
     const nextId = () => db.parent_stone_ledger.reduce((m: number, l: Row) => Math.max(m, l.id), 0) + 1;

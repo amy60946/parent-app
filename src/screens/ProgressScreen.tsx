@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import NotificationBell from '../components/NotificationBell';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,11 +8,16 @@ import { Avatar, Card } from '../components/ui';
 import { useStore, taskOccursOn, completionKey } from '../store';
 import { DAY_SHORT, addDays, toISO, startOfWeek } from '../dates';
 import { genitive } from '../lib/tr';
+import ParentLessons from '../components/ParentLessons';
 
-export default function ProgressScreen({ navigation }: any) {
-  const { children, tasks, completions } = useStore();
-  const [childId, setChildId] = useState(children[0]?.id);
-  const child = children.find((c) => c.id === childId) ?? children[0];
+// Gelişim: çocuklar + aile üyesi "Ben" (ebeveyn eğitimi; ortak akislar.md 22, kullanıcı kararları 5 Kasım 2026)
+export default function ProgressScreen({ navigation, route }: any) {
+  const { children, tasks, completions, parent } = useStore();
+  const [childId, setChildId] = useState<string | undefined>(children[0]?.id ?? 'me');
+  // Bildirimden (lesson_assigned) ya da Bugün'den gelince Ben seçili açılır
+  useEffect(() => { if (route?.params?.who === 'me') { setChildId('me'); navigation.setParams({ who: undefined }); } }, [route?.params?.who, navigation]);
+  const me = childId === 'me' || children.length === 0;
+  const child = me ? undefined : children.find((c) => c.id === childId) ?? children[0];
   const today = new Date();
 
   const stat = (iso: string) => {
@@ -66,8 +71,6 @@ export default function ProgressScreen({ navigation }: any) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks, completions, child?.id]);
 
-  if (!child) return null;
-
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={{ alignItems: 'flex-end', paddingHorizontal: 20, paddingTop: 4 }}>
@@ -83,13 +86,26 @@ export default function ProgressScreen({ navigation }: any) {
 
         <View style={{ flexDirection: 'row', gap: 16 }}>
           {children.map((c) => (
-            <Pressable key={c.id} onPress={() => setChildId(c.id)} style={{ alignItems: 'center', gap: 4, opacity: c.id === child.id ? 1 : 0.5 }}>
-              <Avatar id={c.avatar} size={48} ring={c.id === child.id} />
+            <Pressable key={c.id} onPress={() => setChildId(c.id)} style={{ alignItems: 'center', gap: 4, opacity: c.id === child?.id ? 1 : 0.5 }}
+              accessibilityRole="button" accessibilityLabel={`${c.name} gelişimi`}>
+              <Avatar id={c.avatar} size={48} ring={c.id === child?.id} />
               <Text style={{ fontSize: 11, color: colors.navy, fontWeight: '600' }}>{c.name}</Text>
             </Pressable>
           ))}
+          <Pressable onPress={() => setChildId('me')} style={{ alignItems: 'center', gap: 4, opacity: me ? 1 : 0.5 }}
+            accessibilityRole="button" accessibilityLabel="Ben: senin gelişimin">
+            <Avatar id={parent.avatar} size={48} ring={me} />
+            <Text style={{ fontSize: 11, color: colors.navy, fontWeight: '600' }}>Ben</Text>
+          </Pressable>
         </View>
 
+        {me || !child ? (
+          <>
+            <Text style={styles.title}>Senin gelişimin</Text>
+            <ParentLessons navigation={navigation} />
+          </>
+        ) : (
+        <>
         <Text style={styles.title}>{genitive(child.name)} gelişimi</Text>
 
         <View style={{ flexDirection: 'row', gap: 12 }}>
@@ -157,6 +173,8 @@ export default function ProgressScreen({ navigation }: any) {
         </Card>
         {/* hukuk/50 §13 */}
         <Text style={{ fontSize: 11, lineHeight: 16, color: colors.muted, textAlign: 'center' }}>Bu sayılar çocuğunun uygulamadaki maceralarını özetler; tanı, zekâ ya da dikkat puanı değildir.</Text>
+        </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

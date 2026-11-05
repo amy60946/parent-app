@@ -11,7 +11,7 @@ import { track } from './lib/track';
 
 export type ParentAssign = { userId: string; difficulty: Difficulty };
 export type Member = { id: string; nickname: string; name: string; avatar: string };
-export type StoneRow = { id: number; userId: string; amount: number; reason: 'task' | 'task_undo' | 'gift'; ref: string;
+export type StoneRow = { id: number; userId: string; amount: number; reason: 'task' | 'task_undo' | 'gift' | 'lesson' | 'lesson_undo'; ref: string;
   itemId?: string; childId?: string; createdAt: string };
 
 type Ctx = {

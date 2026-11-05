@@ -78,7 +78,7 @@ function Inline({ text, style }: { text: string; style: object }) {
   );
 }
 
-function Markdown({ text, title }: { text: string; title?: string }) {
+export function Markdown({ text, title }: { text: string; title?: string }) {
   const out: React.ReactNode[] = [];
   let para: string[] = [];
   let table: string[][] = [];
