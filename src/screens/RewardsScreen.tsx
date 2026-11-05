@@ -24,7 +24,7 @@ import {
   RewardTemplate, RewardKind, RewardUnit, RewardGroup, rewardTemplates, rewardIcons, iconKey, iconOf, unitLabel, unitShort, groupLabel,
 } from '../data/rewardTemplates';
 import { formatTR, toISO } from '../dates';
-import { afterModal } from '../lib/modal';
+import { afterModal, useModalOpen } from '../lib/modal';
 
 // İlk açılışta 3 adımlık "kullanıyormuş gibi" tur (kullanıcı isteği 3 Kasım 2026: uzun açıklama yerine); ⓘ yeniden açar.
 // Coin / Güneş Taşı bilgi notu (hukuk/50 §8) turun son kartında.
@@ -145,7 +145,9 @@ export default function RewardsScreen({ navigation }: any) {
   };
   // Öneriye dokun: önerilen fiyatla, bütün çocuklar için eklenir (taş düşmez; satırdan düzenlenir/silinir)
   const addTemplate = (t: RewardTemplate) => {
-    if (!familyId || !ready() || !allow('reward')) return;
+    if (!familyId || !ready()) return;
+    // Sınır doluysa öneriler penceresi kapanır, üyelik ekranı ardından açılır (iOS: pencere açıkken ekran açılmaz)
+    if (!allow('reward')) { setSuggest(false); return; }
     tips.gate('create', rewardTips.create, async () => {
       const ok = await act(() => saveReward(familyId, {
         title: t.title, kind: t.kind, cost: t.cost, unit: t.unit, unitAmount: t.unitAmount, childIds: [], icon: iconKey(t.icon),
@@ -469,6 +471,7 @@ function SuggestionsModal({ visible, rewards, onClose, onAdd, onCustom, tip }: {
   const list = rewardTemplates.filter((t) => (group === 'all' || t.group === group) && (!needle || t.title.toLocaleLowerCase('tr-TR').includes(needle)));
   const groups = (Object.keys(groupLabel) as RewardGroup[]).filter((g) => list.some((t) => t.group === g));
   const added = (t: RewardTemplate) => rewards.some((r) => sameTitle(r.title, t.title));
+  useModalOpen(visible); // açıkken modal ekran açılamaz (lib/modal whenNoModal)
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'bottom']}>
@@ -631,6 +634,7 @@ function RewardEditor({ value, kids, moves, balances: bal, onClose, onSave, onDe
     return <Text>{t.slice(0, i)}<Text style={{ fontWeight: '800' }}>{t.slice(i, i + needle.length)}</Text>{t.slice(i + needle.length)}</Text>;
   };
 
+  useModalOpen(!!value); // açıkken modal ekran açılamaz (lib/modal whenNoModal)
   return (
     <Modal visible={!!value} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }} edges={['top', 'bottom']}>

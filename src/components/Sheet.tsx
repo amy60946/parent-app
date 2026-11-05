@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme';
 import { IconButton } from './ui';
 import { useKeyboardHeight } from '../lib/useKeyboardHeight';
+import { useModalOpen } from '../lib/modal';
 
 // Alttan açılan sayfa. Klavye açılınca sayfa klavyenin üstüne çıkar ve içerik
 // kaydırılabilir kalır; yazılan alan her zaman görünür.
@@ -16,6 +17,7 @@ export default function Sheet({ visible, title, onClose, children, header, foote
   const kb = useKeyboardHeight();
   const maxScroll = Math.max(160, height - kb - insets.top - (footer ? 270 : 190));
 
+  useModalOpen(visible); // açıkken modal ekran açılamaz (lib/modal whenNoModal)
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1 }}>

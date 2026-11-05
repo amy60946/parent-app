@@ -7,6 +7,7 @@ import { colors } from '../theme';
 import { track } from '../lib/track';
 import { Avatar as Face } from './ui';
 import { useParentTasks } from '../parentTasks';
+import { useModalOpen } from '../lib/modal';
 
 // İlk kullanım rehberi (kullanıcı onayı 26 Ekim 2026, tasarım G1 "numaralı dokunuş yolu"):
 // gerçek ekranın sade kopyası karartılır, dokunulacak yerler altın halka + 1 → 2 → 3 sırasıyla gösterilir.
@@ -71,6 +72,7 @@ export default function Onboarding({ visible, onClose, mode = 'full', ask = fals
   const next = () => (step < total - 1 ? setStep(step + 1) : finish(true));
   const Step = SCENES[steps[step] ?? 'task'];
 
+  useModalOpen(visible); // açıkken modal ekran açılamaz (lib/modal whenNoModal)
   return (
     <Modal visible={visible} animationType="fade" presentationStyle="overFullScreen" transparent onRequestClose={() => (asking ? later() : finish(false))}>
       <View style={{ flex: 1, backgroundColor: DIM_SOLID, justifyContent: 'flex-end', alignItems: 'center' }}>

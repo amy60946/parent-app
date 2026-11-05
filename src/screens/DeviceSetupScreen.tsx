@@ -10,6 +10,7 @@ import { useStore, IssuedCode, Child } from '../store';
 import { track } from '../lib/track';
 import { useChildConsent } from '../legal';
 import { genitive, joinNames } from '../lib/tr';
+import { useModalOpen } from '../lib/modal';
 
 // Kurulumdan sonra ilk iş: çocuğun cihazını kur (kullanıcı kararı 27 Ekim 2026; ortak/sozlesme/akislar.md 16 adım 13).
 // "Başka cihaz": indirme bağlantısını paylaş + giriş kodu (QR + yazılı). "Bu cihaz": App Store + kod. Çocuk bağlanınca ✓.
@@ -93,6 +94,7 @@ function DeviceSheet({ child, onClose }: { child: Child; onClose: () => void }) 
   const shareLink = () => Share.share({ message: GAME_URL
     ? `Pofi Adası'nı indir: ${GAME_URL}${code ? `\nGiriş kodu: ${code.code} (15 dakika geçerli)` : ''}`
     : `Pofi Adası'nı App Store'dan indir.${code ? `\nGiriş kodu: ${code.code} (15 dakika geçerli)` : ''}` });
+  useModalOpen(true); // açıkken modal ekran açılamaz (lib/modal whenNoModal)
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>

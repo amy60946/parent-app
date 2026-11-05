@@ -15,6 +15,7 @@ import { useKeyboardHeight } from '../lib/useKeyboardHeight';
 import { stickers, stickerOf } from '../data/stickers';
 import { useBilling } from '../billing';
 import { useNotifications } from '../notifications';
+import { useModalOpen } from '../lib/modal';
 
 export const mmss = (ms: number) => {
   const t = Math.max(0, Math.round(ms / 1000));
@@ -75,6 +76,7 @@ export default function ChatScreen({ navigation, route }: any) {
     const ids = notes.filter((n) => !n.readAt && n.kind === 'message' && n.data?.child_id === childId).map((n) => n.id);
     if (ids.length) markRead(ids);
   }, [notes, childId, markRead]);
+  useModalOpen(!!viewer); // açıkken modal ekran açılamaz (lib/modal whenNoModal)
   if (!child) return null;
 
   const send = () => {

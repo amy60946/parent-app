@@ -6,12 +6,14 @@ import { colors, radius } from '../theme';
 import Info from './Info';
 import CodeEntry, { CodeResult } from './CodeEntry';
 import { track } from '../lib/track';
+import { useModalOpen } from '../lib/modal';
 
 // Kayıttan hemen sonra tek ekran: "Kodun var mı?" (Life360 düzeni; kullanıcı kararı 26 Ekim 2026, "B").
 // Uzman kodu → davet ekranı, eşin kodu → aileye katılım, kod yok → ilk kullanım rehberi.
 export default function CodeStep({ visible, onResult, onSkip }: {
   visible: boolean; onResult: (r: CodeResult) => void; onSkip: () => void;
 }) {
+  useModalOpen(visible); // açıkken modal ekran açılamaz (lib/modal whenNoModal)
   return (
     <Modal visible={visible} animationType="fade" onRequestClose={onSkip}>
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>

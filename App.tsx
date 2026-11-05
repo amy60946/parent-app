@@ -43,6 +43,7 @@ import ChatScreen from './src/screens/ChatScreen';
 import NotificationsScreen, { openNotification } from './src/screens/NotificationsScreen';
 import AbcScreen from './src/screens/AbcScreen';
 import LessonScreen from './src/screens/LessonScreen';
+import { whenNoModal } from './src/lib/modal';
 import { SessionReminderSync } from './src/components/SessionsSection';
 import PaywallScreen from './src/screens/PaywallScreen';
 import RewardsScreen from './src/screens/RewardsScreen';
@@ -268,7 +269,8 @@ function Main() {
     });
   }, [ready]);
   const paywall = React.useCallback((reason?: string) => {
-    if (navRef.isReady()) navRef.navigate('Paywall', { reason });
+    // Açık bir pencere (ör. Aile › Çocuk ekle) varken iOS ekranı açmaz: pencere kapanınca aç (lib/modal)
+    whenNoModal(() => { if (navRef.isReady()) navRef.navigate('Paywall', { reason }); });
   }, []);
   if (!ready || setup === 'loading') return <Loading />;
   return (

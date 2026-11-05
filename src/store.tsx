@@ -331,6 +331,18 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     setReady(true);
   }, [userId, loadChildren, loadTasks, loadCompletions, loadMessages, loadSaved, loadCodes]);
 
+  // Aile bilgisi yüklenemediyse (bağlantı, kayıttan hemen sonra gecikme) işlem sessizce kaybolmasın: uyar ve yeniden yükle
+  // (geri bildirim 5 Kasım 2026: "Kaydet'e bastım, hiçbir şey olmadı")
+  const refreshRef = useRef(refresh);
+  refreshRef.current = refresh;
+  const warnedAt = useRef(0);
+  const noFamily = () => {
+    refreshRef.current();
+    if (Date.now() - warnedAt.current < 4000) return;
+    warnedAt.current = Date.now();
+    Alert.alert('Hesabın yüklenemedi', 'İnternet bağlantını kontrol edip birkaç saniye sonra tekrar dene.');
+  };
+
   // Oturum değişince sıfırla ve yeniden yükle
   useEffect(() => {
     setReady(false);
@@ -413,7 +425,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   const addChild = useCallback(async (c: Omit<Child, 'id' | 'linked'>): Promise<string | null> => {
     track('child.add');
     const f = fid.current;
-    if (!f) return null;
+    if (!f) { noFamily(); return null; }
     const child: Child = { ...c, id: uuid(), linked: false };
     setChildren((p) => [...p, child]);
     let ok = false;
@@ -480,7 +492,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   const addTasks = useCallback((list: Omit<Task, 'id' | 'sortOrder'>[], onSaved?: (ids: string[]) => void) => {
     track('task.create', { n: list.length });
     const f = fid.current;
-    if (!f) return;
+    if (!f) { noFamily(); return; }
     const now = Date.now() / 1000;
     const created: Task[] = list.map((x, i) => ({ ...x, id: uuid(), sortOrder: now + i / 1000 }));
     setTasks((p) => [...p, ...created]);
@@ -499,7 +511,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
 
   const updateTask = useCallback((id: string, patch: Partial<Task>) => {
     const f = fid.current;
-    if (!f) return;
+    if (!f) { noFamily(); return; }
     setTasks((p) => p.map((t) => (t.id === id ? { ...t, ...patch } : t)));
     run(async () => {
       const row = taskRow(patch);
@@ -556,7 +568,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
 
   const toggleCompletion = useCallback((task: Task, childId: string, date: string) => {
     const f = fid.current;
-    if (!f) return;
+    if (!f) { noFamily(); return; }
     const key = completionKey(task.id, childId, date);
     const exists = !!completionsRef.current[key];
     const status: CompletionStatus = task.requiresReview ? 'pending' : 'approved';
@@ -599,7 +611,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
 
   const toggleSaved = useCallback((templateId: string) => {
     const f = fid.current;
-    if (!f) return;
+    if (!f) { noFamily(); return; }
     const row = savedRows.find((r) => r.template_key === templateId);
     if (row?.is_custom) {
       const saved = !row.saved;
@@ -619,7 +631,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     track('template.custom');
     const f = fid.current;
     const id = uuid();
-    if (!f) return id;
+    if (!f) { noFamily(); return id; }
     const r = {
       id, family_id: f, template_key: id, is_custom: true, saved: true, created_by: userId,
       title: t.title, emoji: t.emoji, category: t.category, difficulty: t.difficulty, skill: categorySkill[t.category],
@@ -632,7 +644,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   const sendMessage = useCallback((childId: string, text: string) => {
     track('message.send', { kind: 'text' });
     const f = fid.current;
-    if (!f || !userId) return;
+    if (!f || !userId) { noFamily(); return; }
     const m: Message = { id: uuid(), childId, text, at: new Date().toISOString(), sender: 'parent', kind: 'text' };
     setMessages((p) => [...p, m]);
     run(() => supabase.from('messages').insert({
@@ -643,7 +655,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   const sendSticker = useCallback((childId: string, key: string) => {
     track('message.send', { kind: 'sticker' });
     const f = fid.current;
-    if (!f || !userId) return;
+    if (!f || !userId) { noFamily(); return; }
     const m: Message = { id: uuid(), childId, text: key, at: new Date().toISOString(), sender: 'parent', kind: 'sticker' };
     setMessages((p) => [...p, m]);
     run(() => supabase.from('messages').insert({
@@ -667,7 +679,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   ) => {
     track('message.send', { kind });
     const f = fid.current;
-    if (!f || !userId) return;
+    if (!f || !userId) { noFamily(); return; }
     const id = uuid();
     const path = `${f}/${id}.${extFor(contentType)}`;
     const m: Message = {

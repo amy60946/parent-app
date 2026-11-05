@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors, radius } from '../theme';
 import { Tip } from '../data/rewardTips';
-import { afterModal } from '../lib/modal';
+import { afterModal, useModalOpen } from '../lib/modal';
 
 const KEY = (k: string) => `tip-${k}`;
 
@@ -13,6 +13,7 @@ const KEY = (k: string) => `tip-${k}`;
 // Kapatılırsa (geri tuşu / dışına dokunma) işlem yapılmaz, ipucu sonra yine çıkar.
 export function useFirstTip() {
   const [tip, setTip] = useState<Tip | null>(null);
+  useModalOpen(!!tip); // açıkken modal ekran açılamaz (lib/modal whenNoModal)
   const pending = useRef<{ key: string; run: () => void } | null>(null);
 
   const gate = async (key: string, t: Tip, run: () => void) => {

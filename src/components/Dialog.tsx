@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, Modal, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
+import { useModalOpen } from '../lib/modal';
 
 // Ortada kısa bilgi kartı: simge, başlık, bir-iki cümle, ana eylem ve isteğe bağlı ikinci bağlantı.
 // Bildirim izni ön sorusu ve ilk onay kutlaması için (kullanıcı isteği 27 Ekim 2026).
@@ -9,6 +10,7 @@ export default function Dialog({ visible, icon, badge, title, text, primary, onP
   visible: boolean; icon: keyof typeof Ionicons.glyphMap; badge?: keyof typeof Ionicons.glyphMap;
   title: string; text: string; primary: string; onPrimary: () => void; secondary?: string; onSecondary?: () => void;
 }) {
+  useModalOpen(visible); // açıkken modal ekran açılamaz (lib/modal whenNoModal)
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onSecondary ?? onPrimary}>
       <View style={styles.backdrop}>

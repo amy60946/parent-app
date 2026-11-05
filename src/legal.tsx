@@ -6,7 +6,7 @@ import { colors, radius } from './theme';
 import { LegalDoc, legalAccept, legalPending } from './lib/legal';
 import { LegalTextView } from './components/LegalText';
 import { track } from './lib/track';
-import { MODAL_GAP } from './lib/modal';
+import { MODAL_GAP, useModalOpen } from './lib/modal';
 import { genitive } from './lib/tr';
 
 // Veli onayı (hukuk/50 §1.3): Pofi Adası'nı bağlamadan önce (giriş kodu ya da QR gösterilmeden) GameApp koşulları
@@ -62,6 +62,7 @@ function ChildConsent({ visible, name, docs, onDone, onDismiss }: {
       Alert.alert('Kaydedilemedi', (e as Error).message);
     } finally { setBusy(false); }
   };
+  useModalOpen(visible); // açıkken modal ekran açılamaz (lib/modal whenNoModal)
   return (
     <Modal visible={visible} transparent animationType="fade" onDismiss={onDismiss} onRequestClose={() => (doc ? setDoc(null) : onDone(false))}>
       {doc ? (

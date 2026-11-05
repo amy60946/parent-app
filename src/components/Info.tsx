@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal, Pressable, Text, View, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
+import { useModalOpen } from '../lib/modal';
 
 // "i" düğmesi: uzun açıklama ekranda yazılmaz, ilgili başlığın/eylemin yanındaki i'ye dokununca açılır.
 // Ekranda yalnız çok önemli bilgi kısa cümleyle kalır; ayrıntısı burada.
@@ -9,6 +10,7 @@ export default function Info({ title, text, children, size = 18, color = colors.
   title: string; text?: string; children?: React.ReactNode; size?: number; color?: string;
 }) {
   const [open, setOpen] = useState(false);
+  useModalOpen(open); // açıkken modal ekran açılamaz (lib/modal whenNoModal)
   return (
     <>
       <Pressable onPress={() => setOpen(true)} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Bilgi: ${title}`}>
