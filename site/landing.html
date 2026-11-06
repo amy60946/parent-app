@@ -1,0 +1,380 @@
+<title>ParentApp ve Pofi Adası</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="ParentApp, çocuğunuzun günlük sorumluluklarını düzenli yapmasına yardımcı olur. Sorumlulukları siz verirsiniz, çocuğunuz Pofi Adası oyununda macera olarak görür ve yapınca işaretler, siz onaylarsınız.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap">
+<style>
+/* Düzen: ParentApp önde. Sade zemin, büyük ParentApp telefon ekranı, oyun yalnız küçük bir tablet olarak arkada.
+   Bölümler: ne işe yarar → faydalar → nasıl çalışır (kaydırmalı, ekranlarla) → güvenlik → fiyat → sorular. */
+:root {
+  --ink: #0F1B3D;
+  --ink-2: #3B4560;
+  --ink-3: #6A7390;
+  --paper: #F4F7FA;
+  --card: #FFFFFF;
+  --line: #E0E6EE;
+  --tint: #E6F1FB;       /* ana bölüm zemini, kumsal göğünün çok açık hâli */
+  --sun: #E9B22B;
+  --ok: #2F7D4A;
+  --shadow: 0 24px 60px -24px rgba(15, 27, 61, .35);
+  --ring: 0 0 0 0 transparent;
+  --font-display: "Bricolage Grotesque", "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --r-lg: 22px;
+  --r-md: 14px;
+  /* Uygulama ekranları ParentApp'in kendi (açık) renkleriyle, iki temada da aynı */
+  --app-bg: #F5F6F8; --app-ink: #0F1B3D; --app-muted: #8A91A3; --app-line: #E8EAEF; --app-green: #3FA98D; --app-mint: #DDF1EC;
+}
+/* Kullanıcı kararı (4 Kasım 2026): yalnız açık zemin; cihazın koyu teması sayfayı değiştirmez */
+:root { color-scheme: light; }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { background: var(--paper); color: var(--ink-2); font-family: var(--font-body); font-size: 17px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--card); }
+h1, h2, h3 { font-family: var(--font-display); color: var(--ink); line-height: 1.15; margin: 0; text-wrap: balance; letter-spacing: -0.015em; }
+h1 { font-size: clamp(2rem, 4.2vw, 3.1rem); font-weight: 800; letter-spacing: -0.025em; }
+h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 800; }
+h3 { font-size: 1.1rem; font-weight: 700; }
+p { margin: 0; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; border-radius: 6px; }
+.wrap { width: 100%; max-width: 1120px; margin-inline: auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.eyebrow { font-size: .8rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+.section { padding-block: clamp(56px, 8vw, 96px); }
+.head { display: grid; gap: 10px; justify-items: center; text-align: center; margin-bottom: clamp(28px, 4vw, 48px); }
+.head p { max-width: 34rem; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px; border-radius: 999px; font-weight: 700; font-size: 1rem; text-decoration: none; border: 1.5px solid transparent; white-space: nowrap; }
+.btn-primary { background: var(--ink); color: var(--paper); }
+.btn-ghost { border-color: var(--line); color: var(--ink); background: var(--card); }
+.btn-text { padding: 0 10px; color: var(--ink); font-weight: 600; }
+
+/* Üst bar */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--card) 90%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; align-items: center; gap: 20px; min-height: 66px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); flex: none; }
+.brand img { width: 34px; height: 34px; border-radius: 9px; box-shadow: 0 0 0 1px var(--line); }
+.brand b { font-family: var(--font-display); font-size: 1.2rem; font-weight: 800; }
+.nav { display: flex; gap: 4px; margin-left: 12px; }
+.nav a { text-decoration: none; font-weight: 600; font-size: .95rem; color: var(--ink-2); padding: 8px 10px; border-radius: 8px; }
+.nav a:hover { color: var(--ink); background: var(--paper); }
+.top-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.top-actions .btn { min-height: 42px; padding: 0 18px; font-size: .95rem; }
+@media (max-width: 860px) { .nav { display: none; } }
+@media (max-width: 420px) { .top .wrap { gap: 8px; } .brand b { font-size: 1.05rem; } .top-actions { gap: 2px; } .top-actions .btn-text { padding: 0 6px; font-size: .88rem; } .top-actions .btn { padding: 0 12px; font-size: .88rem; } }
+@media (max-width: 380px) { .brand b { display: none; } }
+@media (max-width: 560px) { .stage .note { font-size: .75rem; padding: 8px 10px; gap: 8px; width: 39%; } .stage .note img { width: 22px; height: 22px; } .stage .note b { display: none; } }
+
+/* Uygulama ekranları (ParentApp'in sade kopyası) */
+.phone { position: relative; width: 100%; aspect-ratio: 9 / 19; border-radius: 34px; background: #0E1630; padding: 9px; box-shadow: var(--ring), var(--shadow); container-type: inline-size; }
+.screen { width: 100%; height: 100%; border-radius: 26px; background: var(--app-bg); overflow: hidden; display: flex; flex-direction: column; color: var(--app-ink); font-size: 4.3cqw; line-height: 1.3; }
+.screen .bar { display: flex; justify-content: space-between; padding: 1.1em 1.6em .4em; font-weight: 700; font-size: .95em; }
+.screen .pad { padding: .6em 1.2em; display: grid; gap: .85em; align-content: start; }
+.screen .t { font-family: var(--font-display); font-weight: 800; font-size: 1.9em; line-height: 1.1; }
+.screen .muted { color: var(--app-muted); font-size: .95em; }
+.screen .sec { font-weight: 800; font-size: 1.05em; }
+.screen .card { background: #fff; border-radius: 1em; padding: 0 1em; }
+.screen .row { display: flex; align-items: center; gap: .7em; padding: .7em 0; }
+.screen .row + .row { border-top: 1px solid var(--app-line); }
+.av { width: 2.4em; height: 2.4em; border-radius: 50%; object-fit: cover; flex: none; }
+.screen .meter { flex: 1; display: grid; gap: .35em; font-weight: 600; min-width: 0; }
+.meter i { display: block; height: .45em; border-radius: 1em; background: #EEF0F5; overflow: hidden; }
+.meter i::after { content: ""; display: block; height: 100%; width: var(--p); background: var(--app-green); border-radius: 1em; }
+.screen .pct { font-weight: 800; min-width: 2.6em; text-align: right; }
+.screen .pending { background: var(--app-mint); border-radius: 1.3em; padding: 1em 1.2em; display: flex; align-items: center; gap: .6em; }
+.screen .pending b { display: block; font-size: 1.2em; font-family: var(--font-display); }
+.screen .pending small { color: #2F6B5E; font-weight: 700; font-size: .85em; }
+.screen .go { margin-left: auto; width: 2.4em; height: 2.4em; border-radius: 50%; background: rgba(255,255,255,.75); display: grid; place-items: center; font-weight: 800; }
+.screen .tabs { margin-top: auto; display: grid; grid-template-columns: repeat(5, 1fr); background: #fff; border-top: 1px solid var(--app-line); padding: .7em 0 1.4em; text-align: center; font-size: .78em; font-weight: 600; color: var(--app-muted); }
+.screen .tabs .on { color: var(--app-ink); font-weight: 800; }
+.tablet { position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 22px; background: #0E1630; padding: 10px; box-shadow: var(--ring), var(--shadow); }
+.tablet img { width: 100%; height: 100%; object-fit: cover; border-radius: 14px; display: block; }
+.tag { position: absolute; font-size: .75rem; font-weight: 700; color: #0F1B3D; background: rgba(255,255,255,.92); padding: 4px 10px; border-radius: 999px; }
+.note { background: rgba(255,255,255,.97); color: var(--app-ink); border-radius: 16px; padding: 10px 12px; display: flex; gap: 10px; align-items: center; box-shadow: var(--ring), var(--shadow); font-size: .85rem; line-height: 1.35; }
+.note img { width: 30px; height: 30px; border-radius: 8px; flex: none; box-shadow: 0 0 0 1px var(--app-line); }
+.note b { display: block; font-size: .75rem; color: var(--app-muted); font-weight: 700; }
+.mini { background: var(--app-bg); color: var(--app-ink); border-radius: 18px; padding: 16px; display: grid; gap: 10px; align-content: start; font-size: .9rem; line-height: 1.35; box-shadow: 0 0 0 1px var(--line), 0 18px 40px -26px rgba(15,27,61,.45); }
+.mini .box { background: #fff; border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
+.mini .muted { color: var(--app-muted); font-size: .8rem; }
+.mini .cta { background: var(--app-ink); color: #fff; border-radius: 10px; padding: 10px; text-align: center; font-weight: 700; }
+.mini .grow { flex: 1; min-width: 0; }
+.mini .one { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.check { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; flex: none; background: var(--app-ink); color: #fff; font-size: .7rem; font-weight: 800; }
+.pill { display: inline-flex; align-items: center; padding: .15em .6em; border-radius: 1em; font-weight: 700; font-size: .8rem; white-space: nowrap; background: #E6F4EA; color: #2F7D4A; }
+.round { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; flex: none; }
+.r-no { border: 1.5px solid #F1C9D0; color: #B3263E; background: #fff; }
+.r-yes { background: var(--app-green); color: #fff; }
+.sunchip { display: inline-flex; align-items: center; gap: .3em; font-weight: 800; }
+.sunchip img { width: 1.3em; height: 1.3em; }
+
+/* Ana bölüm */
+.hero { background: linear-gradient(180deg, var(--tint) 0%, var(--paper) 100%); }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 64px); align-items: center; padding-block: clamp(44px, 6vw, 80px); }
+.hero-copy { display: grid; gap: 20px; }
+.hero-copy p.lead { font-size: clamp(1.05rem, 1.5vw, 1.2rem); color: var(--ink-2); max-width: 32rem; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.fine { font-size: .9rem; color: var(--ink-3); display: flex; flex-wrap: wrap; gap: 6px 16px; font-weight: 600; }
+.fine span { display: inline-flex; align-items: center; gap: 6px; }
+.fine span::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--sun); }
+.stage { position: relative; width: 100%; max-width: 460px; justify-self: center; aspect-ratio: .82; }
+.stage .phone { position: absolute; left: 4%; top: 0; width: 56%; z-index: 2; }
+.stage .tablet { position: absolute; right: 0; top: 30%; width: 62%; z-index: 1; }
+.stage .tablet .tag { left: 16px; bottom: 16px; }
+.stage .note { position: absolute; right: 0; bottom: 3%; width: 39%; z-index: 3; }
+@media (max-width: 860px) { .hero .wrap { grid-template-columns: minmax(0, 1fr); } .stage { max-width: 380px; } }
+
+/* Faydalar */
+.gains { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.gain { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 22px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.gain svg { width: 28px; height: 28px; stroke: var(--ink); }
+.gain p { font-size: .95rem; }
+@media (max-width: 980px) { .gains { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .gains { grid-template-columns: minmax(0, 1fr); } }
+
+/* Nasıl çalışır: yatay kaydırmalı üç adım */
+.rail { display: grid; grid-auto-flow: column; grid-auto-columns: min(86%, 740px); gap: 18px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 14px; scrollbar-width: none; overscroll-behavior-x: contain; }
+.rail::-webkit-scrollbar { display: none; }
+.rail:focus-visible { outline: 3px solid var(--sun); outline-offset: 4px; border-radius: var(--r-lg); }
+.slide { scroll-snap-align: start; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: clamp(20px, 3vw, 30px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: clamp(18px, 3vw, 30px); align-items: center; min-width: 0; }
+.slide .txt { display: grid; gap: 10px; min-width: 0; }
+.num { width: 34px; height: 34px; border-radius: 50%; background: var(--sun); color: #0F1B3D; font-weight: 800; display: grid; place-items: center; font-family: var(--font-display); }
+.slide h3 { font-size: clamp(1.25rem, 2.2vw, 1.55rem); font-weight: 800; }
+.slide .art { position: relative; }
+.slide .art img { display: block; width: 100%; height: auto; aspect-ratio: 1376 / 768; object-fit: cover; border-radius: 16px; box-shadow: 0 0 0 1px var(--line); }
+.slide .art .note { position: absolute; left: 12px; right: 12px; bottom: 12px; }
+.slide .art .tag { left: 12px; top: 12px; }
+.rail-ctl { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 16px; }
+.rail-ctl button { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--card); color: var(--ink); font-size: 1.1rem; font-weight: 800; cursor: pointer; }
+.rail-ctl button:disabled { opacity: .35; cursor: default; }
+.dots { display: flex; gap: 8px; }
+.dots span { width: 8px; height: 8px; border-radius: 4px; background: var(--line); transition: width .2s ease; }
+.dots span.on { width: 22px; background: var(--ink); }
+@media (max-width: 720px) { .slide { grid-template-columns: minmax(0, 1fr); } }
+
+/* Güvenlik */
+.safe { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.safe div { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md); padding: 20px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.safe svg { width: 26px; height: 26px; stroke: var(--ok); }
+.safe p { font-size: .93rem; }
+.limit { margin-top: 20px; text-align: center; color: var(--ink-3); font-size: .92rem; }
+@media (max-width: 980px) { .safe { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .safe { grid-template-columns: minmax(0, 1fr); } }
+
+/* Fiyat */
+.plans { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; max-width: 760px; margin-inline: auto; }
+.plan { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 26px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.plan.main { border: 2px solid var(--ink); }
+.plan .price { font-family: var(--font-display); font-size: 1.7rem; font-weight: 800; color: var(--ink); line-height: 1.15; }
+.plan ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; }
+.terms { margin-top: 16px; font-size: .88rem; color: var(--ink-3); text-align: center; }
+@media (max-width: 640px) { .plans { grid-template-columns: minmax(0, 1fr); } }
+
+/* Sorular */
+.faq { display: grid; gap: 10px; max-width: 44rem; margin-inline: auto; }
+.faq details { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md); padding: 0 20px; }
+.faq summary { cursor: pointer; list-style: none; padding: 16px 0; font-weight: 700; color: var(--ink); display: flex; justify-content: space-between; gap: 16px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; font-size: 1.4rem; line-height: 1; color: var(--ink-3); }
+.faq details[open] summary::after { content: "−"; }
+.faq details p { padding-bottom: 16px; }
+
+/* Son çağrı, alt bilgi */
+.final { text-align: center; display: grid; gap: 18px; justify-items: center; }
+.stores { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.store { display: inline-flex; align-items: center; gap: 10px; border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 8px 14px; font-size: .85rem; color: var(--ink-2); text-align: left; }
+.store img { width: 28px; height: 28px; border-radius: 7px; box-shadow: 0 0 0 1px var(--line); }
+.store b { display: block; color: var(--ink); font-size: .95rem; }
+footer { border-top: 1px solid var(--line); background: var(--card); }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: center; justify-content: space-between; padding-block: 28px; font-size: .92rem; }
+footer nav { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+footer a { text-decoration: none; color: var(--ink-2); }
+footer a:hover { color: var(--ink); text-decoration: underline; }
+footer small { color: var(--ink-3); }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#" aria-label="ParentApp ana sayfa"><img src="img/parentapp-simge.png" alt="" width="34" height="34"><b>ParentApp</b></a>
+    <nav class="nav" aria-label="Sayfa bölümleri">
+      <a href="#nasil">Nasıl çalışır</a>
+      <a href="#guvenlik">Güvenlik</a>
+      <a href="#fiyat">Fiyat</a>
+      <a href="#sss">Sorular</a>
+    </nav>
+    <div class="top-actions">
+      <a class="btn btn-text" href="app/index.html#giris">Giriş yap</a>
+      <a class="btn btn-primary" href="app/index.html#kayit">Ücretsiz kaydol</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- Ne işe yarar (Joon kalıbı: "The … app for kids …" + "Meet the … that …") -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap">
+      <div class="hero-copy">
+        <p class="eyebrow">6–12 yaş çocukların ebeveynleri için</p>
+        <h1 id="hero-title">Çocuğunuzun günlük sorumluluklarını düzenli yapmasına yardımcı olan uygulama</h1>
+        <p class="lead">Sorumlulukları ParentApp'ten verirsiniz. Çocuğunuz bunları Pofi Adası oyununda macera olarak görür ve yapınca işaretler. Siz onaylarsınız.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="app/index.html#kayit">Ücretsiz kaydolun</a>
+          <a class="btn btn-ghost" href="#nasil">Nasıl çalışır?</a>
+        </div>
+        <p class="fine"><span>7 gün tüm özellikler ücretsiz</span><span>Kredi kartı gerekmez</span></p>
+      </div>
+      <div class="stage" role="img" aria-label="ParentApp'in Bugün ekranı ve 'Nazlı macerayı tamamladı' bildirimi; arkada çocuğun tabletinde Pofi Adası oyunu.">
+        <div class="tablet"><img src="img/iskele.jpg" alt="" width="1376" height="768"><span class="tag">Pofi Adası</span></div>
+        <div class="phone">
+          <div class="screen" aria-hidden="true">
+            <div class="bar"><span>9:41</span><span>●●●</span></div>
+            <div class="pad">
+              <div><div class="t">Merhaba, Ayşe!</div><div class="muted">4 Kasım, Çarşamba</div></div>
+              <div class="pending"><div><small>Onay bekleyen</small><b>1 macera onayınızı bekliyor</b></div><span class="go">›</span></div>
+              <div class="sec">Bugünün ilerlemesi</div>
+              <div class="card">
+                <div class="row"><img class="av" src="img/okti_kiz_4.jpg" alt=""><div class="meter">Nazlı<i style="--p:80%"></i></div><span class="pct">%80</span></div>
+                <div class="row"><img class="av" src="img/okti_erkek_2.jpg" alt=""><div class="meter">Efe<i style="--p:50%"></i></div><span class="pct">%50</span></div>
+              </div>
+            </div>
+            <div class="tabs"><span class="on">Bugün</span><span>Uzmanım</span><span>Maceralar</span><span>Gelişim</span><span>Aile</span></div>
+          </div>
+        </div>
+        <div class="note" aria-hidden="true"><img src="img/parentapp-simge.png" alt=""><div><b>ParentApp · şimdi</b>Nazlı macerayı tamamladı: Dişlerini fırçala</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Faydalar (Joon kalıbı: "Help motivate your child to complete their daily routine" + dört kart) -->
+  <section class="section" id="faydalar" aria-labelledby="gain-title">
+    <div class="wrap">
+      <div class="head"><h2 id="gain-title">Çocuğunuzun günlük rutinini tamamlamasına yardımcı olun</h2></div>
+      <div class="gains">
+        <article class="gain"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg><h3>Rutini birkaç dakikada oluşturun</h3><p>Macera ekleyin, yapılanları görün, ilerlemeyi gün gün izleyin.</p></article>
+        <article class="gain"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><h3>Sürekli hatırlatmak zorunda kalmayın</h3><p>Sorumluluklar çocuğunuzun oyununda macera olarak yazar. Yaptığında size bildirim gelir.</p></article>
+        <article class="gain"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><h3>Sorumlulukları keyifli hâle getirin</h3><p>Onayladığınız her macera için çocuğunuz oyunda puan alır.</p></article>
+        <article class="gain"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><h3>Sorumluluk almayı öğretin</h3><p>Çocuğunuz sorumluluğunu kendisi görür ve kendisi işaretler.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Nasıl çalışır (Joon kalıbı üç adım; burada yatay kaydırmalı) -->
+  <section class="section" id="nasil" aria-labelledby="how-title" style="padding-top:0">
+    <div class="wrap">
+      <div class="head"><h2 id="how-title">Nasıl çalışır?</h2><p>Sorumlulukları siz verirsiniz, oyun çocuğunuzun bunları takip etmesini kolaylaştırır.</p></div>
+      <div class="rail" id="rail" tabindex="0" role="region" aria-roledescription="kaydırmalı liste" aria-label="Nasıl çalışır: üç adım">
+        <article class="slide" aria-label="Adım 1 / 3">
+          <div class="txt"><span class="num">1</span><h3>Yaşına uygun maceralarla başlayın</h3><p>Hazır rutinlerden seçin ya da kendi maceranızı ekleyin.</p></div>
+          <div class="mini" aria-hidden="true">
+            <div style="display:flex;justify-content:space-between;align-items:center"><b>Akşam rutini</b><span class="pill">6–8 yaş</span></div>
+            <div class="box"><span class="check">✓</span>Dişlerini fırçala<span class="pill" style="margin-left:auto">20:00</span></div>
+            <div class="box"><span class="check">✓</span>Kitap oku, 15 dakika<span class="pill" style="margin-left:auto">20:30</span></div>
+            <div class="box"><span class="check">✓</span>Çantanı hazırla<span class="pill" style="margin-left:auto">21:00</span></div>
+            <div class="cta">3 macerayı ekle</div>
+          </div>
+        </article>
+        <article class="slide" aria-label="Adım 2 / 3">
+          <div class="txt"><span class="num">2</span><h3>Çocuğunuz maceraları oyunda görür</h3><p>Sorumluluğunu yapınca oyunda "Yaptım" düğmesine basar. Size bildirim gelir.</p></div>
+          <div class="art"><img src="img/adalilar.jpg" alt="Pofi Adası oyunundan bir görüntü." width="1376" height="768" loading="lazy"><span class="tag">Pofi Adası</span><div class="note" aria-hidden="true"><img src="img/parentapp-simge.png" alt=""><div><b>ParentApp · şimdi</b>Nazlı macerayı tamamladı: Dişlerini fırçala</div></div></div>
+        </article>
+        <article class="slide" aria-label="Adım 3 / 3">
+          <div class="txt"><span class="num">3</span><h3>Onaylayın, ilerlemeyi izleyin</h3><p>Onayladığınız macera için çocuğunuz oyunda puan alır. Puanlarla, sizin belirlediğiniz ödülleri ister.</p></div>
+          <div class="mini" aria-hidden="true">
+            <b>Onay bekleyen</b>
+            <div class="box" style="gap:8px"><img class="av" src="img/okti_kiz_4.jpg" alt="" style="width:32px;height:32px"><span class="grow"><span class="one">Dişlerini fırçala</span><span class="one muted">Nazlı · 20:06</span></span><span class="round r-no">✕</span><span class="round r-yes">✓</span></div>
+            <div class="box" style="justify-content:center"><span class="sunchip"><img src="img/gunes-tasi.png" alt="">+1 puan</span></div>
+            <div class="box" style="background:#FFF6DE"><span class="grow"><span class="one">Nazlı film gecesi istiyor</span><span class="one muted">12 puan</span></span><span class="pill">Onayla</span></div>
+          </div>
+        </article>
+      </div>
+      <div class="rail-ctl">
+        <button type="button" id="railPrev" aria-label="Önceki adım">‹</button>
+        <div class="dots" aria-hidden="true"><span class="on"></span><span></span><span></span></div>
+        <button type="button" id="railNext" aria-label="Sonraki adım">›</button>
+      </div>
+    </div>
+  </section>
+  <script>
+  (() => {
+    const rail = document.getElementById('rail'); if (!rail) return;
+    const slides = [...rail.querySelectorAll('.slide')], dots = [...document.querySelectorAll('.dots span')];
+    const prev = document.getElementById('railPrev'), next = document.getElementById('railNext');
+    const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const current = () => { const x = rail.scrollLeft; let k = 0, best = Infinity; slides.forEach((s, i) => { const d = Math.abs(s.offsetLeft - rail.offsetLeft - x); if (d < best) { best = d; k = i; } }); return k; };
+    const go = (i) => { const s = slides[Math.max(0, Math.min(slides.length - 1, i))]; rail.scrollTo({ left: s.offsetLeft - rail.offsetLeft, behavior: smooth ? 'smooth' : 'auto' }); };
+    const sync = () => { const k = current(); dots.forEach((d, i) => d.classList.toggle('on', i === k)); prev.disabled = k === 0; next.disabled = k === slides.length - 1 || rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 2; };
+    prev.addEventListener('click', () => go(current() - 1));
+    next.addEventListener('click', () => go(current() + 1));
+    rail.addEventListener('scroll', () => requestAnimationFrame(sync), { passive: true });
+    addEventListener('resize', sync); sync();
+  })();
+  </script>
+
+  <!-- Güvenlik -->
+  <section class="section" id="guvenlik" aria-labelledby="safe-title" style="padding-top:0">
+    <div class="wrap">
+      <div class="head"><h2 id="safe-title">Çocuğunuzun güvenliği ve verileri</h2></div>
+      <div class="safe">
+        <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg><h3>Reklam yok</h3><p>Oyunda reklam ve satın alma yoktur.</p></div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/></svg><h3>Yabancılarla iletişim yok</h3><p>Çocuğunuz yalnızca ailesine mesaj gönderebilir.</p></div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><h3>Çocuk hesabı gerekmez</h3><p>Çocuğunuzun e-postası ve şifresi olmaz. Cihaz kısa süreli bir kodla bağlanır.</p></div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/></svg><h3>Veriler sizin kontrolünüzde</h3><p>Uzmanla paylaşım yalnızca sizin onayınızla açılır. Hesabınızı istediğiniz zaman silebilirsiniz.</p></div>
+      </div>
+      <p class="limit">ParentApp tanı koymaz ve tedavi yerine geçmez.</p>
+    </div>
+  </section>
+
+  <!-- Fiyat -->
+  <section class="section" id="fiyat" aria-labelledby="price-title" style="padding-top:0">
+    <div class="wrap">
+      <div class="head"><h2 id="price-title">Fiyatlandırma</h2></div>
+      <div class="plans">
+        <div class="plan main"><h3>ParentApp</h3><p class="price">7 gün ücretsiz</p><ul><li>Tüm özellikler açık</li><li>Kredi kartı gerekmez</li><li>Sonrasında aylık ya da yıllık abonelik</li></ul><a class="btn btn-primary" href="app/index.html#kayit" style="justify-self:start; margin-top:6px">Ücretsiz kaydolun</a></div>
+        <div class="plan"><h3>Pofi Adası</h3><p class="price">Ücretsiz</p><ul><li>Çocuğunuzun cihazına kurulur</li><li>Reklam ve satın alma yok</li></ul></div>
+      </div>
+      <p class="terms">Fiyatlar, uygulamalar App Store'da yayınlandığında burada yer alacak. Abonelik tek ücretle bütün aileyi kapsar ve App Store'dan istediğiniz zaman iptal edilebilir. Dilerseniz deneme sonrasında sınırlı ücretsiz sürümle devam edebilirsiniz.</p>
+    </div>
+  </section>
+
+  <!-- Sorular -->
+  <section class="section" id="sss" aria-labelledby="faq-title" style="padding-top:0">
+    <div class="wrap">
+      <div class="head"><h2 id="faq-title">Sık sorulan sorular</h2></div>
+      <div class="faq">
+        <details><summary>Hangi yaş için uygundur?</summary><p>6–12 yaş çocuklar için hazırlanmıştır.</p></details>
+        <details><summary>Hangi cihazlarda çalışır?</summary><p>ParentApp iPhone, iPad ve web tarayıcısında; Pofi Adası iPhone ve iPad'de çalışır.</p></details>
+        <details><summary>Ödülleri kim belirler?</summary><p>Ödülleri siz belirlersiniz. Oyun gerçek bir ödül vermez.</p></details>
+        <details><summary>Çocuğumun uzmanıyla paylaşabilir miyim?</summary><p>Evet. Uzmanınız ClinicApp kullanıyorsa, sizin onayınızla paylaşabilirsiniz. Paylaşımı istediğiniz zaman kapatabilirsiniz.</p></details>
+        <details><summary>Eşim de kullanabilir mi?</summary><p>Evet. Eşiniz aynı aileye katılır, maceraları birlikte yönetirsiniz.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:0">
+    <div class="wrap final">
+      <h2>Çocuğunuzun günlük rutinine bugün başlayın</h2>
+      <div class="cta-row" style="justify-content:center">
+        <a class="btn btn-primary" href="app/index.html#kayit">Ücretsiz kaydolun</a>
+        <a class="btn btn-ghost" href="app/index.html#giris">Giriş yapın</a>
+      </div>
+      <div class="stores" aria-label="Mağaza durumu">
+        <span class="store"><img src="img/parentapp-simge.png" alt=""><span><b>ParentApp</b>Yakında App Store'da</span></span>
+        <span class="store"><img src="img/pofi-simge.png" alt=""><span><b>Pofi Adası</b>Yakında App Store'da</span></span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a class="brand" href="#"><img src="img/parentapp-simge.png" alt="" width="34" height="34"><b>ParentApp</b></a>
+    <nav aria-label="Yasal ve destek">
+      <a href="yasal/gizlilik">Gizlilik Politikası</a>
+      <a href="yasal/kosullar-parentapp">Kullanım Koşulları</a>
+      <a href="yasal/kvkk-basvuru">KVKK başvurusu</a>
+      <a href="destek">Destek</a>
+    </nav>
+    <small>© 2026 ParentApp · Ekranlardaki adlar örnektir.</small>
+  </div>
+</footer>

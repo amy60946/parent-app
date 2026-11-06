@@ -1,16 +1,23 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import NotificationBell from '../components/NotificationBell';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
 import { Avatar, Card } from '../components/ui';
 import { useStore, taskOccursOn, completionKey } from '../store';
 import { DAY_SHORT, addDays, toISO, startOfWeek } from '../dates';
+import { genitive } from '../lib/tr';
+import ParentLessons from '../components/ParentLessons';
 
-export default function ProgressScreen() {
-  const { children, tasks, completions } = useStore();
-  const [childId, setChildId] = useState(children[0]?.id);
-  const child = children.find((c) => c.id === childId) ?? children[0];
+// Gelişim: çocuklar + aile üyesi "Ben" (ebeveyn eğitimi; ortak akislar.md 22, kullanıcı kararları 5 Kasım 2026)
+export default function ProgressScreen({ navigation, route }: any) {
+  const { children, tasks, completions, parent } = useStore();
+  const [childId, setChildId] = useState<string | undefined>(children[0]?.id ?? 'me');
+  // Bildirimden (lesson_assigned) ya da Bugün'den gelince Ben seçili açılır
+  useEffect(() => { if (route?.params?.who === 'me') { setChildId('me'); navigation.setParams({ who: undefined }); } }, [route?.params?.who, navigation]);
+  const me = childId === 'me' || children.length === 0;
+  const child = me ? undefined : children.find((c) => c.id === childId) ?? children[0];
   const today = new Date();
 
   const stat = (iso: string) => {
@@ -64,21 +71,42 @@ export default function ProgressScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks, completions, child?.id]);
 
-  if (!child) return null;
-
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      <View style={{ alignItems: 'flex-end', paddingHorizontal: 20, paddingTop: 4 }}>
+        <NotificationBell />
+      </View>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 12 }}>
+        {/* Davranış kayıtları arşivi (yeni kayıt: Görevler'de + düğmesine basılı tut) */}
+        <Pressable style={styles.abcList} onPress={() => navigation.navigate('Abc')} accessibilityLabel="Davranış kayıtları">
+          <Ionicons name="document-text-outline" size={18} color={colors.navy} />
+          <Text style={{ flex: 1, color: colors.navy, fontSize: 14, fontWeight: '600' }}>Davranış kayıtları</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.faint} />
+        </Pressable>
+
         <View style={{ flexDirection: 'row', gap: 16 }}>
           {children.map((c) => (
-            <Pressable key={c.id} onPress={() => setChildId(c.id)} style={{ alignItems: 'center', gap: 4, opacity: c.id === child.id ? 1 : 0.5 }}>
-              <Avatar id={c.avatar} size={48} ring={c.id === child.id} />
+            <Pressable key={c.id} onPress={() => setChildId(c.id)} style={{ alignItems: 'center', gap: 4, opacity: c.id === child?.id ? 1 : 0.5 }}
+              accessibilityRole="button" accessibilityLabel={`${c.name} gelişimi`}>
+              <Avatar id={c.avatar} size={48} ring={c.id === child?.id} />
               <Text style={{ fontSize: 11, color: colors.navy, fontWeight: '600' }}>{c.name}</Text>
             </Pressable>
           ))}
+          <Pressable onPress={() => setChildId('me')} style={{ alignItems: 'center', gap: 4, opacity: me ? 1 : 0.5 }}
+            accessibilityRole="button" accessibilityLabel="Ben: senin gelişimin">
+            <Avatar id={parent.avatar} size={48} ring={me} />
+            <Text style={{ fontSize: 11, color: colors.navy, fontWeight: '600' }}>Ben</Text>
+          </Pressable>
         </View>
 
-        <Text style={styles.title}>{child.name}'in gelişimi</Text>
+        {me || !child ? (
+          <>
+            <Text style={styles.title}>Senin gelişimin</Text>
+            <ParentLessons navigation={navigation} />
+          </>
+        ) : (
+        <>
+        <Text style={styles.title}>{genitive(child.name)} gelişimi</Text>
 
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <Card style={{ flex: 1, padding: 14 }}>
@@ -112,7 +140,8 @@ export default function ProgressScreen() {
 
         <Card>
           <Text style={styles.h}>Haftalık tamamlama</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 110, gap: 10, marginTop: 14 }}>
+          {/* Satır öğeleri dikeyde uzamalı (varsayılan stretch); 'flex-end' öğelerin yüksekliğini sıfırlıyor, çubuklar görünmüyordu */}
+          <View style={{ flexDirection: 'row', height: 110, gap: 10, marginTop: 14 }}>
             {data.weekly.map((w, i) => (
               <View key={i} style={{ flex: 1, alignItems: 'center', gap: 6 }}>
                 <View style={{ flex: 1, width: '100%', justifyContent: 'flex-end', backgroundColor: '#F1F3F8', borderRadius: 6, overflow: 'hidden' }}>
@@ -132,7 +161,7 @@ export default function ProgressScreen() {
             return (
               <View key={title} style={{ marginTop: 12 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 13, color: colors.navy }}>{h.emoji} {title}</Text>
+                  <Text style={{ fontSize: 13, color: colors.navy }}>{title}</Text>
                   <Text style={{ fontSize: 13, fontWeight: '700', color: colors.navy }}>%{pct}</Text>
                 </View>
                 <View style={{ height: 5, borderRadius: 3, backgroundColor: '#F1F3F8', marginTop: 6, overflow: 'hidden' }}>
@@ -142,12 +171,18 @@ export default function ProgressScreen() {
             );
           })}
         </Card>
+        {/* hukuk/50 §13 */}
+        <Text style={{ fontSize: 11, lineHeight: 16, color: colors.muted, textAlign: 'center' }}>Bu sayılar çocuğunun uygulamadaki maceralarını özetler; tanı, zekâ ya da dikkat puanı değildir.</Text>
+        </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  abcMain: { flex: 1, flexDirection: 'row', gap: 8, height: 50, borderRadius: radius.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
+  abcList: { flexDirection: 'row', gap: 10, height: 48, paddingHorizontal: 16, borderRadius: radius.md, backgroundColor: '#fff', alignItems: 'center' },
   safe: { flex: 1, backgroundColor: colors.bg },
   title: { fontSize: 17, fontWeight: '700', color: colors.navy },
   big: { fontSize: 18, fontWeight: '700', color: colors.navy },

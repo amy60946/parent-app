@@ -12,8 +12,12 @@ import { Avatar, IconButton } from '../components/ui';
 import { useStore, Message } from '../store';
 import { formatTR, todayISO, toISO, addDays } from '../dates';
 import { useKeyboardHeight } from '../lib/useKeyboardHeight';
+import { stickers, stickerOf } from '../data/stickers';
+import { useBilling } from '../billing';
+import { useNotifications } from '../notifications';
+import { useModalOpen } from '../lib/modal';
 
-const mmss = (ms: number) => {
+export const mmss = (ms: number) => {
   const t = Math.max(0, Math.round(ms / 1000));
   return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
 };
@@ -29,13 +33,17 @@ const dayLabel = (iso: string) => {
 
 // Sohbet listesinde son mesajın kısa hâli
 export const messagePreview = (m: Message) =>
-  m.kind === 'image' ? '📷 Fotoğraf' : m.kind === 'audio' ? `🎤 Sesli mesaj · ${mmss(m.durationMs ?? 0)}` : m.text;
+  m.kind === 'image' ? 'Fotoğraf' : m.kind === 'audio' ? `Sesli mesaj · ${mmss(m.durationMs ?? 0)}`
+    : m.kind === 'sticker' ? `Çıkartma: ${stickerOf(m.text)?.label ?? ''}` : m.text;
 
 type Row = { type: 'msg'; m: Message } | { type: 'day'; id: string; label: string };
 
 export default function ChatScreen({ navigation, route }: any) {
   const childId: string = route.params.childId;
-  const { children, messages, sendMessage, sendPhoto, sendVoice } = useStore();
+  const { children, messages, sendMessage, sendSticker, sendPhoto, sendVoice, markThreadRead } = useStore();
+  const { allow } = useBilling();
+  const { items: notes, markRead } = useNotifications();
+  const [picker, setPicker] = useState(false);
   const child = children.find((c) => c.id === childId);
   const insets = useSafeAreaInsets();
   const kb = useKeyboardHeight();
@@ -60,22 +68,33 @@ export default function ChatScreen({ navigation, route }: any) {
   useEffect(() => {
     if (!child) navigation.goBack();
   }, [child, navigation]);
+
+  // Açıkken gelen mesajlar da okundu sayılır; bu sohbetin bildirimleri de okundu olur
+  const unreadCount = messages.filter((m) => m.childId === childId && m.sender === 'child' && !m.readAt).length;
+  useEffect(() => { markThreadRead(childId); }, [childId, unreadCount, markThreadRead]);
+  useEffect(() => {
+    const ids = notes.filter((n) => !n.readAt && n.kind === 'message' && n.data?.child_id === childId).map((n) => n.id);
+    if (ids.length) markRead(ids);
+  }, [notes, childId, markRead]);
+  useModalOpen(!!viewer); // açıkken modal ekran açılamaz (lib/modal whenNoModal)
   if (!child) return null;
 
   const send = () => {
     const t = text.trim();
-    if (!t) return;
+    if (!t || !allow('message')) return;
     sendMessage(childId, t);
     setText('');
   };
 
   const pickPhoto = async () => {
+    if (!allow('message')) return;
     const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
     if (r.canceled || !r.assets?.[0]) return;
     sendPhoto(childId, r.assets[0].uri, r.assets[0].mimeType);
   };
 
   const startRecording = async () => {
+    if (!allow('message')) return;
     const perm = await requestRecordingPermissionsAsync();
     if (!perm.granted) return Alert.alert('Mikrofon izni gerekli', 'Sesli mesaj için Ayarlar\'dan uygulamaya mikrofon izni ver.');
     try {
@@ -109,7 +128,7 @@ export default function ChatScreen({ navigation, route }: any) {
         <Avatar id={child.avatar} size={38} />
         <View style={{ flex: 1 }}>
           <Text style={styles.name}>{child.name}</Text>
-          <Text style={styles.sub}>Posta</Text>
+          <Text style={styles.sub}>Mesajlar</Text>
         </View>
       </View>
 
@@ -118,7 +137,7 @@ export default function ChatScreen({ navigation, route }: any) {
           <Avatar id={child.avatar} size={64} />
           <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>{child.name} ile sohbet</Text>
           <Text style={{ fontSize: 13, color: colors.muted, textAlign: 'center' }}>
-            Yazı, fotoğraf ya da sesli mesaj gönder. {child.name} oyunda Posta kutusundan okuyacak.
+            Yazı, fotoğraf, ses ya da çıkartma gönder.
           </Text>
         </View>
       ) : (
@@ -140,6 +159,17 @@ export default function ChatScreen({ navigation, route }: any) {
       />
       )}
 
+      {picker && !recording && (
+        <View style={styles.picker}>
+          {stickers.map((st) => (
+            <Pressable key={st.key} accessibilityLabel={`${st.label} çıkartması gönder`} style={styles.pick}
+              onPress={() => { if (allow('message')) sendSticker(childId, st.key); setPicker(false); }}>
+              <Ionicons name={st.icon} size={30} color={st.color} />
+              <Text style={{ fontSize: 10, color: colors.muted }} numberOfLines={1}>{st.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
       <View style={[styles.bar, { paddingBottom: kb ? kb + 8 : Math.max(insets.bottom, 10) }]}>
         {recording ? (
           <>
@@ -156,6 +186,7 @@ export default function ChatScreen({ navigation, route }: any) {
         ) : (
           <>
             <IconButton name="image-outline" label="Fotoğraf gönder" onPress={pickPhoto} style={styles.barBtn} />
+            <IconButton name={picker ? 'close' : 'happy-outline'} label="Çıkartma" onPress={() => setPicker(!picker)} style={styles.barBtn} />
             <View style={styles.inputWrap}>
               <TextInput
                 value={text}
@@ -193,7 +224,25 @@ export default function ChatScreen({ navigation, route }: any) {
 function Bubble({ m, onImage }: { m: Message; onImage: (uri: string) => void }) {
   const mine = m.sender === 'parent';
   const fg = mine ? '#fff' : colors.navy;
-  const time = <Text style={[styles.time, { color: mine ? '#AEB6D1' : colors.muted }]}>{hhmm(m.at)}</Text>;
+  const time = (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, alignSelf: 'flex-end', marginTop: 2 }}>
+      <Text style={[styles.time, { color: mine ? '#AEB6D1' : colors.muted }]}>{hhmm(m.at)}</Text>
+      {mine && m.readAt && <Ionicons name="checkmark-done" size={13} color="#AEB6D1" accessibilityLabel="Okundu" />}
+    </View>
+  );
+  if (m.kind === 'sticker') {
+    const st = stickerOf(m.text);
+    return (
+      <View style={[styles.sticker, { alignSelf: mine ? 'flex-end' : 'flex-start' }]} accessibilityLabel={`Çıkartma: ${st?.label ?? ''}`}>
+        <Ionicons name={st?.icon ?? 'help'} size={44} color={st?.color ?? colors.muted} />
+        <Text style={{ fontSize: 11, fontWeight: '600', color: colors.navy }}>{st?.label}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+          <Text style={[styles.time, { color: colors.muted, marginTop: 0 }]}>{hhmm(m.at)}</Text>
+          {mine && m.readAt && <Ionicons name="checkmark-done" size={13} color={colors.muted} accessibilityLabel="Okundu" />}
+        </View>
+      </View>
+    );
+  }
   return (
     <View style={[styles.bubble, mine ? styles.bubbleOut : styles.bubbleIn, m.kind === 'image' && { padding: 4 }]}>
       {m.kind === 'image' ? (
@@ -218,7 +267,7 @@ function Bubble({ m, onImage }: { m: Message; onImage: (uri: string) => void }) 
   );
 }
 
-function Voice({ uri, durationMs, color }: { uri?: string; durationMs?: number; color: string }) {
+export function Voice({ uri, durationMs, color }: { uri?: string; durationMs?: number; color: string }) {
   const player = useAudioPlayer(uri ? { uri } : null);
   const status = useAudioPlayerStatus(player);
 
@@ -264,7 +313,10 @@ const styles = StyleSheet.create({
   bubble: { maxWidth: '80%', borderRadius: 18, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 6, marginVertical: 2 },
   bubbleOut: { alignSelf: 'flex-end', backgroundColor: colors.navy, borderBottomRightRadius: 6 },
   bubbleIn: { alignSelf: 'flex-start', backgroundColor: '#fff', borderBottomLeftRadius: 6 },
-  time: { fontSize: 10, alignSelf: 'flex-end', marginTop: 2 },
+  time: { fontSize: 10 },
+  sticker: { alignItems: 'center', gap: 2, paddingHorizontal: 14, paddingVertical: 10, marginVertical: 4, borderRadius: 18, backgroundColor: '#fff' },
+  picker: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 8, paddingVertical: 8, backgroundColor: '#fff', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
+  pick: { width: '16.66%', alignItems: 'center', gap: 2, paddingVertical: 8 },
   photo: { width: 220, height: 220, borderRadius: 14, backgroundColor: colors.navySoft },
   bar: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: 10, paddingTop: 8,
@@ -272,7 +324,7 @@ const styles = StyleSheet.create({
   },
   barBtn: { backgroundColor: '#F1F2F6', width: 42, height: 42, borderRadius: 21 },
   inputWrap: { flex: 1, minHeight: 42, maxHeight: 120, borderRadius: 21, backgroundColor: '#F1F2F6', paddingHorizontal: 14, justifyContent: 'center' },
-  input: { fontSize: 15, color: colors.navy, paddingTop: 10, paddingBottom: 10, maxHeight: 116 },
+  input: { letterSpacing: 0, fontSize: 15, color: colors.navy, paddingTop: 10, paddingBottom: 10, maxHeight: 116 },
   send: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
   recPill: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   recDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.danger },

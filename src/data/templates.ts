@@ -1,38 +1,61 @@
 import { Difficulty } from '../theme';
+import catalog from './taskCatalog.json';
 
-export type Category = 'home' | 'mind' | 'learn' | 'self';
+// 6 ana kategori (ortak/sozlesme/durumlar.md 9). Eski 'self' kayıtları sunucuda 'health' oldu.
+export type Category = 'home' | 'mind' | 'learn' | 'health' | 'focus' | 'relation';
 
 export const categories: { id: Category; label: string; emoji: string }[] = [
   { id: 'home', label: 'Ev İşleri', emoji: '🏠' },
   { id: 'mind', label: 'Ruh Sağlığı', emoji: '🌈' },
-  { id: 'learn', label: 'Öğrenme', emoji: '📚' },
-  { id: 'self', label: 'Kişisel Bakım', emoji: '🪥' },
+  { id: 'learn', label: 'Öğrenme ve Eğitim', emoji: '📚' },
+  { id: 'health', label: 'Sağlık ve Spor', emoji: '💪' },
+  { id: 'focus', label: 'Odak ve Öz Denetim', emoji: '🎯' },
+  { id: 'relation', label: 'İlişki Kurma', emoji: '🤝' },
+];
+
+export const toCategory = (c?: string | null): Category =>
+  c === 'self' ? 'health' : categories.some((x) => x.id === c) ? (c as Category) : 'home';
+
+// Kategori = beceri (kullanıcı kararı; ortak/sozlesme/ekonomi.md 5B, durumlar.md 9). Görevde `skill` alanına anahtar yazılır.
+export type Skill = 'teamwork' | 'stamina' | 'knowledge' | 'strength' | 'focus' | 'kindness';
+export const categorySkill: Record<Category, Skill> = {
+  home: 'teamwork', mind: 'stamina', learn: 'knowledge', health: 'strength', focus: 'focus', relation: 'kindness',
+};
+export const skillLabels: Record<Skill, string> = {
+  teamwork: 'Takım Çalışması', stamina: 'Dayanıklılık', knowledge: 'Bilgi', strength: 'Güç', focus: 'Odak', kindness: 'Nezaket',
+};
+// Eski kayıtlarda serbest metin olabilir ("Okuma", "Özel"): anahtar değilse olduğu gibi gösterilir
+export const skillLabel = (s?: string | null) => (s && s in skillLabels ? skillLabels[s as Skill] : s || '');
+export const categoryLabel = (c: Category) => categories.find((x) => x.id === c)?.label ?? '';
+
+// Yaş grupları = oyunun yaş bandı (durumlar.md §4): K 5 ve altı, A 6–8, B 9–12, C 13 ve üstü
+export type TemplateAge = 'K' | 'A' | 'B' | 'C';
+export const templateAges: { id: TemplateAge; label: string }[] = [
+  { id: 'K', label: '5 ve altı' },
+  { id: 'A', label: '6–8' },
+  { id: 'B', label: '9–12' },
+  { id: 'C', label: '13 ve üstü' },
 ];
 
 export type Template = {
-  id: string;
+  id: string; // katalogda `gs_<kategori>_<sıra>`, ebeveynin kendi görevinde rastgele kimlik
   title: string;
   emoji: string;
-  category: Category;
+  category: Category; // ana kategori
+  categories: Category[]; // süzgeç etiketleri (ilki ana kategori)
   difficulty: Difficulty;
-  skill: string; // hangi beceriye hitap ediyor
-  usedBy: number; // kaç ebeveyn kullandı
+  coins: number; // varsayılan ödül (kolay 5, orta 10, zor 20); ebeveyn değiştirebilir
+  skill: string; // beceri anahtarı (Skill)
+  ages?: TemplateAge[]; // uygun yaş grupları; yoksa hepsi
+  sort: number; // katalog sırası (küçük olan önce)
   custom?: boolean;
 };
 
-export const templates: Template[] = [
-  { id: 't1', title: 'Yatağını topla', emoji: '🛏️', category: 'home', difficulty: 'easy', skill: 'Takım Çalışması', usedBy: 843 },
-  { id: 't2', title: 'Oyuncaklarını topla', emoji: '🧸', category: 'home', difficulty: 'easy', skill: 'Takım Çalışması', usedBy: 659 },
-  { id: 't3', title: 'Sofrayı kurmaya yardım et', emoji: '🍽️', category: 'home', difficulty: 'medium', skill: 'Takım Çalışması', usedBy: 477 },
-  { id: 't4', title: 'Kirli çamaşırları sepete at', emoji: '🧺', category: 'home', difficulty: 'easy', skill: 'Takım Çalışması', usedBy: 296 },
-  { id: 't5', title: 'Odanı süpür', emoji: '🧹', category: 'home', difficulty: 'medium', skill: 'Takım Çalışması', usedBy: 1015 },
-  { id: 't6', title: 'Bulaşık makinesini boşalt', emoji: '🫧', category: 'home', difficulty: 'hard', skill: 'Takım Çalışması', usedBy: 834 },
-  { id: 't7', title: 'Çiçekleri sula', emoji: '🪴', category: 'home', difficulty: 'easy', skill: 'Sorumluluk', usedBy: 653 },
-  { id: 't8', title: 'Yarın için kıyafetini seç', emoji: '👕', category: 'self', difficulty: 'easy', skill: 'Bağımsızlık', usedBy: 412 },
-  { id: 't9', title: 'Dişlerini fırçala', emoji: '🪥', category: 'self', difficulty: 'easy', skill: 'Öz Bakım', usedBy: 1320 },
-  { id: 't10', title: '10 dakika kitap oku', emoji: '📖', category: 'learn', difficulty: 'medium', skill: 'Odaklanma', usedBy: 902 },
-  { id: 't11', title: 'Ödevini bitir', emoji: '✏️', category: 'learn', difficulty: 'hard', skill: 'Sorumluluk', usedBy: 768 },
-  { id: 't12', title: 'Derin nefes egzersizi yap', emoji: '🌬️', category: 'mind', difficulty: 'easy', skill: 'Sakinleşme', usedBy: 231 },
-  { id: 't13', title: 'Bugün güzel olan 3 şeyi anlat', emoji: '🌈', category: 'mind', difficulty: 'medium', skill: 'Minnettarlık', usedBy: 188 },
-  { id: 't14', title: 'Birine nazik bir söz söyle', emoji: '💬', category: 'mind', difficulty: 'easy', skill: 'Empati', usedBy: 154 },
-];
+// Görev kataloğu: ortak/veri/gorev_sablonlari.json (298 şablon). Sunucudaki task_templates uygulanınca
+// oradan okunabilir; bu gömülü kopya çevrimdışı yedektir.
+type Row = { key: string; title: string; emoji: string; category: string; categories: string[]; ages: string[]; difficulty: string; coins: number; skill: string; sort: number };
+export const templates: Template[] = (catalog as Row[]).map((r) => ({
+  id: r.key, title: r.title, emoji: r.emoji, category: toCategory(r.category),
+  categories: r.categories.map(toCategory), difficulty: r.difficulty as Difficulty, coins: r.coins,
+  skill: r.skill, ages: r.ages as TemplateAge[], sort: r.sort,
+}));

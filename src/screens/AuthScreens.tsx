@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, Pressable, ScrollView, Alert, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
   TextInputProps,
@@ -10,6 +10,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
 import { IconButton } from '../components/ui';
 import { useAuth, authErrorText } from '../lib/auth';
+import { clearPendingClinicInvite, getPendingClinicInvite, isInviteToken, setPendingClinicInvite } from '../lib/clinicInvite';
+import { GUEST_CODE, setPendingGuestCode } from '../lib/guestPass';
+import { InviteInfo, inviteInfo } from '../lib/clinic';
+import { markSignupConsent } from '../lib/legal';
 
 const MIN_PASSWORD = 8;
 const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
@@ -56,9 +60,10 @@ function Input({ secure, ...props }: TextInputProps & { secure?: boolean }) {
   );
 }
 
-function Cta({ label, onPress, busy }: { label: string; onPress: () => void; busy?: boolean }) {
+function Cta({ label, onPress, busy, disabled }: { label: string; onPress: () => void; busy?: boolean; disabled?: boolean }) {
   return (
-    <Pressable style={[styles.cta, busy && { opacity: 0.7 }]} onPress={onPress} disabled={busy}>
+    <Pressable style={[styles.cta, (busy || disabled) && { opacity: busy ? 0.7 : 0.45 }]} onPress={onPress} disabled={busy || disabled}
+      accessibilityRole="button" accessibilityState={{ disabled: !!(busy || disabled) }}>
       {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>{label}</Text>}
     </Pressable>
   );
@@ -141,7 +146,7 @@ export function LoginScreen({ navigation }: any) {
   };
 
   return (
-    <Layout title="Ebeveyn girişi" subtitle="Ailenin görevlerine kaldığın yerden devam et.">
+    <Layout title="Ebeveyn girişi" subtitle="Ailenin maceralarına kaldığın yerden devam et.">
       <Input value={email} onChangeText={setEmail} placeholder="E-posta" keyboardType="email-address"
         autoCapitalize="none" autoComplete="email" textContentType="emailAddress" />
       <Input value={password} onChangeText={setPassword} placeholder="Şifre" secure
@@ -150,28 +155,116 @@ export function LoginScreen({ navigation }: any) {
         <Text style={styles.small}>Şifremi unuttum</Text>
       </Pressable>
       <Cta label="Giriş yap" onPress={submit} busy={busy} />
-      <LinkText onPress={() => navigation.navigate('SignUp')}>Hesabın yok mu? Kayıt ol</LinkText>
+      <LinkText onPress={() => navigation.navigate('ExpertAsk')}>Hesabın yok mu? Kayıt ol</LinkText>
+    </Layout>
+  );
+}
+
+/* ---------- Açılış: Başla / Hesabım var (kullanıcı kararı 27 Ekim 2026; marka tasarımı sonra) ---------- */
+
+export function WelcomeScreen({ navigation }: any) {
+  // Uzman davet bağlantısıyla gelindiyse kod sorusu atlanır
+  const start = async () => navigation.navigate((await getPendingClinicInvite()) ? 'SignUp' : 'ExpertAsk');
+  // Web (tanıtım sayfasındaki "Ücretsiz başla" / "Giriş yap", 4 Kasım 2026): /app/?kayit ya da #kayit → kayıt akışı, ?giris / #giris → giriş
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const q = new URLSearchParams(window.location.search);
+    const h = window.location.hash.replace('#', '');
+    const giris = q.has('giris') || h === 'giris', kayit = q.has('kayit') || h === 'kayit';
+    if (!giris && !kayit) return;
+    window.history.replaceState(null, '', window.location.pathname);
+    if (giris) navigation.navigate('Login'); else start();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <SafeAreaView style={styles.safe}>
+      <StatusBar style="dark" />
+      <View style={{ flex: 1, padding: 24, justifyContent: 'center', alignItems: 'center', gap: 10 }}>
+        <View style={styles.hero}><Ionicons name="sunny-outline" size={48} color={colors.navy} /></View>
+        <Text style={[styles.title, { fontSize: 30, textAlign: 'center' }]}>ParentApp</Text>
+        <Text style={[styles.subtitle, { fontSize: 15, textAlign: 'center', marginTop: 0 }]}>Rutinler kolaylaşsın, evde huzur artsın.</Text>
+      </View>
+      <View style={{ padding: 24, gap: 12 }}>
+        <Cta label="Başla" onPress={start} />
+        <Pressable onPress={() => navigation.navigate('Login')} style={styles.ghost} accessibilityRole="button">
+          <Text style={styles.ghostText}>Hesabım var, giriş yap</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+// Davet kodun var mı? Hayır → kayıt · Evet → kod ekranı → kayıt · Hesabım var → giriş
+// 3 Kasım 2026: yalnız uzman kodu değil, aile davet kodu da (8 karakter; akislar.md 19). Kodun türünü sistem anlar.
+export function ExpertAskScreen({ navigation }: any) {
+  return (
+    <Layout title="Davet kodun var mı?" subtitle="Uzmanından ya da seni davet eden bir aileden aldığın kod." onBack={() => navigation.goBack()}>
+      <Cta label="Hayır" onPress={() => navigation.navigate('SignUp')} />
+      <Pressable onPress={() => navigation.navigate('ExpertCode')} style={styles.ghost} accessibilityRole="button">
+        <Text style={styles.ghostText}>Evet</Text>
+      </Pressable>
+      <LinkText onPress={() => navigation.navigate('Login')}>Hesabın var mı? Giriş yap</LinkText>
+    </Layout>
+  );
+}
+
+export function ExpertCodeScreen({ navigation }: any) {
+  const [code, setCode] = useState('');
+  const next = async () => {
+    if (GUEST_CODE.test(code)) {
+      // Aile davet kodu: kayıttan sonra kurulumun başında kullanılır (SetupScreen), deneme 14 gün olur
+      await setPendingGuestCode(code);
+      return navigation.navigate('SignUp');
+    }
+    if (code.length !== 6) return Alert.alert('Kod 6 ya da 8 karakter olmalı', 'Uzman kodu 6, aile davet kodu 8 karakterdir.');
+    // Kayıtta sunucu daveti aileye bağlar (meta clinic_invite); kurulumda "Çocuğunu ekle" uzmanın önerisiyle açılır
+    await setPendingClinicInvite(code);
+    navigation.navigate('SignUp');
+  };
+  return (
+    <Layout title="Davet kodunu yaz" subtitle="Kodun türünü biz anlarız. Uzman kodunda bilgiler kayıttan sonra hazır gelir; aile kodunda deneme 14 gün olur." onBack={() => navigation.goBack()}>
+      <TextInput value={code} onChangeText={(v) => setCode(v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8))} placeholder="KOD" placeholderTextColor={colors.faint}
+        autoCapitalize="characters" autoCorrect={false} autoFocus onSubmitEditing={next} accessibilityLabel="Davet kodu" style={styles.bigCode} />
+      <Cta label="Devam" onPress={next} />
+      <LinkText onPress={() => navigation.navigate('SignUp')}>Kodsuz devam et</LinkText>
     </Layout>
   );
 }
 
 /* ---------- Kayıt ---------- */
 
-export function SignUpScreen({ navigation }: any) {
+export function SignUpScreen({ navigation, route }: any) {
   const { signUp, resendConfirmation } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [sentTo, setSentTo] = useState<string | undefined>();
+  const [terms, setTerms] = useState(false); // Kullanım Koşulları (önceden işaretli değil; hukuk/50 §1.1)
+  // Uzman davet bağlantısıyla gelindiyse bant + kayıtta meta (akislar.md 10 adım 5). Kod, kayıttan sonraki "Kodun var mı?" ekranında.
+  const [clinicKey, setClinicKey] = useState<string | undefined>();
+  const [clinic, setClinic] = useState<InviteInfo | null>(null);
+  useEffect(() => {
+    getPendingClinicInvite().then(async (k) => {
+      if (!k) return;
+      setClinicKey(k);
+      if (isInviteToken(k)) setClinic(await inviteInfo(k));
+    });
+  }, []);
 
   const submit = async () => {
     if (!name.trim()) return Alert.alert('Adını yaz.');
     if (!isEmail(email)) return Alert.alert('Geçerli bir e-posta adresi yaz.');
     if (password.length < MIN_PASSWORD) return Alert.alert(`Şifre en az ${MIN_PASSWORD} karakter olmalı.`);
+    if (!terms) return Alert.alert('Kullanım Koşulları', 'Hesap açmak için Kullanım Koşulları\'nı okuyup kabul etmelisin.');
+    // Bağlantıdaki davet artık geçerli değilse (süresi doldu / kullanıldı) gönderilmez
+    const key = clinicKey && (!clinic || clinic.status === 'open' || clinic.status === 'error') ? clinicKey : undefined;
     setBusy(true);
     try {
-      const { needsConfirmation } = await signUp(email, password, name);
+      // Kayıttan sonra uygulama daveti yeniden bağlamayı dener (aynı aile için zararsız), sonra davet ekranını açar
+      if (key) await setPendingClinicInvite(key);
+      else if (clinicKey) await clearPendingClinicInvite();
+      await markSignupConsent(); // oturum açılınca legal_accept('parent', …) ile yazılır (koşullar + aydınlatma gösterildi)
+      const { needsConfirmation } = await signUp(email, password, name, key);
       if (needsConfirmation) setSentTo(email.trim());
     } catch (e) {
       Alert.alert('Kayıt olunamadı', authErrorText(e));
@@ -196,13 +289,41 @@ export function SignUpScreen({ navigation }: any) {
   }
 
   return (
-    <Layout title="Kayıt ol" subtitle="Çocuklarına görev ata, gelişimlerini birlikte izleyin." onBack={() => navigation.goBack()}>
+    <Layout title="Kayıt ol" subtitle="Çocuklarına sorumluluk ver, gelişimlerini birlikte izleyin." onBack={() => navigation.goBack()}>
+      {clinic?.status === 'open' && (
+        <View style={styles.inviteBand} accessibilityRole="summary">
+          <Ionicons name="briefcase-outline" size={20} color={colors.navy} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.navy }}>{clinic.clinician || clinic.clinic} seni davet etti</Text>
+            <Text style={styles.small}>{[clinic.title, clinic.clinic].filter(Boolean).join(' · ') || 'Kayıt olunca davet hazır olacak.'}</Text>
+          </View>
+        </View>
+      )}
+      {!!clinic && clinic.status !== 'open' && clinic.status !== 'error' && (
+        <Text style={[styles.small, { color: colors.danger }]}>
+          {clinic.status === 'expired' ? 'Davetin süresi doldu (davetler 3 gün geçerli). Kayıttan sonra uzmanının yeni kodunu yazabilirsin.'
+            : clinic.status === 'not_found' ? 'Davet bulunamadı. Kayıttan sonra uzmanının yeni kodunu yazabilirsin.'
+            : 'Bu davet kullanılmış. Kayıttan sonra uzmanının yeni kodunu yazabilirsin.'}
+        </Text>
+      )}
       <Input value={name} onChangeText={setName} placeholder="Adın" autoComplete="name" textContentType="name" />
       <Input value={email} onChangeText={setEmail} placeholder="E-posta" keyboardType="email-address"
         autoCapitalize="none" autoComplete="email" textContentType="emailAddress" />
       <Input value={password} onChangeText={setPassword} placeholder={`Şifre (en az ${MIN_PASSWORD} karakter)`} secure
         autoComplete="new-password" textContentType="newPassword" onSubmitEditing={submit} />
-      <Cta label="Kayıt ol" onPress={submit} busy={busy} />
+      {/* Hukuki satır (hukuk/50 §1.1; kullanıcı isteği 28 Ekim 2026: tek küçük satır, ayrıntı bağlantılarda): koşullar kutulu;
+          aydınlatma ve gizlilik kutusuz bağlantı; açık rıza bu ekranda yok */}
+      <Pressable onPress={() => setTerms(!terms)} style={styles.legalRow} accessibilityRole="checkbox" accessibilityState={{ checked: terms }}
+        accessibilityLabel="Kullanım Koşulları'nı kabul ediyorum">
+        <Ionicons name={terms ? 'checkbox' : 'square-outline'} size={20} color={colors.navy} />
+        <Text style={styles.legalText}>
+          <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalText', { key: 'kosullar-parentapp' })}>Kullanım Koşulları</Text>'nı kabul ediyorum.{' '}
+          <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalText', { key: 'aydinlatma-ebeveyn' })}>Aydınlatma</Text>
+          {' · '}
+          <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalText', { key: 'gizlilik' })}>Gizlilik</Text>
+        </Text>
+      </Pressable>
+      <Cta label="Kayıt ol" onPress={submit} busy={busy} disabled={!terms} />
       <LinkText onPress={() => navigation.navigate('Login')}>Zaten hesabın var mı? Giriş yap</LinkText>
     </Layout>
   );
@@ -278,7 +399,7 @@ export function NewPasswordScreen() {
 }
 
 const fairy = StyleSheet.create({
-  content: { flex: 1, paddingHorizontal: 24 },
+  content: { flex: 1, paddingHorizontal: 24, width: '100%', maxWidth: 560, alignSelf: 'center' },
   brand: {
     fontSize: 54, fontWeight: '800', color: '#FFE6A3', letterSpacing: 1,
     textShadowColor: 'rgba(255,214,120,0.6)', textShadowRadius: 18, textShadowOffset: { width: 0, height: 0 },
@@ -307,6 +428,7 @@ const fairy = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
+  inviteBand: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: radius.md, padding: 14, borderWidth: 1, borderColor: colors.gold },
   safe: { flex: 1, backgroundColor: colors.bg },
   scroll: { padding: 24, paddingTop: 8, flexGrow: 1 },
   brand: { fontSize: 13, fontWeight: '700', color: colors.muted, letterSpacing: 1, marginTop: 28 },
@@ -316,10 +438,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderRadius: radius.sm,
     paddingHorizontal: 14,
   },
-  input: { flex: 1, paddingVertical: 14, fontSize: 15, color: colors.navy },
+  input: { letterSpacing: 0, flex: 1, paddingVertical: 14, fontSize: 15, color: colors.navy },
   cta: { height: 52, borderRadius: radius.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  ghost: { height: 52, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  ghostText: { color: colors.navy, fontSize: 15, fontWeight: '700' },
+  hero: { width: 96, height: 96, borderRadius: 48, backgroundColor: colors.today, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  bigCode: { height: 64, borderRadius: radius.sm, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line, fontSize: 28, fontWeight: '800', letterSpacing: 8, textAlign: 'center', color: colors.navy },
   ctaText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   link: { fontSize: 13, fontWeight: '600', color: colors.navy },
   small: { fontSize: 12, color: colors.muted },
+  legalRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  legalText: { flex: 1, fontSize: 12, lineHeight: 17, color: '#4A5165' },
+  legalLink: { color: colors.navy, fontWeight: '600', textDecorationLine: 'underline' },
   sent: { flexDirection: 'row', gap: 12, backgroundColor: '#fff', borderRadius: radius.md, padding: 16, alignItems: 'center' },
 });

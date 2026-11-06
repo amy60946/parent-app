@@ -4,17 +4,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme';
 import { IconButton } from './ui';
 import { useKeyboardHeight } from '../lib/useKeyboardHeight';
+import { useModalOpen } from '../lib/modal';
 
 // Alttan açılan sayfa. Klavye açılınca sayfa klavyenin üstüne çıkar ve içerik
 // kaydırılabilir kalır; yazılan alan her zaman görünür.
-export default function Sheet({ visible, title, onClose, children, header }: {
+export default function Sheet({ visible, title, onClose, children, header, footer }: {
   visible: boolean; title: string; onClose: () => void; children: React.ReactNode; header?: React.ReactNode;
+  footer?: React.ReactNode; // kaydırılan içeriğin altında sabit (ör. karar düğmeleri)
 }) {
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const kb = useKeyboardHeight();
-  const maxScroll = Math.max(160, height - kb - insets.top - 190);
+  const maxScroll = Math.max(160, height - kb - insets.top - (footer ? 270 : 190));
 
+  useModalOpen(visible); // açıkken modal ekran açılamaz (lib/modal whenNoModal)
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1 }}>
@@ -33,6 +36,7 @@ export default function Sheet({ visible, title, onClose, children, header }: {
           >
             {children}
           </ScrollView>
+          {footer}
         </View>
       </View>
     </Modal>
@@ -40,7 +44,8 @@ export default function Sheet({ visible, title, onClose, children, header }: {
 }
 
 const styles = StyleSheet.create({
-  sheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 },
+  // iPad'de ortada en çok 640 nokta (telefonda tam genişlik)
+  sheet: { width: '100%', maxWidth: 640, alignSelf: 'center', backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   title: { fontSize: 16, fontWeight: '700', color: colors.navy },
 });

@@ -1,0 +1,10 @@
+// moyo-ebeveyn: ebeveyn.moyoapp.com.tr — ParentApp web (giriş, kayıt, kurulum, cihaz bağlama). Tek sayfa uygulama, taban yol /.
+// workers_dev ve preview_urls KAPALI (yoksa *.workers.dev kilitsiz açık kalır); routes YOK (yönetim paneli penceresi bağlar).
+// Derleme: npm ci && bash site/build-cf.sh ebeveyn · Yayın: npx wrangler@4 deploy -c wrangler.ebeveyn.jsonc
+{
+  "name": "moyo-ebeveyn",
+  "compatibility_date": "2025-10-01",
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": { "directory": "./dist-ebeveyn", "not_found_handling": "single-page-application" }
+}

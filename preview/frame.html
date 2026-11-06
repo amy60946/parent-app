@@ -63,7 +63,7 @@
       return;
     }
     clearTimeout(timer);
-    try { localStorage.removeItem('parentapp-onizleme-v1'); } catch (e) { /* depolama kapalı */ }
+    try { localStorage.removeItem('pofi-onizleme-v4'); } catch (e) { /* depolama kapalı */ }
     document.getElementById('app').src = 'app.html?' + Date.now();
     armed = false; btn.textContent = 'Baştan başlat'; btn.classList.remove('confirm');
   });

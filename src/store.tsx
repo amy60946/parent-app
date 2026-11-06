@@ -1,12 +1,17 @@
 import React, { createContext, useContext, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { Alert, AppState } from 'react-native';
-import { Difficulty } from './theme';
-import { Template, Category, templates as baseTemplates } from './data/templates';
+import { Difficulty, difficultyMeta } from './theme';
+import { Template, Category, templates as baseTemplates, toCategory, categorySkill, skillLabels } from './data/templates';
 import { fromISO, toISO, todayISO } from './dates';
 import { supabase, MAIL_BUCKET } from './lib/supabase';
 import { uuid } from './lib/uuid';
+import { track } from './lib/track';
 import { readFileBytes } from './lib/files';
-import { AgeBand } from './data/ageBands';
+import { TaskDayPart } from './data/dayParts';
+import { AgeBand, toAgeBand } from './data/ageBands';
+import { childAvatarId } from './data/avatars';
+import { toAppError } from './lib/errors';
+import { requestPremium } from './lib/billing';
 
 export type Child = {
   id: string;
@@ -14,7 +19,7 @@ export type Child = {
   avatar: string;
   gender?: 'kız' | 'erkek';
   birthday?: string; // ISO
-  ageBand?: AgeBand; // Pofi Adası oyunu: A 6–9, B 10–12, C 13–15
+  ageBand?: AgeBand; // ebeveynin bilerek seçtiği oyun yaş grubu (K/A/B/C); yoksa otomatik (doğum gününden)
   linked: boolean; // çocuk oyuna giriş kodunu kullandı (cihaz bağlı)
 };
 
@@ -35,19 +40,30 @@ export type Task = {
   repeatDays: number[]; // weekly: 1 = Pzt … 7 = Paz, monthly: 1 … 31
   endDate?: string;
   reminder?: string; // HH:MM
+  dayPart?: TaskDayPart; // Sabah / Öğlen / Akşam; yoksa herhangi bir saat
   requiresReview: boolean;
   sortOrder: number; // Görevler ekranındaki sıra (küçük olan üstte)
+  // Günlük rutin v2 (ortak akislar.md 5.4 adım 6, öneri 20261028200000_routines_v2): görev bir rutine bağlı olabilir.
+  // Yalnız gruplama etiketi: onay, coin ve "Yaptım" görev görev kalır.
+  routine?: TaskRoutine;
 };
+export type TaskRoutine = { id: string; title: string; icon?: string; position?: number };
 
 export type RepeatKind = 'daily' | 'weekly' | 'monthly';
 
+// Ebeveynin kendi şablonu: beceri kategoriden gelir
+export type CustomTemplateInput = { title: string; emoji: string; category: Category; difficulty: Difficulty };
+
 // pending: çocuk "yaptım" dedi · approved: onaylandı (coin verilir)
-// declined: çocuk "yapamam" dedi · rejected: ebeveyn notla reddetti
-export type CompletionStatus = 'pending' | 'approved' | 'declined' | 'rejected';
+// declined: çocuk "yapamam" dedi · rejected: ebeveyn notla reddetti · retry: ebeveyn "tekrar dene" dedi (çocuk yeniden yapar)
+export type CompletionStatus = 'pending' | 'approved' | 'declined' | 'rejected' | 'retry';
+export type ReviewDecision = 'approved' | 'rejected' | 'retry';
+// İnceleme ayrıntısı (ortak/sozlesme/akislar.md 3, 9c): motivasyon 1–5 (uzmana akar), taş 0–6 (boş = zorluğa göre), not oyunda görünür
+export type ReviewExtra = { note?: string; motivation?: number | null; stones?: number | null };
 // anahtar: `${taskId}|${childId}|${date}`
 export type Completions = Record<string, CompletionStatus>;
 
-export type MessageKind = 'text' | 'image' | 'audio';
+export type MessageKind = 'text' | 'image' | 'audio' | 'sticker';
 export type Message = {
   id: string;
   childId: string;
@@ -58,10 +74,11 @@ export type Message = {
   mediaPath?: string; // Storage yolu
   mediaUrl?: string; // gösterim için (imzalı URL ya da gönderilirken yerel dosya)
   durationMs?: number; // sesli mesaj
+  readAt?: string; // karşı taraf okudu
 };
 
 export type InviteCode = { code: string; createdAt: string; expiresAt?: string };
-// Kodlar sunucuda üretilir: tek kullanımlık, süreli (24 saat)
+// Kodlar sunucuda üretilir: tek kullanımlık, 15 dakika geçerli
 export type IssuedCode = { code: string; expiresAt: string };
 
 type Store = {
@@ -75,24 +92,28 @@ type Store = {
   savedIds: string[];
   customTemplates: Template[];
   inviteCodes: InviteCode[];
-  addChild: (c: Omit<Child, 'id' | 'linked'>) => void;
-  setChildAgeBand: (childId: string, band: AgeBand) => void;
+  addChild: (c: Omit<Child, 'id' | 'linked'>) => Promise<string | null>; // sunucuya yazılınca çocuğun kimliği
+  renameChild: (id: string, name: string) => void;
+  setChildAvatar: (id: string, avatar: string) => void; // hazır simge ya da 'photo:<yol>'
+  setChildAgeBand: (childId: string, band: AgeBand | null) => void;
   childBalance: (childId: string) => Promise<number>;
   unlinkChildDevice: (childId: string) => Promise<void>;
   updateParent: (p: Partial<Parent>) => void;
-  addTasks: (t: Omit<Task, 'id' | 'sortOrder'>[]) => void;
+  addTasks: (t: Omit<Task, 'id' | 'sortOrder'>[], onSaved?: (ids: string[]) => void) => void;
   reorderTasks: (orderedIds: string[]) => void; // verilen görevleri bu sırayla diz
   updateTask: (id: string, patch: Partial<Task>) => void; // tekrarlayan görevde tek kayıt => tüm günlere yansır
   deleteTask: (id: string) => void;
   toggleCompletion: (task: Task, childId: string, date: string) => void;
-  review: (key: string, approve: boolean, note?: string) => void; // ret: not çocuğa oyunda görünür
+  review: (key: string, decision: ReviewDecision, extra?: ReviewExtra) => Promise<boolean>; // not çocuğa oyunda görünür
   toggleSaved: (templateId: string) => void;
-  addCustomTemplate: (t: Omit<Template, 'id' | 'usedBy' | 'custom'>) => string;
+  addCustomTemplate: (t: CustomTemplateInput) => string;
   allTemplates: Template[];
   sendMessage: (childId: string, text: string) => void;
+  sendSticker: (childId: string, key: string) => void;
+  markThreadRead: (childId: string) => void;
   sendPhoto: (childId: string, localUri: string, mimeType?: string) => Promise<void>;
   sendVoice: (childId: string, localUri: string, durationMs: number) => Promise<void>;
-  createInviteCode: () => Promise<string>;
+  createInviteCode: () => Promise<IssuedCode>;
   createChildCode: (childId: string) => Promise<IssuedCode>;
   joinFamily: (code: string) => Promise<void>;
   refresh: () => Promise<void>;
@@ -131,10 +152,10 @@ type Row = Record<string, any>;
 const toChild = (r: Row): Child => ({
   id: r.id,
   name: r.name,
-  avatar: r.avatar,
+  avatar: childAvatarId(r.avatar, r.gender), // eski hayvan kimliği → Okti çocuğu (cinsiyete göre; veri değişmez)
   gender: r.gender ?? undefined,
   birthday: r.birthday ?? undefined,
-  ageBand: r.age_band ?? undefined,
+  ageBand: toAgeBand(r.age_band),
   linked: !!r.user_id,
 });
 
@@ -153,8 +174,10 @@ const toTask = (r: Row): Task => ({
   repeatDays: r.repeat_days ?? [],
   endDate: r.end_date ?? undefined,
   reminder: r.reminder ?? undefined,
+  dayPart: r.day_part ?? undefined,
   requiresReview: r.requires_review,
   sortOrder: r.sort_order ?? new Date(r.created_at).getTime() / 1000,
+  routine: r.routine_id ? { id: r.routine_id, title: r.routine_title ?? '', icon: r.routine_icon ?? undefined, position: r.routine_position ?? undefined } : undefined,
 });
 
 const bySortOrder = (a: Task, b: Task) => a.sortOrder - b.sortOrder;
@@ -172,9 +195,21 @@ const taskRow = (t: Partial<Task>) => {
   if (t.sortOrder !== undefined) r.sort_order = t.sortOrder;
   if ('endDate' in t) r.end_date = t.endDate ?? null;
   if ('reminder' in t) r.reminder = t.reminder ?? null;
+  if ('dayPart' in t) r.day_part = t.dayPart ?? null;
   if (t.requiresReview !== undefined) r.requires_review = t.requiresReview;
+  if (t.routine) {
+    r.routine_id = t.routine.id;
+    r.routine_title = t.routine.title.slice(0, 60);
+    r.routine_icon = t.routine.icon ?? null;
+    r.routine_position = t.routine.position ?? null;
+  }
   return r;
 };
+
+// Sunucuda rutin sütunları yoksa (öneri uygulanmadı) yazma bu alanlar olmadan yinelenir
+const missingRoutineColumn = (e: { code?: string; message?: string } | null) =>
+  !!e && (e.code === 'PGRST204' || e.code === '42703') && /routine_/.test(e.message ?? '');
+const withoutRoutine = (r: Row) => { const { routine_id, routine_title, routine_icon, routine_position, ...rest } = r; return rest; };
 
 const assignmentRows = (familyId: string, taskId: string, list: Assignment[]) =>
   list.map((a) => ({ task_id: taskId, child_id: a.childId, family_id: familyId, difficulty: a.difficulty, coins: a.coins }));
@@ -188,6 +223,7 @@ const toMessage = (r: Row): Message => ({
   kind: r.kind,
   mediaPath: r.media_path ?? undefined,
   durationMs: r.duration_ms ?? undefined,
+  readAt: r.read_at ?? undefined,
 });
 
 const SIGNED_URL_SECONDS = 60 * 60 * 24; // gizli kovadaki dosyalar için geçici bağlantı
@@ -295,6 +331,18 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     setReady(true);
   }, [userId, loadChildren, loadTasks, loadCompletions, loadMessages, loadSaved, loadCodes]);
 
+  // Aile bilgisi yüklenemediyse (bağlantı, kayıttan hemen sonra gecikme) işlem sessizce kaybolmasın: uyar ve yeniden yükle
+  // (geri bildirim 5 Kasım 2026: "Kaydet'e bastım, hiçbir şey olmadı")
+  const refreshRef = useRef(refresh);
+  refreshRef.current = refresh;
+  const warnedAt = useRef(0);
+  const noFamily = () => {
+    refreshRef.current();
+    if (Date.now() - warnedAt.current < 4000) return;
+    warnedAt.current = Date.now();
+    Alert.alert('Hesabın yüklenemedi', 'İnternet bağlantını kontrol edip birkaç saniye sonra tekrar dene.');
+  };
+
   // Oturum değişince sıfırla ve yeniden yükle
   useEffect(() => {
     setReady(false);
@@ -322,6 +370,10 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
         if (messagesRef.current.some((x) => x.id === raw.id)) return;
         const [m] = await withMediaUrls([raw]);
         setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter }, (p) => {
+        const r = p.new as Row;
+        setMessages((prev) => prev.map((x) => (x.id === r.id ? { ...x, readAt: r.read_at ?? undefined } : x)));
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, (p) => {
         const id = (p.old as Row).id;
@@ -358,32 +410,51 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
 
   // Sunucu hatasında kullanıcıyı uyar ve ekranı sunucudaki gerçek veriyle eşitle.
   const run = useCallback(
-    async (op: () => PromiseLike<{ error: { message: string } | null }>) => {
+    async (op: () => PromiseLike<{ error: { message: string; hint?: string | null } | null }>) => {
       const { error } = await op();
       if (error) {
-        Alert.alert('Kaydedilemedi', error.message);
+        // Ücretsiz plan sınırı: üyelik ekranı (ortak/sozlesme/durumlar.md 12)
+        if (error.hint === 'premium_required') requestPremium(error.message);
+        else Alert.alert('Kaydedilemedi', error.message);
         refresh();
       }
     },
     [refresh],
   );
 
-  const addChild = useCallback((c: Omit<Child, 'id' | 'linked'>) => {
+  const addChild = useCallback(async (c: Omit<Child, 'id' | 'linked'>): Promise<string | null> => {
+    track('child.add');
     const f = fid.current;
-    if (!f) return;
+    if (!f) { noFamily(); return null; }
     const child: Child = { ...c, id: uuid(), linked: false };
     setChildren((p) => [...p, child]);
-    run(async () => {
+    let ok = false;
+    await run(async () => {
       const ins = await supabase.from('children').insert({
         id: child.id, family_id: f, name: c.name, avatar: c.avatar, gender: c.gender ?? null, birthday: c.birthday ?? null,
       });
+      ok = !ins.error;
       if (ins.error || !c.ageBand) return ins;
       return supabase.rpc('set_child_age_band', { p_child_id: child.id, p_band: c.ageBand });
     });
+    return ok ? child.id : null;
   }, [run]);
 
-  const setChildAgeBand = useCallback((childId: string, band: AgeBand) => {
-    setChildren((p) => p.map((c) => (c.id === childId ? { ...c, ageBand: band } : c)));
+  const renameChild = useCallback((id: string, name: string) => {
+    const nm = name.trim();
+    if (!nm) return;
+    setChildren((p) => p.map((c) => (c.id === id ? { ...c, name: nm } : c)));
+    run(() => supabase.from('children').update({ name: nm }).eq('id', id));
+  }, [run]);
+
+  const setChildAvatar = useCallback((id: string, avatar: string) => {
+    setChildren((p) => p.map((c) => (c.id === id ? { ...c, avatar } : c)));
+    run(() => supabase.from('children').update({ avatar }).eq('id', id));
+  }, [run]);
+
+  // null: otomatik (doğum gününden; durumlar.md §4)
+  const setChildAgeBand = useCallback((childId: string, band: AgeBand | null) => {
+    setChildren((p) => p.map((c) => (c.id === childId ? { ...c, ageBand: band ?? undefined } : c)));
     run(() => supabase.rpc('set_child_age_band', { p_child_id: childId, p_band: band }));
   }, [run]);
 
@@ -417,24 +488,30 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     }, 600);
   }, [userId, run]);
 
-  const addTasks = useCallback((list: Omit<Task, 'id' | 'sortOrder'>[]) => {
+  // onSaved: görevler sunucuya yazılınca kimlikleriyle çağrılır (ör. uzman önerisine task_id yazmak için)
+  const addTasks = useCallback((list: Omit<Task, 'id' | 'sortOrder'>[], onSaved?: (ids: string[]) => void) => {
+    track('task.create', { n: list.length });
     const f = fid.current;
-    if (!f) return;
+    if (!f) { noFamily(); return; }
     const now = Date.now() / 1000;
     const created: Task[] = list.map((x, i) => ({ ...x, id: uuid(), sortOrder: now + i / 1000 }));
     setTasks((p) => [...p, ...created]);
     run(async () => {
-      const ins = await supabase.from('tasks').insert(
-        created.map((t) => ({ ...taskRow(t), id: t.id, family_id: f, created_by: userId })),
-      );
+      const rows0 = created.map((t) => ({ ...taskRow(t), id: t.id, family_id: f, created_by: userId }));
+      let ins = await supabase.from('tasks').insert(rows0);
+      if (missingRoutineColumn(ins.error)) ins = await supabase.from('tasks').insert(rows0.map(withoutRoutine));
       if (ins.error) return ins;
-      return supabase.from('task_assignments').insert(created.flatMap((t) => assignmentRows(f, t.id, t.assignments)));
+      // Yalnız ebeveyne atanan görevde çocuk ataması yok (ortak akislar.md 18)
+      const rows = created.flatMap((t) => assignmentRows(f, t.id, t.assignments));
+      const a = rows.length ? await supabase.from('task_assignments').insert(rows) : { error: null };
+      if (!a.error) onSaved?.(created.map((t) => t.id));
+      return a;
     });
   }, [run, userId]);
 
   const updateTask = useCallback((id: string, patch: Partial<Task>) => {
     const f = fid.current;
-    if (!f) return;
+    if (!f) { noFamily(); return; }
     setTasks((p) => p.map((t) => (t.id === id ? { ...t, ...patch } : t)));
     run(async () => {
       const row = taskRow(patch);
@@ -479,6 +556,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   }, [run]);
 
   const deleteTask = useCallback((id: string) => {
+    track('task.delete');
     setTasks((p) => p.filter((t) => t.id !== id));
     setCompletions((p) => {
       const n: Completions = {};
@@ -490,7 +568,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
 
   const toggleCompletion = useCallback((task: Task, childId: string, date: string) => {
     const f = fid.current;
-    if (!f) return;
+    if (!f) { noFamily(); return; }
     const key = completionKey(task.id, childId, date);
     const exists = !!completionsRef.current[key];
     const status: CompletionStatus = task.requiresReview ? 'pending' : 'approved';
@@ -510,24 +588,30 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     }
   }, [run]);
 
-  const review = useCallback((key: string, approve: boolean, note?: string) => {
+  const review = useCallback(async (key: string, decision: ReviewDecision, extra: ReviewExtra = {}) => {
+    track('task.review', { approve: decision === 'approved', decision, ...(extra.motivation ? { motivation: extra.motivation } : {}) });
     const [taskId, childId, date] = key.split('|');
-    setCompletions((p) => ({ ...p, [key]: approve ? 'approved' : 'rejected' }));
-    if (approve) {
-      run(() => supabase.from('completions')
-        .update({ status: 'approved', reviewed_at: new Date().toISOString(), reviewed_by: userId })
-        .match({ task_id: taskId, child_id: childId, date }));
-    } else {
-      // Ret kaydı silinmez: çocuk oyunda "reddedildi" ve ebeveynin notunu görür.
-      run(() => supabase.rpc('review_completion', {
-        p_task_id: taskId, p_child_id: childId, p_date: date, p_status: 'rejected', p_note: note?.trim() || null,
-      }));
-    }
-  }, [run, userId]);
+    const prev = completionsRef.current[key];
+    setCompletions((p) => ({ ...p, [key]: decision }));
+    // Onay da ret de aynı RPC ile (ortak/sozlesme/durumlar.md D2). Ret kaydı silinmez: çocuk oyunda "reddedildi" ve notu görür.
+    const base = { p_task_id: taskId, p_child_id: childId, p_date: date, p_status: decision, p_note: extra.note?.trim() || null };
+    const more = extra.motivation != null || extra.stones != null;
+    let { error } = await supabase.rpc('review_completion', more
+      ? { ...base, p_motivation: extra.motivation ?? null, p_stones: decision === 'approved' ? extra.stones ?? null : null }
+      : base);
+    // Sunucu henüz eski (öneri 20261027130000 uygulanmadı): motivasyon/taş olmadan yeniden dene; "Tekrar dene" yok
+    if (error && more && decision !== 'retry' && error.code === 'PGRST202') ({ error } = await supabase.rpc('review_completion', base));
+    if (!error) return true;
+    setCompletions((p) => { const n = { ...p }; if (prev) n[key] = prev; else delete n[key]; return n; });
+    const old = decision === 'retry' && (error.code === 'PGRST202' || /Geçersiz durum|completions_status_check/.test(error.message));
+    Alert.alert(old ? 'Sunucu güncellemesi bekleniyor' : 'Kaydedilemedi',
+      old ? '"Tekrar dene", ortak SQL dosyası Supabase\'de çalıştırılınca açılır. Şimdilik onaylayabilir ya da reddedebilirsin.' : error.message);
+    return false;
+  }, []);
 
   const toggleSaved = useCallback((templateId: string) => {
     const f = fid.current;
-    if (!f) return;
+    if (!f) { noFamily(); return; }
     const row = savedRows.find((r) => r.template_key === templateId);
     if (row?.is_custom) {
       const saved = !row.saved;
@@ -543,13 +627,14 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     }
   }, [savedRows, run, userId]);
 
-  const addCustomTemplate = useCallback((t: Omit<Template, 'id' | 'usedBy' | 'custom'>) => {
+  const addCustomTemplate = useCallback((t: CustomTemplateInput) => {
+    track('template.custom');
     const f = fid.current;
     const id = uuid();
-    if (!f) return id;
+    if (!f) { noFamily(); return id; }
     const r = {
       id, family_id: f, template_key: id, is_custom: true, saved: true, created_by: userId,
-      title: t.title, emoji: t.emoji, category: t.category, difficulty: t.difficulty, skill: t.skill,
+      title: t.title, emoji: t.emoji, category: t.category, difficulty: t.difficulty, skill: categorySkill[t.category],
     };
     setSavedRows((p) => [...p, r]);
     run(() => supabase.from('saved_templates').insert(r));
@@ -557,8 +642,9 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   }, [run, userId]);
 
   const sendMessage = useCallback((childId: string, text: string) => {
+    track('message.send', { kind: 'text' });
     const f = fid.current;
-    if (!f || !userId) return;
+    if (!f || !userId) { noFamily(); return; }
     const m: Message = { id: uuid(), childId, text, at: new Date().toISOString(), sender: 'parent', kind: 'text' };
     setMessages((p) => [...p, m]);
     run(() => supabase.from('messages').insert({
@@ -566,13 +652,34 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     }));
   }, [run, userId]);
 
+  const sendSticker = useCallback((childId: string, key: string) => {
+    track('message.send', { kind: 'sticker' });
+    const f = fid.current;
+    if (!f || !userId) { noFamily(); return; }
+    const m: Message = { id: uuid(), childId, text: key, at: new Date().toISOString(), sender: 'parent', kind: 'sticker' };
+    setMessages((p) => [...p, m]);
+    run(() => supabase.from('messages').insert({
+      id: m.id, family_id: f, child_id: childId, sender: 'parent', sender_id: userId, kind: 'sticker', body: key,
+    }));
+  }, [run, userId]);
+
+  // Sohbet açılınca çocuğun mesajları okundu (çocuk oyunda "görüldü"yü görebilir)
+  const markThreadRead = useCallback((childId: string) => {
+    const unread = messagesRef.current.some((m) => m.childId === childId && m.sender === 'child' && !m.readAt);
+    if (!unread) return;
+    const at = new Date().toISOString();
+    setMessages((p) => p.map((m) => (m.childId === childId && m.sender === 'child' && !m.readAt ? { ...m, readAt: at } : m)));
+    supabase.rpc('mark_messages_read', { p_child_id: childId }).then(() => {}, () => {});
+  }, []);
+
   // Fotoğraf / ses: önce Storage'a yükle, sonra mesaj kaydını ekle.
   // Ekranda yerel dosya hemen görünür; hata olursa mesaj geri alınır.
   const sendMedia = useCallback(async (
     childId: string, localUri: string, kind: 'image' | 'audio', contentType: string, durationMs?: number,
   ) => {
+    track('message.send', { kind });
     const f = fid.current;
-    if (!f || !userId) return;
+    if (!f || !userId) { noFamily(); return; }
     const id = uuid();
     const path = `${f}/${id}.${extFor(contentType)}`;
     const m: Message = {
@@ -591,11 +698,12 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
       });
       if (ins.error) {
         await supabase.storage.from(MAIL_BUCKET).remove([path]);
-        throw ins.error;
+        throw toAppError(ins.error);
       }
     } catch (e) {
       setMessages((p) => p.filter((x) => x.id !== id));
-      Alert.alert('Gönderilemedi', (e as Error).message ?? 'Tekrar dene.');
+      if ((e as { hint?: string }).hint === 'premium_required') requestPremium((e as Error).message);
+      else Alert.alert('Gönderilemedi', (e as Error).message ?? 'Tekrar dene.');
     } finally {
       sendingIds.current.delete(id);
     }
@@ -614,24 +722,28 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   );
 
   const issueCode = useCallback(async (kind: 'parent' | 'child', childId?: string): Promise<IssuedCode> => {
+    track('invite.create', { kind });
     const { data, error } = await supabase.rpc('create_invite_code', { p_kind: kind, p_child_id: childId ?? null });
     const row = Array.isArray(data) ? data[0] : data;
-    if (error || !row) throw new Error(error?.message ?? 'Kod üretilemedi');
+    if (error) throw toAppError(error);
+    if (!row) throw new Error('Kod üretilemedi');
     return { code: row.code, expiresAt: row.expires_at };
   }, []);
 
   const createInviteCode = useCallback(async () => {
     const c = await issueCode('parent');
     setInviteCodes((p) => [...p, { code: c.code, createdAt: new Date().toISOString(), expiresAt: c.expiresAt }]);
-    return c.code;
+    return c;
   }, [issueCode]);
 
   const createChildCode = useCallback((childId: string) => issueCode('child', childId), [issueCode]);
 
   // İkinci ebeveyn: davet koduyla aileye katıl
   const joinFamily = useCallback(async (code: string) => {
+    track('family.join');
+    // Kod hatası (süresi doldu / kullanıldı / çok deneme) açık metinle gelir: ortak/sozlesme/durumlar.md 11
     const { error } = await supabase.rpc('join_family', { p_code: code.trim().toUpperCase() });
-    if (error) throw new Error(error.message);
+    if (error) throw toAppError(error);
     await refresh();
   }, [refresh]);
 
@@ -645,19 +757,29 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   }, []);
 
   // Hesabı ve (tek ebeveynse) ailenin tüm verisini kalıcı olarak sil
+  // Klasörü alt klasörleriyle birlikte boşalt (Storage listesinde klasörlerin id'si yoktur)
+  const removeFolder = async (bucketName: string, prefix: string): Promise<void> => {
+    const bucket = supabase.storage.from(bucketName);
+    for (;;) {
+      const { data, error } = await bucket.list(prefix, { limit: 100 });
+      if (error) throw new Error(error.message);
+      const files = (data ?? []).filter((o: any) => o.id);
+      const folders = (data ?? []).filter((o: any) => !o.id);
+      for (const d of folders) await removeFolder(bucketName, `${prefix}/${d.name}`);
+      if (!files.length) break;
+      const rm = await bucket.remove(files.map((o) => `${prefix}/${o.name}`));
+      if (rm.error) throw new Error(rm.error.message);
+      if (!rm.data?.length) break; // silinemeyen dosya kaldıysa döngüye girme
+    }
+  };
+
   const deleteAccount = useCallback(async () => {
     const f = fid.current;
     if (f && (await isOnlyParent())) {
-      // Storage dosyaları veritabanından silinemez; önce Storage API ile silinir.
-      const bucket = supabase.storage.from(MAIL_BUCKET);
-      for (;;) {
-        const { data, error } = await bucket.list(f, { limit: 100 });
-        if (error) throw new Error(error.message);
-        if (!data || data.length === 0) break;
-        const rm = await bucket.remove(data.map((o) => `${f}/${o.name}`));
-        if (rm.error) throw new Error(rm.error.message);
-        if (!rm.data?.length) break; // silinemeyen dosya kaldıysa döngüye girme
-      }
+      // Storage dosyaları veritabanından silinemez; önce Storage API ile silinir:
+      // mesaj medyası ve çocuk fotoğrafları ('mail', alt klasör avatars/ dahil), zor an sesleri ('abc')
+      await removeFolder(MAIL_BUCKET, f);
+      await removeFolder('abc', f);
     }
     const { error } = await supabase.rpc('delete_account');
     if (error) throw new Error(error.message);
@@ -667,8 +789,11 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
 
   const customTemplates = useMemo<Template[]>(
     () => savedRows.filter((r) => r.is_custom).map((r) => ({
-      id: r.template_key, title: r.title, emoji: r.emoji ?? '⭐', category: r.category as Category,
-      difficulty: r.difficulty as Difficulty, skill: r.skill ?? 'Özel', usedBy: 0, custom: true,
+      id: r.template_key, title: r.title, emoji: r.emoji ?? '⭐', category: toCategory(r.category),
+      categories: [toCategory(r.category)], difficulty: r.difficulty as Difficulty,
+      coins: difficultyMeta[r.difficulty as Difficulty]?.coins ?? 5,
+      // Eski kayıtta serbest metin olabilir; anahtar değilse kategorinin becerisi
+      skill: r.skill && r.skill in skillLabels ? r.skill : categorySkill[toCategory(r.category)], sort: -1, custom: true,
     })),
     [savedRows],
   );
@@ -678,8 +803,8 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
   const value: Store = {
     ready, familyId,
     parent, children, tasks, completions, messages, savedIds, customTemplates, inviteCodes,
-    addChild, setChildAgeBand, childBalance, unlinkChildDevice, updateParent, addTasks, reorderTasks, updateTask, deleteTask, toggleCompletion, review,
-    toggleSaved, addCustomTemplate, allTemplates, sendMessage, sendPhoto, sendVoice, createInviteCode, createChildCode, joinFamily, refresh,
+    addChild, renameChild, setChildAvatar, setChildAgeBand, childBalance, unlinkChildDevice, updateParent, addTasks, reorderTasks, updateTask, deleteTask, toggleCompletion, review,
+    toggleSaved, addCustomTemplate, allTemplates, sendMessage, sendSticker, markThreadRead, sendPhoto, sendVoice, createInviteCode, createChildCode, joinFamily, refresh,
     isOnlyParent, deleteAccount,
   };
   return <Ctx.Provider value={value}>{kids}</Ctx.Provider>;

@@ -1,0 +1,114 @@
+import { Platform } from 'react-native';
+import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from './supabase';
+
+// Bildirimler: satırları sunucu yazar (ortak/supabase/proposed/20261019130000_notifications.sql);
+// burada yalnız telefonun Apple (APNs) cihaz anahtarı kaydedilir ve uygulama açıkken gelen bildirim gösterilir.
+// Gönderimi Supabase Edge Function push-apns yapar (ortak/supabase/functions/push-apns); Expo hesabı gerekmez.
+const TOKEN_KEY = 'push-token';
+const OFF_KEY = 'push-off'; // kullanıcı telefona bildirimi kapattıysa '1'
+
+export type AppNotification = {
+  id: number; kind: string; title: string; body: string; data: Record<string, any>;
+  childId?: string; createdAt: string; readAt?: string;
+};
+
+export const toNotification = (r: any): AppNotification => ({
+  id: r.id, kind: r.kind, title: r.title, body: r.body ?? '', data: r.data ?? {},
+  childId: r.child_id ?? undefined, createdAt: r.created_at, readAt: r.read_at ?? undefined,
+});
+
+// Uygulama açıkken de üstte göster
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: true,
+    }),
+  });
+}
+
+export async function pushEnabled() {
+  return (await AsyncStorage.getItem(OFF_KEY)) !== '1';
+}
+
+export type PushPermission = 'granted' | 'denied' | 'undetermined' | 'unavailable';
+
+// Telefonun bildirim izni. Web'de (yalnız önizleme) sistem izni yok: ön soru görünsün diye 'undetermined' sayılır.
+export async function pushPermission(): Promise<PushPermission> {
+  if (Platform.OS === 'web') return 'undetermined';
+  try { return (await Notifications.getPermissionsAsync()).status as PushPermission; } catch { return 'unavailable'; }
+}
+
+// Girişten sonra çağrılır: izin verilmişse anahtarı sunucuya kaydeder. Sistem izin penceresini yalnız ask=true açar
+// (ön sorudan "Evet" ya da ayarlardan açma); ilk açılışta bağlamsız izin sorulmaz. Hata uygulamayı durdurmaz.
+export async function registerForPush(ask = false): Promise<'ok' | 'denied' | 'undetermined' | 'off' | 'unavailable'> {
+  if (Platform.OS === 'web') return 'unavailable';
+  if (!(await pushEnabled())) return 'off';
+  try {
+    let { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted' && ask) ({ status } = await Notifications.requestPermissionsAsync());
+    if (status !== 'granted') return status === 'undetermined' ? 'undetermined' : 'denied';
+    const { data: token } = await Notifications.getDevicePushTokenAsync();
+    if (typeof token !== 'string' || !token) return 'unavailable';
+    const { error } = await supabase.rpc('register_push_token', { p_token: token, p_app: 'parent', p_platform: Platform.OS });
+    if (error) throw error;
+    await AsyncStorage.setItem(TOKEN_KEY, token);
+    return 'ok';
+  } catch (e) {
+    console.warn('Push kaydı yapılamadı', e);
+    return 'unavailable';
+  }
+}
+
+// Ön soru ("Bir dahaki sefere haber verelim mi?"): izin hiç sorulmadıysa; "Şimdi değil" denince 3 gün sonra bir kez daha.
+const ASK_KEY = 'push-ask';
+export async function shouldAskPush(): Promise<boolean> {
+  if (!(await pushEnabled()) || (await pushPermission()) !== 'undetermined') return false;
+  const v = await AsyncStorage.getItem(ASK_KEY);
+  if (!v) return true;
+  const [n, at] = v.split(':').map(Number);
+  return n < 2 && Date.now() - at > 3 * 864e5;
+}
+export async function notePushAsked() {
+  const v = await AsyncStorage.getItem(ASK_KEY);
+  const n = v ? Number(v.split(':')[0]) || 0 : 0;
+  await AsyncStorage.setItem(ASK_KEY, `${n + 1}:${Date.now()}`);
+}
+
+// Çıkışta ya da kullanıcı kapatınca: bu telefona artık push gitmez (uygulama içi liste sürer)
+export async function unregisterPush() {
+  const token = await AsyncStorage.getItem(TOKEN_KEY);
+  if (!token) return;
+  await supabase.rpc('unregister_push_token', { p_token: token });
+  await AsyncStorage.removeItem(TOKEN_KEY);
+}
+
+export async function setPushEnabled(on: boolean) {
+  if (on) {
+    await AsyncStorage.removeItem(OFF_KEY);
+    return registerForPush(true);
+  }
+  await AsyncStorage.setItem(OFF_KEY, '1');
+  await unregisterPush();
+  return 'off' as const;
+}
+
+export async function setBadge(n: number) {
+  if (Platform.OS === 'web') return;
+  try { await Notifications.setBadgeCountAsync(n); } catch { /* izin yoksa önemsiz */ }
+}
+
+// Bildirime dokununca: data.kind'a göre hangi ekran açılacak
+export function onNotificationTap(handler: (data: Record<string, any>) => void) {
+  if (Platform.OS === 'web') return () => {};
+  const seen = new Set<string>();
+  const handle = (r: Notifications.NotificationResponse | null) => {
+    if (!r || seen.has(r.notification.request.identifier)) return;
+    seen.add(r.notification.request.identifier);
+    handler(r.notification.request.content.data ?? {});
+  };
+  Notifications.getLastNotificationResponseAsync().then(handle).catch(() => {});
+  const sub = Notifications.addNotificationResponseReceivedListener(handle);
+  return () => sub.remove();
+}

@@ -1,19 +1,35 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import * as Linking from 'expo-linking';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session, EmailOtpType } from '@supabase/supabase-js';
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
+import { unregisterPush } from './notifications';
+import { storeLogOut } from './purchases';
 
 // E-postadaki bağlantılar uygulamayı bu adresle açar:
-// geliştirmede exp://…/--/auth (Expo Go), derlenmiş uygulamada parentapp://auth
-export const authRedirectUrl = () => Linking.createURL('auth');
+// geliştirmede exp://…/--/auth (Expo Go), derlenmiş uygulamada parentapp://auth.
+// Web sürümünde (site /app/, 4 Kasım 2026) aynı sayfaya döner; Supabase Auth › Redirect URLs'e https://<alan adı>/app/** eklenir.
+export const authRedirectUrl = () =>
+  Platform.OS === 'web' && typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : Linking.createURL('auth');
+
+// Yeni kayıt işareti: ilk oturumda bir kez okunur ve silinir
+const SIGNUP_KEY = 'after-signup';
+const markJustSignedUp = () => AsyncStorage.setItem(SIGNUP_KEY, '1').catch(() => {});
+export async function takeJustSignedUp(): Promise<boolean> {
+  try {
+    const v = await AsyncStorage.getItem(SIGNUP_KEY);
+    if (v) await AsyncStorage.removeItem(SIGNUP_KEY);
+    return v === '1';
+  } catch { return false; }
+}
 
 type Auth = {
   session: Session | null;
   loading: boolean;
   recovery: boolean; // şifre yenileme bağlantısıyla gelindi: yeni şifre ekranı gösterilir
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name: string) => Promise<{ needsConfirmation: boolean }>;
+  signUp: (email: string, password: string, name: string, clinicInvite?: string) => Promise<{ needsConfirmation: boolean }>;
   resendConfirmation: (email: string) => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
@@ -30,6 +46,8 @@ const Ctx = createContext<Auth | null>(null);
 // Supabase hata kodlarını sade Türkçe mesajlara çevir
 export function authErrorText(e: unknown): string {
   const err = e as { code?: string; message?: string; status?: number };
+  // Derlemede sunucu adresi/anahtarı uygulamaya girmediyse her istek ağ hatası gibi görünür
+  if (!isSupabaseConfigured) return 'Uygulama sunucuya bağlanacak şekilde derlenmemiş (Supabase anahtarı eksik). Yeni bir TestFlight derlemesi gerekiyor.';
   switch (err?.code) {
     case 'invalid_credentials': return 'E-posta ya da şifre hatalı.';
     case 'email_not_confirmed': return 'E-posta adresin henüz doğrulanmadı. Gelen kutunu kontrol et.';
@@ -44,6 +62,10 @@ export function authErrorText(e: unknown): string {
     case 'otp_expired': return 'Bağlantının süresi dolmuş. Yeniden iste.';
     case 'anonymous_provider_disabled': return 'Çocuk girişi henüz açık değil. Ebeveyninden Supabase ayarlarında "Anonymous Sign-Ins" seçeneğini açmasını iste.';
   }
+  if (err?.code === 'unexpected_failure' || err?.message?.includes('Database error')) {
+    return 'Sunucu hesabı oluşturamadı. Biraz sonra tekrar dene; sürerse bize bildir.';
+  }
+  if (err?.message?.includes('Invalid API key')) return 'Uygulamanın sunucu anahtarı geçersiz. Yeni bir TestFlight derlemesi gerekiyor.';
   if (err?.status === 429) return 'Çok fazla deneme yapıldı. Biraz sonra tekrar dene.';
   if (err?.message?.toLowerCase().includes('network')) return 'İnternet bağlantını kontrol et.';
   return err?.message || 'Bir şeyler ters gitti. Tekrar dene.';
@@ -64,6 +86,22 @@ function urlParams(url: string): Record<string, string> {
   return out;
 }
 
+// Bağlantıdaki erişim anahtarının e-postası (yalnız göstermek için; doğrulamayı sunucu yapar)
+function tokenEmail(token: string): string | undefined {
+  try {
+    const part = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(globalThis.atob(part.padEnd(part.length + ((4 - (part.length % 4)) % 4), '='))).email;
+  } catch {
+    return undefined;
+  }
+}
+
+const ask = (title: string, message: string) => new Promise<boolean>((resolve) =>
+  Alert.alert(title, message, [
+    { text: 'Vazgeç', style: 'cancel', onPress: () => resolve(false) },
+    { text: 'Devam et', onPress: () => resolve(true) },
+  ], { cancelable: true, onDismiss: () => resolve(false) }));
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,12 +114,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const p = urlParams(url);
     const isAuthLink = p.access_token || p.code || p.token_hash || p.error || p.error_description;
     if (!isAuthLink) return;
+    // Web: bağlantıdaki anahtarlar adres çubuğunda ve geçmişte kalmasın
+    if (Platform.OS === 'web' && typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname);
 
     if (p.error || p.error_description) {
       Alert.alert('Bağlantı açılamadı', p.error_code === 'otp_expired'
         ? 'Bağlantının süresi dolmuş ya da daha önce kullanılmış. Yeniden iste.'
         : p.error_description || 'Bağlantı geçersiz.');
       return;
+    }
+    // Güvenlik: başkasının gönderdiği bir bağlantı oturumu sessizce başka hesaba geçirmesin
+    const before = (await supabase.auth.getSession()).data.session?.user;
+    const target = p.access_token ? tokenEmail(p.access_token) : undefined;
+    if (before && !before.is_anonymous && (!target || target.toLowerCase() !== (before.email ?? '').toLowerCase())) {
+      const ok = await ask('Hesap değişsin mi?',
+        `Şu an ${before.email} ile girişlisin. Bu bağlantı ${target ?? 'başka bir hesapla'} oturum açar. Bağlantıyı sen istemediysen Vazgeç'e dokun.`);
+      if (!ok) return;
     }
     try {
       if (p.access_token && p.refresh_token) {
@@ -95,6 +143,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (error) throw error;
       }
       if (p.type === 'recovery') setRecovery(true);
+      // Önceden oturum yoksa kimin hesabına girildiğini göster; tanımıyorsa hemen çıkabilsin
+      if (!before) {
+        const email = (await supabase.auth.getSession()).data.session?.user.email;
+        if (email) {
+          Alert.alert('Giriş yapıldı', `${email} hesabıyla giriş yapıldı.`, [
+            { text: 'Bu ben değilim', style: 'destructive', onPress: () => { supabase.auth.signOut(); } },
+            { text: 'Tamam' },
+          ]);
+        }
+      }
     } catch (e) {
       Alert.alert('Bağlantı açılamadı', authErrorText(e));
     }
@@ -108,7 +166,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       if (event === 'PASSWORD_RECOVERY') setRecovery(true);
-      if (event === 'SIGNED_OUT') setRecovery(false);
+      // Çıkışta mağaza (RevenueCat) kimliği de bırakılır; girişte BillingProvider logIn yapar
+      if (event === 'SIGNED_OUT') { setRecovery(false); storeLogOut(); }
     });
     Linking.getInitialURL().then(handleUrl);
     const sub = Linking.addEventListener('url', ({ url }) => handleUrl(url));
@@ -123,13 +182,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string, name: string) => {
+  // clinicInvite: uzman davet bağlantısı anahtarı ya da kodu; sunucu kayıtta daveti aileye bağlar (akislar.md 10 adım 5)
+  const signUp = useCallback(async (email: string, password: string, name: string, clinicInvite?: string) => {
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
-      options: { data: { name: name.trim() }, emailRedirectTo: authRedirectUrl() },
+      options: { data: { name: name.trim(), ...(clinicInvite ? { clinic_invite: clinicInvite } : {}) }, emailRedirectTo: authRedirectUrl() },
     });
     if (error) throw error;
+    // Kayıttan hemen sonra "Kodun var mı?" ekranı açılır (App.tsx → Main); onaylı e-postada bağlantıyla açılan ilk oturumda
+    await markJustSignedUp();
     // E-posta onayı açıkken (önerilen) oturum, hoş geldin e-postasındaki bağlantıyla açılır.
     return { needsConfirmation: !data.session };
   }, []);
@@ -154,6 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     setRecovery(false);
+    await unregisterPush().catch(() => {}); // bu telefona artık bu hesabın bildirimi gitmesin
     const { error } = await supabase.auth.signOut();
     // Ağ yoksa bile yerel oturumu kapat
     if (error) await supabase.auth.signOut({ scope: 'local' });

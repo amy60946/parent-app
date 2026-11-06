@@ -1,18 +1,23 @@
 import React, { useMemo, useState } from 'react';
+import Info from '../components/Info';
 import { View, Text, TextInput, Pressable, ScrollView, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, Difficulty, difficultyMeta } from '../theme';
+import { colors, radius, Difficulty, difficultyMeta, MAX_TASK_COINS } from '../theme';
 import { Avatar, IconButton, Segmented, Toggle, Label } from '../components/ui';
 import DateField from '../components/DateField';
 import { useStore, Assignment, RepeatKind } from '../store';
 import { DAY_SHORT, fromISO, todayISO } from '../dates';
+import { TaskDayPart, dayPartLabel, taskDayPartOf } from '../data/dayParts';
+import { Category, categories, categorySkill, skillLabels } from '../data/templates';
+import { useParentTasks, memberName } from '../parentTasks';
 
 type Row = { on: boolean; difficulty: Difficulty; coins: string };
 
 export default function TaskDetailsScreen({ navigation, route }: any) {
   const { taskId, templateIds, custom, date } = route.params ?? {};
   const { tasks, children, allTemplates, addTasks, updateTask, deleteTask, addCustomTemplate } = useStore();
+  const pt = useParentTasks();
 
   const editing = taskId ? tasks.find((t) => t.id === taskId) : undefined;
   const picked = useMemo(
@@ -33,14 +38,29 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
     });
     return r;
   });
+  // Ebeveyn atamaları (akislar.md 18): kendine ya da eşine; ödül zorluğa göre Güneş Taşı
+  const [prows, setProws] = useState<Record<string, { on: boolean; difficulty: Difficulty }>>(() => {
+    const r: Record<string, { on: boolean; difficulty: Difficulty }> = {};
+    pt.members.forEach((m) => {
+      const a = editing ? pt.assigns[editing.id]?.find((x) => x.userId === m.id) : undefined;
+      r[m.id] = { on: !!a, difficulty: a?.difficulty ?? initialDifficulty };
+    });
+    return r;
+  });
+  const setProw = (id: string, patch: Partial<{ on: boolean; difficulty: Difficulty }>) =>
+    setProws((p) => ({ ...p, [id]: { ...(p[id] ?? { on: false, difficulty: initialDifficulty }), ...patch } }));
   const [startDate, setStartDate] = useState<string>(editing?.startDate ?? date ?? todayISO());
   const [recurring, setRecurring] = useState(editing?.recurring ?? false);
   const [repeatKind, setRepeatKind] = useState<RepeatKind>(editing?.repeatKind ?? 'daily');
   const [repeatDays, setRepeatDays] = useState<number[]>(editing?.repeatDays ?? []);
   const [endDate, setEndDate] = useState<string | undefined>(editing?.endDate);
   const [reminder, setReminder] = useState<string | undefined>(editing?.reminder);
+  const [dayPart, setDayPart] = useState<TaskDayPart | 'any'>(editing?.dayPart ?? (editing?.reminder ? taskDayPartOf(editing.reminder) : 'any'));
+  // Hatırlatma saati seçilince gün bölümü kendiliğinden dolar (sonra değiştirilebilir)
+  const pickReminder = (v?: string) => { setReminder(v); if (v) setDayPart(taskDayPartOf(v)); };
   const [requiresReview, setRequiresReview] = useState(editing?.requiresReview ?? true);
   const [saveTemplate, setSaveTemplate] = useState(false);
+  const [category, setCategory] = useState<Category>('home'); // yeni özel görevde beceri buradan gelir
 
   const isPast = startDate < todayISO();
   const isCustom = !!custom;
@@ -65,15 +85,17 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
       .map((c) => ({
         childId: c.id,
         difficulty: rows[c.id].difficulty,
-        coins: Math.max(0, parseInt(rows[c.id].coins || '0', 10) || 0),
+        coins: Math.min(MAX_TASK_COINS, Math.max(0, parseInt(rows[c.id].coins || '0', 10) || 0)),
       }));
-    if (assignments.length === 0) return Alert.alert('En az bir çocuk seçin');
-    if (canTitle && !title.trim()) return Alert.alert('Görev adı gerekli');
+    const parentList = pt.members.filter((m) => prows[m.id]?.on).map((m) => ({ userId: m.id, difficulty: prows[m.id].difficulty }));
+    if (assignments.length === 0 && parentList.length === 0) return Alert.alert('En az bir kişi seçin');
+    if (canTitle && !title.trim()) return Alert.alert('Macera adı gerekli');
     if (recurring && endDate && endDate < startDate) return Alert.alert('Son tarih başlangıçtan önce olamaz');
     if (recurring && repeatKind !== 'daily' && repeatDays.length === 0) {
       return Alert.alert(repeatKind === 'weekly' ? 'Haftanın en az bir gününü seç' : 'Ayın en az bir gününü seç');
     }
 
+    const saveParents = parentList.length ? (ids: string[]) => ids.forEach((id) => pt.saveAssigns(id, parentList)) : undefined;
     const common = {
       description: description.trim(),
       assignments,
@@ -83,22 +105,21 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
       repeatDays: recurring && repeatKind !== 'daily' ? repeatDays : [],
       endDate: recurring ? endDate : undefined,
       reminder,
+      dayPart: dayPart === 'any' ? undefined : dayPart,
       requiresReview,
     };
 
     if (editing) {
       // Tekrarlayan görevde tek kayıt güncellenir; her güne yansır.
       updateTask(editing.id, { ...common, title: title.trim() });
+      if (pt.ready) pt.saveAssigns(editing.id, parentList);
     } else if (isCustom) {
       if (saveTemplate) {
-        addCustomTemplate({
-          title: title.trim(), emoji: '⭐', category: 'home',
-          difficulty: assignments[0].difficulty, skill: 'Özel',
-        });
+        addCustomTemplate({ title: title.trim(), emoji: '⭐', category, difficulty: assignments[0].difficulty });
       }
-      addTasks([{ ...common, title: title.trim(), emoji: '⭐', skill: 'Özel' }]);
+      addTasks([{ ...common, title: title.trim(), emoji: '⭐', skill: categorySkill[category] }], saveParents);
     } else {
-      addTasks(picked.map((t: any) => ({ ...common, title: t.title, emoji: t.emoji, skill: t.skill })));
+      addTasks(picked.map((t: any) => ({ ...common, title: t.title, emoji: t.emoji, skill: t.skill })), saveParents);
     }
     navigation.popToTop();
   };
@@ -106,8 +127,8 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
   const confirmDelete = () => {
     if (!editing) return;
     Alert.alert(
-      'Görev silinsin mi?',
-      editing.recurring ? 'Tekrarlayan görev tüm günlerden silinir.' : 'Bu işlem geri alınamaz.',
+      'Macera silinsin mi?',
+      editing.recurring ? 'Tekrarlayan macera tüm günlerden silinir.' : 'Bu işlem geri alınamaz.',
       [
         { text: 'Vazgeç', style: 'cancel' },
         { text: 'Sil', style: 'destructive', onPress: () => { deleteTask(editing.id); navigation.goBack(); } },
@@ -119,7 +140,7 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
     <SafeAreaView style={styles.safe}>
       <View style={styles.top}>
         <IconButton name="chevron-back" label="Geri" onPress={() => navigation.goBack()} />
-        <Text style={styles.topTitle}>{editing ? 'Görevi düzenle' : 'Görev ayrıntıları'}</Text>
+        <Text style={styles.topTitle}>{editing ? 'Macerayı düzenle' : 'Macera ayrıntıları'}</Text>
         <IconButton name="close" label="Kapat" onPress={() => navigation.popToTop()} />
       </View>
 
@@ -140,14 +161,31 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
       >
         {canTitle ? (
           <>
-            <Label>Görev adı</Label>
+            <Label>Macera adı</Label>
             <TextInput value={title} onChangeText={setTitle} placeholder="Örn. Çantanı hazırla" placeholderTextColor={colors.muted} style={styles.input} />
+            {isCustom && !editing && (
+              <>
+                <Label>{`Kategori · ${skillLabels[categorySkill[category]]} becerisini geliştirir`}</Label>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {categories.map((c) => {
+                    const on = c.id === category;
+                    return (
+                      <Pressable key={c.id} onPress={() => setCategory(c.id)} accessibilityState={{ selected: on }}
+                        style={{ height: 38, paddingHorizontal: 14, borderRadius: 19, justifyContent: 'center', borderWidth: 1,
+                          borderColor: on ? colors.navy : colors.line, backgroundColor: on ? colors.navy : '#fff' }}>
+                        <Text style={{ fontSize: 13, fontWeight: '600', color: on ? '#fff' : colors.navy }}>{c.label}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            )}
           </>
         ) : (
           <>
-            <Label>Seçilen görevler</Label>
+            <Label>Seçilen maceralar</Label>
             {picked.map((t: any) => (
-              <Text key={t.id} style={{ fontSize: 15, color: colors.navy, marginBottom: 4 }}>{t.emoji}  {t.title}</Text>
+              <Text key={t.id} style={{ fontSize: 15, color: colors.navy, marginBottom: 4 }}>{t.title}</Text>
             ))}
           </>
         )}
@@ -182,8 +220,11 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
                     <View style={styles.coinBox}>
                       <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.gold }} />
                       <TextInput
-                        value={r.coins} keyboardType="number-pad"
-                        onChangeText={(v) => setRow(c.id, { coins: v.replace(/[^0-9]/g, '') })}
+                        value={r.coins} keyboardType="number-pad" maxLength={2}
+                        onChangeText={(v) => {
+                          const digits = v.replace(/[^0-9]/g, '');
+                          setRow(c.id, { coins: digits && Number(digits) > MAX_TASK_COINS ? String(MAX_TASK_COINS) : digits });
+                        }}
                         style={{ width: 36, fontSize: 14, fontWeight: '700', color: colors.navy, padding: 0 }}
                       />
                     </View>
@@ -193,6 +234,44 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
             );
           })}
         </View>
+
+        {pt.ready && pt.members.length > 0 && (
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={{ flex: 1 }}><Label>Ebeveynler (isteğe bağlı)</Label></View>
+              <Info title="Ebeveynler" text="Ailece ya da senin yapacağın maceralarda kendini ya da eşini de seç. Ebeveyn 'Yaptım' deyince zorluğa göre Güneş Taşı kazanır (Kolay 1, Orta 2, Zor 3). Güneş Taşlarınla Aile › Ben › Hediye dükkânından çocuğuna oyunda hediye gönderirsin." />
+            </View>
+            <View style={{ backgroundColor: '#fff', borderRadius: radius.md }}>
+              {pt.members.map((m, i) => {
+                const r = prows[m.id] ?? { on: false, difficulty: initialDifficulty };
+                return (
+                  <View key={m.id} style={[{ padding: 14, gap: 10 }, i > 0 && { borderTopWidth: 1, borderTopColor: colors.line }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <Avatar id={m.avatar} size={36} />
+                      <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: colors.navy }}>{m.id === pt.me ? `${memberName(m)} (ben)` : memberName(m)}</Text>
+                      <Toggle value={r.on} onChange={(v) => setProw(m.id, { on: v })} />
+                    </View>
+                    {r.on && (
+                      <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                        <View style={{ flex: 1 }}>
+                          <Segmented
+                            options={(['easy', 'medium', 'hard'] as Difficulty[]).map((d) => ({ id: d, label: difficultyMeta[d].label }))}
+                            value={r.difficulty}
+                            onChange={(d) => setProw(m.id, { difficulty: d })}
+                          />
+                        </View>
+                        <View style={styles.coinBox}>
+                          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.gold, borderWidth: 2, borderColor: '#F6D77A' }} />
+                          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.navy }}>{({ easy: 1, medium: 2, hard: 3 } as const)[r.difficulty]} Güneş Taşı</Text>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </>
+        )}
 
         <Label>Başlangıç tarihi</Label>
         <DateField mode="date" value={startDate} onChange={(v) => v && setStartDate(v)} placeholder="Tarih seç" />
@@ -229,7 +308,7 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
                   ))}
                 </View>
                 {repeatDays.some((x) => x > 28) && (
-                  <Text style={styles.sub}>29, 30 ve 31 olmayan aylarda görev ayın son gününe atanır.</Text>
+                  <Text style={styles.sub}>29, 30 ve 31 olmayan aylarda macera ayın son gününe atanır.</Text>
                 )}
               </>
             )}
@@ -244,11 +323,24 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
           </View>
         )}
 
-        <Label>Hatırlatma saati (isteğe bağlı)</Label>
-        <Text style={[styles.sub, { marginTop: -2, marginBottom: 8 }]}>
-          Bir saat seçersen görev günü o saatte çocuğuna hatırlatma gider. Boş bırakırsan hatırlatma gönderilmez.
-        </Text>
-        <DateField mode="time" value={reminder} onChange={setReminder} placeholder="Saat seç (ör. 19:00)" clearable />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 20, marginBottom: 8 }}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.muted }}>Hatırlatma saati (isteğe bağlı)</Text>
+          <Info title="Hatırlatma saati" text="Bir saat seçersen macera günü o saatte çocuğuna hatırlatma gider. Boş bırakırsan hatırlatma gönderilmez." />
+        </View>
+        <DateField mode="time" value={reminder} onChange={pickReminder} placeholder="Saat seç (ör. 19:00)" clearable />
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 20, marginBottom: 8 }}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.muted }}>Günün bölümü</Text>
+          <Info title="Günün bölümü" text={'Maceralar ekranındaki Sabah / Öğlen / Akşam süzgeci için. Belli bir saati yoksa "Herhangi" kalsın.'} />
+        </View>
+        <Segmented<TaskDayPart | 'any'>
+          options={[
+            { id: 'morning', label: dayPartLabel.morning }, { id: 'noon', label: dayPartLabel.noon },
+            { id: 'evening', label: dayPartLabel.evening }, { id: 'any', label: 'Herhangi' },
+          ]}
+          value={dayPart}
+          onChange={setDayPart}
+        />
 
         <View style={[styles.switchRow, { marginTop: 20 }]}>
           <View style={{ flex: 1 }}>
@@ -270,14 +362,14 @@ export default function TaskDetailsScreen({ navigation, route }: any) {
 
         {editing && (
           <Pressable onPress={confirmDelete} style={{ marginTop: 32, alignItems: 'center', padding: 12 }}>
-            <Text style={{ color: colors.danger, fontWeight: '600' }}>Görevi sil</Text>
+            <Text style={{ color: colors.danger, fontWeight: '600' }}>Macerayı sil</Text>
           </Pressable>
         )}
       </ScrollView>
 
       <View style={styles.bottom}>
         <Pressable style={styles.cta} onPress={submit}>
-          <Text style={styles.ctaText}>{editing ? 'Kaydet' : 'Görevi ata'}</Text>
+          <Text style={styles.ctaText}>{editing ? 'Kaydet' : 'Macerayı ekle'}</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -315,10 +407,11 @@ const styles = StyleSheet.create({
   repeatHint: { fontSize: 12, color: colors.muted },
   summary: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.today, borderRadius: radius.sm, padding: 10 },
   safe: { flex: 1, backgroundColor: colors.bg },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 4 },
+  // Alttan açılan pencerede (modal) üst güvenli alan yok: başlık kenara yapışmasın
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 18, paddingBottom: 6 },
   topTitle: { fontSize: 16, fontWeight: '700', color: colors.navy },
   banner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.medium.bg, marginHorizontal: 20, marginTop: 12, padding: 12, borderRadius: radius.sm },
-  input: { backgroundColor: '#fff', borderRadius: radius.md, padding: 14, fontSize: 15, color: colors.navy },
+  input: { letterSpacing: 0, backgroundColor: '#fff', borderRadius: radius.md, padding: 14, fontSize: 15, color: colors.navy },
   coinBox: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#ECEEF3', borderRadius: radius.sm, paddingHorizontal: 12, height: 40 },
   sub: { fontSize: 12, color: colors.muted, marginTop: 6, marginBottom: 6 },
   switchRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: radius.md, padding: 14 },

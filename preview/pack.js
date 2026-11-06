@@ -8,8 +8,8 @@ const index = fs.readFileSync(path.join(dist, 'index.html'), 'utf8');
 const src = index.match(/<script src="([^"]+)"/)[1];
 let bundle = fs.readFileSync(path.join(dist, src), 'utf8');
 
-const mime = { '.png': 'image/png', '.ttf': 'font/ttf' };
-bundle = bundle.replace(/"(\/assets\/[^"]+\.(png|ttf))"/g, (all, p) => {
+const mime = { '.png': 'image/png', '.jpg': 'image/jpeg', '.ttf': 'font/ttf' };
+bundle = bundle.replace(/"(\/assets\/[^"]+\.(png|jpg|ttf))"/g, (all, p) => {
   if (p.endsWith('.ttf') && !p.includes('/Ionicons.')) return all; // kullanılmayan simge setleri
   const file = path.join(dist, p);
   if (!fs.existsSync(file)) return all;

@@ -1,23 +1,77 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet, useWindowDimensions, ScrollView, Alert } from 'react-native';
+import { View, Text, FlatList, Pressable, StyleSheet, useWindowDimensions, ScrollView, Alert, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import ReanimatedSwipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { colors, radius } from '../theme';
 import { Avatar, DifficultyBadge } from '../components/ui';
 import { useStore, taskOccursOn, completionKey, Task, CompletionStatus } from '../store';
-import { DAY_SHORT, addDays, fromISO, monthYear, startOfWeek, toISO, todayISO } from '../dates';
+import { DAY_SHORT, addDays, formatTR, fromISO, monthYear, startOfWeek, toISO, todayISO } from '../dates';
+import { SuggestionCounts, countSuggestions, onSuggestionsChange, pendingSuggestions, suggestionsLabel } from '../lib/clinic';
+import NotificationBell from '../components/NotificationBell';
+import { TaskDayPart, dayPartLabel, taskDayPartOf } from '../data/dayParts';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import TrialBanner from '../components/TrialBanner';
+import { useBilling } from '../billing';
+import { familyAge, usePlan } from '../lib/plan';
+import { useParentTasks, doneKey, ParentAssign, Member } from '../parentTasks';
+import { difficultyMeta } from '../theme';
+import { COLUMN } from '../components/Column';
+
+const HINT_KEY = 'hint-plus-longpress-v2';
+const NEW_REWARD_KEY = 'hint-reward-new';
+
+type PartFilter = 'all' | TaskDayPart | 'any';
+const partOf = (t: Task) => t.dayPart ?? (t.reminder ? taskDayPartOf(t.reminder) : undefined);
 
 const WEEK_RANGE = 52; // bugünden ±52 hafta
 
-type DayItem = { task: Task; assigns: Task['assignments'] };
+type DayItem = { task: Task; assigns: Task['assignments']; parents: ParentAssign[] }; // parents: ebeveyn atamaları (akislar.md 18)
 
-export default function TasksScreen({ navigation }: any) {
-  const { width } = useWindowDimensions();
-  const { tasks, children, completions, reorderTasks, deleteTask } = useStore();
+export default function TasksScreen({ navigation, route }: any) {
+  // Hafta şeridi sayfa genişliği = ekran sütunu (iPad'de en çok COLUMN; Column.tsx). Döndürünce ölçülür, seçili hafta korunur.
+  const win = useWindowDimensions().width;
+  const [width, setWidth] = useState(Math.min(win, COLUMN));
+  const { tasks, children, completions, reorderTasks, deleteTask, familyId, parent } = useStore();
+  const pt = useParentTasks();
+  // Ebeveyn kendini her zaman görür (görevi olmasa da): kendine görev atayabileceğini fark etsin (kullanıcı geri bildirimi 27 Ekim 2026)
+  const showMe = pt.ready && !!pt.me;
+  const plan = usePlan(familyAge(children)); // tanışma yanıtlarına göre rutin sırası, çocukların yaşına uyan sürüm (lib/plan.ts)
+  // Uzmandan bekleyen öneri varsa üstte kısa bant. Sayım ve metin Bugün ekranıyla aynı (lib/clinic countSuggestions; kullanıcı isteği
+  // 3 Kasım 2026: önceden değişiklik önerileri de "görev önerisi" sayılıyordu). Ekran açıkken de canlı güncellenir.
+  const [suggested, setSuggested] = useState<SuggestionCounts>({ tasks: 0, changes: 0 });
+  const loadSuggested = React.useCallback(() => {
+    if (!familyId) return;
+    pendingSuggestions(familyId).then((l) => setSuggested(countSuggestions(l))).catch(() => setSuggested({ tasks: 0, changes: 0 }));
+  }, [familyId]);
+  useFocusEffect(loadSuggested);
+  React.useEffect(() => (familyId ? onSuggestionsChange(familyId, loadSuggested) : undefined), [familyId, loadSuggested]);
+  const suggestedText = suggestionsLabel(suggested);
   const [selected, setSelected] = useState(todayISO());
   const [childFilter, setChildFilter] = useState<string | 'all'>('all');
+  // Ben › Bugünün ilerlemesi / Senin görevlerin: kişi ve gün süzgeciyle açılır ('me' = ebeveynin kendisi)
+  React.useEffect(() => {
+    const p = route?.params as { filter?: string; date?: string } | undefined;
+    if (!p?.filter && !p?.date) return;
+    if (p.filter) setChildFilter(p.filter);
+    if (p.date) setSelected(p.date);
+    navigation.setParams({ filter: undefined, date: undefined });
+  }, [route?.params?.filter, route?.params?.date]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [part, setPart] = useState<PartFilter>('all');
+  // + düğmesi: kısa bas → görev oluştur; basılı tut → "Ödül" ve "Davranış kaydı" düğmeleri (ilk seferde ipucu)
+  const [dial, setDial] = useState<'menu' | null>(null);
+  const [hint, setHint] = useState(false);
+  const [newReward, setNewReward] = useState(false);
+  React.useEffect(() => {
+    AsyncStorage.getItem(HINT_KEY).then((v) => setHint(!v)).catch(() => {});
+    AsyncStorage.getItem(NEW_REWARD_KEY).then((v) => setNewReward(!v)).catch(() => {});
+  }, []);
+  const seenHint = () => { setHint(false); AsyncStorage.setItem(HINT_KEY, '1').catch(() => {}); };
+  const seenNewReward = () => { setNewReward(false); AsyncStorage.setItem(NEW_REWARD_KEY, '1').catch(() => {}); };
+  const { allow } = useBilling();
+  const go = (screen: string, params?: object) => { setDial(null); navigation.navigate(screen, params); };
   const listRef = useRef<FlatList>(null);
 
   const weeks = useMemo(() => {
@@ -26,24 +80,62 @@ export default function TasksScreen({ navigation }: any) {
   }, []);
 
   const today = todayISO();
+  // Genişlik değişince (iPad döndürme) seçili günün haftasına yeniden hizala
+  const weekIndex = useMemo(() => {
+    const base = startOfWeek(new Date()).getTime();
+    return WEEK_RANGE + Math.round((startOfWeek(fromISO(selected)).getTime() - base) / (7 * 864e5));
+  }, [selected]);
+  const firstLayout = useRef(true);
+  React.useEffect(() => {
+    if (firstLayout.current) { firstLayout.current = false; return; }
+    const i = Math.max(0, Math.min(weeks.length - 1, weekIndex));
+    requestAnimationFrame(() => listRef.current?.scrollToOffset({ offset: i * width, animated: false }));
+  }, [width]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // tasks zaten sıra değerine göre dizili geliyor
   const dayTasks = useMemo<DayItem[]>(() => {
     return tasks
       .filter((t) => taskOccursOn(t, selected))
+      .filter((t) => part === 'all' || (part === 'any' ? !partOf(t) : partOf(t) === part))
       .map((t) => ({
         task: t,
-        assigns: t.assignments.filter((a) => childFilter === 'all' || a.childId === childFilter),
+        assigns: childFilter === 'me' ? [] : t.assignments.filter((a) => childFilter === 'all' || a.childId === childFilter),
+        // "Ben" süzgecinde yalnız bana atananlar; çocuk süzgecinde ebeveyn satırı yok
+        parents: (pt.assigns[t.id] ?? []).filter((x) => childFilter === 'all' || (childFilter === 'me' && x.userId === pt.me)),
       }))
-      .filter((x) => x.assigns.length > 0);
-  }, [tasks, selected, childFilter]);
+      .filter((x) => x.assigns.length > 0 || x.parents.length > 0);
+  }, [tasks, selected, childFilter, part, pt.assigns, pt.me]);
+
+  // Üst süzgeçler (hafta şeridi, günün bölümü, kişi) kaydırınca gizlenir, yukarı kaydırınca geri gelir (kullanıcı isteği 3 Kasım 2026;
+  // "quick return" deseni). Süzgeçler listenin üstünde ayrı katmanda durur, liste aynı yükseklikte boşlukla başlar: gizlenip
+  // açılmak listeyi yeniden ölçtürmez, hareket yerel sürücüde akar. Başlık hep görünür; gizliyken seçili gün başlıkta yazar.
+  const [filtersH, setFiltersH] = useState(0);
+  const [collapsed, setCollapsed] = useState(false);
+  const shift = useRef(new Animated.Value(0)).current; // 0 açık, 1 gizli
+  const lastY = useRef(0);
+  const collapsedRef = useRef(false);
+  const setFilters = React.useCallback((hide: boolean) => {
+    if (collapsedRef.current === hide) return;
+    collapsedRef.current = hide;
+    setCollapsed(hide);
+    Animated.timing(shift, { toValue: hide ? 1 : 0, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [shift]);
+  const onScrollY = React.useCallback((y: number) => {
+    const dy = y - lastY.current;
+    lastY.current = y;
+    if (y < filtersH * 0.6) return setFilters(false); // başa yakın: hep açık (kısa listede titreme olmaz)
+    if (dy > 6) setFilters(true);
+    else if (dy < -6) setFilters(false);
+  }, [filtersH, setFilters]);
+  // Gün ya da süzgeç değişince süzgeçler görünür
+  React.useEffect(() => { setFilters(false); }, [selected, childFilter, part, setFilters]);
 
   const edit = (t: Task) => navigation.navigate('TaskDetails', { taskId: t.id });
 
   const confirmDelete = (t: Task, close: () => void) => {
     Alert.alert(
-      'Görev silinsin mi?',
-      t.recurring ? 'Bu tekrarlayan görev tüm günlerden silinir.' : 'Bu işlem geri alınamaz.',
+      'Macera silinsin mi?',
+      t.recurring ? 'Bu tekrarlayan macera tüm günlerden silinir.' : 'Bu işlem geri alınamaz.',
       [
         { text: 'Vazgeç', style: 'cancel', onPress: close },
         { text: 'Sil', style: 'destructive', onPress: () => deleteTask(t.id) },
@@ -59,6 +151,10 @@ export default function TasksScreen({ navigation }: any) {
         date={selected}
         kids={children}
         completions={completions}
+        members={pt.members}
+        me={pt.me}
+        done={pt.done}
+        onDone={(on) => pt.markDone(item.task.id, selected, on)}
         active={isActive}
         onDrag={drag}
         onEdit={() => edit(item.task)}
@@ -68,12 +164,30 @@ export default function TasksScreen({ navigation }: any) {
   );
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Görevler</Text>
-        <Text style={styles.month}>{monthYear(fromISO(selected))}</Text>
+    <SafeAreaView style={styles.safe} edges={['top']} onLayout={(e) => { const w = Math.round(e.nativeEvent.layout.width); if (w && w !== width) setWidth(w); }}>
+      <View style={[styles.header, { flexDirection: 'row', alignItems: 'center' }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>Maceralar</Text>
+          <Text style={styles.month}>{collapsed ? formatTR(selected) : monthYear(fromISO(selected))}</Text>
+        </View>
+        <NotificationBell />
       </View>
+      <TrialBanner />
+      {!!suggestedText && (
+        <Pressable onPress={() => navigation.navigate('Uzmanım')} style={styles.suggest} accessibilityLabel="Uzman önerilerini gör">
+          <Ionicons name="briefcase-outline" size={16} color={colors.navy} />
+          <Text style={{ flex: 1, fontSize: 13, color: colors.navy, fontWeight: '600' }}>Uzmanından {suggestedText}</Text>
+          <Ionicons name="chevron-forward" size={14} color={colors.muted} />
+        </Pressable>
+      )}
 
+      <View style={{ flex: 1, overflow: 'hidden' }}>
+      <Animated.View
+        onLayout={(e) => { const h = Math.round(e.nativeEvent.layout.height); if (h !== filtersH) setFiltersH(h); }}
+        pointerEvents={collapsed ? 'none' : 'auto'}
+        style={[styles.filters, {
+          transform: [{ translateY: shift.interpolate({ inputRange: [0, 1], outputRange: [0, -Math.max(filtersH, 1)] }) }],
+        }]}>
       <FlatList
         ref={listRef}
         data={weeks}
@@ -112,14 +226,31 @@ export default function TasksScreen({ navigation }: any) {
         )}
       />
 
-      <View style={{ height: 50, justifyContent: 'center', marginTop: 8 }}>
+      {/* Günün bölümüne göre hızlı süzgeç */}
+      <View style={styles.parts}>
+        {(['all', 'morning', 'noon', 'evening', 'any'] as PartFilter[]).map((p) => {
+          const on = part === p;
+          const label = p === 'all' ? 'Tümü' : p === 'any' ? 'Herhangi' : dayPartLabel[p];
+          return (
+            <Pressable key={p} onPress={() => setPart(p)} style={[styles.part, on && styles.partOn]}
+              accessibilityRole="button" accessibilityState={{ selected: on }}>
+              <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '600', color: on ? colors.navy : colors.muted }}>{label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <View style={{ height: 50, justifyContent: 'center', marginTop: 4 }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8, alignItems: 'center' }}>
           <Chip label="Tümü" active={childFilter === 'all'} onPress={() => setChildFilter('all')} />
+          {/* Aile üyesi (ben) önce, çocuklar ardından (geri bildirim 28 Ekim) */}
+          {showMe && <Chip label="Ben" avatar={parent.avatar} active={childFilter === 'me'} onPress={() => setChildFilter('me')} />}
           {children.map((c) => (
             <Chip key={c.id} label={c.name} avatar={c.avatar} active={childFilter === c.id} onPress={() => setChildFilter(c.id)} />
           ))}
         </ScrollView>
       </View>
+      </Animated.View>
 
       <DraggableFlatList
         data={dayTasks}
@@ -128,7 +259,9 @@ export default function TasksScreen({ navigation }: any) {
         onDragEnd={({ data }) => reorderTasks(data.map((x) => x.task.id))}
         activationDistance={12}
         containerStyle={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 120 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: filtersH + 4, paddingBottom: 120 }}
+        onScrollOffsetChange={onScrollY}
+        scrollEventThrottle={16}
         ListHeaderComponent={
           dayTasks.length > 0 ? (
             <View style={styles.hint}>
@@ -137,21 +270,75 @@ export default function TasksScreen({ navigation }: any) {
               <Ionicons name="arrow-back" size={13} color={colors.muted} style={{ marginLeft: 8 }} />
               <Text style={styles.hintText}>Silmek için sola kaydır</Text>
             </View>
-          ) : null
+          ) : undefined
         }
         ListEmptyComponent={
-          <Text style={{ color: colors.muted, textAlign: 'center', marginTop: 48 }}>
-            Bu gün için görev yok.{'\n'}Sağ alttaki + ile görev ata.
-          </Text>
+          childFilter === 'me' ? (
+            <View style={{ alignItems: 'center', gap: 6, marginTop: 40, paddingHorizontal: 12 }}>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>Bu gün sana atanmış macera yok</Text>
+              <Text style={{ fontSize: 13, color: colors.muted, textAlign: 'center' }}>
+                Bir macerayı açıp Ebeveynler bölümünden kendine de atayabilirsin. "Yaptım" dedikçe Güneş Taşı kazanır, çocuğuna oyunda hediye gönderirsin.
+              </Text>
+            </View>
+          ) : tasks.length === 0 ? (
+            // Ailenin hiç görevi yok: hazır rutinle başlamak tek dokunuş (kullanıcı isteği 27 Ekim 2026)
+            <View style={styles.starter}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.navy }}>Bir rutinle başla</Text>
+              <Text style={{ fontSize: 13, color: colors.muted }}>Birkaç macerayı tek seferde ekle, sonra dilediğin gibi düzenle.</Text>
+              {plan.routines.slice(0, 3).map((r) => (
+                <Pressable key={r.id} onPress={() => { if (allow('task')) navigation.navigate('Routine', { id: r.id }); }}
+                  style={[styles.starterRow, { backgroundColor: r.tint }]} accessibilityRole="button">
+                  <Ionicons name={r.icon} size={20} color={colors.navy} />
+                  <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: colors.navy }}>{r.title}</Text>
+                  {plan.recommended === r.id && <Text style={styles.forYou}>Sana önerilen</Text>}
+                  <Ionicons name="chevron-forward" size={16} color={colors.navy} />
+                </Pressable>
+              ))}
+              <Text style={{ fontSize: 12, color: colors.muted, textAlign: 'center' }}>Ya da sağ alttaki + ile tek macera ekle.</Text>
+            </View>
+          ) : (
+            <Text style={{ color: colors.muted, textAlign: 'center', marginTop: 48 }}>
+              Bu gün için macera yok.{'\n'}Sağ alttaki + ile macera ekle.
+            </Text>
+          )
         }
       />
+      </View>
 
+      {dial && <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(245,246,248,0.7)' }]} onPress={() => setDial(null)} accessibilityLabel="Kapat" />}
+      {dial === 'menu' && (
+        <View style={styles.dial}>
+          {newReward && (
+            <Pressable onPress={seenNewReward} style={styles.newTip} accessibilityLabel="İpucunu kapat">
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Yeni: Ödüller</Text>
+              <Text style={{ fontSize: 12, color: '#D6DBEA' }}>Maceralardan Güneş Taşı kazanılır; ödülü sen belirlersin.</Text>
+            </Pressable>
+          )}
+          <Pressable style={styles.dialItem} accessibilityLabel="Ödüller ve Güneş Taşı"
+            onPress={() => { seenNewReward(); go('Rewards', childFilter !== 'all' ? { childId: childFilter } : undefined); }}>
+            <Text style={styles.dialLabel}>Ödül</Text>
+            <View style={styles.dialIcon}><Ionicons name="gift-outline" size={20} color={colors.navy} /></View>
+          </Pressable>
+          <Pressable style={styles.dialItem} accessibilityLabel="Davranış kaydı ekle"
+            onPress={() => go('Abc', { new: true })}>
+            <Text style={styles.dialLabel}>Davranış kaydı</Text>
+            <View style={styles.dialIcon}><Ionicons name="document-text-outline" size={20} color={colors.navy} /></View>
+          </Pressable>
+        </View>
+      )}
+      {hint && !dial && (
+        <Pressable style={styles.hintBubble} onPress={seenHint} accessibilityLabel="İpucunu kapat">
+          <Text style={{ fontSize: 12, color: '#fff' }}>Ödül ve davranış kaydı için + düğmesini basılı tut</Text>
+        </Pressable>
+      )}
       <Pressable
         style={styles.fab}
-        accessibilityLabel="Görev oluştur"
-        onPress={() => navigation.navigate('CreateTask', { date: selected })}
+        accessibilityLabel="Macera ekle. Ödül ve davranış kaydı için basılı tut."
+        onPress={() => { if (dial) setDial(null); else if (allow('task')) navigation.navigate('CreateTask', { date: selected }); }}
+        onLongPress={() => { setDial('menu'); seenHint(); }}
+        delayLongPress={350}
       >
-        <Ionicons name="add" size={32} color="#fff" />
+        <Ionicons name={dial ? 'close' : 'add'} size={32} color="#fff" />
       </Pressable>
     </SafeAreaView>
   );
@@ -162,22 +349,30 @@ const statusMeta: Record<CompletionStatus, { label: string; bg: string; fg: stri
   approved: { label: 'Tamamlandı', bg: colors.easy.bg, fg: colors.easy.fg, icon: 'checkmark-circle' },
   declined: { label: 'Yapamadı', bg: '#ECEEF3', fg: colors.muted, icon: 'remove-circle-outline' },
   rejected: { label: 'Reddedildi', bg: colors.hard.bg, fg: colors.hard.fg, icon: 'close-circle-outline' },
+  retry: { label: 'Tekrar denesin', bg: colors.medium.bg, fg: colors.medium.fg, icon: 'refresh' },
 };
 
-function TaskRow({ item, date, kids, completions, active, onDrag, onEdit, onDelete }: {
+function TaskRow({ item, date, kids, completions, members, me, done, onDone, active, onDrag, onEdit, onDelete }: {
   item: DayItem; date: string; kids: ReturnType<typeof useStore>['children'];
-  completions: ReturnType<typeof useStore>['completions']; active: boolean;
+  completions: ReturnType<typeof useStore>['completions']; members: Member[]; me: string | null;
+  done: Record<string, true>; onDone: (on: boolean) => void; active: boolean;
   onDrag: () => void; onEdit: () => void; onDelete: (close: () => void) => void;
 }) {
   const swipe = useRef<SwipeableMethods>(null);
   const t = item.task;
   const first = item.assigns[0];
+  const myPart = item.parents.find((x) => x.userId === me);
+  const myDone = !!me && !!done[doneKey(t.id, me, date)];
+  // Ebeveyn kendi görevini bir hafta geriye kadar işaretler (sunucu kuralı)
+  const markable = date <= addDaysISO(todayISO(), 1) && date >= addDaysISO(todayISO(), -7);
   // Çocuk tarafındaki durum (çocuk uygulaması işaretler; ebeveyn İnceleme'den onaylar)
   const statuses = item.assigns
     .map((a) => completions[completionKey(t.id, a.childId, date)])
     .filter(Boolean) as CompletionStatus[];
-  const status: CompletionStatus | undefined =
-    statuses.includes('pending') ? 'pending'
+  // Yalnız ebeveyne atanan görevde çocuk durumu yok (boş liste "hepsi onaylı" sayılmasın)
+  const status: CompletionStatus | undefined = item.assigns.length === 0 ? undefined
+    : statuses.includes('pending') ? 'pending'
+      : statuses.includes('retry') ? 'retry'
       : statuses.length === item.assigns.length && statuses.every((x) => x === 'approved') ? 'approved'
       : statuses.includes('rejected') ? 'rejected'
       : statuses.includes('declined') ? 'declined' : undefined;
@@ -193,7 +388,7 @@ function TaskRow({ item, date, kids, completions, active, onDrag, onEdit, onDele
         renderRightActions={() => (
           <Pressable
             onPress={() => onDelete(() => swipe.current?.close())}
-            accessibilityLabel="Görevi sil"
+            accessibilityLabel="Macerayı sil"
             style={styles.deleteAction}
           >
             <Ionicons name="trash-outline" size={22} color="#fff" />
@@ -201,8 +396,8 @@ function TaskRow({ item, date, kids, completions, active, onDrag, onEdit, onDele
           </Pressable>
         )}
       >
+        {/* Satıra dokunmak düzenleme açmaz (kaydırırken yanlışlıkla açılıyordu); yalnız düzenle tuşu açar */}
         <Pressable
-          onPress={onEdit}
           onLongPress={onDrag}
           delayLongPress={250}
           disabled={active}
@@ -213,12 +408,11 @@ function TaskRow({ item, date, kids, completions, active, onDrag, onEdit, onDele
           </Pressable>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={{ fontSize: 16 }}>{t.emoji}</Text>
               <Text numberOfLines={1} style={styles.rowTitle}>{t.title}</Text>
             </View>
             {!!t.description && <Text numberOfLines={1} style={styles.rowDesc}>{t.description}</Text>}
             <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
-              <DifficultyBadge d={first.difficulty} coins={first.coins} />
+              {first ? <DifficultyBadge d={first.difficulty} coins={first.coins} /> : item.parents[0] && <StoneBadge d={item.parents[0].difficulty} />}
               {t.recurring && <Ionicons name="repeat" size={13} color={colors.muted} />}
               {t.reminder && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
@@ -235,16 +429,26 @@ function TaskRow({ item, date, kids, completions, active, onDrag, onEdit, onDele
             </View>
           </View>
           <View style={{ flexDirection: 'row' }}>
-            {item.assigns.slice(0, 3).map((a, i) => {
-              const c = kids.find((k) => k.id === a.childId);
-              return c ? (
-                <View key={a.childId} style={{ marginLeft: i === 0 ? 0 : -10 }}>
-                  <Avatar id={c.avatar} size={28} />
-                </View>
-              ) : null;
-            })}
+            {[
+              // Ebeveynler önce, çocuklar ardından (Görevler'deki süzgeç sırasıyla aynı)
+              ...item.parents.map((x) => ({ key: x.userId, avatar: members.find((m) => m.id === x.userId)?.avatar, ok: !!done[doneKey(t.id, x.userId, date)] })),
+              ...item.assigns.map((a) => ({ key: a.childId, avatar: kids.find((k) => k.id === a.childId)?.avatar, ok: false })),
+            ].filter((x) => x.avatar).slice(0, 4).map((x, i) => (
+              <View key={x.key} style={{ marginLeft: i === 0 ? 0 : -10 }}>
+                <Avatar id={x.avatar!} size={28} />
+                {x.ok && <View style={styles.doneDot}><Ionicons name="checkmark" size={9} color="#fff" /></View>}
+              </View>
+            ))}
           </View>
-          <Pressable onPress={onEdit} hitSlop={8} accessibilityLabel="Görevi düzenle" style={styles.editBtn}>
+          {myPart && (
+            <Pressable onPress={() => markable && onDone(!myDone)} disabled={!markable} hitSlop={8}
+              accessibilityRole="checkbox" accessibilityState={{ checked: myDone, disabled: !markable }}
+              accessibilityLabel={myDone ? 'Yaptım işaretini kaldır' : 'Yaptım'}
+              style={[styles.myDone, myDone && styles.myDoneOn, !markable && { opacity: 0.35 }]}>
+              <Ionicons name="checkmark" size={18} color={myDone ? '#fff' : colors.faint} />
+            </Pressable>
+          )}
+          <Pressable onPress={onEdit} hitSlop={8} accessibilityLabel="Macerayı düzenle" style={styles.editBtn}>
             <Ionicons name="create-outline" size={18} color={colors.navy} />
           </Pressable>
         </Pressable>
@@ -252,6 +456,21 @@ function TaskRow({ item, date, kids, completions, active, onDrag, onEdit, onDele
     </View>
   );
 }
+
+// Ebeveyn görevinde ödül: zorluğa göre Güneş Taşı (kolay 1 / orta 2 / zor 3)
+const STONE_BY: Record<string, number> = { easy: 1, medium: 2, hard: 3 };
+function StoneBadge({ d }: { d: ParentAssign['difficulty'] }) {
+  const c = d === 'easy' ? colors.easy : d === 'medium' ? colors.medium : colors.hard;
+  return (
+    <View style={[styles.status, { backgroundColor: c.bg }]}>
+      <Text style={{ fontSize: 11, fontWeight: '600', color: c.fg }} accessibilityLabel={`${difficultyMeta[d].label}, ${STONE_BY[d]} Güneş Taşı`}>
+        {difficultyMeta[d].label} · {STONE_BY[d]} <Ionicons name="sunny" size={11} color={colors.gold} />
+      </Text>
+    </View>
+  );
+}
+
+const addDaysISO = (iso: string, n: number) => toISO(addDays(fromISO(iso), n));
 
 function Chip({ label, active, onPress, avatar }: { label: string; active: boolean; onPress: () => void; avatar?: string }) {
   return (
@@ -263,8 +482,18 @@ function Chip({ label, active, onPress, avatar }: { label: string; active: boole
 }
 
 const styles = StyleSheet.create({
+  starter: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 16, gap: 10, marginTop: 12 },
+forYou: { fontSize: 11, fontWeight: '700', color: colors.navy, backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, overflow: 'hidden' },
+    starterRow: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: radius.md, paddingHorizontal: 14, height: 48 },
+  suggest: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 20, marginBottom: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.md, backgroundColor: '#FFF6DE' },
   safe: { flex: 1, backgroundColor: colors.bg },
   header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 10 },
+  filters: { position: 'absolute', left: 0, right: 0, top: 0, zIndex: 2, backgroundColor: colors.bg, paddingBottom: 4 },
+  parts: { flexDirection: 'row', marginHorizontal: 20, marginTop: 10, padding: 3, borderRadius: radius.pill, backgroundColor: '#E9EBF0' },
+  part: { flex: 1, height: 30, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  partOn: { backgroundColor: '#fff' },
+  badge: { position: 'absolute', top: -6, right: -8, minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 3, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
+  badgeText: { fontSize: 10, fontWeight: '800', color: colors.navy },
   title: { fontSize: 17, fontWeight: '700', color: colors.navy },
   month: { fontSize: 13, color: colors.muted, marginTop: 2 },
   dayCell: { flex: 1, alignItems: 'center', gap: 6 },
@@ -274,6 +503,9 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: radius.md, paddingVertical: 14, paddingLeft: 8, paddingRight: 10 },
   rowActive: { shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
   handle: { width: 28, alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch' },
+  doneDot: { position: 'absolute', right: -2, bottom: -2, width: 14, height: 14, borderRadius: 7, backgroundColor: colors.easy.fg, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#fff' },
+  myDone: { width: 34, height: 34, borderRadius: 17, borderWidth: 1.5, borderColor: colors.faint, alignItems: 'center', justifyContent: 'center' },
+  myDoneOn: { backgroundColor: colors.easy.fg, borderColor: colors.easy.fg },
   editBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#F1F2F6', alignItems: 'center', justifyContent: 'center' },
   deleteAction: { width: 84, marginLeft: 10, borderRadius: radius.md, backgroundColor: colors.danger, alignItems: 'center', justifyContent: 'center' },
   status: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill },
@@ -282,6 +514,15 @@ const styles = StyleSheet.create({
   rowTitle: { fontSize: 15, fontWeight: '600', color: colors.navy, flexShrink: 1 },
   rowDesc: { fontSize: 12, color: colors.muted, marginTop: 3 },
   meta: { fontSize: 11, color: colors.muted },
+  dial: { position: 'absolute', right: 20, bottom: 96, alignItems: 'flex-end', gap: 12 },
+  dialItem: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dialLabel: { fontSize: 14, fontWeight: '700', color: colors.navy, backgroundColor: '#fff', paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.sm, overflow: 'hidden' },
+  dialIcon: {
+    width: 48, height: 48, borderRadius: 24, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginRight: 6,
+    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 5,
+  },
+  newTip: { maxWidth: 250, gap: 2, padding: 12, borderRadius: radius.md, backgroundColor: colors.navy, marginRight: 6 },
+  hintBubble: { position: 'absolute', right: 90, bottom: 36, maxWidth: 220, paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.md, backgroundColor: colors.navy },
   fab: {
     position: 'absolute', right: 20, bottom: 24, width: 60, height: 60, borderRadius: 30,
     backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center',

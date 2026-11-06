@@ -1,14 +1,14 @@
 # ParentApp (ebeveyn uygulaması) — TestFlight
 
 ParentApp yalnızca **ebeveyn** uygulamasıdır (16 Ekim 2026): açılış ekranı ebeveyn girişi. Çocuk, ebeveynin ürettiği giriş kodunu
-**Pofi Adası** oyununa yazar (ayrı uygulama, depo `amy60946/pofi-adasi`). Sunucu (Supabase), kodlar ve görev akışı değişmedi.
+**Pofi Adası** oyununa yazar (ayrı uygulama, depo `amy60946/game-app`). Sunucu (Supabase), kodlar ve görev akışı değişmedi.
 
 | | ParentApp | Pofi Adası |
 |---|---|---|
 | Kim kullanır | Ebeveyn | Çocuk |
 | Bundle ID | `com.parentapp.ios` | `com.gameapp.ios` |
 | Yön | Dikey | Yatay |
-| Derleme | macOS'ta expo prebuild + Xcode (`.github/workflows/ios-testflight.yml`, `tools/ci/ios-testflight.sh`) | Unity + Xcode (`pofi-adasi/.github/workflows/ios.yml`) |
+| Derleme | macOS'ta expo prebuild + Xcode (`.github/workflows/ios-testflight.yml`, `tools/ci/ios-testflight.sh`) | Unity + Xcode (`game-app/.github/workflows/ios.yml`) |
 
 ## Bir kez yapılacaklar
 
@@ -23,6 +23,7 @@ ParentApp yalnızca **ebeveyn** uygulamasıdır (16 Ekim 2026): açılış ekran
 | `PARENTAPP_ASC_APP_ID` | (isteğe bağlı, şu an kullanılmıyor) 2. adımdaki Apple ID |
 | `SUPABASE_PUBLISHABLE_KEY` | Oyun deposundakiyle aynı publishable anahtar (`sb_publishable_…`; asla `sb_secret_`) |
 | `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`, `APPLE_TEAM_ID` | Oyun deposuna eklenenlerin **aynısı** (secret'lar depo başınadır, iki depoya da eklenir) |
+| `EXPO_PUBLIC_REVENUECAT_IOS_KEY` | (isteğe bağlı) RevenueCat → Project settings → API keys → App Store uygulamasının **herkese açık** anahtarı (`appl_…`). Yoksa ödeme "henüz açık değil" kalır. Gizli anahtar (`sk_…`) buraya değil, yalnız Supabase Secrets'a (`REVENUECAT_API_KEY`). |
 
 5. Supabase → Authentication → **URL Configuration**: Site URL `parentapp://`, Redirect URLs'e `parentapp://**` ekle (eski adla girilmiş olanı sil). Şifre yenileme e-postasındaki bağlantı uygulamayı bu adla açar.
 6. Actions → **iOS (TestFlight)** → **Run workflow**. GitHub'ın Mac makinesi derler, Apple sertifika/profili otomatik oluşturur (API anahtarı Admin olmalı) ve TestFlight'a yükler (~20–30 dk).

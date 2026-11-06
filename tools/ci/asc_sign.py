@@ -4,6 +4,8 @@
 # Kullanım:
 #   python3 asc_sign.py create <p8> <bundle_id> <çıkış_klasörü>   → key.pem, cert.der, profile.mobileprovision, info.json
 #   python3 asc_sign.py cleanup <p8> <info.json>
+#   python3 asc_sign.py push_cap <p8> <bundle_id>   → App ID'de push bildirimi yeteneğini açar (arşivden önce)
+#   python3 asc_sign.py prune_dev <p8>   → CI'ın Xcode'u ile API'den açılmış eski geliştirme sertifikalarını iptal eder (kullanıcı onayı 19 Ekim 2026)
 # Ortam: ASC_KEY_ID, ASC_ISSUER_ID. Gizli bilgiler loga yazılmaz.
 import base64, json, os, sys, time, urllib.error, urllib.request
 import jwt
@@ -61,6 +63,7 @@ def create(p8, bundle, out):
     bids = call(tok, 'GET', '/bundleIds?filter[identifier]=%s&limit=20' % bundle)['data']
     bids = [b for b in bids if b['attributes']['identifier'] == bundle]
     if not bids: raise RuntimeError('Bundle ID kayıtlı değil: ' + bundle)
+    ensure_push(tok, bids[0]['id'])
     name = 'CI %s %d' % (bundle, int(time.time()))
     prof = call(tok, 'POST', '/profiles', {'data': {'type': 'profiles', 'attributes': {'name': name, 'profileType': 'IOS_APP_STORE'},
         'relationships': {'bundleId': {'data': {'type': 'bundleIds', 'id': bids[0]['id']}},
@@ -70,6 +73,26 @@ def create(p8, bundle, out):
     open(os.path.join(out, 'info.json'), 'w').write(json.dumps(info))
     print('Dağıtım sertifikası ve App Store profili hazır:', name)
 
+# App ID'de açık olması gereken yetenekler; yoksa profil uygulamanın izinleriyle (entitlements) uyuşmaz ve dışa aktarma düşer.
+#   PUSH_NOTIFICATIONS: expo-notifications → aps-environment
+#   ASSOCIATED_DOMAINS: app.json ios.associatedDomains (applinks:moyoapp.com.tr; 6 Kasım 2026, uzman davet bağlantısı /d/*)
+CAPS = ['PUSH_NOTIFICATIONS', 'ASSOCIATED_DOMAINS']
+
+def ensure_push(tok, bid):
+    have = {c['attributes'].get('capabilityType') for c in call(tok, 'GET', '/bundleIds/%s/bundleIdCapabilities' % bid)['data']}
+    for cap in CAPS:
+        if cap in have: continue
+        call(tok, 'POST', '/bundleIdCapabilities', {'data': {'type': 'bundleIdCapabilities',
+            'attributes': {'capabilityType': cap},
+            'relationships': {'bundleId': {'data': {'type': 'bundleIds', 'id': bid}}}}})
+        print('App ID için yetenek açıldı:', cap)
+
+def push_cap(p8, bundle):
+    tok = token(p8)
+    bids = [b for b in call(tok, 'GET', '/bundleIds?filter[identifier]=%s&limit=20' % bundle)['data'] if b['attributes']['identifier'] == bundle]
+    if not bids: raise RuntimeError('Bundle ID kayıtlı değil: ' + bundle)
+    ensure_push(tok, bids[0]['id'])
+
 def cleanup(p8, info_path):
     if not os.path.exists(info_path): return
     info = json.load(open(info_path)); tok = token(p8)
@@ -77,5 +100,16 @@ def cleanup(p8, info_path):
     if info.get('cert_id'): call(tok, 'DELETE', '/certificates/' + info['cert_id'], ok_missing=True)
     print('Geçici sertifika ve profil kaldırıldı.')
 
+def prune_dev(p8):
+    # Xcode otomatik imzası her CI işinde yeni bir geliştirme sertifikası açar (özel anahtarı iş bitince kaybolur);
+    # birikince "maximum number of certificates" hatası verir. Yalnız API ile açılmış ("Created via API") olanlar iptal edilir.
+    tok = token(p8)
+    certs = call(tok, 'GET', '/certificates?filter[certificateType]=DEVELOPMENT,IOS_DEVELOPMENT&limit=200')['data']
+    olds = [c for c in certs if 'via API' in (c['attributes'].get('displayName') or '') + (c['attributes'].get('name') or '')]
+    for c in olds: call(tok, 'DELETE', '/certificates/' + c['id'], ok_missing=True)
+    print('Geliştirme sertifikası: %d var, CI kalıntısı %d iptal edildi.' % (len(certs), len(olds)))
+    if certs and not olds: print('Adlar:', ', '.join(sorted({c['attributes'].get('displayName') or '?' for c in certs})))
+
 if __name__ == '__main__':
-    {'create': lambda: create(*sys.argv[2:5]), 'cleanup': lambda: cleanup(*sys.argv[2:4])}[sys.argv[1]]()
+    {'create': lambda: create(*sys.argv[2:5]), 'cleanup': lambda: cleanup(*sys.argv[2:4]),
+     'prune_dev': lambda: prune_dev(sys.argv[2]), 'push_cap': lambda: push_cap(sys.argv[2], sys.argv[3])}[sys.argv[1]]()
