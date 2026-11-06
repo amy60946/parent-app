@@ -44,7 +44,7 @@ node -e '
   require("fs").writeFileSync(f, JSON.stringify(j, null, 2));' "$WORK/app.json"
 rm -rf "$WORK/dist"
 (cd "$WORK" && CI=1 npx expo export --platform web --output-dir dist >/dev/null)
-grep -q 'lang=' "$WORK/dist/index.html" || sed -i 's/<html/<html lang="tr"/' "$WORK/dist/index.html"
+sed -i -E 's/<html lang="[^"]*"/<html/; s/<html/<html lang="tr"/' "$WORK/dist/index.html"   # Expo lang="en" yazar
 
 echo "› Site birleştiriliyor ($OUT)"
 rm -rf "$OUT" && mkdir -p "$OUT"

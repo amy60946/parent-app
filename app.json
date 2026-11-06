@@ -165,7 +165,10 @@
             ]
           }
         ]
-      }
+      },
+      "associatedDomains": [
+        "applinks:moyoapp.com.tr"
+      ]
     },
     "android": {
       "package": "com.parentapp.ios",

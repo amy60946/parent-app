@@ -9,6 +9,17 @@ Kullanıcı isteği 4 Kasım 2026: ParentApp ve Pofi Adası için tek tanıtım 
 | `public/img/` | Görseller. Oyun görselleri GameApp penceresinin onayladığı dosyalardan küçültüldü (game-app `claude/affectionate-hawking-ozf41w`: `Resources/Art/pick_stage.jpg` → `kumsal.jpg`, `load_residents.jpg` → `adalilar.jpg`, `film_1_ada.jpg` → `ada.jpg`, `load_beach.jpg` → `iskele.jpg`, `Art/AppIcon.png` → `pofi-simge.png`, `Icons/ui_sunstone.png`, `Icons/ui_coin.png`); Okti avatarları `assets/avatars/`. `tools/preview/keyart.jpg` kullanılmaz (kullanıcı kontrol etmedi). |
 | `build.sh` | `dist-site/` üretir: kök = tanıtım sayfası, `/app/` = ParentApp'in web derlemesi (giriş, kayıt, kurulum, cihaz bağlama). `--demo` deneme veritabanıyla. |
 
+## Cloudflare yayını (6 Kasım 2026; ortak DURUM 6 Kasım, CANLIYA_ALMA 1.2)
+
+Kullanıcı kararı: `moyoapp.com.tr` kök = tanıtım sitesi, `ebeveyn.moyoapp.com.tr` = ParentApp web (taban yol `/`). İki ayrı Worker, yalnız statik dosya; `workers_dev` ve `preview_urls` kapalı (açık kalırsa `*.workers.dev` önizleme kilidi olmadan herkese açılır), route'lar yapılandırmada yok (yönetim paneli penceresi ilk yayından sonra API ile bağlar; kökte `/destek` ve `/yasal/*` panelin Worker'ında).
+
+| Worker | Yapılandırma | Derleme | Yollar | Değişken |
+|---|---|---|---|---|
+| `moyo-site` | `wrangler.site.jsonc` | `bash site/build-cf.sh site` → `dist-site/` | `/`, `/img/*`, `/d/*` (davet sayfası `site/d/index.html`, kaynağı ortak `web/davet/`), `/.well-known/apple-app-site-association` (uzantısız, `application/json`, `/d/*`) | `APPLE_TEAM_ID` |
+| `moyo-ebeveyn` | `wrangler.ebeveyn.jsonc` | `npm ci && bash site/build-cf.sh ebeveyn` → `dist-ebeveyn/` (tek sayfa uygulama) | hepsi | `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_KEY` (yalnız publishable) |
+
+Yayın komutu: `npx wrangler@4 deploy -c wrangler.site.jsonc` / `-c wrangler.ebeveyn.jsonc`. Tanıtım sayfasının kaynağı değişmez (önizleme için `app/index.html#…`); `build-cf.sh` giriş/kayıt düğmelerini `https://ebeveyn.moyoapp.com.tr/#kayit` `#giris`'e, alt bilgiyi `/destek` ve `/yasal/…`'a çevirir. Uygulama: `app.json` `ios.associatedDomains` = `applinks:moyoapp.com.tr` (App ID yeteneği `tools/ci/asc_sign.py` açar). Supabase dönüş adresleri: `https://ebeveyn.moyoapp.com.tr/**` ve `parentapp://**`.
+
 ## Web uygulaması (`/app/`)
 
 - ParentApp'in kendisi (react-native-web), ClinicApp'teki `site/` + `/app/` düzeniyle aynı. Tanıtım sayfasındaki düğmeler `app/index.html#kayit` ve `#giris` ile doğrudan kayıt ya da giriş ekranını açar (`AuthScreens` WelcomeScreen).

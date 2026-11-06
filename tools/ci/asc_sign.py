@@ -73,14 +73,19 @@ def create(p8, bundle, out):
     open(os.path.join(out, 'info.json'), 'w').write(json.dumps(info))
     print('Dağıtım sertifikası ve App Store profili hazır:', name)
 
+# App ID'de açık olması gereken yetenekler; yoksa profil uygulamanın izinleriyle (entitlements) uyuşmaz ve dışa aktarma düşer.
+#   PUSH_NOTIFICATIONS: expo-notifications → aps-environment
+#   ASSOCIATED_DOMAINS: app.json ios.associatedDomains (applinks:moyoapp.com.tr; 6 Kasım 2026, uzman davet bağlantısı /d/*)
+CAPS = ['PUSH_NOTIFICATIONS', 'ASSOCIATED_DOMAINS']
+
 def ensure_push(tok, bid):
-    # Push bildirimi (expo-notifications → aps-environment) için App ID'de yetenek açık olmalı; yoksa profil uyuşmaz
-    caps = call(tok, 'GET', '/bundleIds/%s/bundleIdCapabilities' % bid)['data']
-    if any(c['attributes'].get('capabilityType') == 'PUSH_NOTIFICATIONS' for c in caps): return
-    call(tok, 'POST', '/bundleIdCapabilities', {'data': {'type': 'bundleIdCapabilities',
-        'attributes': {'capabilityType': 'PUSH_NOTIFICATIONS'},
-        'relationships': {'bundleId': {'data': {'type': 'bundleIds', 'id': bid}}}}})
-    print('App ID için push bildirimi yeteneği açıldı.')
+    have = {c['attributes'].get('capabilityType') for c in call(tok, 'GET', '/bundleIds/%s/bundleIdCapabilities' % bid)['data']}
+    for cap in CAPS:
+        if cap in have: continue
+        call(tok, 'POST', '/bundleIdCapabilities', {'data': {'type': 'bundleIdCapabilities',
+            'attributes': {'capabilityType': cap},
+            'relationships': {'bundleId': {'data': {'type': 'bundleIds', 'id': bid}}}}})
+        print('App ID için yetenek açıldı:', cap)
 
 def push_cap(p8, bundle):
     tok = token(p8)
