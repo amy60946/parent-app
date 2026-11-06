@@ -15,7 +15,7 @@ Kullanıcı kararı: `moyoapp.com.tr` kök = tanıtım sitesi, `ebeveyn.moyoapp.
 
 | Worker | Yapılandırma | Derleme | Yollar | Değişken |
 |---|---|---|---|---|
-| `moyo-site` | `wrangler.site.jsonc` | `bash site/build-cf.sh site` → `dist-site/` | `/`, `/img/*`, `/d/*` (davet sayfası `site/d/index.html`, kaynağı ortak `web/davet/`), `/.well-known/apple-app-site-association` (uzantısız, `application/json`, `/d/*`) | `APPLE_TEAM_ID` |
+| `moyo-site` | `wrangler.site.jsonc` | `bash site/build-cf.sh site` → `dist-site/` | `/`, `/img/*`, `/d/*` (davet sayfası `site/d/index.html` → `/davet/`, `_redirects` `/d/* /davet/ 200`; kaynağı ortak `web/davet/`), `/.well-known/apple-app-site-association` (uzantısız, `application/json`, `/d/*`) | `APPLE_TEAM_ID` |
 | `moyo-ebeveyn` | `wrangler.ebeveyn.jsonc` | `npm ci && bash site/build-cf.sh ebeveyn` → `dist-ebeveyn/` (tek sayfa uygulama) | hepsi | `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_KEY` (yalnız publishable) |
 
 Yayın komutu: `npx wrangler@4 deploy -c wrangler.site.jsonc` / `-c wrangler.ebeveyn.jsonc`. Tanıtım sayfasının kaynağı değişmez (önizleme için `app/index.html#…`); `build-cf.sh` giriş/kayıt düğmelerini `https://ebeveyn.moyoapp.com.tr/#kayit` `#giris`'e, alt bilgiyi `/destek` ve `/yasal/…`'a çevirir. Uygulama: `app.json` `ios.associatedDomains` = `applinks:moyoapp.com.tr` (App ID yeteneği `tools/ci/asc_sign.py` açar). Supabase dönüş adresleri: `https://ebeveyn.moyoapp.com.tr/**` ve `parentapp://**`.

@@ -21,9 +21,9 @@ case "${1:-}" in
 site)
   TEAM="${APPLE_TEAM_ID:-}"
   [[ "$TEAM" =~ ^[A-Z0-9]{10}$ ]] || { echo "APPLE_TEAM_ID eksik ya da hatalı (10 karakter, büyük harf/rakam). Cloudflare › Settings › Build › Variables"; exit 1; }
-  OUT="$ROOT/dist-site"; rm -rf "$OUT"; mkdir -p "$OUT/d" "$OUT/.well-known"
+  OUT="$ROOT/dist-site"; rm -rf "$OUT"; mkdir -p "$OUT/davet" "$OUT/.well-known"
   cp -r "$ROOT/site/public/." "$OUT/"
-  cp "$ROOT/site/d/index.html" "$OUT/d/index.html"
+  cp "$ROOT/site/d/index.html" "$OUT/davet/index.html"   # /d/* buraya yeniden yazılır (aşağıda)
   # Tanıtım sayfası (iskeletsiz yazılır) → tam belge; giriş/kayıt ebeveyn adresine, destek ve yasal kök yoluna
   python3 - "$ROOT/site/landing.html" "$OUT/index.html" "$EBEVEYN_URL" <<'PY'
 import sys
@@ -41,7 +41,9 @@ open(out, 'w', encoding='utf-8').write(
 PY
   # Universal Links: uzman → aile daveti uygulamada açılsın (uzantısız, yönlendirmesiz, application/json)
   printf '{\n  "applinks": {\n    "details": [\n      { "appIDs": ["%s.%s"], "components": [{ "/": "/d/*", "comment": "Uzman aile daveti" }] }\n    ]\n  }\n}\n' "$TEAM" "$BUNDLE_ID" > "$OUT/.well-known/apple-app-site-association"
-  printf '/d/*  /d/index.html  200\n' > "$OUT/_redirects"
+  # /d/<anahtar> → /davet/ (adres çubuğu /d/<anahtar> kalır; sayfa anahtarı oradan okur). Hedef /d/ altında OLMAZ: Cloudflare
+# /d/index.html'i /d/'ye kısaltır, kural kendini tetikler ("Infinite loop detected", 6 Kasım 2026 ilk yayın).
+printf '/d/*  /davet/  200\n' > "$OUT/_redirects"
   printf '%s\n\n/.well-known/apple-app-site-association\n  Content-Type: application/json\n  Cache-Control: max-age=3600\n' "$SEC" > "$OUT/_headers"
   echo "✓ dist-site/ hazır (AASA: $TEAM.$BUNDLE_ID)";;
 ebeveyn)
