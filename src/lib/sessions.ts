@@ -134,7 +134,7 @@ export function sessionIcs(s: Session) {
   const end = new Date(start.getTime() + s.durationMin * 60e3);
   const title = `${s.kindLabel}${s.child ? ` · ${s.child}` : ''}`;
   return [
-    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//ParentApp//Randevu//TR', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Moyo//Randevu//TR', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
     'BEGIN:VEVENT', `UID:${s.id}@parentapp`, `DTSTAMP:${icsDate(new Date())}`, `DTSTART:${icsDate(start)}`, `DTEND:${icsDate(end)}`,
     `SUMMARY:${icsText(title)}`, `DESCRIPTION:${icsText([s.clinician, s.clinic].filter(Boolean).join(' · '))}`,
     `LOCATION:${icsText(placeLabel(s))}`, 'END:VEVENT', 'END:VCALENDAR', '',

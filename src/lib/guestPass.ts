@@ -32,7 +32,7 @@ const REASONS: Record<string, string> = {
   own: 'Kendi davet kodunu kullanamazsın; bir aileyle paylaş.',
   already: 'Ailen daha önce bir davet kodu kullandı.',
   premium: 'Zaten Premium üyesin; davet koduna gerek yok.',
-  not_new: 'Davet kodu yalnız ParentApp\'e yeni başlayan ailelerde (ilk 7 gün) kullanılabilir.',
+  not_new: 'Davet kodu yalnız Moyo\'ya yeni başlayan ailelerde (ilk 7 gün) kullanılabilir.',
   too_many_attempts: 'Çok fazla hatalı deneme. 15 dakika sonra tekrar dene.',
 };
 
@@ -50,7 +50,7 @@ export async function redeemGuestPass(code: string): Promise<string> {
 
 // Kod kullanıldı bildirimi (Kod gir kutuları)
 export const guestRedeemedText = (trialEndsAt: string) =>
-  `ParentApp ${formatTR(trialEndsAt.slice(0, 10))} tarihine kadar bütün özellikleriyle açık (7 yerine 14 gün). Kod artık başka bir aile tarafından kullanılamaz.`;
+  `Moyo ${formatTR(trialEndsAt.slice(0, 10))} tarihine kadar bütün özellikleriyle açık (7 yerine 14 gün). Kod artık başka bir aile tarafından kullanılamaz.`;
 
 // Davet özeti (kimlik yok): katılan aile, abone olan, kazanılan ay, yıllık kalan hak, Apple hediye kodları
 export type Referrals = { joined: number; paid: number; months: number; yearLeft: number; pendingCodes: number; codes: { code: string; sentAt: string }[] };

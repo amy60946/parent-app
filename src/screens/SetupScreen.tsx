@@ -156,7 +156,7 @@ export default function SetupScreen({ navigation, route }: any) {
         <View style={{ flex: 1, justifyContent: 'center', gap: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
             <Text style={styles.title}>Kodu yaz</Text>
-            <Info title="Hangi kod?" text={'Eşin ParentApp\'te Aile › + › Ebeveyn bölümünden 6 haneli bir kod üretir; bu kodla aynı aileye katılırsın, çocuklar ve maceralar ortak olur. Uzmanından kod aldıysan onu da buraya yazabilirsin.\n\nBir aile sana 8 karakterli davet kodu gönderdiyse onu yaz: ParentApp 7 yerine 14 gün bütün özellikleriyle açılır.'} />
+            <Info title="Hangi kod?" text={'Eşin Moyo\'da Aile › + › Ebeveyn bölümünden 6 haneli bir kod üretir; bu kodla aynı aileye katılırsın, çocuklar ve maceralar ortak olur. Uzmanından kod aldıysan onu da buraya yazabilirsin.\n\nBir aile sana 8 karakterli davet kodu gönderdiyse onu yaz: Moyo 7 yerine 14 gün bütün özellikleriyle açılır.'} />
           </View>
           <Text style={[styles.text, { textAlign: 'center' }]}>Eşinden, uzmanından ya da bir aileden aldığın kod</Text>
           <CodeEntry onResult={onCode} autoFocus />

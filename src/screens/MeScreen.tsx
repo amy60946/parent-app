@@ -276,7 +276,7 @@ export default function MeScreen({ navigation }: any) {
         <Pressable onPress={() => setGuide(true)} style={[styles.card, styles.row]} accessibilityRole="button">
           <View style={styles.rowIcon}><Ionicons name="compass-outline" size={18} color={colors.navy} /></View>
           <View style={{ flex: 1, gap: 1 }}>
-            <Text style={styles.rowTitle}>ParentApp'i tanı</Text>
+            <Text style={styles.rowTitle}>Moyo'yu tanı</Text>
             <Text style={styles.cap}>Adım adım rehber · 1 dakika</Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color={colors.faint} />

@@ -194,7 +194,7 @@ function AbcForm({ onDone, defaultChild, links, goals }: { onDone: () => void; d
 
   const startRec = async () => {
     const perm = await requestRecordingPermissionsAsync();
-    if (!perm.granted) return Alert.alert('Mikrofon izni gerekli', 'Ayarlar > ParentApp > Mikrofon');
+    if (!perm.granted) return Alert.alert('Mikrofon izni gerekli', 'Ayarlar > Moyo > Mikrofon');
     try {
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
       await recorder.prepareToRecordAsync();
@@ -360,7 +360,7 @@ function AbcForm({ onDone, defaultChild, links, goals }: { onDone: () => void; d
         {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Kaydet</Text>}
       </Pressable>
       {/* Acil durum notu (hukuk/50 §9) */}
-      <Text style={[styles.cap, { textAlign: 'center' }]}>ParentApp bir acil yardım hizmeti değildir. Çocuğunun ya da başka birinin güvenliği tehlikedeyse hemen 112'yi ara. Davranış kaydın uzmanına anında ulaşmayabilir.</Text>
+      <Text style={[styles.cap, { textAlign: 'center' }]}>Moyo bir acil yardım hizmeti değildir. Çocuğunun ya da başka birinin güvenliği tehlikedeyse hemen 112'yi ara. Davranış kaydın uzmanına anında ulaşmayabilir.</Text>
     </ScrollView>
   );
 }

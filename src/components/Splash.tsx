@@ -3,8 +3,8 @@ import { View, Text, Image, Animated, Easing, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { colors } from '../theme';
 
-// Açılış ekranı (kullanıcı isteği 28 Ekim 2026: "bizim görsellerimizle, ParentApp olduğu için çocukça olmasın"):
-// yerel açılış görseliyle birebir aynı yerleşim (lacivert zemin, filiz + güneş, ParentApp yazısı; assets/splash-icon.png,
+// Açılış ekranı (kullanıcı isteği 28 Ekim 2026: "bizim görsellerimizle, ParentApp olduğu için çocukça olmasın"; görünen ad 9 Kasım 2026'dan beri Moyo):
+// yerel açılış görseliyle birebir aynı yerleşim (lacivert zemin, filiz + güneş, Moyo yazısı; assets/splash-icon.png,
 // app.json imageWidth 260), geçiş fark edilmesin diye. Yükleme sürerken altta kısa bir söz ve ince ilerleme çizgisi belirir.
 const SIZE = 260;
 
@@ -16,7 +16,7 @@ export default function Splash() {
     Animated.loop(Animated.timing(line, { toValue: 1, duration: 1400, easing: Easing.inOut(Easing.cubic), useNativeDriver: true })).start();
   }, [fade, line]);
   return (
-    <View style={styles.root} accessibilityLabel="ParentApp açılıyor">
+    <View style={styles.root} accessibilityLabel="Moyo açılıyor">
       <StatusBar style="light" />
       <Image source={require('../../assets/splash-icon.png')} style={{ width: SIZE, height: SIZE }} resizeMode="contain" accessibilityIgnoresInvertColors />
       <Animated.View style={[styles.foot, { opacity: fade }]}>

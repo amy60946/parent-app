@@ -5,13 +5,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>ParentApp daveti</title>
+<title>Moyo daveti</title>
 <!--
   Uzmanın aile davet bağlantısının açılış sayfası (ortak/sozlesme/akislar.md 10).
   Adres: https://<alan adı>/d/<anahtar>  (ya da ?t=<anahtar>). Alan adının kökünde
-  /.well-known/apple-app-site-association (bu klasördeki örnek) yayınlanınca ParentApp yüklü telefonda bağlantı
+  /.well-known/apple-app-site-association (bu klasördeki örnek) yayınlanınca Moyo (ParentApp) yüklü telefonda bağlantı
   doğrudan uygulamayı açar; yüklü değilse bu sayfa görünür.
-  Ayarlar: SUPABASE_URL (herkese açık), STORE_URL (ParentApp App Store / TestFlight bağlantısı), APP_SCHEME.
+  Ayarlar: SUPABASE_URL (herkese açık), STORE_URL (Moyo App Store / TestFlight bağlantısı), APP_SCHEME.
 -->
 <style>
   :root { --navy: #0F1B3D; --bg: #F5F6F8; --muted: #5B6274; --gold: #E9B22B; --line: #E1E4EA; }
@@ -35,17 +35,17 @@
 </head>
 <body>
 <main>
-  <div class="brand">ParentApp</div>
+  <div class="brand">Moyo</div>
   <section id="loading"><p class="muted">Davet yükleniyor…</p></section>
 
   <section id="open" hidden>
     <h1>Uzmanın seni davet ediyor</h1>
     <div class="card">
       <div class="who" id="who"></div>
-      <p class="muted">Çocuğunun ev rutinini ve uzmanın hazırladığı takip planını ParentApp'te birlikte izleyeceksiniz. Hangi çocuğunu paylaşacağına sen karar verirsin; istediğin an durdurabilirsin.</p>
+      <p class="muted">Çocuğunun ev rutinini ve uzmanın hazırladığı takip planını Moyo'da birlikte izleyeceksiniz. Hangi çocuğunu paylaşacağına sen karar verirsin; istediğin an durdurabilirsin.</p>
     </div>
     <div class="card">
-      <div class="step"><span class="num">1</span><p class="muted"><b>ParentApp'i yükle</b></p></div>
+      <div class="step"><span class="num">1</span><p class="muted"><b>Moyo'yu yükle</b></p></div>
       <a class="btn primary" id="store" href="#">App Store'dan yükle</a>
       <div class="step"><span class="num">2</span><p class="muted"><b>Yükledikten sonra buraya dönüp daveti aç.</b> Kayıt olurken uzmanın kendiliğinden tanımlanır.</p></div>
       <a class="btn secondary" id="openApp" href="#">Daveti uygulamada aç</a>
@@ -60,13 +60,13 @@
   <section id="closed" hidden>
     <h1 id="closedTitle">Bu davet artık geçerli değil</h1>
     <div class="card"><p class="muted" id="closedText">Uzmanından yeni bir davet bağlantısı iste. Davetler 3 gün geçerlidir.</p></div>
-    <a class="btn secondary" id="openApp2" href="#">ParentApp'i aç</a>
+    <a class="btn secondary" id="openApp2" href="#">Moyo'yu aç</a>
   </section>
 </main>
 <script>
   var SUPABASE_URL = 'https://uhelhxqgpcjemadhsifx.supabase.co';
-  var STORE_URL = '';            // ParentApp App Store bağlantısı (yayınlanınca); boşsa düğme gizlenir
-  var APP_SCHEME = 'parentapp';  // ParentApp app.json "scheme"
+  var STORE_URL = '';            // Moyo App Store bağlantısı (yayınlanınca); boşsa düğme gizlenir
+  var APP_SCHEME = 'parentapp';  // app.json "scheme" (görünen ad Moyo, şema aynı)
 
   function $(id) { return document.getElementById(id); }
   var m = location.pathname.match(/\/d\/([0-9a-fA-F]{32})/);
@@ -89,7 +89,7 @@
       } else {
         if (d.status === 'used') {
           $('closedTitle').textContent = 'Bu davet kullanıldı';
-          $('closedText').textContent = 'Davet bir ailede kullanıldı. Sen kabul ettiysen ParentApp’i açman yeterli; değilse uzmanından yeni davet iste.';
+          $('closedText').textContent = 'Davet bir ailede kullanıldı. Sen kabul ettiysen Moyo’yu açman yeterli; değilse uzmanından yeni davet iste.';
         }
         show('closed');
       }

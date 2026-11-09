@@ -65,7 +65,7 @@ export default function NotificationsScreen({ navigation }: any) {
     const r = await setPushEnabled(on);
     if (on && r === 'denied') {
       setPush(false);
-      Alert.alert('İzin gerekli', 'Telefonun Ayarlar > ParentApp > Bildirimler bölümünden izin ver, sonra tekrar aç.');
+      Alert.alert('İzin gerekli', 'Telefonun Ayarlar > Moyo > Bildirimler bölümünden izin ver, sonra tekrar aç.');
     }
   };
 

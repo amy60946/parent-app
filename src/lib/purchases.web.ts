@@ -6,7 +6,7 @@ import type { PlanId } from '../data/plans';
 export const ENTITLEMENT = 'premium';
 export const MANAGE_URL = 'https://apps.apple.com/account/subscriptions';
 export const storeEnabled = false;
-export const WEB_NO_STORE = 'Üyeliği iPhone ya da iPad\'deki ParentApp\'ten başlat; aynı hesapla burada da açılır.';
+export const WEB_NO_STORE = 'Üyeliği iPhone ya da iPad\'deki Moyo\'dan başlat; aynı hesapla burada da açılır.';
 
 export type StorePrice = { price: number; priceString: string; perMonth?: string; currency: string };
 export type StorePrices = Partial<Record<PlanId, StorePrice>>;

@@ -1,4 +1,5 @@
-# ParentApp açılış görseli: uygulama simgesindeki filiz + güneş işareti ve "ParentApp" yazısı (saydam zemin; lacivert app.json'da).
+# Moyo (ParentApp) açılış görseli: uygulama simgesindeki filiz + güneş işareti ve uygulamanın görünen adı (saydam zemin; lacivert app.json'da).
+# Görünen ad 9 Kasım 2026'dan beri "Moyo" (kullanıcı kararı); eskisi "ParentApp".
 # Kullanım: python3 tools/brand/splash.py assets/splash-icon.png assets/brand-mark.png  (Inter Display Bold gerekir)
 import sys
 from PIL import Image, ImageDraw, ImageFont
@@ -29,7 +30,7 @@ def splash(out):
     d = ImageDraw.Draw(im)
     mark(d, 512, 430, 0.86)
     font = ImageFont.truetype('/usr/share/fonts/opentype/inter/InterDisplay-Bold.otf', 128 * S)
-    text = 'ParentApp'
+    text = 'Moyo'
     bb = d.textbbox((0, 0), text, font=font)
     tw = bb[2] - bb[0]
     d.text(((W * S - tw) / 2 - bb[0], 812 * S), text, font=font, fill=WHITE)
