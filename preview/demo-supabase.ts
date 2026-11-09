@@ -16,6 +16,10 @@ type Db = { users: Row[]; blobs: Record<string, string>; sessions: Record<string
 // veri ortak, oturum her uygulamaya ayrı. Uygulama adını paketleyici yazar (window.__PREVIEW_APP__).
 const APP: string = (globalThis as any).__PREVIEW_APP__ ?? 'parent';
 const KEY = 'pofi-onizleme-v14';
+// Klinik önizlemesine (ClinicApp penceresinin "ClinicApp Önizleme" sayfası, uzman + ebeveyn yan yana) konan app.html
+// `PREVIEW_SHARED=1 bash preview/build.sh` ile derlenir: depo anahtarı ClinicApp'inkiyle aynı olur ve seans örnek verisini
+// ClinicApp kurar (onunki daha zengin: oda, paket, çalışma saatleri). Tek başına önizlemede false.
+const SHARED_WITH_CLINIC = false;
 const TABLES = ['profiles', 'families', 'children', 'tasks', 'task_assignments', 'completions', 'messages', 'saved_templates', 'invite_codes',
   'clinics', 'clinicians', 'clinic_invites', 'clinic_links', 'clinic_notes', 'clinic_goals', 'goal_ratings', 'abc_events',
   'clinic_task_suggestions', 'family_subscriptions', 'notifications', 'push_tokens', 'rewards', 'reward_requests', 'sun_stone_ledger',
@@ -52,7 +56,7 @@ const DEMO_LESSONS = [
 ];
 // Örnek randevular (öneri 20261105100000_sessions.sql; ParentApp yalnız family_* işlevleriyle görür)
 function seedSessions(x: Db) {
-  if (x.sessions_seeded) return;
+  if (x.sessions_seeded || x.sessionsSeeded || SHARED_WITH_CLINIC) return; // sessionsSeeded: ClinicApp önizlemesi kurdu
   x.sessions_seeded = true;
   const link = (x.clinic_links ?? []).find((l: Row) => l.id === 'demo-link' && l.status === 'active');
   if (!link) return;
@@ -283,6 +287,9 @@ function load(): Db {
       seedSessions(x);
       seedTraining(x);
       seedBehaviors(x);
+      // Veriyi ClinicApp önizlemesi kurduysa (eski kopya) örnek ebeveynin ilk kurulumu tamam sayılır; yoksa kurulum ekranı açılır
+      const demoParent = (x.profiles ?? []).find((p: Row) => p.id === 'demo-user');
+      if (demoParent && demoParent.setup_completed_at === undefined) demoParent.setup_completed_at = demoParent.created_at ?? now();
       x.sessions = x.sessions ?? {};
       return x;
     }

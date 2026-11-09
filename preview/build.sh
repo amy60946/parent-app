@@ -32,6 +32,14 @@ mkdir -p "$WORK/assets" && cp -r "$ROOT/assets/." "$WORK/assets/"
 cp "$ROOT/preview/demo-supabase.ts" "$WORK/src/lib/supabase.ts"
 cp "$ROOT/preview/demo-training.ts" "$WORK/src/lib/demo-training.ts"     # ebeveyn eğitimi örnek verisi (ClinicApp kopyası)
 cp "$ROOT/preview/demo-behaviors.ts" "$WORK/src/lib/demo-behaviors.ts"   # hedef davranış örnek verisi (ClinicApp kopyası)
+# Klinik önizlemesi (uzman + ebeveyn yan yana) için: PREVIEW_SHARED=1 → ClinicApp önizlemesinin depo anahtarı (ClinicApp
+# preview/demo-supabase.ts KEY) ve seans verisini ClinicApp kurar. Çıktı yine preview/out/app.html; o sayfaya app.html olarak yüklenir.
+if [ "${PREVIEW_SHARED:-}" = "1" ]; then
+  CLINIC_KEY="${PREVIEW_SHARED_KEY:-pofi-onizleme-v4}"
+  sed -i "s/^const KEY = 'pofi-onizleme-v[0-9]*';/const KEY = '$CLINIC_KEY';/; s/^const SHARED_WITH_CLINIC = false;/const SHARED_WITH_CLINIC = true;/" "$WORK/src/lib/supabase.ts"
+  grep -q "const KEY = '$CLINIC_KEY';" "$WORK/src/lib/supabase.ts" && grep -q "SHARED_WITH_CLINIC = true" "$WORK/src/lib/supabase.ts" || { echo "ortak depo ayarı yazılamadı"; exit 1; }
+  echo "› Klinik önizlemesiyle ortak depo: $CLINIC_KEY"
+fi
 cp "$ROOT/preview/demo-purchases.ts" "$WORK/src/lib/purchases.ts"  # mağaza (RevenueCat) taklidi
 cp "$ROOT/preview/demo-purchases.ts" "$WORK/src/lib/purchases.web.ts"  # web derlemesi .web.ts'yi seçer
 
