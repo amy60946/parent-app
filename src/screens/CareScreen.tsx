@@ -94,7 +94,7 @@ export default function CareScreen({ navigation, route }: any) {
             </View>
 
             <View style={styles.tip}>
-              <Text style={styles.h}>Uzmanın ParentApp'i bilmiyor mu?</Text>
+              <Text style={styles.h}>Uzmanın Moyo'yu bilmiyor mu?</Text>
               <Text style={styles.text}>Çocuğunla çalışan uzman ClinicApp'te hesap açıp sana bir davet kodu gönderebilir. Kısa bir mesajla anlat.</Text>
               <Pressable onPress={tell} style={styles.tipBtn} accessibilityRole="button">
                 <Ionicons name="share-outline" size={16} color={colors.navy} />

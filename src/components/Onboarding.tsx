@@ -679,7 +679,7 @@ function Ask({ total, onShow, onLater }: { total: number; onShow: () => void; on
       <Dim />
       <View style={[st.card, { left: 20, right: 20, top: 300 }]}>
         <Text style={[st.counter, { alignSelf: 'flex-start' }]}>{total} adım · 30 saniye</Text>
-        <Text style={st.title} accessibilityRole="header">ParentApp nasıl çalışır?</Text>
+        <Text style={st.title} accessibilityRole="header">Moyo nasıl çalışır?</Text>
         <Text style={st.text}>Sorumluluk verirsin, çocuğun oyunda macera olarak yapar, sen onaylarsın. Kısaca göstereyim mi?</Text>
         <Pressable onPress={onShow} accessibilityRole="button" style={st.start}>
           <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Göster</Text>

@@ -55,10 +55,10 @@ export function ClientConfigProvider({ children }: { children: React.ReactNode }
   }, [load]);
 
   if (cfg.maintenance) {
-    return <Blocker icon="construct-outline" title="Kısa bir bakım yapıyoruz" body="ParentApp birazdan yeniden açılacak. Verilerin güvende; lütfen biraz sonra tekrar dene." action="Tekrar dene" onAction={load} />;
+    return <Blocker icon="construct-outline" title="Kısa bir bakım yapıyoruz" body="Moyo birazdan yeniden açılacak. Verilerin güvende; lütfen biraz sonra tekrar dene." action="Tekrar dene" onAction={load} />;
   }
   if (cfg.minVersion && compareVersions(version, cfg.minVersion) < 0) {
-    return <Blocker icon="cloud-download-outline" title="Güncelleme gerekli" body={`Devam etmek için ParentApp'in yeni sürümünü yükle (en az ${cfg.minVersion}; sende ${version}).`} action="Güncelle" onAction={() => Linking.openURL(STORE_URL).catch(() => {})} />;
+    return <Blocker icon="cloud-download-outline" title="Güncelleme gerekli" body={`Devam etmek için Moyo'nun yeni sürümünü yükle (en az ${cfg.minVersion}; sende ${version}).`} action="Güncelle" onAction={() => Linking.openURL(STORE_URL).catch(() => {})} />;
   }
   const showBanner = !!cfg.banner && cfg.banner !== dismissed;
   return (

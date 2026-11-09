@@ -463,7 +463,7 @@ function CodeSheet({ visible, onClose }: { visible: boolean; onClose: () => void
       <View style={{ gap: 14 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Text style={{ flex: 1, fontSize: 13, color: colors.muted }}>Uzmanından, eşinden ya da bir aileden aldığın kod</Text>
-          <Info title="Hangi kod?" text={'Uygulama kodun kimden geldiğini kendisi anlar.\n\n• Uzman kodu (6 karakter): uzmanın davet ekranı açılır; onaylarsan çocuğunun maceraları onunla paylaşılır.\n• Eşinin kodu (6 karakter): aynı aileye katılırsın. Eşin kodu Aile › + › Ebeveyn bölümünden üretir; kod 15 dakika geçerlidir.\n• Aile davet kodu (8 karakter): seni davet eden aileden; deneme 7 yerine 14 gün olur. ParentApp\'e yeni başlayan ailelerde (ilk 7 gün) geçerlidir.'} />
+          <Info title="Hangi kod?" text={'Uygulama kodun kimden geldiğini kendisi anlar.\n\n• Uzman kodu (6 karakter): uzmanın davet ekranı açılır; onaylarsan çocuğunun maceraları onunla paylaşılır.\n• Eşinin kodu (6 karakter): aynı aileye katılırsın. Eşin kodu Aile › + › Ebeveyn bölümünden üretir; kod 15 dakika geçerlidir.\n• Aile davet kodu (8 karakter): seni davet eden aileden; deneme 7 yerine 14 gün olur. Moyo\'ya yeni başlayan ailelerde (ilk 7 gün) geçerlidir.'} />
         </View>
         <CodeEntry onResult={done} />
       </View>
@@ -608,7 +608,7 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
             <Info title="Ebeveyn daveti" text="Her yeni ebeveyn için ayrı bir kod üretilir. Diğer ebeveyn kodu kayıttan sonra açılan “Kodun var mı?” ekranına ya da Aile › Hesap › Kod gir bölümüne yazar. Kod 15 dakika geçerlidir." />
           </View>
           {code ? (
-            <CodeBox code={code} busy={busy} onRenew={invite} shareText={`ParentApp'e katılmak için davet kodun: ${code.code}\nKayıttan sonra açılan "Kodun var mı?" ekranına ya da Aile > Hesap > Kod gir bölümüne yaz. Kod 15 dakika geçerli.`} />
+            <CodeBox code={code} busy={busy} onRenew={invite} shareText={`Moyo'ya katılmak için davet kodun: ${code.code}\nKayıttan sonra açılan "Kodun var mı?" ekranına ya da Aile > Hesap > Kod gir bölümüne yaz. Kod 15 dakika geçerli.`} />
           ) : (
             <Pressable
               style={[styles.cta, busy && { opacity: 0.6 }]}

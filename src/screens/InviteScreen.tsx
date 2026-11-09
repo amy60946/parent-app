@@ -186,7 +186,7 @@ export default function InviteScreen({ navigation, route }: any) {
             <View style={{ gap: 12 }}>
               <Card style={{ gap: 8 }}>
                 <Text style={styles.h}>Sorun değil</Text>
-                <Text style={styles.small}>ParentApp'i uzmanın olmadan da kullanabilirsin. Çocuğunla çalışan bir uzman varsa ClinicApp'te hesap açıp sana bir davet kodu gönderebilir.</Text>
+                <Text style={styles.small}>Moyo'yu uzmanın olmadan da kullanabilirsin. Çocuğunla çalışan bir uzman varsa ClinicApp'te hesap açıp sana bir davet kodu gönderebilir.</Text>
                 <Pressable onPress={() => { track('invite.tell'); Share.share({ message: TELL_CLINICIAN }).catch(() => {}); }} style={styles.share} accessibilityRole="button">
                   <Ionicons name="share-outline" size={16} color={colors.navy} />
                   <Text style={{ fontSize: 14, fontWeight: '700', color: colors.navy }}>Uzmanına anlat</Text>
