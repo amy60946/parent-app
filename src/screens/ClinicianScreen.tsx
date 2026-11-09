@@ -23,6 +23,8 @@ import { track } from '../lib/track';
 import { afterModal } from '../lib/modal';
 import SessionsSection from '../components/SessionsSection';
 import { familySessions, syncSessionReminders } from '../lib/sessions';
+import { useTrainings } from '../lib/trainings';
+import { reportable, useTargetBehaviors } from '../lib/incidents';
 
 // Uzmanım › uzman (kullanıcı isteği 28 Ekim 2026, Joon "Care › therapist" örneğinden): bugün yapılacaklar (uzmanın aile
 // programındaki uygulamalar + davranış kaydı), çocuk başına program (takip planı), görev önerileri, paylaşılan çocuklar.
@@ -61,6 +63,9 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
   const leave = () => { if (tab) reload(); else navigation.goBack(); };
   // iPad: ekran sütunu kenardan ayrık; başlık da kartlarla aynı hizada, dört köşesi yuvarlak
   const wide = useWindowDimensions().width > COLUMN;
+  // Ebeveyn eğitimi görevleri ve davranış olayı (ortak akislar.md 23–24: "Uzmanım › uzman › Günlük yapılacaklar"); sunucuda yoksa görünmez
+  const trainings = useTrainings();
+  const behaviors = useTargetBehaviors();
 
   if (!care) return <SafeAreaView style={styles.safe}><ActivityIndicator color={colors.navy} style={{ marginTop: 60 }} /></SafeAreaView>;
   if (!c) {
@@ -90,6 +95,14 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
   const goalTitle = (s: (typeof suggestions)[number]) => (s.goalId ? care.plans[s.linkId]?.goals.find((g) => g.id === s.goalId)?.title : undefined);
   const dropSuggestions = (ids: string[]) => setCare((p) => p && ({ ...p, suggestions: p.suggestions.filter((x) => !ids.includes(x.id)) }));
   const unshared = children.filter((k) => !links.some((l) => l.childId === k.id));
+  const myTrainings = (trainings ?? []).filter((t) => t.mine && t.status === 'active' && links.some((l) => l.linkId === t.linkId));
+  const tRows = myTrainings.flatMap((t) => [
+    ...t.tasks.map((k) => ({ key: k.id, kicker: 'Uygulama görevi', title: k.title,
+      go: () => navigation.navigate('TrainingTask', { trainingId: t.id, taskId: k.id }) })),
+    ...t.todos.filter((d) => !d.doneAt).map((d) => ({ key: d.id, kicker: 'Tek seferlik görev', title: d.title,
+      go: () => navigation.navigate('TrainingTodo', { trainingId: t.id, todoId: d.id }) })),
+  ]);
+  const canReport = reportable(behaviors).some((l) => l.clinicId === c.clinicId);
 
   // "Bugün uyguladım" kısayolu: işaretliyse ayrıntı (zorluk / geri alma) takip planında
   const practice = async (t: CareTodo) => {
@@ -202,7 +215,25 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
               </Pressable>
             </View>
           ))}
-          <Pressable onPress={() => navigation.navigate('Abc', { new: true })} style={[styles.row, todos.length > 0 && styles.sep]} accessibilityRole="button">
+          {tRows.map((r, i) => (
+            <Pressable key={r.key} onPress={r.go} style={[styles.row, (todos.length > 0 || i > 0) && styles.sep]} accessibilityRole="button">
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={styles.kicker}>{r.kicker}</Text>
+                <Text style={styles.rowTitle}>{r.title}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.faint} />
+            </Pressable>
+          ))}
+          {canReport && (
+            <Pressable onPress={() => navigation.navigate('Incident', { clinicId: c.clinicId })} style={[styles.row, (todos.length > 0 || tRows.length > 0) && styles.sep]} accessibilityRole="button">
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={styles.rowTitle}>Çocuğunun davranış olayını bildir</Text>
+                <Text style={styles.cap}>Uzmanının belirlediği davranışlar</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.faint} />
+            </Pressable>
+          )}
+          <Pressable onPress={() => navigation.navigate('Abc', { new: true })} style={[styles.row, (todos.length > 0 || tRows.length > 0 || canReport) && styles.sep]} accessibilityRole="button">
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={styles.rowTitle}>Davranış kaydı ekle</Text>
               <Text style={styles.cap}>Ne oldu, öncesinde ve sonrasında</Text>

@@ -43,6 +43,10 @@ import ChatScreen from './src/screens/ChatScreen';
 import NotificationsScreen, { openNotification } from './src/screens/NotificationsScreen';
 import AbcScreen from './src/screens/AbcScreen';
 import LessonScreen from './src/screens/LessonScreen';
+import TrainingScreen from './src/screens/TrainingScreen';
+import TrainingPlayerScreen from './src/screens/TrainingPlayerScreen';
+import TrainingTaskScreen, { TrainingTodoScreen } from './src/screens/TrainingTaskScreen';
+import IncidentScreen from './src/screens/IncidentScreen';
 import { whenNoModal } from './src/lib/modal';
 import { SessionReminderSync } from './src/components/SessionsSection';
 import PaywallScreen from './src/screens/PaywallScreen';
@@ -294,6 +298,12 @@ function Main() {
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="Abc" component={AbcScreen} />
       <Stack.Screen name="Lesson" component={LessonScreen} options={{ presentation: 'modal' }} />
+      {/* Ebeveyn eğitimi ve davranış olayı (ortak akislar.md 23–24; 9 Kasım 2026) */}
+      <Stack.Screen name="Training" component={TrainingScreen} />
+      <Stack.Screen name="TrainingPlayer" component={TrainingPlayerScreen} options={{ presentation: 'modal', gestureEnabled: false }} />
+      <Stack.Screen name="TrainingTask" component={TrainingTaskScreen} options={{ presentation: 'modal' }} />
+      <Stack.Screen name="TrainingTodo" component={TrainingTodoScreen} options={{ presentation: 'modal' }} />
+      <Stack.Screen name="Incident" component={IncidentScreen} options={{ presentation: 'modal', gestureEnabled: false }} />
       <Stack.Screen name="Rewards" component={RewardsScreen} />
       <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="Invite" component={InviteScreen} options={{ presentation: 'modal', gestureEnabled: false }} />

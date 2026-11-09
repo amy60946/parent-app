@@ -30,6 +30,8 @@ rm -rf "$WORK/src" "$WORK/App.tsx" "$WORK/assets/avatars"
 cp -r "$ROOT/App.tsx" "$ROOT/src" "$WORK/"
 mkdir -p "$WORK/assets" && cp -r "$ROOT/assets/." "$WORK/assets/"
 cp "$ROOT/preview/demo-supabase.ts" "$WORK/src/lib/supabase.ts"
+cp "$ROOT/preview/demo-training.ts" "$WORK/src/lib/demo-training.ts"     # ebeveyn eğitimi örnek verisi (ClinicApp kopyası)
+cp "$ROOT/preview/demo-behaviors.ts" "$WORK/src/lib/demo-behaviors.ts"   # hedef davranış örnek verisi (ClinicApp kopyası)
 cp "$ROOT/preview/demo-purchases.ts" "$WORK/src/lib/purchases.ts"  # mağaza (RevenueCat) taklidi
 cp "$ROOT/preview/demo-purchases.ts" "$WORK/src/lib/purchases.web.ts"  # web derlemesi .web.ts'yi seçer
 

@@ -5,6 +5,8 @@
 // gerçek sürümünde kullanılmaz.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { TRAINING_TABLES, seedTraining } from './demo-training';
+import { BEHAVIOR_TABLES, seedBehaviors } from './demo-behaviors';
 
 type Row = Record<string, any>;
 type Err = { message: string; code?: string } | null;
@@ -20,7 +22,8 @@ const TABLES = ['profiles', 'families', 'children', 'tasks', 'task_assignments',
   'care_modules', 'care_module_logs', 'clinic_link_history', 'intake_answers',
   'parent_assignments', 'parent_completions', 'parent_stone_ledger', 'gift_items', 'child_gifts',
   'legal_documents', 'legal_acceptances', 'kvkk_requests',
-  'parent_lessons', 'parent_lesson_assignments', 'parent_lesson_progress', 'parent_lesson_practice', 'clinic_sessions'];
+  'parent_lessons', 'parent_lesson_assignments', 'parent_lesson_progress', 'parent_lesson_practice', 'clinic_sessions',
+  ...TRAINING_TABLES, ...BEHAVIOR_TABLES];
 
 const uuid = () =>
   'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -264,6 +267,9 @@ function seed(): Db {
   };
   seedLessons(db);
   seedSessions(db);
+  TRAINING_TABLES.concat(BEHAVIOR_TABLES).forEach((t) => { db[t] = db[t] ?? []; });
+  seedTraining(db);
+  seedBehaviors(db);
   return db;
 }
 
@@ -275,6 +281,8 @@ function load(): Db {
       TABLES.forEach((t) => { x[t] = x[t] ?? []; });
       seedLessons(x);
       seedSessions(x);
+      seedTraining(x);
+      seedBehaviors(x);
       x.sessions = x.sessions ?? {};
       return x;
     }
@@ -967,6 +975,89 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
         booked_by: 'family', offer_expires_at: null, series: false });
       save(); return { data: id, error: null };
     }
+  }
+  // Ebeveyn eğitimi (öneri 20261110100000_parent_trainings.sql, akislar.md 23): aile yalnız işlevlerle; taslak görünmez
+  if (name.startsWith('family_training')) {
+    const fam = me?.family_id;
+    if (!fam) return err('Önce ebeveyn olarak giriş yapmalısın');
+    const linkOk = (id: string) => db.clinic_links.some((l: Row) => l.id === id && l.family_id === fam && l.status === 'active');
+    const actor = (tid: string) => { const t = db.parent_trainings.find((x: Row) => x.id === tid);
+      return !!t && t.status === 'active' && linkOk(t.link_id) && (!t.parent_id || t.parent_id === uid); };
+    const trDay = () => new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
+    if (name === 'family_trainings') {
+      const by = (a: Row, b: Row) => (a.position ?? 0) - (b.position ?? 0) || String(a.created_at).localeCompare(String(b.created_at));
+      const list = (db.parent_trainings as Row[]).filter((t) => t.status !== 'draft' && linkOk(t.link_id))
+        .sort((a, b) => String(b.started_at).localeCompare(String(a.started_at))).map((t) => {
+          const l = db.clinic_links.find((k: Row) => k.id === t.link_id);
+          return { id: t.id, link_id: t.link_id, child_id: l.child_id, child_name: db.children.find((c: Row) => c.id === l.child_id)?.name ?? null,
+            title: t.title, status: t.status, started_at: t.started_at, activated_at: t.activated_at ?? null, mastered_at: t.mastered_at ?? null,
+            parent_id: t.parent_id ?? null, parent_name: t.parent_name ?? '', mine: !t.parent_id || t.parent_id === uid,
+            modules: (db.parent_training_modules as Row[]).filter((m) => m.training_id === t.id && !m.archived).sort(by)
+              .map(({ id, item_key, position, completed_at, correct, total, answers }) => ({ id, item_key, position, completed_at, correct, total, answers })),
+            tasks: (db.parent_training_tasks as Row[]).filter((k) => k.training_id === t.id && !k.archived).sort(by)
+              .map(({ id, title, description, measure, position }) => ({ id, title, description, measure, position })),
+            logs: (db.parent_training_logs as Row[]).filter((g) => g.training_id === t.id).sort((a, b) => String(b.day).localeCompare(String(a.day))),
+            todos: (db.parent_training_todos as Row[]).filter((d) => d.training_id === t.id && !d.archived).sort(by)
+              .map(({ id, title, description, done_at, rating, reflection, created_at }) => ({ id, title, description, done_at, rating, reflection, created_at })) };
+        });
+      return { data: list, error: null };
+    }
+    if (name === 'family_training_module_complete') {
+      const m = db.parent_training_modules.find((x: Row) => x.id === args.p_module && !x.archived);
+      if (!m || !actor(m.training_id)) return err('training_not_found');
+      if (!m.completed_at) Object.assign(m, { completed_at: now(), completed_by: uid, answers: args.p_answers ?? null,
+        correct: args.p_total == null ? null : args.p_correct ?? 0, total: args.p_total ?? null });
+      save(); return { data: m.id, error: null };
+    }
+    if (name === 'family_training_log') {
+      const k = db.parent_training_tasks.find((x: Row) => x.id === args.p_task && !x.archived);
+      if (!k || !actor(k.training_id)) return err('training_not_found');
+      if (k.measure === 'frequency' && args.p_count == null) return err('count_required');
+      if (k.measure === 'accuracy' && (args.p_successes == null || args.p_attempts == null)) return err('attempts_required');
+      if (k.measure === 'duration' && args.p_minutes == null) return err('minutes_required');
+      const id = uuid();
+      db.parent_training_logs.push({ id, task_id: k.id, training_id: k.training_id, family_id: fam, day: args.p_day ?? trDay(),
+        count: k.measure === 'frequency' ? args.p_count : null, successes: k.measure === 'accuracy' ? args.p_successes : null,
+        attempts: k.measure === 'accuracy' ? args.p_attempts : null, minutes: k.measure === 'duration' ? args.p_minutes : null,
+        reflection: String(args.p_reflection ?? '').slice(0, 255), created_by: uid, created_at: now() });
+      save(); return { data: id, error: null };
+    }
+    if (name === 'family_training_todo_set') {
+      const d = db.parent_training_todos.find((x: Row) => x.id === args.p_todo && !x.archived);
+      if (!d || !actor(d.training_id)) return err('training_not_found');
+      Object.assign(d, args.p_done ? { done_at: d.done_at ?? now(), done_by: d.done_by ?? uid, rating: args.p_rating ?? null, reflection: String(args.p_reflection ?? '').slice(0, 140) }
+        : { done_at: null, done_by: null, rating: null, reflection: '' });
+      save(); return { data: null, error: null };
+    }
+  }
+  // Hedef davranışlar ve olaylar (öneri 20261110110000_target_behaviors.sql, akislar.md 24)
+  if (name === 'family_target_behaviors' || name === 'family_incident_report') {
+    const fam = me?.family_id;
+    if (!fam) return err('Önce ebeveyn olarak giriş yapmalısın');
+    const links = (db.clinic_links as Row[]).filter((l) => l.family_id === fam && l.status === 'active');
+    if (name === 'family_target_behaviors') {
+      return { data: links.map((l) => ({ link_id: l.id, child_id: l.child_id, child_name: db.children.find((c: Row) => c.id === l.child_id)?.name ?? null, clinic_id: l.clinic_id,
+        behaviors: (db.clinic_target_behaviors as Row[]).filter((b) => b.link_id === l.id && !b.archived && b.parent_logging)
+          .map(({ id, title, description, strategies, log_type, status }) => ({ id, title, description, strategies, log_type, status })) })), error: null };
+    }
+    const l = links.find((x) => x.id === args.p_link);
+    if (!l) return err('link_not_found');
+    const at = args.p_occurred_at ?? now();
+    if (Date.parse(at) > Date.now() + 5 * 60e3 || Date.parse(at) < Date.now() - 30 * 864e5) return err('date_out_of_range');
+    const b = args.p_behavior ? db.clinic_target_behaviors.find((x: Row) => x.id === args.p_behavior && x.link_id === l.id && !x.archived && x.parent_logging) : null;
+    if (args.p_behavior && !b) return err('behavior_not_found');
+    if (b?.log_type === 'frequency' && !(args.p_count >= 1)) return err('count_required');
+    if (b?.log_type === 'abc' && (!String(args.p_antecedent ?? '').trim() || !String(args.p_consequence ?? '').trim())) return err('abc_required');
+    if (b?.log_type === 'duration' && args.p_duration_min == null) return err('duration_required');
+    if (!b && !String(args.p_other_behavior ?? '').trim()) return err('behavior_required');
+    const id = uuid(), t = b?.log_type ?? null;
+    db.behavior_incidents.push({ id, link_id: l.id, family_id: fam, child_id: l.child_id, behavior_id: b?.id ?? null, log_type: t,
+      other_behavior: b ? '' : String(args.p_other_behavior).trim().slice(0, 120), occurred_at: at,
+      count: !b || t === 'frequency' ? args.p_count ?? null : null, duration_min: !b || t === 'duration' ? args.p_duration_min ?? null : null,
+      antecedent: !b || t === 'abc' ? String(args.p_antecedent ?? '').trim() : '', consequence: !b || t === 'abc' ? String(args.p_consequence ?? '').trim() : '',
+      strategy: String(args.p_strategy ?? '').trim().slice(0, 200), response: args.p_response ?? null, reporter_id: uid,
+      reporter_name: (String(me?.name ?? '').trim() || me?.nickname) ?? '', created_at: now() });
+    save(); return { data: id, error: null };
   }
   // Ebeveyn dersleri (öneri 20261105200000_parent_lessons.sql): hafta Pzt–Paz, uygulanan gün başına 1 taş, haftada en çok 3
   if (name.startsWith('parent_lesson_') || name === 'family_lessons') {

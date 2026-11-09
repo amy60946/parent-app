@@ -18,6 +18,8 @@ import { useCare } from '../lib/care';
 import { intakeStatus } from '../lib/intake';
 import { countSuggestions } from '../lib/clinic';
 import TrialBanner from '../components/TrialBanner';
+import { openTaskCount, trainingPct, useTrainings } from '../lib/trainings';
+import { reportable, useTargetBehaviors } from '../lib/incidents';
 import { todayISO } from '../dates';
 
 // Ben (ana sayfa; kullanıcı isteği 28 Ekim 2026, Joon "Me" örneğinden): onay bekleyenler (İnceleme), aile davet et kartı (3 Kasım 2026),
@@ -40,6 +42,17 @@ export default function MeScreen({ navigation }: any) {
   const [guestHidden, setGuestHidden] = useState<boolean | null>(null);
   const [intakeMissing, setIntakeMissing] = useState(false);
   const [guide, setGuide] = useState(false);
+  // Ebeveyn eğitimi ve davranış olayı (ortak akislar.md 23–24; rakibin "Görevlerin" / "Derslere devam et" bölümleri).
+  // Sunucuda işlev yoksa (SQL uygulanmadı) ya da uzman bir şey vermediyse bölümler görünmez.
+  const trainings = useTrainings();
+  const behaviors = useTargetBehaviors();
+  const taskCount = openTaskCount(trainings ?? []);
+  const canReport = reportable(behaviors).length > 0;
+  const lessons = [...(trainings ?? [])].sort((a, b) => (a.status === b.status ? 0 : a.status === 'active' ? -1 : 1));
+  const openTasks = () => {
+    const withTasks = (trainings ?? []).filter((t) => t.mine && t.status === 'active' && (t.tasks.length || t.todos.some((d) => !d.doneAt)));
+    navigation.navigate('Training', withTasks.length === 1 ? { trainingId: withTasks[0].id } : { list: 'tasks' });
+  };
 
   useEffect(() => { AsyncStorage.getItem(GUEST_HIDDEN).then((v) => setGuestHidden(v === '1')).catch(() => setGuestHidden(false)); }, []);
   // Tanışma soruları atlandıysa (uzman davetiyle gelen aile) burada tamamlanır
@@ -170,8 +183,47 @@ export default function MeScreen({ navigation }: any) {
           ))}
         </Section>}
 
+        {(taskCount > 0 || canReport) && <Section title="Görevlerin">
+          {taskCount > 0 && (
+            <Pressable onPress={openTasks} style={styles.row} accessibilityRole="button">
+              <View style={styles.rowIcon}><Ionicons name="clipboard-outline" size={18} color={colors.navy} /></View>
+              <Text style={[styles.rowTitle, { flex: 1 }]} numberOfLines={2}>Uzmanından {taskCount} görev</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.faint} />
+            </Pressable>
+          )}
+          {canReport && (
+            <Pressable onPress={() => navigation.navigate('Incident')} style={[styles.row, taskCount > 0 && styles.sep]} accessibilityRole="button">
+              <View style={styles.rowIcon}><Ionicons name="pulse-outline" size={18} color={colors.navy} /></View>
+              <Text style={[styles.rowTitle, { flex: 1 }]} numberOfLines={2}>Çocuğunun davranış olayını bildir</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.faint} />
+            </Pressable>
+          )}
+        </Section>}
+
         </View>
         <View style={wide ? styles.col : styles.stack}>
+        {lessons.length > 0 && <Section title="Derslere devam et">
+          {lessons.map((t, i) => {
+            const pct = trainingPct(t);
+            return (
+              <Pressable key={t.id} onPress={() => navigation.navigate('Training', { trainingId: t.id })} style={[styles.row, i > 0 && styles.sep]}
+                accessibilityRole="button" accessibilityLabel={`${t.title}, yüzde ${pct}`}>
+                <View style={{ flex: 1, gap: 6 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Text style={[styles.rowTitle, { flex: 1 }]} numberOfLines={2}>{t.title}</Text>
+                    <Text style={[styles.pct, { minWidth: 0 }]}>%{pct}</Text>
+                  </View>
+                  <View style={styles.bar}><View style={[styles.barFill, { width: `${pct}%` }]} /></View>
+                  {(t.status === 'mastered' || !t.mine) && (
+                    <Text style={styles.cap}>{t.status === 'mastered' ? 'Tamamlandı' : `${t.parentName || 'Öteki ebeveyn'} için`}</Text>
+                  )}
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.faint} />
+              </Pressable>
+            );
+          })}
+        </Section>}
+
         {/* Uzmanın programı varsa (kullanıcı isteği 3 Kasım 2026: program yokken başlık görünmez; rehber satırı en altta) */}
         {!!care?.todos.length && <Section title="Programına devam et">
           {care.todos.map((t, i) => (

@@ -2,7 +2,8 @@ name: Denetim (tür, web, tarif, canlı)
 # Her push'ta, her gün ve elle: ParentApp bozulmadan önce yakalansın (kullanıcı isteği 5 Kasım 2026).
 #  1. tur-web: TypeScript tür denetimi + web derlemesi (expo export) — telefon/iPad/web aynı kod.
 #  2. tarif:   ortak deposunun göçleri boş PostgreSQL'e uygulanır; uygulamanın çağırdığı her işlev (argüman adlarıyla),
-#              tablo ve sütun tarifte var ve girişli kullanıcıya açık mı (tools/contract/check-db.mjs).
+#              tablo ve sütun tarifte var ve girişli kullanıcıya açık mı (tools/contract/check-db.mjs). Tarifte olmayıp
+#              ortaktaki öneride (proposed/) olan, SQL uygulanana dek uyarıdır; öneride de yoksa hata.
 #  3. canli:   aynı liste canlı Supabase'de var mı + giriş ayarları (e-posta kaydı, anonim giriş) + Edge Function'lar
 #              (tools/contract/check.mjs; yalnız okur, satır yazmaz, oturum açmaz; publishable anahtar).
 # Kırmızı biterse GitHub e-posta gönderir. Bildirim, zamanlamayı en son değiştiren hesaba gider.
@@ -69,8 +70,17 @@ jobs:
           for f in ../ortak/supabase/test/supabase_stub.sql ../ortak/supabase/migrations/*.sql; do
             psql -q -t -o /dev/null -v ON_ERROR_STOP=1 -d tarif -f "$f" 2> err.txt || { echo "::error::$f uygulanamadı"; grep ERROR err.txt; exit 1; }
           done
+      # Ortaktaki henüz uygulanmamış öneriler (supabase/proposed/) ikinci veritabanında: yeni özelliğin çağrıları
+      # SQL canlıya uygulanana dek "ÖNERİDE BEKLİYOR" uyarısı olur, hata değil (canlı adımı o zamana dek kırmızı).
+      - name: Önerileri uygula
+        run: |
+          createdb -T tarif oneri
+          shopt -s nullglob
+          for f in ../ortak/supabase/proposed/*.sql; do
+            psql -q -t -o /dev/null -v ON_ERROR_STOP=1 -d oneri -f "$f" 2> err.txt || { echo "::error::$f uygulanamadı"; grep ERROR err.txt; exit 1; }
+          done
       - name: Uygulama ↔ tarif
-        run: node tools/contract/check-db.mjs "dbname=tarif"
+        run: node tools/contract/check-db.mjs "dbname=tarif" --pending "dbname=oneri"
 
   canli:
     runs-on: ubuntu-latest

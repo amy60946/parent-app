@@ -13,7 +13,7 @@ const icon: Record<string, keyof typeof Ionicons.glyphMap> = {
   clinic_suggestion: 'briefcase-outline', clinic_revoked: 'briefcase-outline', device_linked: 'phone-portrait-outline',
   parent_joined: 'person-add-outline', reward_request: 'gift-outline', reward_given: 'gift-outline',
   reward_decided: 'gift-outline', stones_deducted: 'sunny-outline', guest_pass_used: 'gift-outline', referral_reward: 'gift-outline', care_plan_shared: 'clipboard-outline',
-  lesson_assigned: 'school-outline',
+  lesson_assigned: 'school-outline', training_assigned: 'school-outline', training_mastered: 'ribbon-outline', training_reminder: 'alarm-outline',
   session_scheduled: 'calendar-outline', session_changed: 'calendar-outline', session_cancelled: 'calendar-outline', session_offer: 'calendar-outline',
 };
 
@@ -34,6 +34,10 @@ export function notificationTarget(n: Pick<AppNotification, 'kind' | 'data'>): [
   if ((n.kind.startsWith('session_')) && n.data?.session_id) return ['Clinician', { sessionId: n.data.session_id }];
   // Uzmanın ders önerisi (akislar.md 22) → Gelişim › Ben
   if (n.kind === 'lesson_assigned') return ['Tabs', { screen: 'Gelişim', params: { who: 'me' } }];
+  // Ebeveyn eğitimi (akislar.md 23; durumlar.md P21): o eğitimin sayfası
+  if ((n.kind === 'training_assigned' || n.kind === 'training_mastered' || n.kind === 'training_reminder') && n.data?.training_id) {
+    return ['Training', { trainingId: n.data.training_id }];
+  }
   if (n.kind === 'kvkk_answered') return ['Kvkk', { tab: 'list' }]; // KVKK başvurusu yanıtlandı (ortak P17)
   return null;
 }
