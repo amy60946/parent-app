@@ -1,0 +1,12 @@
+{
+  "not": "Sınır: bu oturumun ağı bu sitelerin çoğunu açamadı. Yalnız Joon’un sayfası ve App Store sayfaları açılıp doğrulandı; öteki satırlar arama sonuçlarına ve bilinen düzene dayanır. Karar vermeden önce bağlantıları kendi tarayıcınızda açıp bakın. App Store değerlendirme sayıları ABD mağazasından, 10 Kasım 2026. “1 · Kaydır” düzenini bugün kullanan büyük bir tüketici uygulaması doğrulanamadı; telefonda çoğu sayfa yazı ve ekran görüntüsünü alt alta dizer (Joon böyle), sabitlenen bölümlerin telefonda takılabildiği bildiriliyor. Yalnız işleyiş örnek alınır; metin, karakter ve görsel kopyalanmaz.",
+  "ornekler": [
+    { "sirket": "Apple (iPhone sayfası)", "kalip": "3 · Dokun + 2 · Tek ekran", "nasil": "“Öne çıkanlar” kartları kendiliğinden ilerler; noktalar ve duraklat düğmesi var. Aşağıdaki bölümler sabitlenir, görsel yerinde değişir.", "basari": "2,5 milyardan fazla etkin cihaz (Apple, Ocak 2026)", "url": "https://www.apple.com/iphone-17-pro/", "bakildi": false },
+    { "sirket": "Revolut", "kalip": "2 · Tek ekran", "nasil": "Üst bölüm yerinde durur; kaydırdıkça görsel uygulama ekranına yaklaşır.", "basari": "70 milyondan fazla müşteri (Revolut)", "url": "https://www.revolut.com/", "bakildi": false },
+    { "sirket": "Wise", "kalip": "3 · Dokun (deneme)", "nasil": "Üst bölümde çalışan döviz hesaplayıcı: ziyaretçi ürünü sayfada dener.", "basari": "App Store 4,6 · 113.834 değerlendirme", "url": "https://wise.com/", "bakildi": false },
+    { "sirket": "Calendly", "kalip": "3 · Dokun (kendiliğinden ilerleyen adımlar)", "nasil": "Adım listesi, dolan ilerleme çizgisi; her adımda ürün görseli değişir.", "basari": "App Store 4,8 · 55.817 değerlendirme", "url": "https://calendly.com/", "bakildi": false },
+    { "sirket": "Notion", "kalip": "3 · Dokun (sekmeler)", "nasil": "Sekmeye dokununca ürün görünümü değişir; ziyaretçi ilgilendiğini seçer.", "basari": "App Store 4,8 · 90.663 değerlendirme", "url": "https://www.notion.com/", "bakildi": false },
+    { "sirket": "Headspace", "kalip": "3 · Dokun (sekme + kaydırılan kartlar)", "nasil": "Hap biçimli sekmeler ve yana kaydırılan kartlar.", "basari": "App Store 4,8 · 973.765 değerlendirme", "url": "https://www.headspace.com/", "bakildi": false },
+    { "sirket": "Joon (en yakın ürün)", "kalip": "Hiçbiri: düz, alt alta", "nasil": "Sessiz tanıtım videosu, sabit fayda blokları, numaralı üç adım, açılır sorular. Öğrenilecek bir şey yok, bozulmaz; ama sayfa uzun ve az gösterir.", "basari": "App Store 4,7 · 6.565 değerlendirme", "url": "https://www.joonapp.io/", "bakildi": true }
+  ]
+}

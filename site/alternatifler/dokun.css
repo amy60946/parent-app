@@ -1,0 +1,48 @@
+/* === Alternatif 3 · Dokun: kaydırmaya bağlı değil. Faydalar kendiliğinden ilerleyen sekmeler (dokununca durur);
+       "Nasıl çalışır" ziyaretçinin telefonda üç dokunuşla denediği akış. ============================================ */
+.tabs3 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .8fr); gap: clamp(28px, 6vw, 88px); align-items: center; }
+.tabs3-list { display: grid; gap: 10px; align-content: center; min-width: 0; }
+.tab3 { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.tab3.on { border-color: var(--ink); box-shadow: 0 14px 34px -24px rgba(15, 27, 61, .5); }
+.tab3 h3 { font-size: 1.08rem; }
+.tab3-head { width: 100%; display: flex; align-items: center; gap: 12px; padding: 16px 18px; background: none; border: 0; font: inherit; font-weight: 700; color: var(--ink); text-align: left; cursor: pointer; }
+.tab3-head .num { flex: none; width: 30px; height: 30px; font-size: .95rem; }
+.tab3-title { flex: 1; min-width: 0; }
+.tab3-ico { width: 10px; height: 10px; border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3); transform: rotate(45deg); transition: transform .2s ease; flex: none; margin-right: 4px; }
+.tab3.on .tab3-ico { transform: rotate(-135deg); }
+.tab3-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s ease; }
+.tab3.on .tab3-body { grid-template-rows: 1fr; }
+.tab3-in { min-height: 0; overflow: hidden; display: grid; gap: 12px; padding: 0 18px; visibility: hidden; transition: visibility 0s .3s; }
+.tab3.on .tab3-in { padding-bottom: 18px; visibility: visible; transition-delay: 0s; }
+.tab3-in p { font-size: .98rem; }
+.tab3-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; }
+.tab3-bar b { display: block; height: 100%; width: 0; background: var(--sun); }
+@keyframes tab3fill { to { width: 100%; } }
+@media (min-width: 861px) and (prefers-reduced-motion: no-preference) {
+  .tabs3[data-tabs="auto"].inview:not(.manual) .tab3.on .tab3-bar b { animation: tab3fill 7s linear forwards; }
+  .tabs3[data-tabs="auto"]:hover .tab3-bar b, .tabs3[data-tabs="auto"]:focus-within .tab3-bar b { animation-play-state: paused; }
+}
+.tabs3-stage { display: grid; justify-items: center; min-width: 0; }
+.tabs3 .phone { width: min(100%, 290px); }
+.slot:empty { display: none; }
+.try { justify-self: start; font-size: .92rem; font-weight: 700; color: var(--ink); background: color-mix(in srgb, var(--sun) 24%, var(--card)); border-radius: 10px; padding: 8px 12px; }
+.demo-ctl { display: flex; gap: 10px; margin-top: 6px; }
+.screen button { cursor: pointer; }
+.screen button:disabled { cursor: default; }
+.pulse { position: relative; }
+.pulse::after { content: ""; position: absolute; inset: -.4em; border-radius: inherit; border: .16em solid var(--sun); pointer-events: none; animation: pulse 1.5s ease-out infinite; }
+@keyframes pulse { 0% { opacity: 1; transform: scale(.97); } 100% { opacity: 0; transform: scale(1.1); } }
+.screen .cta.ok, .screen .did.ok { background: #E6F4EA; color: #2F7D4A; }
+.screen .rbtn { width: 2.2em; height: 2.2em; border-radius: 50%; display: grid; place-items: center; font: inherit; font-weight: 800; flex: none; }
+.screen .rbtn.no { border: .1em solid #F1C9D0; color: #B3263E; background: #fff; }
+.screen .rbtn.yes { border: 0; background: var(--app-green); color: #fff; }
+.screen .approve.ok { background: var(--app-mint); }
+.screen .meter i::after { transition: width .6s ease; }
+.demo-note { position: absolute; left: -7%; right: -7%; bottom: 8%; z-index: 3; opacity: 0; transform: translateY(10px); transition: opacity .3s ease, transform .3s ease; pointer-events: none; }
+.demo-note.show { opacity: 1; transform: none; }
+@media (max-width: 860px) {
+  .tabs3 { grid-template-columns: minmax(0, 1fr); }
+  .tabs3-stage { display: none; }
+  .slot .phone { width: min(70%, 250px); margin: 4px auto 0; }
+}
+@media (prefers-reduced-motion: reduce) { .pulse::after { animation: none; opacity: 1; } .tab3-body, .demo-note, .screen .meter i::after { transition: none; } }

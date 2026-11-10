@@ -1,0 +1,44 @@
+/* === Alternatif 2 · Tek ekran: bölüm ekrana sabitlenir; kaydırdıkça yazı ve telefondaki ekran yerinde değişir ======== */
+/* JS çalışmazsa (.is-pinned yok) yazılar alt alta durur, telefon ilk ekranı gösterir. Kaydırma tarayıcının kendi
+   kaydırmasıdır (ele geçirilmez); noktalarla adım seçilir, "Bölümü geç" ile atlanır. */
+.pin { background: var(--tint); }
+.pin.alt { background: var(--card); }
+.pin-inner { padding-block: clamp(40px, 6vw, 72px); }
+.pin.is-pinned { height: calc(100vh + (var(--n) - 1) * 60vh + 30vh); }
+.pin.is-pinned .pin-inner { position: sticky; top: var(--head, 67px); height: calc(100vh - var(--head, 67px)); height: calc(100svh - var(--head, 67px)); padding-block: 0; display: grid; align-items: center; overflow: hidden; }
+.pin-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .8fr); gap: clamp(28px, 6vw, 88px); align-items: center; }
+.pin-copy { display: grid; gap: 18px; align-content: center; min-width: 0; }
+h2.pin-h { font-size: .95rem; letter-spacing: .08em; color: var(--ink-3); font-weight: 800; }
+.pin-sub { font-weight: 600; max-width: 32rem; }
+.pin-texts { display: grid; gap: 28px; }
+.pin-text { display: grid; gap: 12px; align-content: start; justify-items: start; max-width: 32rem; }
+.pin-text h3 { font-size: clamp(1.5rem, 2.8vw, 2.1rem); font-weight: 800; }
+.pin-text p { font-size: 1.05rem; }
+.pin.is-pinned .pin-texts { gap: 0; }
+.pin.is-pinned .pin-text { grid-area: 1 / 1; opacity: 0; visibility: hidden; transform: translateY(12px); transition: opacity .3s ease, transform .3s ease, visibility 0s .3s; }
+.pin.is-pinned .pin-text.on { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+.pin-nav { display: none; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pin.is-pinned .pin-nav { display: flex; }
+.pin-dots { display: flex; gap: 2px; margin-left: -10px; }
+.pin-dot { width: 30px; height: 30px; border: 0; background: none; padding: 0; display: grid; place-items: center; cursor: pointer; border-radius: 50%; }
+.pin-dot span { width: 9px; height: 9px; border-radius: 5px; background: color-mix(in srgb, var(--ink) 24%, transparent); transition: width .2s ease, background .2s ease; }
+.pin-dot.on span { width: 24px; background: var(--ink); }
+.pin-count { font-size: .9rem; font-weight: 700; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.pin-skip { margin-left: auto; font-size: .9rem; font-weight: 700; color: var(--ink-2); text-underline-offset: 3px; }
+.pin-stage { display: grid; justify-items: center; min-width: 0; }
+.pin-stage .phone { width: min(100%, 300px, calc((100vh - var(--head, 67px) - 72px) * 9 / 19)); }
+.pin-after { padding-block: clamp(28px, 4vw, 44px); }
+.pin-after .closing { margin-top: 0; }
+@media (max-width: 860px) {
+  .pin.is-pinned .pin-inner { align-items: stretch; padding-top: 18px; }
+  .pin.is-pinned .pin-inner > .wrap { height: 100%; }
+  .pin-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .pin.is-pinned .pin-grid { grid-template-rows: auto minmax(0, 1fr); align-items: start; }
+  .pin-copy { gap: 10px; }
+  .pin-text { gap: 8px; }
+  .pin-text h3 { font-size: 1.3rem; }
+  .pin-text p { font-size: .95rem; line-height: 1.5; }
+  .pin.is-pinned .pin-stage { height: 100%; overflow: hidden; align-items: start; }
+  .pin-stage .phone { width: min(64%, 260px); }
+}
+@media (prefers-reduced-motion: reduce) { .pin.is-pinned .pin-text { transition: none; transform: none; } }
