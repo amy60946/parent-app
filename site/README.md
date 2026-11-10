@@ -6,6 +6,7 @@ Kullanıcı isteği 4 Kasım 2026: ParentApp ve Pofi Adası için tek tanıtım 
 | Yol | Ne |
 |---|---|
 | `landing.html` | Tanıtım sayfası. İskeletsiz yazılır (`<title>`, `<style>` ve gövde); önizlemede Artifact iskeleti ekler, `build.sh` tam belgeye sarar. |
+| `public/fonts/` | Yazı tipi **Plus Jakarta Sans** (Moyo Mercek tanıtım sitesiyle aynı, kullanıcı isteği 10 Kasım 2026; clinic-app `site/assets/fonts`'tan kopya), SIL OFL 1.1 (`OFL.txt`). Kendi dosyasından yüklenir, Google Fonts'a istek gitmez. |
 | `public/img/` | Görseller. Oyun görselleri GameApp penceresinin onayladığı dosyalardan küçültüldü (game-app `claude/affectionate-hawking-ozf41w`: `Resources/Art/pick_stage.jpg` → `kumsal.jpg`, `load_residents.jpg` → `adalilar.jpg`, `film_1_ada.jpg` → `ada.jpg`, `load_beach.jpg` → `iskele.jpg`, `Art/AppIcon.png` → `pofi-simge.png`, `Icons/ui_sunstone.png`, `Icons/ui_coin.png`); Okti avatarları `assets/avatars/`. `tools/preview/keyart.jpg` kullanılmaz (kullanıcı kontrol etmedi). |
 | `build.sh` | `dist-site/` üretir: kök = tanıtım sayfası, `/app/` = ParentApp'in web derlemesi (giriş, kayıt, kurulum, cihaz bağlama). `--demo` deneme veritabanıyla. |
 
