@@ -131,6 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         `Şu an ${before.email} ile girişlisin. Bu bağlantı ${target ?? 'başka bir hesapla'} oturum açar. Bağlantıyı sen istemediysen Vazgeç'e dokun.`);
       if (!ok) return;
     }
+    let redirect: string | null = null;
     try {
       if (p.access_token && p.refresh_token) {
         const { error } = await supabase.auth.setSession({ access_token: p.access_token, refresh_token: p.refresh_token });
@@ -139,12 +140,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { error } = await supabase.auth.verifyOtp({ token_hash: p.token_hash, type: p.type as EmailOtpType });
         if (error) throw error;
       } else if (p.code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(p.code);
+        const { data, error } = await supabase.auth.exchangeCodeForSession(p.code);
         if (error) throw error;
+        if ((data as { redirectType?: string | null }).redirectType === 'recovery') redirect = 'recovery'; // PKCE akışında tür bağlantıda yazmaz
       }
-      if (p.type === 'recovery') setRecovery(true);
-      // Önceden oturum yoksa kimin hesabına girildiğini göster; tanımıyorsa hemen çıkabilsin
-      if (!before) {
+      const isRecovery = p.type === 'recovery' || redirect === 'recovery';
+      if (isRecovery) setRecovery(true);
+      // Önceden oturum yoksa kimin hesabına girildiğini göster; tanımıyorsa hemen çıkabilsin. Şifre yenilemede pencere
+      // çıkmaz (kullanıcı geri bildirimi 10 Kasım 2026: "Yeni şifre belirle" ekranının üstünde anlamsız geliyordu):
+      // kişi bağlantıyı kendisi istedi; hesap adresi yeni şifre ekranında yazar, "Geri" oturumu kapatır.
+      if (!before && !isRecovery) {
         const email = (await supabase.auth.getSession()).data.session?.user.email;
         if (email) {
           Alert.alert('Giriş yapıldı', `${email} hesabıyla giriş yapıldı.`, [
