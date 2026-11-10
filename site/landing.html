@@ -1,10 +1,15 @@
 <title>Moyo ve Pofi Adası</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Moyo, çocuğunuzun günlük sorumluluklarını düzenli yapmasına yardımcı olur. Sorumlulukları siz verirsiniz, çocuğunuz Pofi Adası oyununda macera olarak görür ve yapınca işaretler, siz onaylarsınız.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap">
+<link rel="preload" href="fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+/* Yazı tipi Moyo Mercek tanıtım sitesiyle aynı (kullanıcı isteği 10 Kasım 2026): Plus Jakarta Sans, kendi dosyasından
+   (public/fonts, SIL OFL 1.1, OFL.txt). Google Fonts'a istek gitmez. */
+@font-face { font-family: "Plus Jakarta Sans"; font-style: normal; font-weight: 400 800; font-display: swap;
+  src: url(fonts/plus-jakarta-sans-latin-ext.woff2) format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Plus Jakarta Sans"; font-style: normal; font-weight: 400 800; font-display: swap;
+  src: url(fonts/plus-jakarta-sans-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
 /* Düzen: Moyo (ebeveyn uygulaması) önde. Sade zemin, büyük Moyo telefon ekranı, oyun yalnız küçük bir tablet olarak arkada.
    Bölümler: ne işe yarar → faydalar → nasıl çalışır (kaydırmalı, ekranlarla) → güvenlik → fiyat → sorular. */
 :root {
@@ -19,8 +24,8 @@
   --ok: #2F7D4A;
   --shadow: 0 24px 60px -24px rgba(15, 27, 61, .35);
   --ring: 0 0 0 0 transparent;
-  --font-display: "Bricolage Grotesque", "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-body: "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --r-lg: 22px;
   --r-md: 14px;
   /* Uygulama ekranları Moyo'nun kendi (açık) renkleriyle, iki temada da aynı */
