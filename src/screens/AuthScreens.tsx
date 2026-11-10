@@ -368,7 +368,8 @@ export function ForgotPasswordScreen({ navigation, route }: any) {
 /* ---------- Yeni şifre (e-postadaki bağlantıdan gelinir) ---------- */
 
 export function NewPasswordScreen() {
-  const { updatePassword, signOut } = useAuth();
+  const { updatePassword, signOut, session } = useAuth();
+  const email = session?.user.email;
   const [password, setPassword] = useState('');
   const [again, setAgain] = useState('');
   const [busy, setBusy] = useState(false);
@@ -388,7 +389,7 @@ export function NewPasswordScreen() {
   };
 
   return (
-    <Layout title="Yeni şifre belirle" subtitle="Hesabın için yeni bir şifre seç." onBack={signOut}>
+    <Layout title="Yeni şifre belirle" subtitle={email ? `${email} hesabın için yeni bir şifre seç. Bu hesap senin değilse geri dön.` : 'Hesabın için yeni bir şifre seç.'} onBack={signOut}>
       <Input value={password} onChangeText={setPassword} placeholder={`Yeni şifre (en az ${MIN_PASSWORD} karakter)`} secure
         autoComplete="new-password" textContentType="newPassword" />
       <Input value={again} onChangeText={setAgain} placeholder="Yeni şifre (tekrar)" secure
