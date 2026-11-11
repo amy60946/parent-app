@@ -15,7 +15,7 @@ görselleriyle alternatifler; içerikler aynı kalsın, UI/UX değişsin; karı�
 - **Önizleme kabuğu** `kabuk.html`: seçici, telefon / bilgisayar genişliği, karşılaştırma ve benchmark (`benchmark.json`).
 - Üretim: `python3 site/alternatifler/build.py <çıktı klasörü>` → `kaydir.html`, `tek-ekran.html`, `dokun.html`, `simdiki.html`, `index.html`, `img/`, `fonts/`.
   Çıktı depoya girmez (`out/`). Yayındaki siteyi (`build-cf.sh`) etkilemez.
-- Önizleme: https://claude.ai/artifact/ (bağlantı `docs/DURUM.md` 10 Kasım satırında).
+- Önizleme: https://claude.ai/artifact/NGFSZunv9JV2hPeKeW3fy2 (çıktı klasöründeki `index.html` sayfa, öteki dosyalar yanında yayınlanır).
 
 Benchmark sınırı (10 Kasım 2026): oturumun ağı aday sitelerin çoğunu açamadı; yalnız Joon'un sayfası ve App Store sayfaları doğrulandı
 (`benchmark.json` `bakildi`). Öteki satırlar arama sonuçlarına ve bilinen düzene dayanır.

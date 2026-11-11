@@ -27,11 +27,13 @@
 .slot:empty { display: none; }
 .try { justify-self: start; font-size: .92rem; font-weight: 700; color: var(--ink); background: color-mix(in srgb, var(--sun) 24%, var(--card)); border-radius: 10px; padding: 8px 12px; }
 .demo-ctl { display: flex; gap: 10px; margin-top: 6px; }
+.demo-ctl .btn { font: inherit; font-weight: 700; cursor: pointer; }
 .screen button { cursor: pointer; }
 .screen button:disabled { cursor: default; }
-.pulse { position: relative; }
-.pulse::after { content: ""; position: absolute; inset: -.4em; border-radius: inherit; border: .16em solid var(--sun); pointer-events: none; animation: pulse 1.5s ease-out infinite; }
-@keyframes pulse { 0% { opacity: 1; transform: scale(.97); } 100% { opacity: 0; transform: scale(1.1); } }
+/* Dokunulacak düğme: her zaman görünen sarı çerçeve + dışa doğru sönen halka (ölçek değişmez, ekran kenarına taşmaz) */
+.pulse { position: relative; box-shadow: 0 0 0 .18em var(--sun); }
+.pulse::after { content: ""; position: absolute; inset: -.18em; border-radius: inherit; pointer-events: none; animation: pulse 1.6s ease-out infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--sun) 75%, transparent); } 100% { box-shadow: 0 0 0 .6em transparent; } }
 .screen .cta.ok, .screen .did.ok { background: #E6F4EA; color: #2F7D4A; }
 .screen .rbtn { width: 2.2em; height: 2.2em; border-radius: 50%; display: grid; place-items: center; font: inherit; font-weight: 800; flex: none; }
 .screen .rbtn.no { border: .1em solid #F1C9D0; color: #B3263E; background: #fff; }
@@ -45,4 +47,4 @@
   .tabs3-stage { display: none; }
   .slot .phone { width: min(70%, 250px); margin: 4px auto 0; }
 }
-@media (prefers-reduced-motion: reduce) { .pulse::after { animation: none; opacity: 1; } .tab3-body, .demo-note, .screen .meter i::after { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .pulse::after { animation: none; } .tab3-body, .demo-note, .screen .meter i::after { transition: none; } }

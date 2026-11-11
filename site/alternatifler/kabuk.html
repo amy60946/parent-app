@@ -34,12 +34,13 @@ button:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px soli
 .view { min-height: 0; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; align-items: start; }
 .view iframe { width: 100%; height: 100%; border: 1px solid var(--line); border-radius: 16px; background: #F4F7FA; display: block; }
 .shell[data-w="phone"] .view iframe { width: 410px; max-width: 100%; height: min(100%, 820px); border: 10px solid var(--bezel); border-radius: 44px; }
-.cmp { width: 100%; height: 100%; overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: clamp(16px, 3vw, 28px); display: grid; gap: 26px; align-content: start; }
+.cmp { width: 100%; height: 100%; overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: clamp(16px, 3vw, 28px); display: grid; grid-template-columns: minmax(0, 1fr); gap: 26px; align-content: start; }
+.cmp > * { min-width: 0; }
 .cmp h2 { font-size: 18px; font-weight: 800; margin: 0 0 10px; letter-spacing: -.01em; }
 .cmp p { margin: 0; max-width: 78ch; }
 .cmp .lead { font-size: 16px; font-weight: 600; }
 .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.card { border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.card { border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .card.rec { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
 .card h3 { margin: 0; font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .card h3 .n { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--sun); color: #0F1B3D; font-size: 13px; }
@@ -49,7 +50,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px soli
 .card li::before { font-weight: 800; }
 .card li.p::before { content: "+"; color: var(--good); }
 .card li.m::before { content: "−"; color: var(--warn); }
-.card .go { justify-self: start; font: inherit; font-size: 13.5px; font-weight: 700; color: var(--ink); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.card .go { align-self: flex-start; margin-top: auto; font: inherit; font-size: 13.5px; font-weight: 700; color: var(--ink); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
 .scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
 table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 13.5px; }
 th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
@@ -60,7 +61,7 @@ td a { color: inherit; font-weight: 700; text-underline-offset: 3px; word-break:
 .tagm { display: inline-block; font-size: 11.5px; color: var(--ink-2); }
 .small { font-size: 13px; color: var(--ink-2); }
 @media (max-width: 900px) { .cards { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 700px) { .wide { display: none; } .shell { min-height: 560px; } .ttl span { display: none; } }
+@media (max-width: 700px) { .wide { display: none; } .shell { min-height: 560px; } .ttl span { display: none; } .pick { flex-wrap: wrap; overflow-x: visible; } .pick button { padding: 7px 12px; } }
 </style>
 
 <div class="shell" id="shell" data-w="desk">
