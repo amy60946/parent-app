@@ -1,0 +1,18 @@
+/* === Alternatif 1 · Kaydır: telefon sabit durur, yazı akar; ekrandaki yazıya göre telefondaki ekran değişir ========== */
+.story { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .8fr); gap: clamp(28px, 6vw, 88px); align-items: start; }
+.story-stage { position: sticky; top: 96px; display: grid; justify-items: center; gap: 14px; }
+.story-stage .phone { width: min(100%, 300px, calc((100vh - 170px) * 9 / 19)); }
+.beat { min-height: 68vh; display: grid; align-content: center; gap: 12px; max-width: 31rem; opacity: .4; transition: opacity .3s ease; }
+.beat.on { opacity: 1; }
+.beat h3 { font-size: clamp(1.35rem, 2.3vw, 1.75rem); font-weight: 800; }
+.beat p { font-size: 1.05rem; }
+.beat-screen { display: none; }
+.story .dots { justify-content: center; }
+@media (max-width: 860px) {
+  .story { grid-template-columns: minmax(0, 1fr); }
+  .story-stage { display: none; }
+  .story-text { display: grid; gap: 48px; }
+  .beat { min-height: 0; opacity: 1; max-width: none; }
+  .beat-screen { display: block; width: min(70%, 250px); margin: 10px auto 0; }
+}
+@media (prefers-reduced-motion: reduce) { .beat { transition: none; } }

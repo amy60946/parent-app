@@ -1,0 +1,33 @@
+/* === Alternatifler: ortak parçalar (telefon içi ekranlar, üst üste ekran dizisi) =================================== */
+.stack .screen { position: absolute; inset: 9px; width: auto; height: auto; opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility 0s .35s; }
+.stack .screen.on { opacity: 1; visibility: visible; transition-delay: 0s; }
+.screen .grow { flex: 1; min-width: 0; }
+.screen .c { text-align: center; }
+.screen .pill { font-size: .8em; vertical-align: middle; }
+.screen .seg { display: grid; grid-template-columns: repeat(3, 1fr); background: #E9ECF2; border-radius: .9em; padding: .2em; font-size: .9em; font-weight: 700; text-align: center; color: var(--app-muted); }
+.screen .seg span { padding: .35em 0; }
+.screen .seg .on { background: #fff; color: var(--app-ink); border-radius: .75em; }
+.screen .ck { width: 1.5em; height: 1.5em; border-radius: .45em; border: .12em solid #C5C9D3; flex: none; display: grid; place-items: center; font-size: .9em; font-weight: 800; color: #fff; }
+.screen .ck.on { background: var(--app-green); border-color: var(--app-green); }
+.screen .bars { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: .5em; align-items: end; height: 5.4em; padding-top: .9em; }
+.screen .bars i { display: block; background: var(--app-green); border-radius: .35em .35em 0 0; height: var(--h); }
+.screen .days { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: .5em; text-align: center; font-size: .74em; color: var(--app-muted); font-weight: 600; padding: .35em 0 .7em; white-space: nowrap; }
+.screen .chips { display: flex; flex-wrap: wrap; gap: .45em; }
+.screen .chip { padding: .35em .8em; border-radius: 2em; background: #fff; border: .1em solid var(--app-line); font-weight: 700; font-size: .9em; }
+.screen .chip.on { background: var(--app-ink); color: #fff; border-color: var(--app-ink); }
+.screen .plus { width: 1.9em; height: 1.9em; border-radius: 50%; background: var(--app-ink); color: #fff; display: grid; place-items: center; font-weight: 800; flex: none; }
+.screen .cta { display: block; width: 100%; background: var(--app-ink); color: #fff; border: 0; border-radius: .9em; padding: .8em; text-align: center; font: inherit; font-weight: 800; }
+.screen .shot { position: relative; margin: .2em 1.2em 0; border-radius: 1em; overflow: hidden; aspect-ratio: 16 / 9; flex: none; }
+.screen .shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.screen .shot .tag { font-size: .78em; left: .7em; top: .7em; padding: .25em .7em; }
+.screen .did { background: var(--app-green); color: #fff; border: 0; border-radius: 2em; padding: .5em 1em; font: inherit; font-weight: 800; flex: none; }
+.screen .care { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6em; }
+.screen .care span { background: #fff; border-radius: .9em; padding: .8em .3em; text-align: center; font-weight: 700; }
+.screen .care.lock span { background: #E9ECF2; color: var(--app-muted); }
+.screen .push { background: rgba(255,255,255,.96); color: var(--app-ink); border-radius: 1em; padding: .7em .9em; display: flex; gap: .7em; align-items: center; font-size: .95em; }
+.screen .push img { width: 2.3em; height: 2.3em; border-radius: .6em; flex: none; }
+.screen .push b { display: block; font-size: .85em; color: var(--app-muted); }
+.screen .clock { text-align: center; font-family: var(--font-display); font-weight: 800; font-size: 3.8em; line-height: 1; padding: .2em 0 .25em; }
+.screen.night { background: linear-gradient(180deg, #24376E 0%, #0F1B3D 100%); color: #fff; }
+.screen.night .muted { color: rgba(255,255,255,.75); }
+@media (prefers-reduced-motion: reduce) { .stack .screen { transition: none; } }
