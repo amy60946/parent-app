@@ -12,6 +12,8 @@ import { CareBarrier, CareGoal, CareLog, CareModule, CareRoutine, carePlan, list
 import { genitive } from '../lib/tr';
 import { addDays, fromISO, toISO } from '../dates';
 import { useStore } from '../store';
+import { CARE_PLAN_FLAG } from '../lib/care';
+import { useFlag } from '../clientConfig';
 
 // Uzmanım › çocuk › Takip planı (ortak/sozlesme/akislar.md 12): uzmanın aileyle paylaştığı hedefler ve aile programı.
 // Ebeveyn modülde günde bir kez "Bugün uyguladım" der; zorluk kendi bildirimidir, puan ya da ölçek değildir.
@@ -24,7 +26,21 @@ const barriers: { id: CareBarrier; label: string }[] = [
 ];
 const ease = ['Çok kolaydı', 'Kolaydı', 'Orta', 'Zorlandım', 'Çok zorlandım'];
 
-export default function CarePlanScreen({ navigation, route }: any) {
+// Bayrak kapalıyken (ortak akislar.md 12.2) bu ekrana giden yol yok; eski bir bildirim ya da bağlantıyla gelinirse kısa not.
+export default function CarePlanScreen(props: any) {
+  const planOn = useFlag(CARE_PLAN_FLAG);
+  if (!planOn) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
+        <View style={{ padding: 12 }}><IconButton name="chevron-back" label="Geri" onPress={() => props.navigation.goBack()} /></View>
+        <Text style={{ padding: 24, textAlign: 'center', fontSize: 15, lineHeight: 22, color: colors.navy }}>Takip planı şu an kapalı. Uzmanının verdiği eğitim ve görevler Ben ve Uzmanım sayfalarında.</Text>
+      </SafeAreaView>
+    );
+  }
+  return <CarePlanInner {...props} />;
+}
+
+function CarePlanInner({ navigation, route }: any) {
   const { linkId } = route.params as { linkId: string; childName?: string; clinician?: string };
   const { session } = useAuth();
   const { children, completions } = useStore();

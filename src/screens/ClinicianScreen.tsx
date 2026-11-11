@@ -14,7 +14,8 @@ import { colors, radius } from '../theme';
 import { COLUMN } from '../components/Column';
 import { useStore } from '../store';
 import { useAuth } from '../lib/auth';
-import { useCare, groupClinicians, CareTodo } from '../lib/care';
+import { useCare, groupClinicians, CareTodo, CARE_PLAN_FLAG } from '../lib/care';
+import { useFlag } from '../clientConfig';
 import { ClinicLink, addChildToClinic, saveLog, setHistoryShared, stopSharing } from '../lib/clinic';
 import { historyConsent, removeText, unlinkText } from '../data/clinicTexts';
 import { formatTR, todayISO } from '../dates';
@@ -66,6 +67,7 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
   // Ebeveyn eğitimi görevleri ve davranış olayı (ortak akislar.md 23–24: "Uzmanım › uzman › Günlük yapılacaklar"); sunucuda yoksa görünmez
   const trainings = useTrainings();
   const behaviors = useTargetBehaviors();
+  const planOn = useFlag(CARE_PLAN_FLAG); // Takip Planı kapalıyken Program bölümü ve plan bağlantıları yok (akislar.md 12.2)
 
   if (!care) return <SafeAreaView style={styles.safe}><ActivityIndicator color={colors.navy} style={{ marginTop: 60 }} /></SafeAreaView>;
   if (!c) {
@@ -202,7 +204,9 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
 
         <SessionsSection links={links} childName={childName} highlight={sessionId} />
 
-        <Section title="Bugün yapılacaklar" info="Uzmanının seninle paylaştığı evde uygulamalar. Uyguladığın gün kutuyu işaretle; nasıl geçtiğini takip planında yazabilirsin. Zor bir an olduysa davranış kaydı ekle; uzmanın görür.">
+        <Section title="Bugün yapılacaklar" info={planOn
+          ? 'Uzmanının seninle paylaştığı evde uygulamalar. Uyguladığın gün kutuyu işaretle; nasıl geçtiğini takip planında yazabilirsin. Zor bir an olduysa davranış kaydı ekle; uzmanın görür.'
+          : 'Uzmanının verdiği eğitim görevleri burada görünür. Zor bir an olduysa davranış kaydı ekle; uzmanın görür.'}>
           {todos.map((t, i) => (
             <View key={t.module.id} style={[styles.row, i > 0 && styles.sep]}>
               <Pressable style={{ flex: 1, gap: 2 }} onPress={() => openPlan(links.find((l) => l.linkId === t.linkId)!)} accessibilityRole="button">
@@ -242,27 +246,29 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
           </Pressable>
         </Section>
 
-        <Section title="Program" info="Uzmanının her çocuk için paylaştığı davranış hedefleri ve aile programı (eğitimler). İlerlemeyi buradan takip edersin; uzmanın da görür. Bu bilgiler tanı ya da puan değildir.">
-          {links.map((l, i) => {
-            const p = care.plans[l.linkId];
-            const active = p?.modules.filter((m) => m.status === 'active') ?? [];
-            const week = active.reduce((n, m) => n + Math.min(m.practicedWeek, 7), 0);
-            const pct = active.length ? Math.round((week / (active.length * 7)) * 100) : 0;
-            const sub = !l.planReady ? 'Takip planı bu sürümde açık değil'
-              : !p || (!p.modules.length && !p.goals.length) ? 'Uzmanın henüz plan paylaşmadı'
-              : [active.length ? `${active.length} uygulama` : '', p.goals.length ? `${p.goals.length} davranış hedefi` : '', active.length ? `bu hafta %${pct}` : ''].filter(Boolean).join(' · ');
-            return (
-              <Pressable key={l.linkId} onPress={() => openPlan(l)} disabled={!l.planReady} style={[styles.row, i > 0 && styles.sep]} accessibilityRole="button">
-                <View style={{ flex: 1, gap: 6 }}>
-                  <Text style={styles.rowTitle}>{genitive(childName(l.childId))} programı</Text>
-                  {active.length > 0 && <View style={styles.bar}><View style={[styles.barFill, { width: `${pct}%` }]} /></View>}
-                  <Text style={styles.cap}>{sub}</Text>
-                </View>
-                {l.planReady && <Ionicons name="chevron-forward" size={16} color={colors.faint} />}
-              </Pressable>
-            );
-          })}
-        </Section>
+        {planOn && (
+          <Section title="Program" info="Uzmanının her çocuk için paylaştığı davranış hedefleri ve aile programı (eğitimler). İlerlemeyi buradan takip edersin; uzmanın da görür. Bu bilgiler tanı ya da puan değildir.">
+            {links.map((l, i) => {
+              const p = care.plans[l.linkId];
+              const active = p?.modules.filter((m) => m.status === 'active') ?? [];
+              const week = active.reduce((n, m) => n + Math.min(m.practicedWeek, 7), 0);
+              const pct = active.length ? Math.round((week / (active.length * 7)) * 100) : 0;
+              const sub = !l.planReady ? 'Takip planı bu sürümde açık değil'
+                : !p || (!p.modules.length && !p.goals.length) ? 'Uzmanın henüz plan paylaşmadı'
+                : [active.length ? `${active.length} uygulama` : '', p.goals.length ? `${p.goals.length} davranış hedefi` : '', active.length ? `bu hafta %${pct}` : ''].filter(Boolean).join(' · ');
+              return (
+                <Pressable key={l.linkId} onPress={() => openPlan(l)} disabled={!l.planReady} style={[styles.row, i > 0 && styles.sep]} accessibilityRole="button">
+                  <View style={{ flex: 1, gap: 6 }}>
+                    <Text style={styles.rowTitle}>{genitive(childName(l.childId))} programı</Text>
+                    {active.length > 0 && <View style={styles.bar}><View style={[styles.barFill, { width: `${pct}%` }]} /></View>}
+                    <Text style={styles.cap}>{sub}</Text>
+                  </View>
+                  {l.planReady && <Ionicons name="chevron-forward" size={16} color={colors.faint} />}
+                </Pressable>
+              );
+            })}
+          </Section>
+        )}
 
         {suggestions.length > 0 && (
           <View style={{ gap: 8 }}>
