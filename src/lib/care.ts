@@ -4,6 +4,7 @@ import {
   ClinicLink, CareGoal, CareModule, CareRoutine, PendingInvite, Suggestion, carePlan, listLinks, onSuggestionsChange, pendingInvites, pendingSuggestions, todayLogs,
 } from './clinic';
 import { todayISO } from '../dates';
+import { useFlag } from '../clientConfig';
 
 // Uzman ilişkisinin özeti (Ben ve Uzmanım sekmeleri; kullanıcı isteği 28 Ekim 2026, Joon "Me" / "Care"):
 // bağlı uzmanlar (çocuk başına paylaşım), bekleyen davetler, bekleyen görev önerileri, aile programının etkin modülleri ve
@@ -27,12 +28,18 @@ export function groupClinicians(links: ClinicLink[]): Clinician[] {
   return [...map.values()];
 }
 
-export async function loadCare(familyId: string | null): Promise<CareState> {
+// Takip Planı uzaktan ayar bayrağı `care_plan` arkasında (kullanıcı kararı 11 Kasım 2026, lansman odağı ebeveyn eğitimi;
+// ortak akislar.md 12.2, admin.md): bayrak yoksa KAPALI. Kapalıyken plan hiç okunmaz: `plans` boş, `todos` boş kalır; böylece
+// Ben › Programına devam et, "Bugün n uygulama", Uzmanım › Bugün yapılacaklar'daki program satırları, önerilerdeki davranış
+// hedefi etiketi ve Davranış kaydındaki "Hangi davranış hedefiyle ilgili?" kendiliğinden görünmez. Veri ve işlevler durur.
+export const CARE_PLAN_FLAG = 'care_plan';
+
+export async function loadCare(familyId: string | null, planOn = true): Promise<CareState> {
   const links = await listLinks().catch(() => [] as ClinicLink[]);
   const [invites, suggestions, plans] = await Promise.all([
     pendingInvites().catch(() => [] as PendingInvite[]),
     familyId ? pendingSuggestions(familyId).catch(() => [] as Suggestion[]) : Promise.resolve([] as Suggestion[]),
-    Promise.all(links.filter((l) => l.planReady).map(async (l) => ({ l, p: await carePlan(l.linkId).catch(() => null) }))),
+    Promise.all(links.filter((l) => planOn && l.planReady).map(async (l) => ({ l, p: await carePlan(l.linkId).catch(() => null) }))),
   ]);
   const active = plans.flatMap(({ l, p }) => (p?.modules ?? []).filter((m) => m.status === 'active')
     .map((m) => ({ linkId: l.linkId, childId: l.childId, clinician: clinicianName(l), module: m })));
@@ -46,7 +53,8 @@ export async function loadCare(familyId: string | null): Promise<CareState> {
 // Ekran her öne geldiğinde yeniden okunur (başka ekranda "Bugün uyguladım" ya da paylaşım değişmiş olabilir)
 export function useCare(familyId: string | null) {
   const [state, setState] = useState<CareState | null>(null);
-  const reload = useCallback(() => loadCare(familyId).then(setState).catch(() => setState(EMPTY)), [familyId]);
+  const planOn = useFlag(CARE_PLAN_FLAG);
+  const reload = useCallback(() => loadCare(familyId, planOn).then(setState).catch(() => setState(EMPTY)), [familyId, planOn]);
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
   // Öneriler başka yerde değişince (uzman gönderdi, eş kabul etti) ekran açıkken de yenilenir
   useEffect(() => (familyId ? onSuggestionsChange(familyId, reload) : undefined), [familyId, reload]);
