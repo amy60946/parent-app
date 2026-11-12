@@ -4,7 +4,7 @@ Kullanıcı isteği (11 Kasım 2026): küçük harf "moyo" sözcük logosu ("y" 
 "mercek"; renk ve yazı tipi için verilen referans temel alınır; üç uygulama iconu (Moyo, Moyo Mercek, Moyo Oyun) tek aile.
 Kitin tek sahibi bu depodur (Ebeveyn penceresi); Moyo Mercek ve Oyun pencereleri seçimden sonra buradan alır.
 
-**Durum: seçim bekliyor.** Önizleme: https://claude.ai/artifact/H3iJ6aFjeyvrAhQS7EPqeQ
+**Durum:** logo **A Kıvrım seçildi** (kullanıcı, 12 Kasım 2026; B ve C dosyaları kaldırıldı, çizimleri `kit.py`'de duruyor). Icon ailesi ve yazı tipi seçim bekliyor. Seçimler `kit.py` `SELECTED`'da. Önizleme: https://claude.ai/artifact/H3iJ6aFjeyvrAhQS7EPqeQ
 
 | Yol | Ne |
 |---|---|

@@ -18,6 +18,8 @@ TRACK = -0.014 * HEAVY.upm
 
 VARIANTS = {'a': 'Kıvrım', 'b': 'Gülüş', 'c': 'Top'}
 FAMILIES = {'1': 'Sözcük', '2': 'y işareti', '3': 'İki satır'}
+# Kullanıcı seçimleri (None = karar bekliyor). Logo: A Kıvrım (kullanıcı, 12 Kasım 2026).
+SELECTED = {'logo': 'a', 'icon': None, 'yazi': None}
 
 # Renkler: kullanıcının verdiği referans temel alındı (lacivert zemin, tek yeşil vurgu, gri basamaklar).
 PALETTE = [

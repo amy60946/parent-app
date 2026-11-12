@@ -7,6 +7,7 @@
 import json
 import os
 import re
+import shutil
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -35,9 +36,15 @@ def inner(svg):
     return m.group(1), re.sub(r'<title>.*?</title>', '', m.group(2))
 
 
+def variants():
+    """Üretilecek logo alternatifleri: seçildiyse yalnız o."""
+    return [kit.SELECTED['logo']] if kit.SELECTED['logo'] else list(kit.VARIANTS)
+
+
 def build_files():
     n = 0
-    for v in kit.VARIANTS:
+    shutil.rmtree(os.path.join(HERE, 'svg'), ignore_errors=True)    # seçilmeyenlerden dosya kalmasın
+    for v in variants():
         for ink in kit.INKS:
             for suffix in (None, 'mercek', 'oyun'):
                 svg, _, _ = kit.wordmark(v, ink, suffix)
@@ -52,10 +59,10 @@ def build_files():
     write(os.path.join(HERE, 'tokens.css'), '\n'.join(css) + '\n')
     write(os.path.join(HERE, 'tokens.json'), json.dumps({
         'renkler': {var: {'ad': ad, 'deger': val, 'kullanim': use} for ad, var, val, use in kit.PALETTE},
-        'yazi': {'aile': 'Outfit', 'lisans': 'SIL OFL 1.1', 'baslik': 800, 'ara': 600, 'govde': 400, 'ince': 300,
+        'yazi': {'aile': 'Outfit', 'lisans': 'SIL OFL 1.1', 'secilen': kit.SELECTED['yazi'], 'baslik': 800, 'ara': 600, 'govde': 400, 'ince': 300,
                  'olcek_px': {'h1': 58, 'h2': 50, 'h3': 32, 'giris': 24, 'govde': 18, 'kucuk': 14}},
-        'logo': {'harfler': 'Poppins ExtraBold (SIL OFL 1.1) dış çizgisi; "y" özgün', 'alternatifler': kit.VARIANTS, 'secilen': None},
-        'icon': {'aileler': kit.FAMILIES, 'urunler': {k: {x: p[x] for x in ('ad', 'bg', 'fg', 'accent')} for k, p in kit.PRODUCTS.items()}, 'secilen': None},
+        'logo': {'harfler': 'Poppins ExtraBold (SIL OFL 1.1) dış çizgisi; "y" özgün', 'alternatifler': kit.VARIANTS, 'secilen': kit.SELECTED['logo']},
+        'icon': {'aileler': kit.FAMILIES, 'urunler': {k: {x: p[x] for x in ('ad', 'bg', 'fg', 'accent')} for k, p in kit.PRODUCTS.items()}, 'secilen': kit.SELECTED['icon']},
     }, ensure_ascii=False, indent=2) + '\n')
     return n
 
@@ -69,17 +76,21 @@ def build_preview(out):
     def use(sid, vb, label):          # dış viewBox 0 0 g y: <use> sembolü (0, 0)'a yerleştirir, sembolün kendi viewBox'ı ölçekler
         w, h = vb.split()[2:]
         return '<svg viewBox="0 0 %s %s" role="img" aria-label="%s"><use href="#%s" width="%s" height="%s"/></svg>' % (w, h, label, sid, w, h)
+    sel = kit.SELECTED['logo']
     for v, (name, note, rec) in NOTES.items():
         vb_l = sym('wm-%s-l' % v, kit.wordmark(v, 'lacivert')[0]); vb_d = sym('wm-%s-d' % v, kit.wordmark(v, 'yesil')[0])
-        logos.append('<div class="opt"><div class="swatch on-light">%s</div><div class="swatch on-dark">%s</div><h3>%s %s%s</h3><p class="muted small">%s</p></div>'
-                     % (use('wm-%s-l' % v, vb_l, 'moyo, ' + name), use('wm-%s-d' % v, vb_d, 'moyo, ' + name), v.upper(), name, '<span class="tag">önerilen</span>' if rec else '', note))
+        tag = ('<span class="tag">seçildi</span>' if v == sel else '') if sel else ('<span class="tag">önerilen</span>' if rec else '')
+        logos.append('<div class="opt%s"><div class="swatch on-light">%s</div><div class="swatch on-dark">%s</div><h3>%s %s%s</h3><p class="muted small">%s</p></div>'
+                     % (' dim' if sel and v != sel else '', use('wm-%s-l' % v, vb_l, 'moyo, ' + name), use('wm-%s-d' % v, vb_d, 'moyo, ' + name), v.upper(), name, tag, note))
+        if v not in variants():
+            continue
         cells = []
         for suffix in ('mercek', 'oyun'):
             for ink, cls in (('lacivert', 'on-light'), ('yesil', 'on-dark')):
                 sid = 'lk-%s-%s-%s' % (v, suffix, ink)
                 vb = sym(sid, kit.wordmark(v, ink, suffix)[0])
                 cells.append('<div class="swatch %s">%s</div>' % (cls, use(sid, vb, 'moyo ' + suffix)))
-        locks.append('<div class="locks" data-variant="%s"%s>%s</div>' % (v, '' if v == 'a' else ' hidden', ''.join(cells)))
+        locks.append('<div class="locks" data-variant="%s"%s>%s</div>' % (v, '' if v == (sel or 'a') else ' hidden', ''.join(cells)))
         rows = []
         for fam, fname in kit.FAMILIES.items():
             ids = {}
@@ -95,7 +106,7 @@ def build_preview(out):
                            ''.join(app(p, 's40') for p in kit.PRODUCTS) + ''.join(app(p, 's29') for p in kit.PRODUCTS)))
             rows.append('<div class="fam"><div class="opt"><h3>%s. %s%s</h3><p class="muted small">%s</p><div class="big">%s</div></div><div class="phones">%s%s</div></div>'
                         % (fam, fname, '<span class="tag">önerilen</span>' if fam == '3' else '', FAMILY_NOTES[fam], big, wall('l'), wall('d')))
-        icons.append('<div data-variant="%s"%s>%s</div>' % (v, '' if v == 'a' else ' hidden', ''.join(rows)))
+        icons.append('<div data-variant="%s"%s>%s</div>' % (v, '' if v == (sel or 'a') else ' hidden', ''.join(rows)))
     colors = ''.join('<div class="color"><i style="background:%s"></i><b>%s</b><code>%s</code><span class="muted small">%s</span></div>' % (val, ad, val, use_) for ad, _, val, use_ in kit.PALETTE)
     C = kit.C
     pairs = [('Lacivert yazı, beyaz zemin', C['lacivert'], C['beyaz'], 'Açık bölümlerde başlık ve gövde'),
@@ -110,6 +121,11 @@ def build_preview(out):
         verdict = 'yeterli' if r >= 4.5 else ('yalnız büyük yazı' if r >= 3 else 'yetersiz')
         return '<tr><td>%s</td><td><span class="pair" style="background:%s;color:%s;box-shadow:0 0 0 1px rgba(128,128,128,.35)">Moyo Aa</span></td><td class="num">%.1f : 1 · %s</td><td>%s</td></tr>' % (label, bg, fg, r, verdict, use_)
     html = open(os.path.join(HERE, 'onizleme.html'), encoding='utf8').read()
+    if sel:            # seçim yapıldı: seçici kalkar, karar kutusu sonucu söyler
+        html, k = re.subn(r'\n  <div class="pick".*?\n  </div>\n', '\n', html, flags=re.S); assert k == 1
+        old = '<div><b>1. Sözcük logo</b><span class="muted small">A Kıvrım, B Gülüş ya da C Top. Önerim A.</span></div>'
+        assert old in html
+        html = html.replace(old, '<div class="done"><b>1. Sözcük logo: %s %s seçildi</b><span class="muted small">12 Kasım 2026. Aşağıdaki kilitler ve iconlar bu logoyla.</span></div>' % (sel.upper(), kit.VARIANTS[sel]))
     for key, val in (('<!--DEFS-->', ''.join(defs)), ('<!--LOGOS-->', ''.join(logos)), ('<!--LOCKS-->', ''.join(locks)), ('<!--ICONS-->', ''.join(icons)),
                      ('<!--COLORS-->', colors), ('<!--PAIRS-->', ''.join(row(*p) for p in pairs))):
         assert key in html, key

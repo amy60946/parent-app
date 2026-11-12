@@ -26,7 +26,8 @@ import kit  # noqa: E402
 args = [a for a in sys.argv[1:] if not a.startswith('--')]
 OUT = args[0] if args else os.path.join(HERE, 'out')
 PREVIEW = '--onizleme' in sys.argv
-LOGO = sys.argv[sys.argv.index('--logo') + 1] if '--logo' in sys.argv else 'a'
+LOGO = sys.argv[sys.argv.index('--logo') + 1] if '--logo' in sys.argv else (kit.SELECTED['logo'] or 'a')
+MULTI = PREVIEW and not kit.SELECTED['logo']     # logo seçilmediyse önizlemede A / B / C seçicisi
 APP = '' if PREVIEW else 'app/index.html'   # önizlemede giriş / kayıt bağlantıları sayfada kalır
 
 src = open(os.path.join(SITE, 'landing.html'), encoding='utf-8').read()
@@ -83,7 +84,7 @@ def svg_inner(svg):
 
 def logo(ink):
     out = []
-    for v in (kit.VARIANTS if PREVIEW else [LOGO]):
+    for v in (kit.VARIANTS if MULTI else [LOGO]):
         vb, body = svg_inner(kit.wordmark(v, ink, pad=0.04)[0])
         out.append('<svg viewBox="%s" role="img" aria-label="moyo" data-logo="%s"%s>%s</svg>' % (vb, v, '' if v == LOGO else ' hidden', body))
     return ''.join(out)
@@ -91,7 +92,7 @@ def logo(ink):
 
 def app_icon():
     out = []
-    for v in (kit.VARIANTS if PREVIEW else [LOGO]):
+    for v in (kit.VARIANTS if MULTI else [LOGO]):
         vb, body = svg_inner(kit.icon('moyo', '3', v))
         out.append('<svg viewBox="%s" aria-hidden="true" data-logo="%s"%s>%s</svg>' % (vb, v, '' if v == LOGO else ' hidden', body))
     return ''.join(out)
@@ -181,7 +182,7 @@ def alt():
 
 
 def extras():
-    if not PREVIEW:
+    if not MULTI:
         return ''
     return ('<div class="logo-sec" role="group" aria-label="Önizleme: logo alternatifi">Logo'
             + ''.join('<button type="button" id="logo-%s" data-v="%s" aria-pressed="%s">%s</button>' % (v, v, 'true' if v == LOGO else 'false', v.upper()) for v in kit.VARIANTS) + '</div>')
