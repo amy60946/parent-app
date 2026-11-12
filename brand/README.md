@@ -22,6 +22,10 @@ Gerekenler: `pip install fonttools brotli uharfbuzz`.
 
 - **Sözcük logo:** A Kıvrım (kuyruk içe kıvrılır) · B Gülüş (kuyruk sola uzanıp yükselir) · C Top (kısa kanca + ayrı duran top).
   m ve o harfleri Poppins ExtraBold'un dış çizgisi; "y" özgün çizim ("u" gövdesi + `kit.tail()`). Dosyalarda yazı tipi yok, yalnız yol.
+- **D "C Top, ayarlı"** (12 Kasım 2026): Moyo Mercek penceresinin logo atölyesinde kaydedilen ayar ("Moyo c top adjusted"): C'nin kuyruğu,
+  harfler arası mürekkep boşluğu x yüksekliğinin m–o %7,9 · o–y %8,1 · y–o %8,8'i (`INK_GAPS`), ürün adı büyük harfle ("Mercek"),
+  Poppins 300, −0,03 em, son "o"dan 0,5 x yüksekliği uzakta (`SUFFIX`). Mercek penceresi bunun A'nın yerine geçtiğini iletti;
+  kullanıcı onayı bekleniyor, onaylanırsa `SELECTED['logo'] = 'd'`.
 - **Icon ailesi:** 1 Sözcük · 2 y işareti · 3 İki satır ("mo" / "yo"). Ürün rengi: Moyo lacivert zemin, yeşil harf; Moyo Mercek
   beyaz zemin, lacivert harf, yeşil mercek sapı; Moyo Oyun yeşil zemin, lacivert harf.
 - **Yazı tipi:** referans sitenin yazısı Galano Grotesque (René Bieder, ücretli: aile 250–300 USD liste fiyatı, web ve uygulama

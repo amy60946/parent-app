@@ -16,7 +16,12 @@ S = float(_b - _a)                 # dikme kalınlığı
 XC = (_a + _b) / 2.0               # "u"nun sağ dikmesinin ekseni
 TRACK = -0.014 * HEAVY.upm
 
-VARIANTS = {'a': 'Kıvrım', 'b': 'Gülüş', 'c': 'Top'}
+VARIANTS = {'a': 'Kıvrım', 'b': 'Gülüş', 'c': 'Top', 'd': 'Top, ayarlı'}
+# D: C'nin kuyruğu + logo atölyesinde kaydedilen ayar ("Moyo c top adjusted", 12 Kasım 2026, Moyo Mercek penceresinin atölyesi):
+# harfler arası mürekkep boşluğu x yüksekliğinin m–o %7,9 · o–y %8,1 · y–o %8,8'i; ürün adı büyük harfle, Poppins 300,
+# harf aralığı −0,03 em, son "o"dan 0,5 x yüksekliği uzakta.
+INK_GAPS = {'d': {'mo': 0.079, 'oy': 0.081, 'yo': 0.088}}
+SUFFIX = {'d': {'case': str.capitalize, 'track': -0.03, 'gap': 0.5}}
 FAMILIES = {'1': 'Sözcük', '2': 'y işareti', '3': 'İki satır'}
 # Kullanıcı seçimleri (None = karar bekliyor). Logo: A Kıvrım (kullanıcı, 12 Kasım 2026).
 SELECTED = {'logo': 'a', 'icon': None, 'yazi': None}
@@ -54,7 +59,7 @@ def tail(variant):
     if variant == 'b':          # aşağı in, geniş yayla sola uzan, hafifçe yüksel
         pts = turtle(start, 90, [('L', 0.45 * X + 0.30 * X), ('A', 0.40 * X, 78), ('A', 2.1 * X, 34)])
         return ribbon(pts, S, taper_from=0.45, end_ratio=0.62), None
-    if variant == 'c':          # kısa kanca; ucunun ilerisinde ayrı duran top
+    if variant in ('c', 'd'):   # kısa kanca; ucunun ilerisinde ayrı duran top (D aynı kuyruk)
         pts = turtle(start, 90, [('L', 0.45 * X + 0.34 * X), ('A', 0.36 * X, 118)])
         x, y, h, _ = pts[-1]
         r = 0.205 * X
@@ -72,14 +77,21 @@ def letter(ch, variant):
 
 
 def word(text, variant, dx=0.0, dy=0.0):
-    """Harf dizisi → (harf şekli, vurgu şekli, genişlik, harf başlangıçları)."""
+    """Harf dizisi → (harf şekli, vurgu şekli, genişlik, harf başlangıçları).
+    Aralık: INK_GAPS'te varsa mürekkepten mürekkebe (x yüksekliği oranı), yoksa ilerleme + TRACK."""
     ink, acc, x, starts = [], [], 0.0, []
+    gaps = INK_GAPS.get(variant)
+    prev, prev_right = None, None
     for ch in text:
         g, a, adv = letter(ch, variant)
+        if gaps and prev is not None:
+            left = bounds(g)[0]       # harfin kendisi; ayrı duran top sayılmaz
+            x = prev_right + gaps[prev + ch] * X - left
         starts.append(dx + x)
         ink += move(g, dx + x, dy); acc += move(a, dx + x, dy)
+        prev, prev_right = ch, x + bounds(g)[2]
         x += adv + TRACK
-    return ink, acc, x - TRACK, starts
+    return ink, acc, (prev_right if gaps else x - TRACK), starts
 
 
 def svg_doc(x0, y0, w, h, body, title):
@@ -97,9 +109,17 @@ def wordmark(variant, ink='lacivert', suffix=None, pad=0.14):
     w_ink, w_acc, width, _ = word('moyo', variant)
     title = 'moyo'
     if suffix:
-        thin, _ = LIGHT.text(suffix, dx=width + 0.34 * X, tracking=0.012 * LIGHT.upm)
+        sx = SUFFIX.get(variant)
+        if sx:                  # mürekkepten mürekkebe boşluk
+            text = sx['case'](suffix)
+            probe, _ = LIGHT.text(text, tracking=sx['track'] * LIGHT.upm)
+            right = bounds(w_ink)[2]
+            thin, _ = LIGHT.text(text, dx=right + sx['gap'] * X - bounds(probe)[0], tracking=sx['track'] * LIGHT.upm)
+        else:
+            text = suffix
+            thin, _ = LIGHT.text(suffix, dx=width + 0.34 * X, tracking=0.012 * LIGHT.upm)
         w_ink = w_ink + thin
-        title = 'moyo ' + suffix
+        title = 'moyo ' + text
     x0, y0, x1, y1 = bounds(w_ink, w_acc) if w_acc else bounds(w_ink)
     p = pad * X
     return svg_doc(x0 - p, y0 - p, x1 - x0 + 2 * p, y1 - y0 + 2 * p, fill(w_ink, fg) + fill(w_acc, accent), title), x1 - x0 + 2 * p, y1 - y0 + 2 * p
