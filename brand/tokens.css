@@ -1,0 +1,22 @@
+/* Moyo marka değişkenleri (brand/build.py üretir; elle düzenlenmez). */
+:root{
+  --moyo-lacivert:#16113A; /* Koyu zemin; açık zeminde yazı ve logo */
+  --moyo-lacivert-2:#2D294E; /* Koyu zeminde kart, yükseltilmiş alan */
+  --moyo-gece:#0E0B26; /* En koyu zemin, alt bilgi */
+  --moyo-yesil:#51E56A; /* Ana düğme zemini (üstünde lacivert yazı), vurgu */
+  --moyo-yesil-marka:#0FD354; /* Koyu zeminde logo; açık zeminde yalnız dolgu */
+  --moyo-camgobegi:#00D1FF; /* İkincil vurgu (rozet, grafik) */
+  --moyo-beyaz:#FFFFFF; /* Açık zemin; koyu zeminde yazı */
+  --moyo-sis:#F8F8F9; /* Bölüm zemini */
+  --moyo-cizgi:#E8E7EB; /* Ayırıcı, kart kenarı */
+  --moyo-soluk:#D0CFD8; /* Pasif alan */
+  --moyo-yazi-2:#5C5875; /* İkincil yazı (açık zeminde) */
+  --moyo-yazi-3:#737089; /* Açıklama yazısı */
+  --moyo-yazi:"Outfit","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --moyo-baslik-kalinlik:800;
+  --moyo-govde-kalinlik:400;
+  --moyo-kose:999px; /* düğmeler hap biçiminde */
+  --moyo-kart-kose:20px;
+  --moyo-bolum-boslugu:120px;
+  --moyo-icerik-genisligi:1120px;
+}

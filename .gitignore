@@ -14,3 +14,8 @@ web-build/
 preview/out/
 dist-site/
 /dist-ebeveyn/
+
+# Marka kiti ve yeni tanıtım sayfası üretim çıktıları
+__pycache__/
+brand/out/
+site/yeni/out/
