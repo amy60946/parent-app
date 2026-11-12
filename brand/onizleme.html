@@ -1,0 +1,157 @@
+<title>Moyo Marka Kiti</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap">
+<style>
+/* Yazı tipi önizlemede Google Fonts'tan (Outfit, SIL OFL); sitede brand/fonts/ dosyalarından.
+   Düzen: tek sütun karar belgesi; her bölüm bir karar ya da bir referans. Örnekler sabit marka zeminlerinde, sayfa temaya uyar. */
+:root{
+  --bg:#FFFFFF; --panel:#F8F8F9; --fg:#16113A; --muted:#5C5875; --line:#E8E7EB; --chip:#16113A; --chip-fg:#FFFFFF; --ok:#0B7A34;
+  --lacivert:#16113A; --lacivert-2:#2D294E; --yesil:#51E56A; --yesil-marka:#0FD354; --beyaz:#FFFFFF; --sis:#F8F8F9;
+  --font:"Outfit","Avenir Next","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0E0B26; --panel:#16113A; --fg:#FFFFFF; --muted:#C9C7D6; --line:#3F3A66; --chip:#51E56A; --chip-fg:#16113A; --ok:#51E56A; color-scheme:dark } }
+:root[data-theme="dark"]{ --bg:#0E0B26; --panel:#16113A; --fg:#FFFFFF; --muted:#C9C7D6; --line:#3F3A66; --chip:#51E56A; --chip-fg:#16113A; --ok:#51E56A; color-scheme:dark }
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:17px;line-height:1.5}
+.wrap{max-width:1040px;margin:0 auto;padding-block:40px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:72px}
+h1{font-size:clamp(34px,5vw,50px);line-height:1.08;font-weight:800;margin:0;text-wrap:balance}
+h2{font-size:clamp(26px,3.4vw,34px);line-height:1.15;font-weight:800;margin:0;text-wrap:balance}
+h3{font-size:19px;line-height:1.25;font-weight:600;margin:0}
+p{margin:0;max-width:68ch}
+.lead{font-size:20px;color:var(--muted)}
+.muted{color:var(--muted)} .small{font-size:14.5px}
+section{display:flex;flex-direction:column;gap:22px}
+.head{display:flex;flex-direction:column;gap:10px}
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.decide{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.decide div{border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.decide b{font-weight:600}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.opt{display:flex;flex-direction:column;gap:12px;min-width:0}
+.swatch{border-radius:20px;display:flex;align-items:center;justify-content:center;padding:26px 22px;min-height:150px}
+.swatch svg{width:100%;height:auto;max-width:260px;display:block}
+.on-light{background:var(--beyaz);border:1px solid var(--line)} .on-dark{background:var(--lacivert);border:1px solid var(--line)} .on-green{background:var(--yesil)} .on-sis{background:var(--sis);border:1px solid var(--line)}
+.tag{display:inline-block;font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--chip);color:var(--chip-fg);margin-left:8px;vertical-align:middle}
+.pick{display:flex;flex-wrap:wrap;align-items:center;gap:12px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px;border-bottom:1px solid var(--line)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:4px;gap:2px}
+.seg button{font:inherit;font-weight:600;font-size:15px;border:0;background:transparent;color:var(--fg);padding:8px 16px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--chip);color:var(--chip-fg)}
+.seg button:focus-visible{outline:2px solid var(--ok);outline-offset:2px}
+.locks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.locks .swatch svg{max-width:420px}
+.fam{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:22px;align-items:center;border-top:1px solid var(--line);padding-top:22px}
+.big{display:flex;gap:16px;flex-wrap:wrap}
+.app{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:13.5px}
+.ic{display:block;border-radius:22.4%;overflow:hidden;box-shadow:0 0 0 1px rgba(128,128,140,.38)} .ic svg{display:block;width:100%;height:100%}
+.s112{width:112px;height:112px} .s60{width:60px;height:60px} .s40{width:40px;height:40px} .s29{width:29px;height:29px}
+.phones{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.wall{border-radius:22px;padding:16px 12px 12px;display:flex;flex-direction:column;gap:14px}
+.wall.l{background:#DDE3EC;color:#16113A} .wall.d{background:#17171C;color:#FFFFFF}
+.wall .row{display:flex;justify-content:space-around;gap:6px} .wall .app{font-size:11.5px;font-weight:400;gap:6px;text-align:center}
+.wall .tiny{display:flex;align-items:center;justify-content:center;gap:10px;opacity:.95}
+.colors{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+.color{display:flex;flex-direction:column;gap:6px;font-size:14px} .color i{display:block;height:72px;border-radius:14px;border:1px solid var(--line)}
+.color code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+.tbl{overflow-x:auto} table{border-collapse:collapse;width:100%;min-width:660px;font-size:15.5px} th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top} th{font-weight:600;font-size:13.5px;color:var(--muted)}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.pair{display:inline-block;padding:4px 12px;border-radius:999px;font-weight:600;font-size:14px}
+.spec{border:1px solid var(--line);border-radius:20px;padding:26px;display:flex;flex-direction:column;gap:12px}
+.spec .d1{font-weight:800;font-size:clamp(34px,5.4vw,58px);line-height:1.07} .spec .d2{font-weight:800;font-size:clamp(24px,3.2vw,32px);line-height:1.15} .spec .d3{font-size:clamp(19px,2.4vw,26px);line-height:1.25;color:var(--muted)} .spec .d4{font-size:18px}
+.btnrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.pill{display:inline-block;font-weight:600;font-size:18px;padding:13px 26px;border-radius:999px;background:var(--yesil);color:var(--lacivert)} .pill.o{background:transparent;color:var(--fg);box-shadow:inset 0 0 0 2px currentColor}
+ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;max-width:72ch}
+.note{border-left:4px solid var(--yesil-marka);padding:4px 0 4px 16px}
+a{color:inherit}
+@media (max-width:760px){ .grid3,.decide,.locks,.fam,.phones{grid-template-columns:minmax(0,1fr)} .wrap{gap:56px} .s112{width:92px;height:92px} }
+</style>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><!--DEFS--></defs></svg>
+<div class="wrap">
+  <header class="head">
+    <span class="eyebrow">Seçenekler · 12 Kasım 2026</span>
+    <h1>Moyo marka kiti</h1>
+    <p class="lead">Küçük harfli “moyo” sözcük logosu, yanında ince “mercek”, renkler, yazı tipleri ve üç uygulama iconu. Senden üç seçim bekliyor.</p>
+    <div class="decide">
+      <div><b>1. Sözcük logo</b><span class="muted small">A Kıvrım, B Gülüş ya da C Top. Önerim A.</span></div>
+      <div><b>2. Icon ailesi</b><span class="muted small">1 Sözcük, 2 y işareti ya da 3 İki satır. Önerim 3.</span></div>
+      <div><b>3. Yazı tipi</b><span class="muted small">Ücretli Galano Grotesque ya da ücretsiz eşi Outfit. Önerim Outfit.</span></div>
+    </div>
+  </header>
+
+  <section>
+    <div class="head"><h2>1. Sözcük logo</h2><p class="muted">Üçünde de m ve o harfleri aynı; fark “y” harfinin kuyruğunda. Referanstaki “g” kıvrımı “y”ye taşındı, çizim özgün.</p></div>
+    <div class="grid3"><!--LOGOS--></div>
+  </section>
+
+  <div class="pick" role="group" aria-label="Aşağıdaki örneklerde kullanılacak logo">
+    <span class="small muted">Aşağıdaki örnekleri şu logoyla göster:</span>
+    <div class="seg"><button type="button" id="pick-a" data-v="a" aria-pressed="true">A Kıvrım</button><button type="button" id="pick-b" data-v="b" aria-pressed="false">B Gülüş</button><button type="button" id="pick-c" data-v="c" aria-pressed="false">C Top</button></div>
+  </div>
+
+  <section>
+    <div class="head"><h2>Ürün adlarıyla</h2><p class="muted">“moyo” kalın, ürün adı yanında ince ve düz. Aynı kalıp oyunda da çalışır.</p></div>
+    <!--LOCKS-->
+  </section>
+
+  <section>
+    <div class="head"><h2>2. Uygulama iconları</h2><p class="muted">Üç ürün tek aile: Moyo lacivert, Moyo Mercek beyaz (son harfte mercek sapı), Moyo Oyun yeşil. Sağda telefondaki küçük boyutlar, açık ve koyu zeminde.</p></div>
+    <!--ICONS-->
+  </section>
+
+  <section>
+    <div class="head"><h2>Renkler</h2><p class="muted">Verdiğin referansın paleti temel alındı: lacivert zemin, tek yeşil vurgu, gri basamaklar. Yeşil, açık zeminde yazı rengi olarak kullanılmaz; düğme ve dolgu rengidir.</p></div>
+    <div class="colors"><!--COLORS--></div>
+    <div class="tbl"><table><thead><tr><th>Eşleşme</th><th>Örnek</th><th>Kontrast</th><th>Kullanım</th></tr></thead><tbody><!--PAIRS--></tbody></table></div>
+  </section>
+
+  <section>
+    <div class="head"><h2>3. Yazı tipleri</h2><p class="muted">Referans sitenin yazı tipi Galano Grotesque; ücretli. Aşağıdaki örnek, ona en çok benzeyen ücretsiz yazı tipi Outfit ile yazıldı. Türkçe harflerin hepsi var.</p></div>
+    <div class="spec">
+      <div class="d1">Çocuğunuzun günlük görevleri</div>
+      <div class="d2">Başlık, ikinci düzey · ğ ü ş ı ö ç İ</div>
+      <div class="d3">Giriş cümlesi bu boyda ve bu açıklıkta durur; en çok üç satır.</div>
+      <div class="d4">Gövde yazısı 18 punto. Rakamlar: 0 1 2 3 4 5 6 7 8 9 · 249,99 TL</div>
+      <div class="btnrow"><span class="pill">Ücretsiz kaydolun</span><span class="pill o">Nasıl çalışır?</span></div>
+    </div>
+    <div class="tbl"><table><thead><tr><th>Yazı tipi</th><th>Nerede</th><th>Lisans</th><th>Yaklaşık bedel</th></tr></thead><tbody>
+      <tr><td><b>Galano Grotesque</b><br><span class="muted small">René Bieder</span></td><td>Referans sitenin başlık ve gövde yazısı</td><td>Ücretli. Masaüstü, web ve uygulama için ayrı lisans; web ve uygulama lisansı yıllık yenilenir.</td><td class="num">Aile 250–300 USD<br><span class="muted small">tek stil 30 USD; web ve uygulama ayrıca</span></td></tr>
+      <tr><td><b>Outfit</b><span class="tag">önerilen</span></td><td>Sayfa ve uygulama yazısı</td><td>Açık lisans (SIL OFL 1.1). Web, uygulama ve logo dahil ücretsiz.</td><td class="num">0</td></tr>
+      <tr><td><b>Poppins ExtraBold</b></td><td>Yalnız logodaki m ve o harflerinin çizimi</td><td>Açık lisans (SIL OFL 1.1). Logo çizime çevrildi; dosya gerekmez.</td><td class="num">0</td></tr>
+    </tbody></table></div>
+    <p class="small muted">Bedeller satıcı sayfalarındaki liste fiyatlarıdır (Fontspring, MyFonts; 12 Kasım 2026). Web ve uygulama lisansı kullanım hacmine göre ayrıca fiyatlanır. Referans markanın logosu özel çizimdir, satılan bir yazı tipi değildir.</p>
+  </section>
+
+  <section>
+    <div class="head"><h2>Benchmark özeti</h2><p class="muted">ClickUp ve Geckoboard ana sayfaları ile fiyat sayfaları, 12 Kasım 2026’da ölçülerek incelendi. Yalnız işleyiş alındı; içerik, metin ve görsel alınmadı.</p></div>
+    <ul>
+      <li><b>Hareketli anlatım:</b> ikisi de video kullanmıyor; ürün ekranı sayfanın içinde yeniden kurulmuş ve kendiliğinden oynuyor. Bir seferde tek şey değişiyor, her adım 1–2 saniye duruyor, döngü 8–10 saniye.</li>
+      <li><b>Ferahlık:</b> bölümlerin üstünde ve altında yaklaşık 120 piksel boşluk; ekran başına bir başlık, en çok üç satır yazı ve bir görsel. İçerik genişliği 1080–1160 piksel.</li>
+      <li><b>Yazı ölçüleri:</b> ana başlık 58–60, bölüm başlığı 48–50, giriş cümlesi 22–26, gövde 18 piksel.</li>
+      <li><b>Ana menü:</b> en çok altı madde; “Fiyat” açılır menüsüz düz bağlantı; sağda bir dolu, bir çerçeveli düğme.</li>
+      <li><b>Fiyat sayfası:</b> ana sayfada fiyat yok. Ayrı sayfada aylık / yıllık geçişi, üç ya da dört plan kartı (biri vurgulu), altında karşılaştırma tablosu ve sık sorulan sorular.</li>
+      <li><b>Telefonda:</b> menü tek düğmeye iner; ClickUp hareketli gösterimi kaldırıyor, Geckoboard okunmayacak kadar küçültüyor. Bizde gösterim telefonda da okunur boyda kalır.</li>
+    </ul>
+    <p class="small muted">Kaynaklar: clickup.com, clickup.com/pricing, geckoboard.com, geckoboard.com/pricing.</p>
+  </section>
+
+  <section>
+    <div class="head"><h2>Karar vermeden önce</h2></div>
+    <p class="note">Renk, yazı tipi ve kıvrım üçü birlikte alınınca ortaya çıkan görünüm referans markaya yakın durur. Alanlar farklı olduğu için karışma riski düşük; yine de marka tescili yapılırken avukata sorulmalı. B ve C bu açıdan daha uzak seçeneklerdir.</p>
+    <ul>
+      <li>Seçtiğin icon uygulama iconu olur, telefondaki adlar Moyo, Moyo Mercek, Moyo Oyun yazılır ve yeni TestFlight sürümü gönderilir.</li>
+      <li>Uygulama içi renk ve arayüz düzenlemesi bu seçimden sonra yapılır; şimdilik uygulamaya dokunulmadı.</li>
+      <li>Kit dosyaları parent-app deposunda <code>brand/</code> klasöründe.</li>
+    </ul>
+  </section>
+</div>
+<script>
+(function(){
+  var btns=[].slice.call(document.querySelectorAll('.seg button'));
+  function show(v){
+    btns.forEach(function(b){b.setAttribute('aria-pressed', b.dataset.v===v ? 'true':'false');});
+    [].forEach.call(document.querySelectorAll('[data-variant]'),function(el){el.hidden = el.dataset.variant!==v;});
+    try{localStorage.setItem('moyo-kit-v',v);}catch(e){}
+  }
+  btns.forEach(function(b){b.addEventListener('click',function(){show(b.dataset.v);});});
+  var v='a'; try{v=localStorage.getItem('moyo-kit-v')||'a';}catch(e){}
+  show(/^[abc]$/.test(v)?v:'a');
+})();
+</script>
