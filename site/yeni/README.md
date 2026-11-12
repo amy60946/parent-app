@@ -3,7 +3,7 @@
 Kullanıcı isteği (11 Kasım 2026): ürün, gerçek arayüzün yavaş ve akıcı hareketli anlatımıyla sunulsun; yerleşim ferah, ana menü
 sade olsun; **fiyat ana sayfada değil, ayrı sayfada** dursun. Marka `brand/` kitinden gelir.
 
-Önizleme: yayınlanınca buraya eklenir (ana sayfa; menüde "Fiyat" ayrı sayfayı açar).
+Önizleme: https://claude.ai/artifact/C6dGXNz63c5koGCrSBDFXb (ana sayfa; menüde "Fiyat" ayrı sayfayı açar).
 
 | Dosya | Ne |
 |---|---|

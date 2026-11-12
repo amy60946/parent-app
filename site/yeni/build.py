@@ -7,7 +7,8 @@ kelimesine bulunduğu denetlenir. Burada yazılan tek yeni metin fiyat sayfasın
 
     python3 site/yeni/build.py <çıktı klasörü> [--logo a|b|c] [--onizleme]
 
-Çıktı: index.html (ana sayfa), fiyat.html, img/, fonts/. --onizleme: Artifact için (index iskeletsiz, logo seçici, yer tutucu notu).
+Çıktı: index.html (ana sayfa), fiyat.html, img/, fonts/. --onizleme: Artifact için (index iskeletsiz, logo seçici, yer tutucu notu,
+yazı tipi Google Fonts'tan; fonts/ kopyalanmaz).
 Yayındaki siteyi (build-cf.sh, landing.html) etkilemez.
 """
 import html
@@ -26,7 +27,7 @@ args = [a for a in sys.argv[1:] if not a.startswith('--')]
 OUT = args[0] if args else os.path.join(HERE, 'out')
 PREVIEW = '--onizleme' in sys.argv
 LOGO = sys.argv[sys.argv.index('--logo') + 1] if '--logo' in sys.argv else 'a'
-APP = 'app/index.html'
+APP = '' if PREVIEW else 'app/index.html'   # önizlemede giriş / kayıt bağlantıları sayfada kalır
 
 src = open(os.path.join(SITE, 'landing.html'), encoding='utf-8').read()
 one = lambda pat: re.search(pat, src, re.S).group(1)
@@ -157,9 +158,9 @@ def gosterim():
            '<div class="sec">Bugünün ilerlemesi</div><div class="card">'
            '<div class="row"><img class="av" src="img/okti_kiz_4.jpg" alt=""><div class="grow"><b>Nazlı</b><div class="olcer"><i data-olcer style="--p:80%"></i></div></div><span class="yuzde" data-yuzde>%80</span></div>'
            '<div class="row"><img class="av" src="img/okti_erkek_2.jpg" alt=""><div class="grow"><b>Efe</b><div class="olcer"><i style="--p:50%"></i></div></div><span class="yuzde">%50</span></div>'
-           '</div></div>' + tabs('Bugün') + '<span class="nokta nokta-b"><i>Ayşe</i></span>')
+           '</div><div class="hizli"><span>Macera ekle</span><span>Ödül</span></div></div>' + tabs('Bugün') + '<span class="nokta nokta-b"><i>Ayşe</i></span>')
     return ('<div class="sahne yok-js s-done s-push s-pending" data-gosterim role="img" aria-label="Gösterim: Nazlı tabletinde macerayı tamamlar, Moyo size bildirim gönderir, siz onaylarsınız ve Nazlı 1 puan kazanır.">'
-            + tablet + '<div class="cihaz"><span class="cihaz-ad">Sizin telefonunuz · Moyo</span><div class="phone"><div class="scr">' + scr + '</div></div></div>'
+            + tablet + '<div class="cihaz"><span class="cihaz-ad">Sizin telefonunuz · Moyo</span><div class="kirp"><div class="phone"><div class="scr">' + scr + '</div></div></div></div>'
             '<button type="button" class="dur" id="gosterim-dur" aria-pressed="false">Durdur</button></div>')
 
 
@@ -167,7 +168,7 @@ def ust(page):
     here = '' if page == 'ana' else 'index.html'
     items = [(here + '#faydalar', 'Faydalar', ''), (here + '#nasil', 'Nasıl çalışır', ''), (here + '#guvenlik', 'Güvenlik', ''),
              ('fiyat.html', 'Fiyat', ' aria-current="page"' if page == 'fiyat' else ''), (here + '#sss', 'Sorular', '')]
-    links = ''.join('<a href="%s"%s>%s</a>' % i for i in items)
+    links = ''.join('<a href="%s"%s>%s</a>' % (h, attr, label) for h, label, attr in items)
     return ('<header class="ust"><div class="inner"><a class="logo" href="index.html" aria-label="Moyo ana sayfa">%s</a><nav class="menu" aria-label="Ana menü">%s</nav>'
             '<div class="sag"><a class="hap cizgi k" href="%s#giris">%s</a><a class="hap dolu k" href="%s#kayit">%s</a>'
             '<details class="acilir"><summary aria-label="Menü"><span></span></summary><nav aria-label="Menü">%s<a href="%s#giris">%s</a></nav></details></div></div></header>'
@@ -194,7 +195,7 @@ def ana():
     guven = ''.join('<div>%s<h3>%s</h3><p>%s</p></div>' % s for s in SAFE)
     sss = ''.join('<details><summary>%s</summary><p>%s</p></details>' % q for q in FAQ)
     magaza = ''.join('<span class="m"><span class="ik">%s</span><span><b>%s</b>%s</span></span>' % (app_icon() if 'parentapp' in img else '<img src="%s" alt="">' % img, name, note) for img, name, note in STORES)
-    return f'''{ust('ana')}
+    return f'''{extras()}{ust('ana')}
 <main>
   <section class="band koyu kahraman" aria-labelledby="ust-baslik">
     <div class="inner">
@@ -247,7 +248,7 @@ def ana():
     </div>
   </section>
 </main>
-{alt()}{extras()}'''
+{alt()}'''
 
 
 def fiyat():
@@ -257,7 +258,7 @@ def fiyat():
     sss = ''.join('<details><summary>%s</summary><p>%s</p></details>' % q for q in PRICE_FAQ)
     li = lambda xs: ''.join('<li>%s</li>' % x for x in xs)
     note = '<p class="onizleme-notu">Önizleme: fiyat rakamları yer tutucudur (— TL). Rakamlar karardan sonra yazılacak.</p>' if PREVIEW else ''
-    return f'''{ust('fiyat')}{note}
+    return f'''{extras()}{ust('fiyat')}{note}
 <main>
   <section class="band koyu fiyat-ust" aria-labelledby="fiyat-baslik">
     <div class="inner"><div class="yazi">
@@ -301,18 +302,22 @@ def fiyat():
     </div>
   </section>
 </main>
-{alt()}{extras()}'''
+{alt()}'''
 
 
 def page(title, body, full):
     css = open(os.path.join(HERE, 'sayfa.css'), encoding='utf-8').read()
     js = open(os.path.join(HERE, 'demo.js'), encoding='utf-8').read()
-    head = '<title>%s</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n<style>\n%s</style>\n' % (title, css) if not full else ''
+    link = ''
+    if PREVIEW:        # Artifact'te yazı tipi yalnız Google Fonts'tan yüklenir; sitede brand/fonts/ dosyalarından (Google'a istek gitmez)
+        css = re.sub(r'@font-face\{[^}]*\}\n', '', css)
+        link = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap">\n'
+    head = '<title>%s</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n%s<style>\n%s</style>\n' % (title, link, css) if not full else ''
     doc = head + body + '\n<script>\n' + js + '</script>\n'
     if full:
         doc = ('<!doctype html>\n<html lang="tr">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
-               '<title>%s</title>\n<style>\nhtml{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%%}[hidden]{display:none!important}\n%s</style>\n</head>\n<body>\n%s</body>\n</html>\n'
-               % (title, css, body + '\n<script>\n' + js + '</script>\n'))
+               '<title>%s</title>\n%s<style>\nhtml{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%%}[hidden]{display:none!important}\n%s</style>\n</head>\n<body>\n%s</body>\n</html>\n'
+               % (title, link, css, body + '\n<script>\n' + js + '</script>\n'))
     return doc
 
 
@@ -332,7 +337,11 @@ def main():
     assert 'TL' not in re.sub(r'<[^>]+>', '', a), 'Ana sayfada fiyat olmamalı'
     open(os.path.join(OUT, 'index.html'), 'w', encoding='utf-8').write(page('Moyo Tanıtım Sayfası' if PREVIEW else 'Moyo', a, full=not PREVIEW))
     open(os.path.join(OUT, 'fiyat.html'), 'w', encoding='utf-8').write(page('Moyo · Fiyatlandırma', f, full=True))
-    for d, srcdir, keep in (('img', os.path.join(SITE, 'public', 'img'), lambda n: True), ('fonts', os.path.join(ROOT, 'brand', 'fonts'), lambda n: n.startswith('outfit-') and re.search(r'-(400|600|800)-', n))):
+    used = set(re.findall(r'img/([A-Za-z0-9_.-]+)', a + f))
+    copies = [('img', os.path.join(SITE, 'public', 'img'), lambda n: n in used)]
+    if not PREVIEW:
+        copies.append(('fonts', os.path.join(ROOT, 'brand', 'fonts'), lambda n: n.startswith('outfit-') and re.search(r'-(400|600|800)-', n)))
+    for d, srcdir, keep in copies:
         os.makedirs(os.path.join(OUT, d), exist_ok=True)
         for n in os.listdir(srcdir):
             if keep(n):

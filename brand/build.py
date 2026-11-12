@@ -2,12 +2,11 @@
 """Marka kitini üretir: brand/svg/ (logo, kilit, icon), brand/tokens.css + tokens.json ve önizleme sayfası.
 
   python3 brand/build.py                 # SVG'ler ve değişkenler
-  python3 brand/build.py <çıktı klasörü>  # ayrıca önizleme (index.html + fonts/); çıktı depoya girmez
+  python3 brand/build.py <çıktı klasörü>  # ayrıca önizleme (index.html; Artifact için); çıktı depoya girmez
 """
 import json
 import os
 import re
-import shutil
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -67,8 +66,9 @@ def build_preview(out):
         vb, body = inner(svg)
         defs.append('<symbol id="%s" viewBox="%s">%s</symbol>' % (sid, vb, body))
         return vb
-    def use(sid, vb, label):
-        return '<svg viewBox="%s" role="img" aria-label="%s"><use href="#%s"/></svg>' % (vb, label, sid)
+    def use(sid, vb, label):          # dış viewBox 0 0 g y: <use> sembolü (0, 0)'a yerleştirir, sembolün kendi viewBox'ı ölçekler
+        w, h = vb.split()[2:]
+        return '<svg viewBox="0 0 %s %s" role="img" aria-label="%s"><use href="#%s" width="%s" height="%s"/></svg>' % (w, h, label, sid, w, h)
     for v, (name, note, rec) in NOTES.items():
         vb_l = sym('wm-%s-l' % v, kit.wordmark(v, 'lacivert')[0]); vb_d = sym('wm-%s-d' % v, kit.wordmark(v, 'yesil')[0])
         logos.append('<div class="opt"><div class="swatch on-light">%s</div><div class="swatch on-dark">%s</div><h3>%s %s%s</h3><p class="muted small">%s</p></div>'
@@ -115,10 +115,6 @@ def build_preview(out):
         assert key in html, key
         html = html.replace(key, val)
     write(os.path.join(out, 'index.html'), html)
-    os.makedirs(os.path.join(out, 'fonts'), exist_ok=True)
-    for f in os.listdir(os.path.join(HERE, 'fonts')):
-        if f.startswith('outfit-') and re.search(r'-(300|400|600|800)-', f):
-            shutil.copy(os.path.join(HERE, 'fonts', f), os.path.join(out, 'fonts', f))
     return len(html)
 
 

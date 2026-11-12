@@ -122,7 +122,7 @@ def icon(product, family, variant, size=1024):
         ink, acc, width, starts = word('moyo', variant)
         if product == 'mercek':
             cx, cy, r = o_center(starts[3])
-            acc = acc + handle(cx, cy, r - 0.30 * S, 0.62 * S, 0.30 * S + 0.52 * X)
+            acc = acc + handle(cx, cy, r - 0.30 * S, 0.82 * S, 0.30 * S + 0.62 * X)
         frac = 0.76
     elif family == '2':                     # yalnız y
         ink, acc, _ = letter('y', variant)
@@ -144,7 +144,7 @@ def icon(product, family, variant, size=1024):
         acc = move(bot_acc, dx)
         if product == 'mercek':
             cx, cy, r = o_center(bs[1] + dx, X + 0.22 * X)
-            acc = acc + handle(cx, cy, r - 0.30 * S, 0.62 * S, 0.30 * S + 0.46 * X)
+            acc = acc + handle(cx, cy, r - 0.30 * S, 0.82 * S, 0.30 * S + 0.56 * X)
         frac = 0.66
     x0, y0, x1, y1 = bounds(ink, acc) if acc else bounds(ink)
     if extra:

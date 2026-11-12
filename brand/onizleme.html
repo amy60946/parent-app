@@ -1,22 +1,16 @@
 <title>Moyo Marka Kiti</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap">
 <style>
-/* Düzen: tek sütun karar belgesi; her bölüm bir karar ya da bir referans. Örnekler sabit marka zeminlerinde, sayfa temaya uyar. */
-@font-face{font-family:"Outfit";font-weight:300;src:url(fonts/outfit-latin-300-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+2000-206F}
-@font-face{font-family:"Outfit";font-weight:300;src:url(fonts/outfit-latin-ext-300-normal.woff2) format("woff2");unicode-range:U+0100-02BA}
-@font-face{font-family:"Outfit";font-weight:400;src:url(fonts/outfit-latin-400-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+2000-206F}
-@font-face{font-family:"Outfit";font-weight:400;src:url(fonts/outfit-latin-ext-400-normal.woff2) format("woff2");unicode-range:U+0100-02BA}
-@font-face{font-family:"Outfit";font-weight:600;src:url(fonts/outfit-latin-600-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+2000-206F}
-@font-face{font-family:"Outfit";font-weight:600;src:url(fonts/outfit-latin-ext-600-normal.woff2) format("woff2");unicode-range:U+0100-02BA}
-@font-face{font-family:"Outfit";font-weight:800;src:url(fonts/outfit-latin-800-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+2000-206F}
-@font-face{font-family:"Outfit";font-weight:800;src:url(fonts/outfit-latin-ext-800-normal.woff2) format("woff2");unicode-range:U+0100-02BA}
+/* Yazı tipi önizlemede Google Fonts'tan (Outfit, SIL OFL); sitede brand/fonts/ dosyalarından.
+   Düzen: tek sütun karar belgesi; her bölüm bir karar ya da bir referans. Örnekler sabit marka zeminlerinde, sayfa temaya uyar. */
 :root{
   --bg:#FFFFFF; --panel:#F8F8F9; --fg:#16113A; --muted:#5C5875; --line:#E8E7EB; --chip:#16113A; --chip-fg:#FFFFFF; --ok:#0B7A34;
   --lacivert:#16113A; --lacivert-2:#2D294E; --yesil:#51E56A; --yesil-marka:#0FD354; --beyaz:#FFFFFF; --sis:#F8F8F9;
   --font:"Outfit","Avenir Next","Segoe UI",system-ui,sans-serif;
 }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#16113A; --panel:#211C49; --fg:#FFFFFF; --muted:#C9C7D6; --line:#3A3660; --chip:#51E56A; --chip-fg:#16113A; --ok:#51E56A; color-scheme:dark } }
-:root[data-theme="dark"]{ --bg:#16113A; --panel:#211C49; --fg:#FFFFFF; --muted:#C9C7D6; --line:#3A3660; --chip:#51E56A; --chip-fg:#16113A; --ok:#51E56A; color-scheme:dark }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0E0B26; --panel:#16113A; --fg:#FFFFFF; --muted:#C9C7D6; --line:#3F3A66; --chip:#51E56A; --chip-fg:#16113A; --ok:#51E56A; color-scheme:dark } }
+:root[data-theme="dark"]{ --bg:#0E0B26; --panel:#16113A; --fg:#FFFFFF; --muted:#C9C7D6; --line:#3F3A66; --chip:#51E56A; --chip-fg:#16113A; --ok:#51E56A; color-scheme:dark }
 body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:17px;line-height:1.5}
 .wrap{max-width:1040px;margin:0 auto;padding-block:40px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:72px}
 h1{font-size:clamp(34px,5vw,50px);line-height:1.08;font-weight:800;margin:0;text-wrap:balance}
@@ -35,7 +29,7 @@ section{display:flex;flex-direction:column;gap:22px}
 .opt{display:flex;flex-direction:column;gap:12px;min-width:0}
 .swatch{border-radius:20px;display:flex;align-items:center;justify-content:center;padding:26px 22px;min-height:150px}
 .swatch svg{width:100%;height:auto;max-width:260px;display:block}
-.on-light{background:var(--beyaz);border:1px solid var(--line)} .on-dark{background:var(--lacivert)} .on-green{background:var(--yesil)} .on-sis{background:var(--sis);border:1px solid var(--line)}
+.on-light{background:var(--beyaz);border:1px solid var(--line)} .on-dark{background:var(--lacivert);border:1px solid var(--line)} .on-green{background:var(--yesil)} .on-sis{background:var(--sis);border:1px solid var(--line)}
 .tag{display:inline-block;font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--chip);color:var(--chip-fg);margin-left:8px;vertical-align:middle}
 .pick{display:flex;flex-wrap:wrap;align-items:center;gap:12px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px;border-bottom:1px solid var(--line)}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:4px;gap:2px}
@@ -47,7 +41,7 @@ section{display:flex;flex-direction:column;gap:22px}
 .fam{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:22px;align-items:center;border-top:1px solid var(--line);padding-top:22px}
 .big{display:flex;gap:16px;flex-wrap:wrap}
 .app{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:13.5px}
-.ic{display:block;border-radius:22.4%;overflow:hidden;box-shadow:0 0 0 1px rgba(22,17,58,.10)} .ic svg{display:block;width:100%;height:100%}
+.ic{display:block;border-radius:22.4%;overflow:hidden;box-shadow:0 0 0 1px rgba(128,128,140,.38)} .ic svg{display:block;width:100%;height:100%}
 .s112{width:112px;height:112px} .s60{width:60px;height:60px} .s40{width:40px;height:40px} .s29{width:29px;height:29px}
 .phones{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .wall{border-radius:22px;padding:16px 12px 12px;display:flex;flex-direction:column;gap:14px}
@@ -57,7 +51,7 @@ section{display:flex;flex-direction:column;gap:22px}
 .colors{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
 .color{display:flex;flex-direction:column;gap:6px;font-size:14px} .color i{display:block;height:72px;border-radius:14px;border:1px solid var(--line)}
 .color code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
-.tbl{overflow-x:auto} table{border-collapse:collapse;width:100%;font-size:15.5px} th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top} th{font-weight:600;font-size:13.5px;color:var(--muted)}
+.tbl{overflow-x:auto} table{border-collapse:collapse;width:100%;min-width:660px;font-size:15.5px} th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top} th{font-weight:600;font-size:13.5px;color:var(--muted)}
 td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .pair{display:inline-block;padding:4px 12px;border-radius:999px;font-weight:600;font-size:14px}
 .spec{border:1px solid var(--line);border-radius:20px;padding:26px;display:flex;flex-direction:column;gap:12px}

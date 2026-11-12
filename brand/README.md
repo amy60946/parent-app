@@ -4,7 +4,7 @@ Kullanıcı isteği (11 Kasım 2026): küçük harf "moyo" sözcük logosu ("y" 
 "mercek"; renk ve yazı tipi için verilen referans temel alınır; üç uygulama iconu (Moyo, Moyo Mercek, Moyo Oyun) tek aile.
 Kitin tek sahibi bu depodur (Ebeveyn penceresi); Moyo Mercek ve Oyun pencereleri seçimden sonra buradan alır.
 
-**Durum: seçim bekliyor.** Önizleme: yayınlanınca buraya eklenir.
+**Durum: seçim bekliyor.** Önizleme: https://claude.ai/artifact/H3iJ6aFjeyvrAhQS7EPqeQ
 
 | Yol | Ne |
 |---|---|
