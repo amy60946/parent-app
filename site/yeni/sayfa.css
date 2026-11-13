@@ -134,7 +134,7 @@ h2{font-size:clamp(28px,4vw,48px);line-height:1.12;font-weight:800}
 .ikili-kap{display:flex;flex-direction:column;gap:14px;min-width:0}
 .ikili{position:relative;width:100%;aspect-ratio:1/.9}
 .ikili .cihaz{position:absolute;display:block}
-.ikili .cihaz-tablet{left:0;bottom:4%;width:77%}
+.ikili .cihaz-tablet{left:0;bottom:14%;width:77%}
 .ikili .cihaz-telefon{right:0;top:0;width:43%;z-index:2}
 .ikili .phone{max-width:none;width:100%;box-shadow:0 0 0 1px rgba(255,255,255,.08),-18px 30px 60px -18px rgba(0,0,0,.7)}
 .ikili-alt{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -142,10 +142,13 @@ h2{font-size:clamp(28px,4vw,48px);line-height:1.12;font-weight:800}
 .ikili-alt .altyazi{margin:0;font-size:13px;line-height:1.4;color:rgba(255,255,255,.6);flex:1 1 260px}
 .ikili.yok-js+.ikili-alt .dur{display:none}
 .phone.gercek{aspect-ratio:auto;height:auto}
-.phone.gercek .scr{height:auto;padding-top:7%;display:block}
+.phone.gercek .scr{height:auto;padding-top:5%;display:block}
 .phone.gercek .ekran{display:block;width:100%;height:auto}
 .phone.gercek .scr>.bildirim{top:9%}
 .nokta-b{margin:-1.6em 0 0 -1.6em}
+.ikili .nokta{font-size:13px;background:rgba(81,229,106,.22);box-shadow:0 0 0 .14em var(--yesil)}
+.ikili .nokta i{font-size:13px}
+.nokta-a i{left:50%;top:100%;transform:translate(-50%,.45em)}
 
 /* Faydalar: sırayla sağ / sol */
 .satirlar{display:flex;flex-direction:column;gap:clamp(56px,8vw,104px)}
