@@ -59,10 +59,8 @@ export default function GuestPassScreen({ navigation }: any) {
         {/* Kart */}
         <View style={styles.card}>
           <View style={styles.glow} />
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Image source={require('../../assets/brand-mark.png')} style={{ width: 34, height: 34 }} />
-            <Text style={styles.brand}>Moyo</Text>
-          </View>
+          <Image source={require('../../assets/brand-mark.png')} style={{ width: 82, height: 30 }} resizeMode="contain"
+            accessibilityRole="image" accessibilityLabel="Moyo" />
           <View style={{ flex: 1 }} />
           <Text style={styles.big}>+1 hafta</Text>
           <Text style={styles.cardSub}>Davet edilen aileye · 14 gün ücretsiz</Text>
@@ -162,7 +160,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: '800', color: colors.navy, textAlign: 'center' },
   card: { height: 210, borderRadius: 22, backgroundColor: colors.navy, padding: 20, overflow: 'hidden' },
   glow: { position: 'absolute', right: -70, top: -70, width: 220, height: 220, borderRadius: 110, borderWidth: 26, borderColor: 'rgba(233,178,43,0.14)' },
-  brand: { fontSize: 17, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
   big: { fontSize: 38, fontWeight: '800', color: '#fff' },
   cardSub: { fontSize: 13, color: 'rgba(255,255,255,0.72)' },
   codeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, minHeight: 34 },

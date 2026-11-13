@@ -20,7 +20,7 @@ ParentApp, ebeveynin kullandığı uygulama (Expo / React Native, TypeScript). �
 - Kullanıcı yazılımcı değil: **Türkçe**, sade dille, adım adım ve nereye tıklayacağını söyleyerek anlat. Belirsiz kararda kısa soru sor; kapsam dışına çıkma.
 - Şifre/anahtar sohbete yapıştırılmaz; GitHub Secrets'a eklenir. Uygulamaya yalnız Supabase publishable anahtarı girer (`EXPO_PUBLIC_SUPABASE_KEY`, CI'da `SUPABASE_PUBLISHABLE_KEY` secret'ından `.env`). `sb_secret_` / `service_role` asla.
 - Push yalnız oturumun `claude/...` dalına; kullanıcı istemedikçe PR açılmaz.
-- "Fidan" adı hiçbir yerde kullanılmaz. **Görünen ad Moyo** (kullanıcı kararı 9 Kasım 2026: telefonda simgenin altında, uygulama içi yazılarda, tanıtım sitesinde ve davet sayfasında; `app.json` `name`, açılış görseli `tools/brand/splash.py`). İç ad (depo, belgeler, ortak sözleşme) ParentApp; bundle `com.parentapp.ios` ve şema `parentapp://` değişmez. Oyundaki karakter **Okti**. Türkçe eklerle: Moyo'yu, Moyo'ya, Moyo'dan, Moyo'da, Moyo'nun.
+- "Fidan" adı hiçbir yerde kullanılmaz. **Görünen ad Moyo** (kullanıcı kararı 9 Kasım 2026: telefonda simgenin altında, uygulama içi yazılarda, tanıtım sitesinde ve davet sayfasında; `app.json` `name`). **Marka (13 Kasım 2026):** logo küçük harf "moyo" ("C Top, ayarlı"), uygulama simgesi iki satırlı "mo / yo" (koyu zemin #16113A, yeşil harf #0FD354, beyaz top); kit `brand/` (README orada), simge / açılış / site görselleri `python3 brand/app_assets.py` ile üretilir, elle düzenlenmez. İç ad (depo, belgeler, ortak sözleşme) ParentApp; bundle `com.parentapp.ios` ve şema `parentapp://` değişmez. Oyundaki karakter **Okti**. Türkçe eklerle: Moyo'yu, Moyo'ya, Moyo'dan, Moyo'da, Moyo'nun.
 
 ## Teknik notlar
 

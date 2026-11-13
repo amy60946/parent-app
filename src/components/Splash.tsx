@@ -4,9 +4,10 @@ import { StatusBar } from 'expo-status-bar';
 import { colors } from '../theme';
 
 // Açılış ekranı (kullanıcı isteği 28 Ekim 2026: "bizim görsellerimizle, ParentApp olduğu için çocukça olmasın"; görünen ad 9 Kasım 2026'dan beri Moyo):
-// yerel açılış görseliyle birebir aynı yerleşim (lacivert zemin, filiz + güneş, Moyo yazısı; assets/splash-icon.png,
-// app.json imageWidth 260), geçiş fark edilmesin diye. Yükleme sürerken altta kısa bir söz ve ince ilerleme çizgisi belirir.
+// yerel açılış görseliyle birebir aynı yerleşim (marka laciverti #16113A zemin, "moyo" sözcük logosu; assets/splash-icon.png,
+// app.json imageWidth 260; 13 Kasım 2026'dan beri brand/app_assets.py üretir), geçiş fark edilmesin diye. Yükleme sürerken altta kısa bir söz ve ince ilerleme çizgisi belirir.
 const SIZE = 260;
+const BRAND_BG = '#16113A'; // app.json splash backgroundColor ile aynı (brand/tokens.css --moyo-lacivert)
 
 export default function Splash() {
   const fade = useRef(new Animated.Value(0)).current;
@@ -30,7 +31,7 @@ export default function Splash() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
+  root: { flex: 1, backgroundColor: BRAND_BG, alignItems: 'center', justifyContent: 'center' },
   foot: { position: 'absolute', bottom: 72, alignItems: 'center', gap: 18 },
   tagline: { fontSize: 14, color: 'rgba(255,255,255,0.7)', letterSpacing: 0.2 },
   track: { width: 120, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.12)', overflow: 'hidden' },

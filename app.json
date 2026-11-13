@@ -173,7 +173,7 @@
     "android": {
       "package": "com.parentapp.ios",
       "adaptiveIcon": {
-        "backgroundColor": "#0F1B3D",
+        "backgroundColor": "#16113A",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -192,7 +192,7 @@
         {
           "image": "./assets/splash-icon.png",
           "imageWidth": 260,
-          "backgroundColor": "#0F1B3D"
+          "backgroundColor": "#16113A"
         }
       ],
       [
