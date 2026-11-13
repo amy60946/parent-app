@@ -4,7 +4,7 @@ Kullanıcı isteği (11 Kasım 2026): küçük harf "moyo" sözcük logosu ("y" 
 "mercek"; renk ve yazı tipi için verilen referans temel alınır; üç uygulama iconu (Moyo, Moyo Mercek, Moyo Oyun) tek aile.
 Kitin tek sahibi bu depodur (Ebeveyn penceresi); Moyo Mercek ve Oyun pencereleri seçimden sonra buradan alır.
 
-**Durum:** logo **A Kıvrım seçildi** (kullanıcı, 12 Kasım 2026; B ve C dosyaları kaldırıldı, çizimleri `kit.py`'de duruyor). Icon ailesi ve yazı tipi seçim bekliyor. Seçimler `kit.py` `SELECTED`'da. Önizleme: https://claude.ai/artifact/H3iJ6aFjeyvrAhQS7EPqeQ
+**Durum:** logo **D "C Top, ayarlı"** (kullanıcı, 12 Kasım 2026, logo atölyesinde; aynı gün önce A seçilmişti), icon ailesi **3 İki satır** (kullanıcı, 13 Kasım 2026: Moyo koyu zemin + yeşil harf, Moyo Mercek açık zemin + lacivert harf; Moyo Oyun için karar yok). Yazı tipi seçim bekliyor. Seçimler `kit.py` `SELECTED`'da; seçilmeyenlerin dosyaları üretilmez, çizimleri kodda durur.
 
 | Yol | Ne |
 |---|---|
@@ -15,8 +15,9 @@ Kitin tek sahibi bu depodur (Ebeveyn penceresi); Moyo Mercek ve Oyun pencereleri
 | `tokens.css`, `tokens.json` | Renk ve yazı değişkenleri (`--moyo-…`). Üretilir, elle düzenlenmez. |
 | `fonts/` | Outfit (sayfa ve uygulama yazısı) ve Poppins 300 / 800 (yalnız logo çizimi için). İkisi de SIL OFL 1.1 (`OFL-*.txt`). |
 | `onizleme.html` | Önizleme sayfasının kalıbı. |
+| `app_assets.py` | Uygulama ve site görselleri: `assets/icon.png` (1024, saydamlıksız), `favicon.png`, Android katmanları, `splash-icon.png`, `brand-mark.png`, `site/public/img/parentapp-simge.png`. `python3 brand/app_assets.py` (cairosvg gerekir). |
 
-Gerekenler: `pip install fonttools brotli uharfbuzz`.
+Gerekenler: `pip install fonttools brotli uharfbuzz cairosvg`.
 
 ## Seçenekler
 
@@ -38,4 +39,4 @@ Gerekenler: `pip install fonttools brotli uharfbuzz`.
 - Logo çizimi özgündür; referans markanın harfi, görseli, metni kopyalanmaz (ortak `CLAUDE.md` kural 7). Renk + yazı tipi + kıvrım
   birlikte referansa yakın durur: marka tescilinde avukata sorulur.
 - Seçimden sonra: seçilmeyen alternatifler `svg/`'den silinir, `tokens.json` `secilen` alanları doldurulur, uygulama iconu
-  (`assets/icon.png`, Android katmanları, `tools/brand/splash.py`) seçilen icondan üretilir. Uygulama içi renkler ayrı iş.
+  (`assets/icon.png`, Android katmanları, açılış görseli) `app_assets.py` ile seçilen icondan üretilir (13 Kasım 2026 yapıldı). Uygulama içi renkler ayrı iş.

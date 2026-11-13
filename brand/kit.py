@@ -23,8 +23,9 @@ VARIANTS = {'a': 'Kıvrım', 'b': 'Gülüş', 'c': 'Top', 'd': 'Top, ayarlı'}
 INK_GAPS = {'d': {'mo': 0.079, 'oy': 0.081, 'yo': 0.088}}
 SUFFIX = {'d': {'case': str.capitalize, 'track': -0.03, 'gap': 0.5}}
 FAMILIES = {'1': 'Sözcük', '2': 'y işareti', '3': 'İki satır'}
-# Kullanıcı seçimleri (None = karar bekliyor). Logo: A Kıvrım (kullanıcı, 12 Kasım 2026).
-SELECTED = {'logo': 'a', 'icon': None, 'yazi': None}
+# Kullanıcı seçimleri (None = karar bekliyor). 12 Kasım 2026 önce A Kıvrım; sonra logo atölyesinde "C Top, ayarlı" (D).
+# 13 Kasım 2026 (kullanıcı, Moyo Mercek penceresinde): iki satırlı "mo / yo" icon; Moyo koyu zemin + yeşil harf, Moyo Mercek açık zemin + lacivert harf.
+SELECTED = {'logo': 'd', 'icon': '3', 'yazi': None}
 
 # Renkler: kullanıcının verdiği referans temel alındı (lacivert zemin, tek yeşil vurgu, gri basamaklar).
 PALETTE = [
@@ -44,7 +45,7 @@ PALETTE = [
 C = {var: val for _, var, val, _ in PALETTE}
 INKS = {'lacivert': (C['lacivert'], C['yesil-marka']), 'yesil': (C['yesil-marka'], C['beyaz']), 'beyaz': (C['beyaz'], C['yesil'])}
 PRODUCTS = {
-    'moyo': {'ad': 'Moyo', 'bg': C['lacivert'], 'fg': C['yesil'], 'accent': C['beyaz']},
+    'moyo': {'ad': 'Moyo', 'bg': C['lacivert'], 'fg': C['yesil-marka'], 'accent': C['beyaz']},
     'mercek': {'ad': 'Moyo Mercek', 'bg': C['beyaz'], 'fg': C['lacivert'], 'accent': C['yesil-marka']},
     'oyun': {'ad': 'Moyo Oyun', 'bg': C['yesil'], 'fg': C['lacivert'], 'accent': C['beyaz']},
 }
@@ -136,9 +137,12 @@ def handle(cx, cy, r, width, length):
     return ribbon(turtle((cx + r * math.cos(a), cy + r * math.sin(a)), 45, [('L', length)]), width)
 
 
-def icon(product, family, variant, size=1024):
-    """Uygulama iconu: kare, köşesiz (köşeyi işletim sistemi keser), saydam alan yok."""
-    P = PRODUCTS[product]
+def icon(product, family, variant, size=1024, transparent=False, frac_scale=1.0, mono=None):
+    """Uygulama iconu: kare, köşesiz (köşeyi işletim sistemi keser), saydam alan yok.
+    transparent: zeminsiz (Android uyarlanır icon ön katmanı); frac_scale: işaretin boyu çarpanı; mono: tek renk (tek renkli katman)."""
+    P = dict(PRODUCTS[product])
+    if mono:
+        P['fg'] = P['accent'] = mono
     extra = ''
     if family == '1':                       # yatay sözcük
         ink, acc, width, starts = word('moyo', variant)
@@ -164,18 +168,15 @@ def icon(product, family, variant, size=1024):
         dx = top_w - bot_w
         ink = top_ink + move(bot_ink, dx)
         acc = move(bot_acc, dx)
-        if product == 'mercek':
-            cx, cy, r = o_center(bs[1] + dx, X + 0.22 * X)
-            acc = acc + handle(cx, cy, r - 0.30 * S, 0.82 * S, 0.30 * S + 0.56 * X)
-        frac = 0.66
+        frac = 0.62                         # Moyo Mercek iconuyla aynı (clinic-app tools/logo/ikon.py); mercek sapı yok
     x0, y0, x1, y1 = bounds(ink, acc) if acc else bounds(ink)
     if extra:
         x0, y0 = min(x0, cx - R - sw / 2), min(y0, cy - R - sw / 2); x1, y1 = max(x1, cx + R + sw / 2), max(y1, cy + R + sw / 2)
     w, h = x1 - x0, y1 - y0
-    s = size * frac / max(w, h)
+    s = size * frac * frac_scale / max(w, h)
     tx = size / 2.0 - s * (x0 + w / 2.0); ty = size / 2.0 - s * (y0 + h / 2.0)
-    body = ('<rect width="%d" height="%d" fill="%s"/><g transform="translate(%s %s) scale(%.4f)">%s%s%s</g>'
-            % (size, size, P['bg'], num(tx), num(ty), s, fill(ink, P['fg']), extra, fill(acc, P['accent'])))
+    body = (('' if transparent else '<rect width="%d" height="%d" fill="%s"/>' % (size, size, P['bg']))
+            + '<g transform="translate(%s %s) scale(%.4f)">%s%s%s</g>' % (num(tx), num(ty), s, fill(ink, P['fg']), extra, fill(acc, P['accent'])))
     return svg_doc(0, 0, size, size, body, P['ad'] + ' iconu')
 
 

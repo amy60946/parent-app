@@ -18,6 +18,7 @@ NOTES = {
     'a': ('Kıvrım', 'Kuyruk aşağı iner, sola döner ve içe kıvrılır. İstediğin harekete en yakın olan.', True),
     'b': ('Gülüş', 'Kuyruk sola doğru uzanıp hafifçe yükselir; sözcüğün altında bir gülüş. Referanstan en uzak olan.', False),
     'c': ('Top', 'Kısa bir kanca ve ucunda ayrı duran top. Oyunla bağ kurar; küçük boyda da seçilir.', False),
+    'd': ('Top, ayarlı', 'C’nin kuyruğu, daha sıkı harf aralığı; ürün adı büyük harfle. Logo atölyesinde kaydedildi (12 Kasım 2026).', False),
 }
 FAMILY_NOTES = {'1': 'Sözcüğün tamamı. Adı doğrudan okutur; küçük boyda harfler incelir.',
                 '2': 'Yalnız “y”. En sade ve en iri; ad okunmaz, şekil tanınır.',
@@ -49,7 +50,7 @@ def build_files():
             for suffix in (None, 'mercek', 'oyun'):
                 svg, _, _ = kit.wordmark(v, ink, suffix)
                 write(os.path.join(HERE, 'svg', 'logo', 'moyo%s-%s-%s.svg' % ('-' + suffix if suffix else '', v, ink)), svg); n += 1
-        for fam in kit.FAMILIES:
+        for fam in ([kit.SELECTED['icon']] if kit.SELECTED['icon'] else kit.FAMILIES):
             for p in kit.PRODUCTS:
                 write(os.path.join(HERE, 'svg', 'icon', '%s-%s%s.svg' % (p, fam, v)), kit.icon(p, fam, v)); n += 1
     css = ['/* Moyo marka değişkenleri (brand/build.py üretir; elle düzenlenmez). */', ':root{']
@@ -78,6 +79,8 @@ def build_preview(out):
         return '<svg viewBox="0 0 %s %s" role="img" aria-label="%s"><use href="#%s" width="%s" height="%s"/></svg>' % (w, h, label, sid, w, h)
     sel = kit.SELECTED['logo']
     for v, (name, note, rec) in NOTES.items():
+        if sel and v != sel:
+            continue
         vb_l = sym('wm-%s-l' % v, kit.wordmark(v, 'lacivert')[0]); vb_d = sym('wm-%s-d' % v, kit.wordmark(v, 'yesil')[0])
         tag = ('<span class="tag">seçildi</span>' if v == sel else '') if sel else ('<span class="tag">önerilen</span>' if rec else '')
         logos.append('<div class="opt%s"><div class="swatch on-light">%s</div><div class="swatch on-dark">%s</div><h3>%s %s%s</h3><p class="muted small">%s</p></div>'
@@ -93,6 +96,8 @@ def build_preview(out):
         locks.append('<div class="locks" data-variant="%s"%s>%s</div>' % (v, '' if v == (sel or 'a') else ' hidden', ''.join(cells)))
         rows = []
         for fam, fname in kit.FAMILIES.items():
+            if kit.SELECTED['icon'] and fam != kit.SELECTED['icon']:
+                continue
             ids = {}
             for p in kit.PRODUCTS:
                 ids[p] = 'ic-%s-%s%s' % (p, fam, v)
@@ -104,8 +109,9 @@ def build_preview(out):
                 return ('<div class="wall %s"><div class="row">%s</div><div class="tiny">%s</div></div>'
                         % (cls, ''.join('<div class="app">%s<span>%s</span></div>' % (app(p, 's60'), kit.PRODUCTS[p]['ad']) for p in kit.PRODUCTS),
                            ''.join(app(p, 's40') for p in kit.PRODUCTS) + ''.join(app(p, 's29') for p in kit.PRODUCTS)))
+            ftag = ('<span class="tag">seçildi</span>' if kit.SELECTED['icon'] else '<span class="tag">önerilen</span>') if fam == '3' else ''
             rows.append('<div class="fam"><div class="opt"><h3>%s. %s%s</h3><p class="muted small">%s</p><div class="big">%s</div></div><div class="phones">%s%s</div></div>'
-                        % (fam, fname, '<span class="tag">önerilen</span>' if fam == '3' else '', FAMILY_NOTES[fam], big, wall('l'), wall('d')))
+                        % (fam, fname, ftag, FAMILY_NOTES[fam], big, wall('l'), wall('d')))
         icons.append('<div data-variant="%s"%s>%s</div>' % (v, '' if v == (sel or 'a') else ' hidden', ''.join(rows)))
     colors = ''.join('<div class="color"><i style="background:%s"></i><b>%s</b><code>%s</code><span class="muted small">%s</span></div>' % (val, ad, val, use_) for ad, _, val, use_ in kit.PALETTE)
     C = kit.C
@@ -125,7 +131,13 @@ def build_preview(out):
         html, k = re.subn(r'\n  <div class="pick".*?\n  </div>\n', '\n', html, flags=re.S); assert k == 1
         old = '<div><b>1. Sözcük logo</b><span class="muted small">A Kıvrım, B Gülüş ya da C Top. Önerim A.</span></div>'
         assert old in html
-        html = html.replace(old, '<div class="done"><b>1. Sözcük logo: %s %s seçildi</b><span class="muted small">12 Kasım 2026. Aşağıdaki kilitler ve iconlar bu logoyla.</span></div>' % (sel.upper(), kit.VARIANTS[sel]))
+        html = html.replace(old, '<div class="done"><b>1. Sözcük logo: %s seçildi</b><span class="muted small">%s Aşağıdaki kilitler ve iconlar bu logoyla.</span></div>' % (kit.VARIANTS[sel] if sel == 'd' else sel.upper() + ' ' + kit.VARIANTS[sel], '12 Kasım 2026, logo atölyesinde.' if sel == 'd' else '12 Kasım 2026.'))
+        html = html.replace('<div class="grid3"><!--LOGOS--></div>', '<div class="grid1"><!--LOGOS--></div>')
+        html = re.sub(r'(<h2>1\. Sözcük logo</h2><p class="muted">)[^<]*', r'\1Seçilen logo. m ve o harfleri Poppins ExtraBold’un çizimi, “y” özgün: “u” gövdesi, kısa kanca ve ayrı duran top.', html)
+    if kit.SELECTED['icon']:
+        old = '<div><b>2. Icon ailesi</b><span class="muted small">1 Sözcük, 2 y işareti ya da 3 İki satır. Önerim 3.</span></div>'
+        assert old in html
+        html = html.replace(old, '<div class="done"><b>2. Icon ailesi: %s %s seçildi</b><span class="muted small">13 Kasım 2026. Moyo koyu zemin + yeşil harf, Moyo Mercek açık zemin + lacivert harf. Moyo Oyun için karar yok.</span></div>' % (kit.SELECTED['icon'], kit.FAMILIES[kit.SELECTED['icon']]))
     for key, val in (('<!--DEFS-->', ''.join(defs)), ('<!--LOGOS-->', ''.join(logos)), ('<!--LOCKS-->', ''.join(locks)), ('<!--ICONS-->', ''.join(icons)),
                      ('<!--COLORS-->', colors), ('<!--PAIRS-->', ''.join(row(*p) for p in pairs))):
         assert key in html, key
