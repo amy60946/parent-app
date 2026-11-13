@@ -170,13 +170,13 @@ def gosterim():
     dot_b = 'left:%.2f%%;top:%.2f%%' % (b['cx'], b['cy'])
     tablet = ('<div class="cihaz cihaz-tablet"><div class="tablet"><div class="tscr"><img src="img/iskele.jpg" alt="">'
               '<div class="gorev"><small>Bugünün macerası</small><b>Dişlerini fırçala</b><span class="dgm"><span class="q-a">Yaptım</span><span class="q-b">Onay bekliyor</span><span class="q-c">Onaylandı ✓</span></span></div>'
-              '<span class="nokta nokta-a"><i>Nazlı</i></span></div></div><span class="cihaz-ad">Çocuğun tableti · Pofi Adası</span></div>')
+              '<span class="nokta nokta-a"><i>Nazlı</i></span></div></div></div>')
     over = (push('Moyo · şimdi', 'Nazlı macerayı tamamladı: Dişlerini fırçala', '<span class="ik">%s</span>' % app_icon())
             + '<span class="nokta nokta-b" style="%s"><i>Siz</i></span>' % dot_b)
-    phone_ = '<div class="cihaz cihaz-telefon">%s<span class="cihaz-ad">Sizin telefonunuz · Moyo</span></div>' % real_phone('onay', over).replace(' loading="lazy"', '')
-    return ('<div class="ikili yok-js s-done" data-gosterim role="img" aria-label="Gösterim: çocuğunuz oyunda macerayı tamamlar, Moyo size bildirir, siz onaylarsınız; oyunda onaylandığını görür.">'
-            + tablet + phone_ + '<button type="button" class="dur" id="gosterim-dur" aria-pressed="false">Durdur</button>'
-            '<p class="altyazi">Moyo ekranı uygulamanın kendisidir; oyun ekranı örnek gösterimdir. Adlar örnektir.</p></div>')
+    phone_ = '<div class="cihaz cihaz-telefon">%s</div>' % real_phone('onay', over).replace(' loading="lazy"', '')
+    return ('<div class="ikili-kap"><div class="ikili yok-js s-done" data-gosterim role="img" aria-label="Gösterim: çocuğunuz oyunda macerayı tamamlar, Moyo size bildirir, siz onaylarsınız; oyunda onaylandığını görür.">'
+            + tablet + phone_ + '</div><div class="ikili-alt"><button type="button" class="dur" id="gosterim-dur" aria-pressed="false">Durdur</button>'
+            '<p class="altyazi">Arkada çocuğunuzun tableti (Pofi Adası, örnek gösterim), önde sizin telefonunuzda Moyo’nun gerçek onay ekranı. Adlar örnektir.</p></div></div>')
 
 
 def ust(page):

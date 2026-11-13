@@ -55,9 +55,9 @@ h2{font-size:clamp(28px,4vw,48px);line-height:1.12;font-weight:800}
 
 /* Üst bölüm */
 .kahraman{padding-block:clamp(40px,6vw,72px) var(--bosluk);text-align:left;overflow:hidden}
-.kahraman-ic{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:clamp(28px,4vw,64px);align-items:center}
+.kahraman-ic{display:grid;grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr);gap:clamp(28px,4vw,56px);align-items:center}
 .kahraman .yazi{display:flex;flex-direction:column;align-items:flex-start;gap:20px}
-.kahraman h1{font-size:clamp(30px,3.2vw,44px);line-height:1.14;color:var(--yesil);max-width:none}
+.kahraman h1{font-size:clamp(28px,2.7vw,39px);line-height:1.15;color:var(--yesil);max-width:none}
 .alt-baslik{font-size:clamp(21px,2vw,27px);line-height:1.25;font-weight:700;color:var(--beyaz);text-wrap:balance}
 .etiket{font-size:15px;font-weight:600;color:var(--yesil);max-width:640px;line-height:1.35;text-wrap:balance}
 .giris{font-size:18px;line-height:1.5;max-width:34em;color:var(--koyu-yazi-2)}
@@ -122,22 +122,25 @@ h2{font-size:clamp(28px,4vw,48px);line-height:1.12;font-weight:800}
 .arti1{display:inline-flex;align-items:center;gap:.45em;align-self:flex-start;background:#FFF4D6;color:#8A5A00;font-weight:800;border-radius:2em;padding:0 .9em 0 .45em;max-height:0;margin-top:-.8em;overflow:hidden;opacity:0;transform:scale(.85);transition:opacity .4s ease,transform .4s cubic-bezier(.3,1.5,.5,1),max-height .5s ease,margin-top .5s ease,padding .5s ease}
 .arti1 img{width:1.6em;height:1.6em} .s-ok .arti1,.arti1.acik{opacity:1;transform:none;max-height:3em;margin-top:0;padding:.35em .9em .35em .45em}
 .nokta{position:absolute;width:3.2em;height:3.2em;margin:-1.6em 0 0 -1.6em;border-radius:50%;background:rgba(81,229,106,.35);box-shadow:0 0 0 .18em var(--yesil);opacity:0;transform:scale(1.25);transition:opacity .35s ease,transform .35s ease;z-index:4;pointer-events:none}
-.nokta i{position:absolute;left:100%;top:50%;transform:translate(.5em,-50%);font-style:normal;font-size:.8em;font-weight:700;background:var(--lacivert);color:#fff;padding:.12em .6em;border-radius:1em;white-space:nowrap}
+.nokta i{position:absolute;left:100%;top:50%;transform:translate(.5em,-50%);background:var(--beyaz) !important;color:var(--lacivert) !important;box-shadow:0 2px 8px rgba(14,11,38,.35);font-style:normal;font-size:.8em;font-weight:700;background:var(--lacivert);color:#fff;padding:.12em .6em;border-radius:1em;white-space:nowrap}
 .nokta{left:0;top:0} /* yeri demo.js hedefin ortasına koyar */
-.nokta-b i{left:auto;right:100%;transform:translate(-.5em,-50%)}
+.nokta-b i{left:50%;right:auto;top:auto;bottom:100%;transform:translate(-50%,-.45em)}
 .s-dot-a .nokta-a,.s-dot-b .nokta-b{opacity:1;transform:none} .s-tap .nokta{transform:scale(.72)}
 .dur{grid-column:1/-1;justify-self:center;font:inherit;font-size:13px;font-weight:600;background:transparent;color:rgba(255,255,255,.7);border:1px solid var(--koyu-cizgi);border-radius:999px;padding:5px 14px;cursor:pointer}
 .sahne.yok-js .dur{display:none}
 
 /* Üst bölümün sağı: oyun tableti + gerçek Moyo onay ekranı */
-.ikili{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:clamp(12px,1.6vw,22px);align-items:end}
-.ikili .cihaz{gap:10px}
-.ikili .cihaz-ad{order:2;font-size:13px}
-.ikili .tablet{order:1}
-.ikili .phone{max-width:none}
-.ikili .dur{grid-column:1/-1;justify-self:start}
-.ikili .altyazi{grid-column:1/-1;margin:0;font-size:12.5px;color:rgba(255,255,255,.55)}
-.ikili.yok-js .dur{display:none}
+/* Tablet arkada solda, telefon önde sağda (üst üste biner); boyutlar kutunun genişliğine göre */
+.ikili-kap{display:flex;flex-direction:column;gap:14px;min-width:0}
+.ikili{position:relative;width:100%;aspect-ratio:1/.9}
+.ikili .cihaz{position:absolute;display:block}
+.ikili .cihaz-tablet{left:0;bottom:4%;width:77%}
+.ikili .cihaz-telefon{right:0;top:0;width:43%;z-index:2}
+.ikili .phone{max-width:none;width:100%;box-shadow:0 0 0 1px rgba(255,255,255,.08),-18px 30px 60px -18px rgba(0,0,0,.7)}
+.ikili-alt{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.ikili-alt .dur{position:static;flex:none}
+.ikili-alt .altyazi{margin:0;font-size:13px;line-height:1.4;color:rgba(255,255,255,.6);flex:1 1 260px}
+.ikili.yok-js+.ikili-alt .dur{display:none}
 .phone.gercek{aspect-ratio:auto;height:auto}
 .phone.gercek .scr{height:auto;padding-top:7%;display:block}
 .phone.gercek .ekran{display:block;width:100%;height:auto}

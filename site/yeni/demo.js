@@ -6,7 +6,7 @@
     // Oyun tableti + gerçek Moyo onay ekranı. Bir seferde tek değişiklik, adımlar 1–2 sn, döngü ~11 sn.
     // JS yoksa ya da "hareketi azalt" açıksa durağan hâl: tablette "Onay bekliyor", telefonda onay ekranı.
     var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var btn = stage.querySelector('.dur');
+    var btn = document.getElementById('gosterim-dur');
     var timers = [], playing = false, userPaused = false, visible = true;
     var set = function (cls, on) { stage.classList.toggle(cls, on); };
     var place = function (dotSel, targetSel) {            // parmak noktası: hedefin tam ortasına

@@ -28,7 +28,8 @@ for name in ('onay', 'bugun', 'maceralar', 'ekle', 'odul', 'gelisim'):
     entry = {'dosya': 'ekran-%s.jpg' % name, 'ust_renk': top}
     for k, b in (meta.get(name, {}).get('boxes') or {}).items():
         if b:
-            entry[k] = {'cx': round(100 * (b['x'] + b['width'] / 2) / VW, 2), 'cy': round(100 * (b['y'] + b['height'] / 2) / VH, 2)}
+            dx = -11.0 if k == 'onayla' else 0.0   # "Onayla" düğmesinde yazının solunda simge var: düğmenin ortası yazınınkinden ~11 nokta solda
+            entry[k] = {'cx': round(100 * (b['x'] + b['width'] / 2 + dx) / VW, 2), 'cy': round(100 * (b['y'] + b['height'] / 2) / VH, 2)}
     info[name] = entry
 json.dump(info, open(os.path.join(OUT, 'ekranlar.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
 print(json.dumps(info, ensure_ascii=False))
