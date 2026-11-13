@@ -1,0 +1,30 @@
+{
+ "onay": {
+  "dosya": "ekran-onay.jpg",
+  "ust_renk": "#A4A9B6",
+  "onayla": {
+   "cx": 79.24,
+   "cy": 92.86
+  }
+ },
+ "bugun": {
+  "dosya": "ekran-bugun.jpg",
+  "ust_renk": "#F5F6F8"
+ },
+ "maceralar": {
+  "dosya": "ekran-maceralar.jpg",
+  "ust_renk": "#F5F6F8"
+ },
+ "ekle": {
+  "dosya": "ekran-ekle.jpg",
+  "ust_renk": "#F5F6F8"
+ },
+ "odul": {
+  "dosya": "ekran-odul.jpg",
+  "ust_renk": "#F5F6F8"
+ },
+ "gelisim": {
+  "dosya": "ekran-gelisim.jpg",
+  "ust_renk": "#F5F6F8"
+ }
+}

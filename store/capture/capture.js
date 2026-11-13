@@ -24,6 +24,7 @@ const shots = JSON.parse(fs.readFileSync(process.argv[2] || (__dirname + '/shots
         if (st.startsWith('@')) await p.getByLabel(st.slice(1)).first().click({ timeout: 4000 });
         else if (st.startsWith('~')) await p.getByText(st.slice(1)).first().click({ timeout: 4000 });
         else if (st.startsWith('scroll:')) await p.mouse.wheel(0, +st.slice(7));
+        else if (st.startsWith('xy:')) { const [x, y] = st.slice(3).split(',').map(Number); await p.mouse.click(x, y); }
         else await p.getByText(st, { exact: true }).first().click({ timeout: 4000 });
       } catch (e) { console.log('MISS', s.name, st); }
       await p.waitForTimeout(1100);

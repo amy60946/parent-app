@@ -1,0 +1,8 @@
+[
+ {"name": "onay", "steps": ["~1 macera onayını bekliyor", "@Yatağını topla, Nazlı: incele", "Şimdi değil", "@Yatağını topla, Nazlı: incele"], "boxes": {"onayla": "Onayla"}},
+ {"name": "bugun"},
+ {"name": "maceralar", "steps": ["xy:220,845"], "dismiss": ["Kapat"]},
+ {"name": "ekle", "steps": ["Macera ekle"]},
+ {"name": "odul", "steps": ["Ödül"], "dismiss": ["Atla"], "hide": ["[aria-label^=\"Harçlık ekle\"]"]},
+ {"name": "gelisim", "steps": ["xy:308,845"], "dismiss": ["Kapat"]}
+]

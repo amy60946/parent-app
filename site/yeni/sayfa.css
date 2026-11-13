@@ -54,12 +54,15 @@ h2{font-size:clamp(28px,4vw,48px);line-height:1.12;font-weight:800}
 .acilir nav a{padding:12px 14px;border-radius:12px;font-weight:600;text-decoration:none} .acilir nav a:hover{background:var(--sis)}
 
 /* Üst bölüm */
-.kahraman{padding-block:clamp(48px,7vw,80px) var(--bosluk);text-align:center;overflow:hidden}
-.kahraman .yazi{display:flex;flex-direction:column;align-items:center;gap:22px}
+.kahraman{padding-block:clamp(40px,6vw,72px) var(--bosluk);text-align:left;overflow:hidden}
+.kahraman-ic{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:clamp(28px,4vw,64px);align-items:center}
+.kahraman .yazi{display:flex;flex-direction:column;align-items:flex-start;gap:20px}
+.kahraman h1{font-size:clamp(30px,3.2vw,44px);line-height:1.14;color:var(--yesil);max-width:none}
+.alt-baslik{font-size:clamp(21px,2vw,27px);line-height:1.25;font-weight:700;color:var(--beyaz);text-wrap:balance}
 .etiket{font-size:15px;font-weight:600;color:var(--yesil);max-width:640px;line-height:1.35;text-wrap:balance}
-.kahraman h1{max-width:1000px}
-.giris{font-size:clamp(19px,2.1vw,24px);line-height:1.35;max-width:820px;color:var(--koyu-yazi-2);text-wrap:balance}
+.giris{font-size:18px;line-height:1.5;max-width:34em;color:var(--koyu-yazi-2)}
 .dugmeler{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.kahraman .dugmeler,.kahraman .ince{justify-content:flex-start}
 .ince{display:flex;flex-wrap:wrap;gap:6px 22px;justify-content:center;font-size:15px;color:var(--koyu-yazi-2)}
 .ince span::before{content:"✓";color:var(--yesil);font-weight:800;margin-right:7px}
 
@@ -126,6 +129,21 @@ h2{font-size:clamp(28px,4vw,48px);line-height:1.12;font-weight:800}
 .dur{grid-column:1/-1;justify-self:center;font:inherit;font-size:13px;font-weight:600;background:transparent;color:rgba(255,255,255,.7);border:1px solid var(--koyu-cizgi);border-radius:999px;padding:5px 14px;cursor:pointer}
 .sahne.yok-js .dur{display:none}
 
+/* Üst bölümün sağı: oyun tableti + gerçek Moyo onay ekranı */
+.ikili{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:clamp(12px,1.6vw,22px);align-items:end}
+.ikili .cihaz{gap:10px}
+.ikili .cihaz-ad{order:2;font-size:13px}
+.ikili .tablet{order:1}
+.ikili .phone{max-width:none}
+.ikili .dur{grid-column:1/-1;justify-self:start}
+.ikili .altyazi{grid-column:1/-1;margin:0;font-size:12.5px;color:rgba(255,255,255,.55)}
+.ikili.yok-js .dur{display:none}
+.phone.gercek{aspect-ratio:auto;height:auto}
+.phone.gercek .scr{height:auto;padding-top:7%;display:block}
+.phone.gercek .ekran{display:block;width:100%;height:auto}
+.phone.gercek .scr>.bildirim{top:9%}
+.nokta-b{margin:-1.6em 0 0 -1.6em}
+
 /* Faydalar: sırayla sağ / sol */
 .satirlar{display:flex;flex-direction:column;gap:clamp(56px,8vw,104px)}
 .satir{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(24px,5vw,72px);align-items:center}
@@ -134,6 +152,7 @@ h2{font-size:clamp(28px,4vw,48px);line-height:1.12;font-weight:800}
 .satir p{color:var(--yazi-2);max-width:31em}
 .gorsel{background:var(--sis);border-radius:28px;height:clamp(360px,38vw,430px);overflow:hidden;display:flex;justify-content:center;align-items:flex-start;padding-top:36px}
 .gorsel .phone{flex:none;width:280px;max-width:80%;box-shadow:0 24px 50px -20px rgba(22,17,58,.35)} /* telefon alttan kesilir */
+.gorsel .phone.gercek .scr{font-size:16px}
 .gorsel.koyu-zemin{background:var(--lacivert)}
 
 /* Nasıl çalışır: üç adım */
@@ -208,6 +227,7 @@ table.kars{width:100%;border-collapse:separate;border-spacing:0 8px;font-size:17
 
 @media (max-width:900px){
   .menu,.sag .cizgi{display:none} .acilir{display:block} .ust .inner{gap:12px} .logo{margin-right:auto}
+  .kahraman-ic{grid-template-columns:minmax(0,1fr)}
   .sahne{grid-template-columns:minmax(0,1fr);justify-items:center;gap:18px} .cihaz{width:100%;gap:8px} .cihaz .phone{max-width:280px}
   .tscr{font-size:3.7cqw} .gorev{width:68%}
   .kirp{height:345px;overflow:hidden;align-items:flex-start} .kirp .phone{flex:none;width:280px} /* dokunuş ve sonucu aynı ekranda görünsün */
