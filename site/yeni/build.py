@@ -12,6 +12,7 @@ yazı tipi Google Fonts'tan; fonts/ kopyalanmaz).
 Yayındaki siteyi (build-cf.sh, landing.html) etkilemez.
 """
 import html
+import json
 import os
 import re
 import shutil
@@ -37,6 +38,9 @@ one = lambda pat: re.search(pat, src, re.S).group(1)
 TAGLINE = one(r'<p class="eyebrow tagline">(.*?)</p>')
 H1 = one(r'<h1 id="hero-title">(.*?)</h1>')
 LEAD = one(r'<p class="lead">(.*?)</p>')
+# Kullanıcı (13 Kasım 2026): "6–12 yaş" ile başlayan ilk cümle çıkar; kalan kısım alt başlığın altında, daha küçük.
+LEAD2 = LEAD.split('. ', 1)[1] if LEAD.startswith('6') and '. ' in LEAD else LEAD
+assert LEAD2 != LEAD and not LEAD2.startswith('6')
 CTA1 = one(r'<a class="btn btn-primary" href="app/index.html#kayit">(.*?)</a>')
 CTA2 = one(r'<a class="btn btn-ghost" href="#nasil">(.*?)</a>')
 FINE = re.findall(r'<span>(.*?)</span>', one(r'<p class="fine">(.*?)</p>'))
@@ -74,6 +78,11 @@ PRICE_FAQ = [('Deneme bitince ne olur?', 'Aylık ya da yıllık üyeliği seçeb
              ('Nasıl iptal ederim?', 'Üyelik App Store üzerinden yönetilir; iPhone ya da iPad’inizde Ayarlar › Apple hesabınız › Abonelikler bölümünden istediğiniz zaman iptal edebilirsiniz.'),
              ('Web’den satın alabilir miyim?', 'Hayır. Üyelik iPhone ya da iPad’deki Moyo’dan başlatılır; aynı hesapla web’de de açılır.'),
              ('Oyun ücretli mi?', 'Hayır. Pofi Adası ücretsizdir; içinde reklam ve satın alma yoktur.')]
+
+
+# Gerçek Moyo ekranları (ekranlar.py üretir; deneme verisi, adlar kurgusal)
+SHOTS = json.load(open(os.path.join(HERE, 'img', 'ekranlar.json'), encoding='utf-8'))
+FAYDA_EKRAN = ['gelisim', 'maceralar', 'odul', 'ekle']   # faydaların sırasıyla
 
 
 # --- Parçalar ---------------------------------------------------------------------------------------------------------
@@ -114,6 +123,13 @@ def phone(inner, cls=''):
     return '<div class="phone" aria-hidden="true"><div class="scr%s">%s</div></div>' % (' ' + cls if cls else '', inner)
 
 
+def real_phone(name, extra=''):
+    """Gerçek uygulama ekranı telefon çerçevesinde (üstte durum çubuğu payı, ekranın üst rengiyle)."""
+    sh = SHOTS[name]
+    return ('<div class="phone gercek" aria-hidden="true"><div class="scr" style="background:%s">%s<img class="ekran" src="img/%s" alt="" loading="lazy"></div></div>'
+            % (sh['ust_renk'], extra, sh['dosya']))
+
+
 def push(title, text, icon_html):
     return '<div class="bildirim">%s<div><b>%s</b>%s</div></div>' % (icon_html, title, text)
 
@@ -147,22 +163,20 @@ N_CLS = ['', 'gece', '']
 
 
 def gosterim():
-    """Üstteki hareketli gösterim. Durağan hâli (JS yok / hareketi azalt): bildirim gelmiş, onay bekliyor."""
-    tablet = ('<div class="cihaz"><span class="cihaz-ad">Nazlı’nın tableti · Pofi Adası</span><div class="tablet"><div class="tscr"><img src="img/iskele.jpg" alt="">'
+    """Üst bölümün sağı: oyun ekranı ile Moyo'nun gerçek onay ekranı yan yana (kullanıcı, 13 Kasım 2026).
+    Hareket: çocuk tablette "Yaptım"a dokunur → telefona bildirim → ebeveyn "Onayla"ya dokunur → oyunda "Onaylandı".
+    Durağan hâli (JS yok / hareketi azalt): onay bekliyor."""
+    b = SHOTS['onay']['onayla']
+    dot_b = 'left:%.2f%%;top:%.2f%%' % (b['cx'], b['cy'])
+    tablet = ('<div class="cihaz cihaz-tablet"><div class="tablet"><div class="tscr"><img src="img/iskele.jpg" alt="">'
               '<div class="gorev"><small>Bugünün macerası</small><b>Dişlerini fırçala</b><span class="dgm"><span class="q-a">Yaptım</span><span class="q-b">Onay bekliyor</span><span class="q-c">Onaylandı ✓</span></span></div>'
-              '<span class="nokta nokta-a"><i>Nazlı</i></span></div></div><span class="altyazi">Örnek gösterim · adlar örnektir</span></div>')
-    scr = (BAR + push('Moyo · şimdi', 'Nazlı macerayı tamamladı: Dişlerini fırçala', '<span class="ik">%s</span>' % app_icon())
-           + '<div class="pad"><div><div class="t">Merhaba, Ayşe!</div><div class="mut">4 Kasım, Çarşamba</div></div>'
-           '<div class="bekleyen-kap"><div class="sec">Onay bekleyen</div>'
-           '<div class="bekleyen"><img class="av" src="img/okti_kiz_4.jpg" alt=""><div class="grow"><b>Dişlerini fırçala</b><span class="mut">Nazlı · 20:06</span></div><span class="hayir">✕</span><span class="evet">✓</span></div></div>'
-           '<div class="arti1"><img src="img/gunes-tasi.png" alt="">+1 puan</div>'
-           '<div class="sec">Bugünün ilerlemesi</div><div class="card">'
-           '<div class="row"><img class="av" src="img/okti_kiz_4.jpg" alt=""><div class="grow"><b>Nazlı</b><div class="olcer"><i data-olcer style="--p:80%"></i></div></div><span class="yuzde" data-yuzde>%80</span></div>'
-           '<div class="row"><img class="av" src="img/okti_erkek_2.jpg" alt=""><div class="grow"><b>Efe</b><div class="olcer"><i style="--p:50%"></i></div></div><span class="yuzde">%50</span></div>'
-           '</div><div class="hizli"><span>Macera ekle</span><span>Ödül</span></div></div>' + tabs('Bugün') + '<span class="nokta nokta-b"><i>Ayşe</i></span>')
-    return ('<div class="sahne yok-js s-done s-push s-pending" data-gosterim role="img" aria-label="Gösterim: Nazlı tabletinde macerayı tamamlar, Moyo size bildirim gönderir, siz onaylarsınız ve Nazlı 1 puan kazanır.">'
-            + tablet + '<div class="cihaz"><span class="cihaz-ad">Sizin telefonunuz · Moyo</span><div class="kirp"><div class="phone"><div class="scr">' + scr + '</div></div></div></div>'
-            '<button type="button" class="dur" id="gosterim-dur" aria-pressed="false">Durdur</button></div>')
+              '<span class="nokta nokta-a"><i>Nazlı</i></span></div></div></div>')
+    over = (push('Moyo · şimdi', 'Nazlı macerayı tamamladı: Dişlerini fırçala', '<span class="ik">%s</span>' % app_icon())
+            + '<span class="nokta nokta-b" style="%s"><i>Siz</i></span>' % dot_b)
+    phone_ = '<div class="cihaz cihaz-telefon">%s</div>' % real_phone('onay', over).replace(' loading="lazy"', '')
+    return ('<div class="ikili-kap"><div class="ikili yok-js s-done" data-gosterim role="img" aria-label="Gösterim: çocuğunuz oyunda macerayı tamamlar, Moyo size bildirir, siz onaylarsınız; oyunda onaylandığını görür.">'
+            + tablet + phone_ + '</div><div class="ikili-alt"><button type="button" class="dur" id="gosterim-dur" aria-pressed="false">Durdur</button>'
+            '<p class="altyazi">Arkada çocuğunuzun tableti (Pofi Adası, örnek gösterim), önde sizin telefonunuzda Moyo’nun gerçek onay ekranı. Adlar örnektir.</p></div></div>')
 
 
 def ust(page):
@@ -189,8 +203,8 @@ def extras():
 
 
 def ana():
-    satirlar = ''.join('<article class="satir"><div><h3>%s</h3><p>%s</p></div><div class="gorsel%s">%s</div></article>'
-                       % (t, p, ' koyu-zemin' if F_CLS[i] else '', phone(F[i], F_CLS[i])) for i, (t, p) in enumerate(GAINS))
+    satirlar = ''.join('<article class="satir"><div><h3>%s</h3><p>%s</p></div><div class="gorsel">%s</div></article>'
+                       % (t, p, real_phone(FAYDA_EKRAN[i])) for i, (t, p) in enumerate(GAINS))
     adimlar = ''.join('<article class="adim"><div class="ust-gorsel">%s</div><div class="ic"><span class="no">%d</span><h3>%s</h3><p>%s</p></div></article>'
                       % (phone(N[i], N_CLS[i]), i + 1, t, p) for i, (t, p) in enumerate(STEPS))
     guven = ''.join('<div>%s<h3>%s</h3><p>%s</p></div>' % s for s in SAFE)
@@ -199,11 +213,11 @@ def ana():
     return f'''{extras()}{ust('ana')}
 <main>
   <section class="band koyu kahraman" aria-labelledby="ust-baslik">
-    <div class="inner">
+    <div class="inner kahraman-ic">
       <div class="yazi">
-        <p class="etiket">{TAGLINE}</p>
-        <h1 id="ust-baslik">{H1}</h1>
-        <p class="giris">{LEAD}</p>
+        <h1 id="ust-baslik">{TAGLINE}</h1>
+        <p class="alt-baslik">{H1}</p>
+        <p class="giris">{LEAD2}</p>
         <div class="dugmeler"><a class="hap dolu b" href="{APP}#kayit">{CTA1}</a><a class="hap cizgi b" href="#nasil">{CTA2}</a></div>
         <p class="ince">{''.join('<span>%s</span>' % f for f in FINE)}</p>
       </div>
@@ -332,14 +346,14 @@ def check(doc, texts):
 def main():
     os.makedirs(OUT, exist_ok=True)
     a, f = ana(), fiyat()
-    check(a, [TAGLINE, H1, LEAD, GAIN_H, HOW_H, HOW_P, CLOSING, SAFE_H, LIMIT, FAQ_H, FINAL_H] + [x for g in GAINS for x in g] + [x for s in STEPS for x in s]
+    check(a, [TAGLINE, H1, LEAD2, GAIN_H, HOW_H, HOW_P, CLOSING, SAFE_H, LIMIT, FAQ_H, FINAL_H] + [x for g in GAINS for x in g] + [x for s in STEPS for x in s]
           + [x for s in SAFE for x in s[1:]] + [x for q in FAQ for x in q])
     check(f, [PRICE_H, TERMS] + GAME)
     assert 'TL' not in re.sub(r'<[^>]+>', '', a), 'Ana sayfada fiyat olmamalı'
     open(os.path.join(OUT, 'index.html'), 'w', encoding='utf-8').write(page('Moyo Tanıtım Sayfası' if PREVIEW else 'Moyo', a, full=not PREVIEW))
     open(os.path.join(OUT, 'fiyat.html'), 'w', encoding='utf-8').write(page('Moyo · Fiyatlandırma', f, full=True))
     used = set(re.findall(r'img/([A-Za-z0-9_.-]+)', a + f))
-    copies = [('img', os.path.join(SITE, 'public', 'img'), lambda n: n in used)]
+    copies = [('img', os.path.join(SITE, 'public', 'img'), lambda n: n in used), ('img', os.path.join(HERE, 'img'), lambda n: n in used)]
     if not PREVIEW:
         copies.append(('fonts', os.path.join(ROOT, 'brand', 'fonts'), lambda n: n.startswith('outfit-') and re.search(r'-(400|600|800)-', n)))
     for d, srcdir, keep in copies:

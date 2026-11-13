@@ -3,35 +3,31 @@
 (function () {
   var stage = document.querySelector('[data-gosterim]');
   if (stage) {
+    // Oyun tableti + gerçek Moyo onay ekranı. Bir seferde tek değişiklik, adımlar 1–2 sn, döngü ~11 sn.
+    // JS yoksa ya da "hareketi azalt" açıksa durağan hâl: tablette "Onay bekliyor", telefonda onay ekranı.
     var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var btn = stage.querySelector('.dur'), pct = stage.querySelector('[data-yuzde]'), bar = stage.querySelector('[data-olcer]');
+    var btn = document.getElementById('gosterim-dur');
     var timers = [], playing = false, userPaused = false, visible = true;
     var set = function (cls, on) { stage.classList.toggle(cls, on); };
-    var setPct = function (v) { pct.textContent = '%' + v; bar.style.setProperty('--p', v + '%'); };
-    var count = function (from, to, ms) {
-      var t0 = performance.now();
-      var step = function (t) { var k = Math.min(1, (t - t0) / ms); pct.textContent = '%' + Math.round(from + (to - from) * k); if (k < 1 && playing) requestAnimationFrame(step); };
-      requestAnimationFrame(step);
-    };
     var place = function (dotSel, targetSel) {            // parmak noktası: hedefin tam ortasına
       var dot = stage.querySelector(dotSel), target = stage.querySelector(targetSel);
       var p = dot.offsetParent.getBoundingClientRect(), r = target.getBoundingClientRect();
       dot.style.left = (r.left + r.width / 2 - p.left) + 'px'; dot.style.top = (r.top + r.height / 2 - p.top) + 'px';
     };
-    var rest = function () { ['s-done', 's-push', 's-pending', 's-ok', 's-dot-a', 's-dot-b', 's-tap', 's-tint'].forEach(function (c) { set(c, false); }); setPct(80); };
-    var still = function () { rest(); set('s-done', true); set('s-push', true); set('s-pending', true); };
+    var all = ['s-done', 's-push', 's-ok', 's-dot-a', 's-dot-b', 's-tap'];
+    var rest = function () { all.forEach(function (c) { set(c, false); }); };
+    var still = function () { rest(); set('s-done', true); };
     var steps = [
-      [1500, function () { place('.nokta-a', '.dgm'); set('s-dot-a', true); }],                       // çocuk: parmak "Yaptım"ın üstünde
+      [1400, function () { place('.nokta-a', '.dgm'); set('s-dot-a', true); }],   // çocuk: parmak "Yaptım"ın üstünde
       [900, function () { set('s-tap', true); }],
-      [350, function () { set('s-tap', false); set('s-done', true); }],     // "Onay bekliyor"
+      [350, function () { set('s-tap', false); set('s-done', true); }],            // "Onay bekliyor"
       [900, function () { set('s-dot-a', false); }],
-      [700, function () { set('s-push', true); }],                          // ebeveyne bildirim
-      [1500, function () { set('s-pending', true); }],                      // onay bekleyen satırı
-      [1500, function () { place('.nokta-b', '.evet'); set('s-dot-b', true); set('s-tint', true); }],   // ebeveyn: parmak ✓ üstünde
+      [600, function () { set('s-push', true); }],                                 // ebeveyne bildirim
+      [1900, function () { set('s-push', false); set('s-dot-b', true); }],         // ebeveyn: parmak "Onayla"nın üstünde
       [900, function () { set('s-tap', true); }],
-      [350, function () { set('s-tap', false); set('s-ok', true); set('s-push', false); set('s-tint', false); }],   // onay, +1 puan
-      [500, function () { set('s-dot-b', false); bar.style.setProperty('--p', '100%'); count(80, 100, 900); }],
-      [2600, function () { rest(); }],                                      // dinlen, baştan
+      [350, function () { set('s-tap', false); set('s-ok', true); }],              // oyunda "Onaylandı"
+      [700, function () { set('s-dot-b', false); }],
+      [2600, function () { rest(); }],                                             // dinlen, baştan
       [600, function () { run(0); }]
     ];
     var run = function (i) { if (!playing) return; var s = steps[i]; if (!s) return; timers.push(setTimeout(function () { if (!playing) return; s[1](); if (i < steps.length - 1) run(i + 1); }, s[0])); };
