@@ -33,7 +33,7 @@ export function useRedeemCode() {
     // 2) Eşin aile kodu: bu ailede veri varsa ve tek ebeveynse önce sor (yeni aileye geçince eski aile silinir)
     let loses = false;
     try { loses = (children.length > 0 || tasks.length > 0) && (await isOnlyParent()); } catch { /* sunucu yine kontrol eder */ }
-    if (loses && !(await ask('Mevcut aileden ayrılınsın mı?', 'Yeni aileye katılınca şu anki ailendeki çocuklar, maceralar ve mesajlar silinir.', 'Katıl'))) return null;
+    if (loses && !(await ask('Mevcut aileden ayrılınsın mı?', 'Yeni aileye katılınca şu anki ailendeki çocuklar, rutinler ve mesajlar silinir.', 'Katıl'))) return null;
     try {
       await joinFamily(code);
     } catch (e) {

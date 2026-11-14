@@ -193,13 +193,13 @@ function GoalHead({ g }: { g: CareGoal }) {
 function RoutineRow({ r, approved, onPress }: { r: CareRoutine; approved: number; onPress: () => void }) {
   const icon = r.icon && /^[a-z0-9-]+$/.test(r.icon) ? (r.icon as keyof typeof Ionicons.glyphMap) : undefined;
   return (
-    <Pressable onPress={onPress} style={styles.rt} accessibilityRole="button" accessibilityLabel={`${r.title}, maceralar`}>
+    <Pressable onPress={onPress} style={styles.rt} accessibilityRole="button" accessibilityLabel={`${r.title}, rutinler`}>
       <View style={styles.rtIcon}>{icon ? <Ionicons name={icon} size={16} color={colors.navy} /> : <Text style={{ fontSize: 15 }}>{r.icon ?? '•'}</Text>}</View>
       <View style={{ flex: 1, gap: 1 }}>
         <Text style={styles.h}>{r.title}</Text>
-        <Text style={styles.cap}>{r.single ? 'Macera' : `${r.taskIds.length} macera`} · bu hafta {approved} onay</Text>
+        <Text style={styles.cap}>{r.single ? 'Adım' : `${r.taskIds.length} adım`} · bu hafta {approved} onay</Text>
       </View>
-      <Text style={styles.cap}>Maceralar ›</Text>
+      <Text style={styles.cap}>Rutinler ›</Text>
     </Pressable>
   );
 }

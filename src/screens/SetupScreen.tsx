@@ -156,7 +156,7 @@ export default function SetupScreen({ navigation, route }: any) {
         <View style={{ flex: 1, justifyContent: 'center', gap: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
             <Text style={styles.title}>Kodu yaz</Text>
-            <Info title="Hangi kod?" text={'Eşin Moyo\'da Aile › + › Ebeveyn bölümünden 6 haneli bir kod üretir; bu kodla aynı aileye katılırsın, çocuklar ve maceralar ortak olur. Uzmanından kod aldıysan onu da buraya yazabilirsin.\n\nBir aile sana 8 karakterli davet kodu gönderdiyse onu yaz: Moyo 7 yerine 14 gün bütün özellikleriyle açılır.'} />
+            <Info title="Hangi kod?" text={'Eşin Moyo\'da Aile › + › Ebeveyn bölümünden 6 haneli bir kod üretir; bu kodla aynı aileye katılırsın, çocuklar ve rutinler ortak olur. Uzmanından kod aldıysan onu da buraya yazabilirsin.\n\nBir aile sana 8 karakterli davet kodu gönderdiyse onu yaz: Moyo 7 yerine 14 gün bütün özellikleriyle açılır.'} />
           </View>
           <Text style={[styles.text, { textAlign: 'center' }]}>Eşinden, uzmanından ya da bir aileden aldığın kod</Text>
           <CodeEntry onResult={onCode} autoFocus />
@@ -418,7 +418,7 @@ function ChildForm({ first, onSaved, onBack }: { first: boolean; onSaved: (id: s
         <View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text style={styles.label}>Doğum günü (isteğe bağlı)</Text>
-            <Info title="Doğum günü" text="Yaşına uygun macera ve rutin önermek ve oyunun dilini ayarlamak için kullanılır." />
+            <Info title="Doğum günü" text="Yaşına uygun rutin ve adım önermek ve oyunun dilini ayarlamak için kullanılır." />
           </View>
           <DateField mode="date" value={birthday} onChange={setBirthday} placeholder="Tarih seç" clearable maximumDate={new Date()}
             onOpenChange={(o) => { setPicking(o); if (o) setTimeout(() => scroll.current?.scrollTo({ y: 180, animated: true }), 60); }} />

@@ -33,7 +33,7 @@ export default function RoutineScreen({ navigation, route }: any) {
 
   const add = () => {
     if (!kids.length) return Alert.alert('En az bir çocuk seç');
-    if (!count) return Alert.alert('En az bir macera seç');
+    if (!count) return Alert.alert('En az bir adım seç');
     // Görevler rutinine bağlanır (ortak akislar.md 5.4 v2 adım 6): onay ve coin yine görev görev
     const routineId = uuid();
     let pos = 0;
@@ -67,9 +67,9 @@ export default function RoutineScreen({ navigation, route }: any) {
           <Ionicons name={r.icon} size={30} color={colors.navy} />
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>{r.title}</Text>
-            <Text style={styles.cap}>{r.subtitle} · {items.length} macera</Text>
+            <Text style={styles.cap}>{r.subtitle} · {items.length} adım</Text>
           </View>
-          <Info title="Hazır rutin" text="Rutin, birkaç macerayı tek seferde ekler. İstemediğin maceranın işaretini kaldır, adını ya da saatini değiştir. Her macera ayrı kaydedilir; sonra Maceralar'dan tek tek düzenleyebilir ya da silebilirsin." />
+          <Info title="Hazır rutin" text="Rutin, birkaç adımı tek seferde ekler. İstemediğin adımın işaretini kaldır, adını ya da saatini değiştir. Her adım ayrı kaydedilir; sonra Rutinler'den tek tek düzenleyebilir ya da silebilirsin." />
         </View>
 
         <View style={{ gap: 8 }}>
@@ -100,7 +100,7 @@ export default function RoutineScreen({ navigation, route }: any) {
 
         <View style={styles.timedRow}>
           <Text style={[styles.h, { flex: 1 }]}>Saatleri ekle</Text>
-          <Info title="Saatler" text="Saat, maceranın oyundaki hatırlatma saatidir. O saatten önce 'Yaptım' diyen çocuk küçük bir ek ödül alır. Kapatırsan maceralar gün içinde herhangi bir saatte yapılabilir." />
+          <Info title="Saatler" text="Saat, adımın oyundaki hatırlatma saatidir. O saatten önce 'Yaptım' diyen çocuk küçük bir ek ödül alır. Kapatırsan adımlar gün içinde herhangi bir saatte yapılabilir." />
           <Toggle value={timed} onChange={setTimed} />
         </View>
 
@@ -117,7 +117,7 @@ export default function RoutineScreen({ navigation, route }: any) {
                   {/* Uzun ad alt satıra geçer: rutin tek bakışta okunur */}
                   <TextInput value={row.title} onChangeText={(v) => set(i, { title: v.replace(/\n/g, ' ').slice(0, 80) })} editable={row.on}
                     multiline scrollEnabled={false} submitBehavior="blurAndSubmit" returnKeyType="done"
-                    style={styles.itemTitle} accessibilityLabel="Macera adı" />
+                    style={styles.itemTitle} accessibilityLabel="Adım adı" />
                   {t.days && <Text style={styles.cap}>{t.days.map((d) => DAY_SHORT[d - 1]).join(', ')}</Text>}
                 </View>
                 {timed && <TimePill value={row.time} onChange={(v) => set(i, { time: v })} />}
@@ -128,7 +128,7 @@ export default function RoutineScreen({ navigation, route }: any) {
       </ScrollView>
       <View style={styles.bottom}>
         <Pressable onPress={add} style={[styles.cta, (!count || !kids.length) && { opacity: 0.5 }]} accessibilityRole="button">
-          <Text style={styles.ctaText}>Rutini ekle · {count} macera</Text>
+          <Text style={styles.ctaText}>Rutini ekle · {count} adım</Text>
         </Pressable>
       </View>
     </SafeAreaView>

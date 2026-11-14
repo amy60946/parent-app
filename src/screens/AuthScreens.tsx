@@ -146,7 +146,7 @@ export function LoginScreen({ navigation }: any) {
   };
 
   return (
-    <Layout title="Ebeveyn girişi" subtitle="Ailenin maceralarına kaldığın yerden devam et.">
+    <Layout title="Ebeveyn girişi" subtitle="Ailenin rutinlerine kaldığın yerden devam et.">
       <Input value={email} onChangeText={setEmail} placeholder="E-posta" keyboardType="email-address"
         autoCapitalize="none" autoComplete="email" textContentType="emailAddress" />
       <Input value={password} onChangeText={setPassword} placeholder="Şifre" secure

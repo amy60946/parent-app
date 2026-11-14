@@ -31,7 +31,7 @@ export default function SuggestionCard({ s, childName, goal, onDecided }: { s: S
       const start = task.startDate;
       if (accept) addTasks([task], ([taskId]) => { if (taskId) linkSuggestionTask(s.id, taskId).catch(() => {}); });
       onDecided(s.id);
-      if (accept) Alert.alert('Macera eklendi', `"${s.title}" ${start === todayISO() ? 'bugünden' : formatTR(start) + ' tarihinden'} itibaren ${childName} için Maceralar'da.`);
+      if (accept) Alert.alert('Adım eklendi', `"${s.title}" ${start === todayISO() ? 'bugünden' : formatTR(start) + ' tarihinden'} itibaren ${childName} için Rutinler'de.`);
     } catch (e) {
       Alert.alert('Kaydedilemedi', (e as Error).message);
     } finally {
@@ -56,7 +56,7 @@ export default function SuggestionCard({ s, childName, goal, onDecided }: { s: S
           <Text style={{ color: colors.navy, fontWeight: '600' }}>Şimdilik değil</Text>
         </Pressable>
         <Pressable style={[styles.cta, { flex: 1 }, busy && { opacity: 0.6 }]} disabled={busy} onPress={() => decide(true)} accessibilityRole="button">
-          <Text style={styles.ctaText}>Maceralara ekle</Text>
+          <Text style={styles.ctaText}>Rutinlere ekle</Text>
         </Pressable>
       </View>
     </View>

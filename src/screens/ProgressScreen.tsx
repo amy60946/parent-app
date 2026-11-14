@@ -172,7 +172,7 @@ export default function ProgressScreen({ navigation, route }: any) {
           })}
         </Card>
         {/* hukuk/50 §13 */}
-        <Text style={{ fontSize: 11, lineHeight: 16, color: colors.muted, textAlign: 'center' }}>Bu sayılar çocuğunun uygulamadaki maceralarını özetler; tanı, zekâ ya da dikkat puanı değildir.</Text>
+        <Text style={{ fontSize: 11, lineHeight: 16, color: colors.muted, textAlign: 'center' }}>Bu sayılar çocuğunun uygulamadaki rutinlerini özetler; tanı, zekâ ya da dikkat puanı değildir.</Text>
         </>
         )}
       </ScrollView>

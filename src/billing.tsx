@@ -11,7 +11,7 @@ import { todayISO } from './dates';
 export type Feature = 'task' | 'child' | 'reward' | 'stones' | 'message' | 'abc';
 
 const featureText: Record<Feature, string> = {
-  task: 'Ücretsiz planda en çok 3 etkin macera olabilir.',
+  task: 'Ücretsiz planda en çok 3 etkin adım olabilir.',
   child: 'Ücretsiz planda 1 çocuk eklenebilir.',
   reward: 'Ödüller Premium üyelikte.',
   stones: 'Güneş Taşı düşme Premium üyelikte.',

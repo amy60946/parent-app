@@ -22,7 +22,7 @@ export const plans: Record<PlanId, { productId: string; title: string; price: st
 };
 
 export const premiumFeatures = [
-  'Sınırsız macera ve çocuk',
+  'Sınırsız rutin ve çocuk',
   'Ödüller ve Güneş Taşı',
   'Çocuğunla mesajlaşma',
   'Davranış kayıtları (sesli) ve arşiv',
@@ -30,4 +30,4 @@ export const premiumFeatures = [
 ];
 
 // hukuk/50 §6.1 "Şimdilik ücretsiz devam et" notu
-export const freeFeatures = 'Ücretsiz planda 1 çocuk ve 3 etkin macerayla devam edersin; ödüller, mesajlar ve davranış kayıtları kapalıdır. Oyun ve uzman paylaşımı çalışmaya devam eder.';
+export const freeFeatures = 'Ücretsiz planda 1 çocuk ve 3 etkin adımla devam edersin; ödüller, mesajlar ve davranış kayıtları kapalıdır. Oyun ve uzman paylaşımı çalışmaya devam eder.';

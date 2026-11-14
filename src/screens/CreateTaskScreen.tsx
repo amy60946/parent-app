@@ -44,7 +44,7 @@ export default function CreateTaskScreen({ navigation, route }: any) {
   }, [allTemplates, savedIds, filter, isCategory, showAges, age, query]);
 
   const options: { id: Filter; label: string; icon?: keyof typeof Ionicons.glyphMap }[] = [
-    { id: 'all', label: 'Tüm maceralar', icon: 'apps-outline' },
+    { id: 'all', label: 'Tüm adımlar', icon: 'apps-outline' },
     { id: 'popular', label: 'Önerilenler', icon: 'sparkles-outline' },
     { id: 'saved', label: 'Kaydedilenler', icon: 'bookmark-outline' },
     ...categories.map((c) => ({ id: c.id as Filter, label: c.label })),
@@ -78,6 +78,7 @@ export default function CreateTaskScreen({ navigation, route }: any) {
 
   const header = (
     <View style={{ paddingBottom: 12 }}>
+      <Text style={styles.hint}>Eklediğiniz her rutin oyunda çocuğunuz için bir macera olur.</Text>
       {/* Hazır rutinler: birkaç görevi tek seferde ekler (kullanıcı isteği 27 Ekim 2026). Aramada ve menü açıkken gizli.
           Sıra ve "Sana önerilen" tanışma yanıtlarından (lib/plan.ts). */}
       {showRoutines && (
@@ -93,7 +94,7 @@ export default function CreateTaskScreen({ navigation, route }: any) {
                   {plan.recommended === r.id && <Text style={styles.forYou}>Sana önerilen</Text>}
                 </View>
                 <Text style={styles.routineTitle} numberOfLines={2}>{r.title}</Text>
-                <Text style={styles.routineSub}>{routineTasks(r).length} macera · {r.subtitle}</Text>
+                <Text style={styles.routineSub}>{routineTasks(r).length} adım · {r.subtitle}</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -135,7 +136,7 @@ export default function CreateTaskScreen({ navigation, route }: any) {
         </ScrollView>
       )}
 
-      <Text style={styles.hint}>Birden fazla macera seçip tek seferde ekleyebilirsin.</Text>
+      <Text style={styles.hint}>Birden fazla adım seçip tek seferde ekleyebilirsin.</Text>
     </View>
   );
 
@@ -143,7 +144,7 @@ export default function CreateTaskScreen({ navigation, route }: any) {
     <SafeAreaView style={styles.safe}>
       <View style={styles.top}>
         <IconButton name="chevron-back" label="Geri" onPress={() => navigation.goBack()} />
-        <Text style={styles.topTitle}>Macera oluştur</Text>
+        <Text style={styles.topTitle}>Rutin ekle</Text>
         <IconButton name="close" label="Kapat" onPress={() => navigation.goBack()} />
       </View>
 
@@ -172,7 +173,7 @@ export default function CreateTaskScreen({ navigation, route }: any) {
         ListEmptyComponent={
           <Text style={{ color: colors.muted, textAlign: 'center', marginTop: 40 }}>
             {filter === 'saved'
-              ? 'Henüz kaydedilen macera yok.\nBir maceranın sağındaki yer imi simgesine dokunarak kaydedebilirsin.'
+              ? 'Henüz kaydedilen adım yok.\nBir adımın sağındaki yer imi simgesine dokunarak kaydedebilirsin.'
               : 'Sonuç bulunamadı.'}
           </Text>
         }
@@ -189,7 +190,7 @@ export default function CreateTaskScreen({ navigation, route }: any) {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
                   <DifficultyBadge d={t.difficulty} coins={t.coins} />
                   <Text style={{ flexShrink: 1, fontSize: 12, color: colors.muted }} numberOfLines={1}>
-                    {t.custom ? 'Senin maceran' : categoryLabel(t.category)} · {skillLabel(t.skill)}
+                    {t.custom ? 'Senin adımın' : categoryLabel(t.category)} · {skillLabel(t.skill)}
                   </Text>
                 </View>
               </View>
@@ -222,7 +223,7 @@ export default function CreateTaskScreen({ navigation, route }: any) {
             style={[styles.cta, { marginBottom: 12 }]}
             onPress={() => navigation.navigate('TaskDetails', { templateIds: picked, date })}
           >
-            <Text style={styles.ctaText}>Devam · {picked.length} macera</Text>
+            <Text style={styles.ctaText}>Devam · {picked.length} adım</Text>
           </Pressable>
         )}
         <Text style={{ fontSize: 12, color: colors.muted, textAlign: 'center', marginBottom: 8 }}>
@@ -233,7 +234,7 @@ export default function CreateTaskScreen({ navigation, route }: any) {
           onPress={() => navigation.navigate('TaskDetails', { custom: true, date })}
         >
           <Text style={[styles.ctaText, picked.length > 0 && { color: colors.navy }]}>
-            <Text style={{ fontSize: 22, lineHeight: 22 }}>+ </Text>Yeni bir macera oluştur
+            <Text style={{ fontSize: 22, lineHeight: 22 }}>+ </Text>Yeni bir adım oluştur
           </Text>
         </Pressable>
       </View>

@@ -22,7 +22,7 @@ export default function CodeStep({ visible, onResult, onSkip }: {
             <View style={styles.icon}><Ionicons name="key-outline" size={30} color={colors.navy} /></View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Text style={styles.title} accessibilityRole="header">Kodun var mı?</Text>
-              <Info title="Hangi kod?" text={'Uzmanın ClinicApp\'ten ya da eşin Moyo\'dan 6 haneli bir kod gönderdiyse buraya yaz. Uygulama kodun kimden geldiğini kendisi anlar:\n\n• Uzman kodu: uzmanın davet ekranı açılır, onaylarsan çocuğunun maceraları onunla paylaşılır.\n• Eşinin kodu: aynı aileye katılırsın, çocuklar ve maceralar ortak olur.\n\nBir aile sana 8 karakterli davet kodu gönderdiyse onu da buraya yaz: Moyo 7 yerine 14 gün bütün özellikleriyle açılır.\n\nKodun yoksa devam et; sonra Aile › Hesap › Kod gir bölümünden de yazabilirsin.'} />
+              <Info title="Hangi kod?" text={'Uzmanın ClinicApp\'ten ya da eşin Moyo\'dan 6 haneli bir kod gönderdiyse buraya yaz. Uygulama kodun kimden geldiğini kendisi anlar:\n\n• Uzman kodu: uzmanın davet ekranı açılır, onaylarsan çocuğunun rutinleri onunla paylaşılır.\n• Eşinin kodu: aynı aileye katılırsın, çocuklar ve rutinler ortak olur.\n\nBir aile sana 8 karakterli davet kodu gönderdiyse onu da buraya yaz: Moyo 7 yerine 14 gün bütün özellikleriyle açılır.\n\nKodun yoksa devam et; sonra Aile › Hesap › Kod gir bölümünden de yazabilirsin.'} />
             </View>
             <Text style={styles.sub}>Uzmanından, eşinden ya da bir aileden aldığın kod</Text>
             <View style={{ alignSelf: 'stretch', marginTop: 8, gap: 10 }}>
