@@ -37,7 +37,7 @@ export default function KvkkScreen({ navigation, route }: any) {
     try {
       const r = await kvkkCreate(kind, detail.trim(), who === 'me' ? undefined : who);
       track('kvkk.create', { kind, child: who !== 'me' });
-      Alert.alert('Başvurun alındı', `Başvuru no: ${r.id.slice(0, 8).toUpperCase()}\nEn geç ${fmt(r.due_at)} tarihine kadar ${email} adresine yanıt vereceğiz. Durumunu "Başvurularım"dan izleyebilirsin.`);
+      Alert.alert('Başvurun alındı', `Başvuru no: ${r.id.slice(0, 8).toUpperCase()}\nEn geç ${fmt(r.due_at)} tarihine kadar ${email} adresine yanıt vereceğiz. Durumunu "Başvurularım"dan takip edebilirsin.`);
       setKind(null); setDetail(''); setWho('me'); setTab('list'); load();
     } catch (e) {
       Alert.alert('Gönderilemedi', (e as Error).message);

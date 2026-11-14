@@ -5,7 +5,8 @@ import { colors } from '../theme';
 import { useFlag } from '../clientConfig';
 
 // Uzman belge incelemesi rozeti (ortak/sozlesme/akislar.md 14). Bayrak `clinician_verification` kapalıyken hiçbir şey gösterilmez.
-// Rozet "doğrulandı" demez: ekip uzmanın yüklediği belgeyi incelemiştir. Uyarı ve veli beyanı rozet olsa da kalır.
+// Rozet yalnız "Diploma belgesini yükledi" der (14 Kasım 2026, ortak hukuk_notlari M): Moyo bir şeyi doğruladığını,
+// incelediğini ya da onayladığını söylemez; meslek adı rozette yazılmaz. Uyarı ve veli beyanı rozet olsa da kalır.
 export default function VerifiedBadge({ verifiedAs }: { verifiedAs?: string }) {
   const on = useFlag('clinician_verification');
   if (!on) return null;
@@ -14,9 +15,9 @@ export default function VerifiedBadge({ verifiedAs }: { verifiedAs?: string }) {
   }
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', backgroundColor: '#E6F4EA', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 }}
-      accessibilityLabel={`Belgesi incelendi: ${verifiedAs}`}>
+      accessibilityLabel="Uzman diploma belgesini yükledi.">
       <Ionicons name="shield-checkmark" size={13} color="#2F7D4A" />
-      <Text style={{ fontSize: 12, fontWeight: '700', color: '#2F7D4A' }}>Belgesi incelendi: {verifiedAs}</Text>
+      <Text style={{ fontSize: 12, fontWeight: '700', color: '#2F7D4A' }}>Diploma belgesini yükledi</Text>
     </View>
   );
 }

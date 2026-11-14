@@ -493,7 +493,7 @@ function StepProgress(p: StepProps) {
         </View>
       </Ring>
       <TabRing index={3} />
-      <Coach {...p} title="Gelişimi izle" text="Gelişim sekmesinde günlük tutarlılık, seri ve haftalık tamamlama. Hangi alışkanlığın oturduğunu görürsün." style={{ left: 20, right: 20, top: 400 }} />
+      <Coach {...p} title="Gelişimi takip et" text="Gelişim sekmesinde günlük tutarlılık, seri ve haftalık tamamlama. Hangi alışkanlığın oturduğunu görürsün." style={{ left: 20, right: 20, top: 400 }} />
     </>
   );
 }

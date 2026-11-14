@@ -1,11 +1,11 @@
 import { supabase } from './supabase';
-import { HEALTH_CONSENT, INTAKE_VERSION } from '../data/intake';
+import { INTAKE_VERSION } from '../data/intake';
 
 // Tanışma yanıtları (ortak/sozlesme/veritabani.md 17): kişi + çocuk + soru başına tek satır; aile/kişi kimliği sunucudan.
-export async function saveAnswer(childId: string | null, key: string, values: string[], health = false) {
-  const consent = health && !(values.length === 1 && values[0] === 'prefer_not') ? HEALTH_CONSENT : null;
+// Sağlık sorusu ve sağlık rızası yok (14 Kasım 2026, ortak hukuk_notlari M): consent_version yazılmaz.
+export async function saveAnswer(childId: string | null, key: string, values: string[]) {
   const { error } = await supabase.from('intake_answers').upsert(
-    { child_id: childId, question_key: key, answer: values, version: INTAKE_VERSION, consent_version: consent },
+    { child_id: childId, question_key: key, answer: values, version: INTAKE_VERSION },
     { onConflict: 'user_id,child_id,question_key' },
   );
   if (error) throw new Error(error.message);

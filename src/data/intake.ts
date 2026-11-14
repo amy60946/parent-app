@@ -1,17 +1,16 @@
-// Tanışma soruları (kullanıcı kararları 27 Ekim 2026; anahtarlar ortak/sozlesme/durumlar.md P16, sürüm v1).
+// Tanışma soruları (kullanıcı kararları 27 Ekim 2026; anahtarlar ortak/sozlesme/durumlar.md P16, sürüm v2).
+// v2 (14 Kasım 2026, ortak hukuk_notlari M): tanı ve ilaç soruları ile sağlık rızası çıkarıldı; "Geçen hafta…" bloğuna iki soru eklendi.
 // Metinler referans uygulamadan çevrilmedi; ana fikir korunarak yeniden yazıldı. Hiçbir yanıt tanı ya da puan değildir.
 // Değişince ortak/veri/tanisma_sorulari.json yeniden üretilir: bash tools/intake_json.sh ../ortak/veri/tanisma_sorulari.json
 // {ad}: çocuğun adı (eksiz kullanılır: "Efe için", "Efe nelerden…" — Türkçe ek uyumu gerekmesin).
 
-export const INTAKE_VERSION = 'v1';
-export const HEALTH_CONSENT = 'saglik-yanit-v1';
-export const HEALTH_CONSENT_TEXT = 'Çocuğumun tanısı ve ilaç kullanımı hakkındaki yanıtlarımın, uygulamanın bana ve çocuğuma uygun öneriler sunması amacıyla saklanmasına ve hizmetin yürütülmesi için yetkili ekip tarafından görülebilmesine açık rıza veriyorum. Bu soruları yanıtlamak zorunda değilim; yanıtlarımı istediğim an silebilirim.';
+export const INTAKE_VERSION = 'v2';
 
 export type Option = { key: string; label: string; exclusive?: boolean };
 export type Step =
   | { kind: 'intro'; icon: string; title: string; text: string; points?: { icon: string; text: string }[]; foot?: string; cta?: string }
   | { kind: 'note'; icon: string; title: string; text: string; source?: string } // source: verinin kaynağı (küçük yazılır)
-  | { kind: 'question'; key: string; title: string; prefix?: string; multi?: boolean; health?: boolean; options: Option[];
+  | { kind: 'question'; key: string; title: string; prefix?: string; multi?: boolean; options: Option[];
       exclude?: string }; // exclude: bu sorunun yanıtları seçeneklerden çıkarılır (ana hedef, "başka neler" sorusunda tekrar edilmez)
 
 const FREQ: Option[] = [
@@ -75,21 +74,6 @@ export const childSteps = (name: string): Step[] => [
     { key: 'struggle', label: 'Var ama sürdürmekte zorlanıyoruz' },
     { key: 'not_really', label: 'Pek yok' },
   ] },
-  { kind: 'question', key: 'child_diagnosis', title: `${name} için konmuş ya da düşündüğünüz bir tanı var mı?`, multi: true, health: true, options: [
-    { key: 'adhd', label: 'Dikkat eksikliği ve hiperaktivite (DEHB)' },
-    { key: 'autism', label: 'Otizm spektrumu' },
-    { key: 'odd', label: 'Karşıt olma, karşı gelme' },
-    { key: 'anxiety_depression', label: 'Kaygı ya da depresyon' },
-    { key: 'other', label: 'Başka bir tanı' },
-    { key: 'none', label: 'Tanı yok', exclusive: true },
-    { key: 'prefer_not', label: 'Belirtmek istemiyorum', exclusive: true },
-  ] },
-  { kind: 'question', key: 'child_medication', title: `${name} düzenli kullandığı bir ilaç var mı?`, health: true, options: [
-    { key: 'yes', label: 'Evet' },
-    { key: 'no', label: 'Hayır' },
-    { key: 'not_diagnosed', label: 'Tanı konmadı' },
-    { key: 'prefer_not', label: 'Belirtmek istemiyorum' },
-  ] },
   { kind: 'question', key: 'child_therapists', title: `${name} şu uzmanlardan biriyle çalışıyor mu?`, multi: true, options: [
     { key: 'behavior', label: 'Davranış terapisti' },
     { key: 'speech_ot', label: 'Dil-konuşma terapisti ya da ergoterapist' },
@@ -99,10 +83,12 @@ export const childSteps = (name: string): Step[] => [
   ] },
   { kind: 'question', key: 'child_organizing', prefix: `Geçen hafta ${name} ne sıklıkla…`, title: 'işlerini sıraya koymakta zorlandı?', options: FREQ },
   { kind: 'question', key: 'child_effort_avoid', prefix: `Geçen hafta ${name} ne sıklıkla…`, title: 'uzun dikkat isteyen işlerden kaçındı?', options: FREQ },
+  { kind: 'question', key: 'child_waiting', prefix: `Geçen hafta ${name} ne sıklıkla…`, title: 'yerinde durmakta ya da sırasını beklemekte zorlandı?', options: FREQ },
   { kind: 'question', key: 'child_rules_argue', prefix: `Geçen hafta ${name} ne sıklıkla…`, title: 'kurallara itiraz etti ya da büyüklerle tartıştı?', options: FREQ },
   { kind: 'question', key: 'child_tantrums', prefix: `Geçen hafta ${name} ne sıklıkla…`, title: 'öfke nöbeti geçirdi ya da çabuk sinirlendi?', options: FREQ },
   { kind: 'question', key: 'child_feelings', prefix: `Geçen hafta ${name} ne sıklıkla…`, title: 'duygularını anlamakta ya da anlatmakta zorlandı?', options: FREQ },
   { kind: 'question', key: 'child_worry', prefix: `Geçen hafta ${name} ne sıklıkla…`, title: 'olmadan önce bir şeyler için endişelendi?', options: FREQ },
+  { kind: 'question', key: 'child_transitions', prefix: `Geçen hafta ${name} ne sıklıkla…`, title: 'plan değişince ya da bir işten ötekine geçerken zorlandı?', options: FREQ },
   { kind: 'question', key: 'child_goals', title: `${name} için hedeflerin neler?`, multi: true, options: [
     { key: 'chores', label: 'Sorumluluklarını düzenli tamamlamak' },
     { key: 'focus', label: 'Yaptığı işe odaklanmak' },
