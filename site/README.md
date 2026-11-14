@@ -21,6 +21,8 @@ Kullanıcı kararı: `moyoapp.com.tr` kök = tanıtım sitesi, `ebeveyn.moyoapp.
 | `moyo-site` | `wrangler.site.jsonc` | `bash site/build-cf.sh site` → `dist-site/` | `/`, `/img/*`, `/d/*` (davet sayfası `site/d/index.html` → `/davet/`, `_redirects` `/d/* /davet/ 200`; kaynağı ortak `web/davet/`), `/.well-known/apple-app-site-association` (uzantısız, `application/json`, `/d/*`) | `APPLE_TEAM_ID` |
 | `moyo-ebeveyn` | `wrangler.ebeveyn.jsonc` | `npm ci && bash site/build-cf.sh ebeveyn` → `dist-ebeveyn/` (tek sayfa uygulama) | hepsi | `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_KEY` (yalnız publishable) |
 
+**Çatı sayfa ve Moyo Ebeveyn sayfası (14 Kasım 2026, kullanıcı isteği "şifre girişli sistemi aktif tutarak live'a al"):** `site/moyo/` hazır çıktıdır, elle düzenlenmez: kaynağı clinic-app `tools/cati-sayfa` (`python3 disa_aktar.py <parent-app>/site/moyo`). `build-cf.sh site` bunu `dist-site/`'ın üstüne kopyalar: `/` = çatı sayfa (eski `landing.html`'in yerine), `/ebeveyn/` = Moyo Ebeveyn sayfası, `/c/…` = stil, betik, yazı tipi ve görseller. Kilit (Cloudflare Access) alan adındadır; bu derleme ona dokunmaz.
+
 Yayın komutu: `npx wrangler@4 deploy -c wrangler.site.jsonc` / `-c wrangler.ebeveyn.jsonc`. Tanıtım sayfasının kaynağı değişmez (önizleme için `app/index.html#…`); `build-cf.sh` giriş/kayıt düğmelerini `https://ebeveyn.moyoapp.com.tr/#kayit` `#giris`'e, alt bilgiyi `/destek` ve `/yasal/…`'a çevirir. Uygulama: `app.json` `ios.associatedDomains` = `applinks:moyoapp.com.tr` (App ID yeteneği `tools/ci/asc_sign.py` açar). Supabase dönüş adresleri: `https://ebeveyn.moyoapp.com.tr/**` ve `parentapp://**`.
 
 ## Web uygulaması (`/app/`)

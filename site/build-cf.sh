@@ -39,6 +39,12 @@ open(out, 'w', encoding='utf-8').write(
   '<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>\n'
   + s[:i] + '</head>\n<body>\n' + s[i:] + '\n</body>\n</html>\n')
 PY
+  # Moyo ekosistem sayfaları (14 Kasım 2026, Moyo Mercek penceresi; kaynak clinic-app tools/cati-sayfa, disa_aktar.py):
+  # kökte çatı sayfa (yukarıdaki landing.html'in yerine geçer), /ebeveyn/ Moyo ebeveyn sayfası, varlıklar /c/ altında
+  if [ -f "$ROOT/site/moyo/index.html" ]; then
+    cp -r "$ROOT/site/moyo/." "$OUT/"
+    test -f "$OUT/ebeveyn/index.html" && test -d "$OUT/c/img" || { echo "site/moyo eksik"; exit 1; }
+  fi
   # Universal Links: uzman → aile daveti uygulamada açılsın (uzantısız, yönlendirmesiz, application/json)
   printf '{\n  "applinks": {\n    "details": [\n      { "appIDs": ["%s.%s"], "components": [{ "/": "/d/*", "comment": "Uzman aile daveti" }] }\n    ]\n  }\n}\n' "$TEAM" "$BUNDLE_ID" > "$OUT/.well-known/apple-app-site-association"
   # /d/<anahtar> → /davet/ (adres çubuğu /d/<anahtar> kalır; sayfa anahtarı oradan okur). Hedef /d/ altında OLMAZ: Cloudflare
