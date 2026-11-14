@@ -27,10 +27,10 @@ export const SCOPE_FULL = [
 ].join('\n');
 
 // Uzman bağla › "Hayır, kodum yok": ebeveyn uzmanına ClinicApp'i anlatır (paylaşım metni; kişisel veri içermez)
-export const TELL_CLINICIAN = 'Merhaba, çocuğumun günlük rutinlerini ve sorumluluklarını Moyo ile takip ediyorum. ClinicApp ile (yalnız benim onayımla) ilerlemesini görebilir, eve program ve macera önerisi gönderebilirsiniz. Klinik hesabınızı açınca bana bir davet kodu gönderebilir misiniz?';
+export const TELL_CLINICIAN = 'Merhaba, çocuğumun günlük rutinlerini ve sorumluluklarını Moyo ile takip ediyorum. ClinicApp ile (yalnız benim onayımla) ilerlemesini görebilir, eve program ve rutin önerisi gönderebilirsiniz. Klinik hesabınızı açınca bana bir davet kodu gönderebilir misiniz?';
 
 // Uzmandan ayırma / uzmanı kaldırma (ortak akislar.md 5, 8: revoke_clinic_link): uzman yeni veriyi göremez, aldığı notlar onda kalır
 export const unlinkText = (child: string, clinician: string) =>
-  `${clinician}, ${child} için yeni maceraları ve davranış kayıtlarını artık göremez. Daha önce aldığı notlar uzmanda kalır. İstersen sonra yeni bir kodla yeniden paylaşabilirsin.`;
+  `${clinician}, ${child} için yeni rutinleri ve davranış kayıtlarını artık göremez. Daha önce aldığı notlar uzmanda kalır. İstersen sonra yeni bir kodla yeniden paylaşabilirsin.`;
 export const removeText = (clinician: string) =>
-  `${clinician} ile bütün çocuklarının paylaşımı durur; uzman yeni verileri göremez ve sana macera önerisi gönderemez. Daha önce aldığı notlar uzmanda kalır.`;
+  `${clinician} ile bütün çocuklarının paylaşımı durur; uzman yeni verileri göremez ve sana rutin önerisi gönderemez. Daha önce aldığı notlar uzmanda kalır.`;

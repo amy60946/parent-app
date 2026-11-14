@@ -148,7 +148,7 @@ function MyProfile() {
         // Ebeveynin Güneş Taşı (akislar.md 18): kendine atanan görevlerden; hediye dükkânında harcanır
         <>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ flex: 1 }}><InfoTitle title="Güneş Taşım" style={styles.h} info={'Sana atanan maceralarda "Yaptım" dedikçe Güneş Taşı kazanırsın (Kolay 1, Orta 2, Zor 3). Güneş Taşlarınla Hediye dükkânından çocuğuna oyunda hediye gönderirsin.'} /></View>
+            <View style={{ flex: 1 }}><InfoTitle title="Güneş Taşım" style={styles.h} info={'Sana atanan adımlarda "Yaptım" dedikçe Güneş Taşı kazanırsın (Kolay 1, Orta 2, Zor 3). Güneş Taşlarınla Hediye dükkânından çocuğuna oyunda hediye gönderirsin.'} /></View>
             <Pressable onPress={() => navigation.navigate('Stones')} hitSlop={8}><Text style={styles.link}>Geçmiş ›</Text></Pressable>
           </View>
           <Card style={{ gap: 12 }}>
@@ -454,7 +454,7 @@ function CodeSheet({ visible, onClose }: { visible: boolean; onClose: () => void
   const done = (r: CodeResult) => {
     onClose();
     if (r.kind === 'invite') afterModal(() => navigation.navigate('Invite', { invite: r.invite }));
-    else if (r.kind === 'family') Alert.alert('Aileye katıldın', 'Ailenin çocuklarını, maceralarını ve bildirimlerini artık görüyorsun.');
+    else if (r.kind === 'family') Alert.alert('Aileye katıldın', 'Ailenin çocuklarını, rutinlerini ve bildirimlerini artık görüyorsun.');
     else if (r.kind === 'guest') Alert.alert('Davet kodu kullanıldı', guestRedeemedText(r.trialEndsAt));
     else Alert.alert('Bu daveti zaten kabul ettin', `${r.invite.clinician || r.invite.clinic} ile paylaşım Uzmanım sekmesinde.`);
   };
@@ -463,7 +463,7 @@ function CodeSheet({ visible, onClose }: { visible: boolean; onClose: () => void
       <View style={{ gap: 14 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Text style={{ flex: 1, fontSize: 13, color: colors.muted }}>Uzmanından, eşinden ya da bir aileden aldığın kod</Text>
-          <Info title="Hangi kod?" text={'Uygulama kodun kimden geldiğini kendisi anlar.\n\n• Uzman kodu (6 karakter): uzmanın davet ekranı açılır; onaylarsan çocuğunun maceraları onunla paylaşılır.\n• Eşinin kodu (6 karakter): aynı aileye katılırsın. Eşin kodu Aile › + › Ebeveyn bölümünden üretir; kod 15 dakika geçerlidir.\n• Aile davet kodu (8 karakter): seni davet eden aileden; deneme 7 yerine 14 gün olur. Moyo\'ya yeni başlayan ailelerde (ilk 7 gün) geçerlidir.'} />
+          <Info title="Hangi kod?" text={'Uygulama kodun kimden geldiğini kendisi anlar.\n\n• Uzman kodu (6 karakter): uzmanın davet ekranı açılır; onaylarsan çocuğunun rutinleri onunla paylaşılır.\n• Eşinin kodu (6 karakter): aynı aileye katılırsın. Eşin kodu Aile › + › Ebeveyn bölümünden üretir; kod 15 dakika geçerlidir.\n• Aile davet kodu (8 karakter): seni davet eden aileden; deneme 7 yerine 14 gün olur. Moyo\'ya yeni başlayan ailelerde (ilk 7 gün) geçerlidir.'} />
         </View>
         <CodeEntry onResult={done} />
       </View>

@@ -49,7 +49,7 @@ export default function GiftShopScreen({ navigation }: any) {
     if (error) return Alert.alert('Gönderilemedi', error.message);
     const r = data as { ok: boolean; error?: string };
     if (!r.ok) return Alert.alert(r.error === 'not_enough_stones' ? 'Güneş Taşı yetmiyor' : 'Gönderilemedi',
-      r.error === 'not_enough_stones' ? 'Sana atanan maceralarda "Yaptım" diyerek Güneş Taşı kazanabilirsin.' : 'Bu eşya artık dükkânda yok.');
+      r.error === 'not_enough_stones' ? 'Sana atanan adımlarda "Yaptım" diyerek Güneş Taşı kazanabilirsin.' : 'Bu eşya artık dükkânda yok.');
     track('gift.send', { item: chosen.id, stones: chosen.stones });
     pt.reload();
     setSent(`${child.name} Pofi Adası'nı açınca ${giftName(chosen.id)} posta kutusunda olacak.`);
@@ -92,8 +92,8 @@ export default function GiftShopScreen({ navigation }: any) {
         ListHeaderComponent={
           <View style={{ gap: 12, marginBottom: 4 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={[styles.cap, { flex: 1, fontSize: 13 }]}>Maceralarından kazandığın Güneş Taşı ile çocuğuna oyunda hediye gönder.</Text>
-              <Info title="Hediye dükkânı" text="Kendine ya da ailece macera ekle (Macera ayrıntıları › Ebeveynler), 'Yaptım' de: Kolay 1, Orta 2, Zor 3 Güneş Taşı. Seçtiğin eşya çocuğunun Pofi Adası posta kutusuna düşer; notun da yanında görünür." />
+              <Text style={[styles.cap, { flex: 1, fontSize: 13 }]}>Adımlarından kazandığın Güneş Taşı ile çocuğuna oyunda hediye gönder.</Text>
+              <Info title="Hediye dükkânı" text="Kendine ya da ailece adım ekle (Adım ayrıntıları › Ebeveynler), 'Yaptım' de: Kolay 1, Orta 2, Zor 3 Güneş Taşı. Seçtiğin eşya çocuğunun Pofi Adası posta kutusuna düşer; notun da yanında görünür." />
             </View>
             <Segmented options={giftKinds} value={kind} onChange={setKind} />
             {items === null && <ActivityIndicator color={colors.navy} />}

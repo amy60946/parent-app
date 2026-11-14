@@ -720,7 +720,7 @@ function RewardEditor({ value, kids, moves, balances: bal, onClose, onSave, onDe
                 <Text key={e.name} style={{ fontSize: 13, lineHeight: 19, color: '#4A5165' }}>
                   {e.w > 0
                     ? `${e.name} haftada ortalama ${e.w} Güneş Taşı kazanıyor: ${exchange ? `${cost} Güneş Taşı` : 'bu ödül'} yaklaşık ${e.days} günlük emek.`
-                    : `${e.name} son 4 haftada maceralardan Güneş Taşı kazanmadı; önce kolay bir ödülle başlamak iyi olabilir.`}
+                    : `${e.name} son 4 haftada adımlardan Güneş Taşı kazanmadı; önce kolay bir ödülle başlamak iyi olabilir.`}
                 </Text>
               ))}
             </View>

@@ -134,8 +134,8 @@ export default function TasksScreen({ navigation, route }: any) {
 
   const confirmDelete = (t: Task, close: () => void) => {
     Alert.alert(
-      'Macera silinsin mi?',
-      t.recurring ? 'Bu tekrarlayan macera tüm günlerden silinir.' : 'Bu işlem geri alınamaz.',
+      'Adım silinsin mi?',
+      t.recurring ? 'Bu tekrarlayan adım tüm günlerden silinir.' : 'Bu işlem geri alınamaz.',
       [
         { text: 'Vazgeç', style: 'cancel', onPress: close },
         { text: 'Sil', style: 'destructive', onPress: () => deleteTask(t.id) },
@@ -167,7 +167,7 @@ export default function TasksScreen({ navigation, route }: any) {
     <SafeAreaView style={styles.safe} edges={['top']} onLayout={(e) => { const w = Math.round(e.nativeEvent.layout.width); if (w && w !== width) setWidth(w); }}>
       <View style={[styles.header, { flexDirection: 'row', alignItems: 'center' }]}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Maceralar</Text>
+          <Text style={styles.title}>Rutinler</Text>
           <Text style={styles.month}>{collapsed ? formatTR(selected) : monthYear(fromISO(selected))}</Text>
         </View>
         <NotificationBell />
@@ -275,16 +275,16 @@ export default function TasksScreen({ navigation, route }: any) {
         ListEmptyComponent={
           childFilter === 'me' ? (
             <View style={{ alignItems: 'center', gap: 6, marginTop: 40, paddingHorizontal: 12 }}>
-              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>Bu gün sana atanmış macera yok</Text>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>Bu gün sana atanmış adım yok</Text>
               <Text style={{ fontSize: 13, color: colors.muted, textAlign: 'center' }}>
-                Bir macerayı açıp Ebeveynler bölümünden kendine de atayabilirsin. "Yaptım" dedikçe Güneş Taşı kazanır, çocuğuna oyunda hediye gönderirsin.
+                Bir adımı açıp Ebeveynler bölümünden kendine de atayabilirsin. "Yaptım" dedikçe Güneş Taşı kazanır, çocuğuna oyunda hediye gönderirsin.
               </Text>
             </View>
           ) : tasks.length === 0 ? (
             // Ailenin hiç görevi yok: hazır rutinle başlamak tek dokunuş (kullanıcı isteği 27 Ekim 2026)
             <View style={styles.starter}>
               <Text style={{ fontSize: 16, fontWeight: '700', color: colors.navy }}>Bir rutinle başla</Text>
-              <Text style={{ fontSize: 13, color: colors.muted }}>Birkaç macerayı tek seferde ekle, sonra dilediğin gibi düzenle.</Text>
+              <Text style={{ fontSize: 13, color: colors.muted }}>Birkaç adımı tek seferde ekle, sonra dilediğin gibi düzenle.</Text>
               {plan.routines.slice(0, 3).map((r) => (
                 <Pressable key={r.id} onPress={() => { if (allow('task')) navigation.navigate('Routine', { id: r.id }); }}
                   style={[styles.starterRow, { backgroundColor: r.tint }]} accessibilityRole="button">
@@ -294,11 +294,11 @@ export default function TasksScreen({ navigation, route }: any) {
                   <Ionicons name="chevron-forward" size={16} color={colors.navy} />
                 </Pressable>
               ))}
-              <Text style={{ fontSize: 12, color: colors.muted, textAlign: 'center' }}>Ya da sağ alttaki + ile tek macera ekle.</Text>
+              <Text style={{ fontSize: 12, color: colors.muted, textAlign: 'center' }}>Ya da sağ alttaki + ile tek adım ekle.</Text>
             </View>
           ) : (
             <Text style={{ color: colors.muted, textAlign: 'center', marginTop: 48 }}>
-              Bu gün için macera yok.{'\n'}Sağ alttaki + ile macera ekle.
+              Bu gün için adım yok.{'\n'}Sağ alttaki + ile rutin ya da adım ekle.
             </Text>
           )
         }
@@ -311,7 +311,7 @@ export default function TasksScreen({ navigation, route }: any) {
           {newReward && (
             <Pressable onPress={seenNewReward} style={styles.newTip} accessibilityLabel="İpucunu kapat">
               <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Yeni: Ödüller</Text>
-              <Text style={{ fontSize: 12, color: '#D6DBEA' }}>Maceralardan Güneş Taşı kazanılır; ödülü sen belirlersin.</Text>
+              <Text style={{ fontSize: 12, color: '#D6DBEA' }}>Adımlardan Güneş Taşı kazanılır; ödülü sen belirlersin.</Text>
             </Pressable>
           )}
           <Pressable style={styles.dialItem} accessibilityLabel="Ödüller ve Güneş Taşı"
@@ -333,7 +333,7 @@ export default function TasksScreen({ navigation, route }: any) {
       )}
       <Pressable
         style={styles.fab}
-        accessibilityLabel="Macera ekle. Ödül ve davranış kaydı için basılı tut."
+        accessibilityLabel="Rutin ekle. Ödül ve davranış kaydı için basılı tut."
         onPress={() => { if (dial) setDial(null); else if (allow('task')) navigation.navigate('CreateTask', { date: selected }); }}
         onLongPress={() => { setDial('menu'); seenHint(); }}
         delayLongPress={350}
@@ -388,7 +388,7 @@ function TaskRow({ item, date, kids, completions, members, me, done, onDone, act
         renderRightActions={() => (
           <Pressable
             onPress={() => onDelete(() => swipe.current?.close())}
-            accessibilityLabel="Macerayı sil"
+            accessibilityLabel="Adımı sil"
             style={styles.deleteAction}
           >
             <Ionicons name="trash-outline" size={22} color="#fff" />
@@ -448,7 +448,7 @@ function TaskRow({ item, date, kids, completions, members, me, done, onDone, act
               <Ionicons name="checkmark" size={18} color={myDone ? '#fff' : colors.faint} />
             </Pressable>
           )}
-          <Pressable onPress={onEdit} hitSlop={8} accessibilityLabel="Macerayı düzenle" style={styles.editBtn}>
+          <Pressable onPress={onEdit} hitSlop={8} accessibilityLabel="Adımı düzenle" style={styles.editBtn}>
             <Ionicons name="create-outline" size={18} color={colors.navy} />
           </Pressable>
         </Pressable>

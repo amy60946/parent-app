@@ -121,7 +121,7 @@ function Tabs() {
         }}
       />
       <Tab.Screen name="Uzmanım" component={CareScreen} />
-      <Tab.Screen name="Maceralar" component={TasksScreen} />
+      <Tab.Screen name="Maceralar" component={TasksScreen} options={{ tabBarLabel: 'Rutinler' }} />
       <Tab.Screen name="Gelişim" component={ProgressScreen} />
       <Tab.Screen name="Aile" options={{ tabBarBadge: unread || undefined, tabBarBadgeStyle: { backgroundColor: colors.gold, color: colors.navy } }}>
         {() => <FamilyScreen onLogout={signOut} />}
@@ -256,7 +256,7 @@ function Main() {
       afterModal(() => { if (navRef.isReady()) navRef.navigate('Invite', { invite: r.invite }); });
     } else if (r.kind === 'family') {
       markOnboardingSeen();
-      Alert.alert('Aileye katıldın', 'Ailenin çocuklarını, maceralarını ve bildirimlerini artık görüyorsun.');
+      Alert.alert('Aileye katıldın', 'Ailenin çocuklarını, rutinlerini ve bildirimlerini artık görüyorsun.');
     } else if (r.kind === 'guest') {
       Alert.alert('Davet kodu kullanıldı', guestRedeemedText(r.trialEndsAt));
       afterModal(() => setGuide('full'));

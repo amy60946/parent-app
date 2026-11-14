@@ -94,7 +94,7 @@ export async function decideRequest(id: string, approve: boolean, note?: string)
 }
 
 export const moveLabel: Record<StoneMove['reason'], string> = {
-  task: 'Macera onaylandı', task_undo: 'Onay geri alındı', reward: 'Ödül', penalty: 'Güneş Taşı düşüldü', adjust: 'Düzeltme',
+  task: 'Adım onaylandı', task_undo: 'Onay geri alındı', reward: 'Ödül', penalty: 'Güneş Taşı düşüldü', adjust: 'Düzeltme',
 };
 
 // Bir çocuğun haftalık görev taşı kazancı: son 4 haftanın ortalaması; kayıtlar daha yeniyse ilk kayıttan bu yana geçen haftalara bölünür

@@ -39,7 +39,7 @@ export const familySteps: Step[] = [
     text: 'Birkaç soruyla aileni tanıyalım.', cta: 'Başlayalım',
     points: [
       { icon: 'sparkles-outline', text: 'Hedefine uygun rutinler' },
-      { icon: 'options-outline', text: 'Çocuğunun yaşına uygun maceralar' },
+      { icon: 'options-outline', text: 'Çocuğunun yaşına uygun adımlar' },
       { icon: 'shield-checkmark-outline', text: 'Yanıtlar not ya da tanı değildir' },
     ],
     foot: 'Yaklaşık 3 dakika' },

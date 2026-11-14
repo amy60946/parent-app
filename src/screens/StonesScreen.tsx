@@ -17,7 +17,7 @@ type Move = { id: string; at: string; text: string; amount: number };
 type Period = 'week' | 'month' | 'all';
 
 const childReason: Record<string, string> = {
-  task: 'Macera onayı', task_undo: 'Onay geri alındı', adjust: 'Düzeltme', reward: 'Ödül', penalty: 'Güneş Taşı düşüldü', goal: 'Haftalık hedef',
+  task: 'Adım onayı', task_undo: 'Onay geri alındı', adjust: 'Düzeltme', reward: 'Ödül', penalty: 'Güneş Taşı düşüldü', goal: 'Haftalık hedef',
 };
 
 export default function StonesScreen({ navigation, route }: any) {
@@ -38,7 +38,7 @@ export default function StonesScreen({ navigation, route }: any) {
   }, [childId, familyId]);
 
   const myMoves = useMemo<Move[]>(() => (childId ? [] : pt.ledger.filter((r) => r.userId === pt.me).map((r) => {
-    const task = tasks.find((t) => t.id === r.ref.split('|')[0])?.title ?? 'Macera';
+    const task = tasks.find((t) => t.id === r.ref.split('|')[0])?.title ?? 'Adım';
     const kid = children.find((c) => c.id === r.childId)?.name;
     // Ders uygulaması (akislar.md 22, ekonomi.md 5C): haftalık hesap satırı
     const text = r.reason === 'lesson' ? 'Ders uygulaması' : r.reason === 'lesson_undo' ? 'Ders uygulaması geri alındı'
@@ -74,8 +74,8 @@ export default function StonesScreen({ navigation, route }: any) {
           {child && <Avatar id={child.avatar} size={36} />}
           <Text style={{ flex: 1, fontSize: 16, fontWeight: '700', color: colors.navy }}>{child ? child.name : 'Benim Güneş Taşlarım'}</Text>
           <Info title="Güneş Taşı hesabı" text={child
-            ? `${child.name} onaylanan maceralardan Güneş Taşı kazanır (Kolay 1, Orta 2, Zor 3; incelemede değişebilir). Ödüller ve düşülen Güneş Taşları burada görünür.`
-            : 'Sana atanan maceralarda "Yaptım" dedikçe Güneş Taşı kazanırsın. Güneş Taşlarınla Hediye dükkânından çocuğuna oyunda hediye gönderirsin.'} />
+            ? `${child.name} onaylanan adımlardan Güneş Taşı kazanır (Kolay 1, Orta 2, Zor 3; incelemede değişebilir). Ödüller ve düşülen Güneş Taşları burada görünür.`
+            : 'Sana atanan adımlarda "Yaptım" dedikçe Güneş Taşı kazanırsın. Güneş Taşlarınla Hediye dükkânından çocuğuna oyunda hediye gönderirsin.'} />
         </View>
         <Segmented options={[{ id: 'week', label: 'Bu hafta' }, { id: 'month', label: 'Bu ay' }, { id: 'all', label: 'Tümü' }]} value={period} onChange={setPeriod} />
         <View style={styles.balance}>
