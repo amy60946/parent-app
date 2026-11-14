@@ -305,7 +305,7 @@ export function Questionnaire({ steps, childId, onDone, onBackFirst }: {
     advancing.current = true;
     answersRef.current = { ...answersRef.current, [step.key]: values };
     setAnswers(answersRef.current);
-    saveAnswer(childId, step.key, values, step.health).catch((e) => Alert.alert('Yanıt kaydedilemedi', (e as Error).message));
+    saveAnswer(childId, step.key, values).catch((e) => Alert.alert('Yanıt kaydedilemedi', (e as Error).message));
     track('intake.answer', { q: step.key });
     setTimeout(() => go(i + 1), step.multi ? 0 : 140); // tek seçimde seçilenin vurgusu bir an görünsün
   };
@@ -345,16 +345,9 @@ export function Questionnaire({ steps, childId, onDone, onBackFirst }: {
               </Pressable>
             );
           })}
-          {/* ⓘ kaldırıldı (kullanıcı kararı 3 Kasım 2026); rıza satırı kalır, tam metin Aile › Hesap › Yasal ve gizlilik › Verdiğin izinler */}
-          {step.health && (
-            <Text style={[styles.cap, { marginTop: 4 }]}>İsteğe bağlı. Yanıt verirsen sağlık bilgisi olarak saklanmasına onay vermiş olursun.</Text>
-          )}
         </ScrollView>
         <View style={{ gap: 8 }}>
           {step.multi && <Cta label="İleri" onPress={() => answer(multi.filter((k) => !skip.includes(k)))} disabled={!multi.some((k) => !skip.includes(k))} />}
-          {step.health && <Pressable onPress={() => go(i + 1)} hitSlop={8} style={{ alignSelf: 'center', paddingVertical: 6 }}>
-            <Text style={styles.link}>Bu soruyu atla</Text>
-          </Pressable>}
         </View>
       </>
     );
@@ -580,7 +573,6 @@ const styles = StyleSheet.create({
   text: { fontSize: 15, color: '#4A5165', lineHeight: 21 },
   cap: { fontSize: 12, color: colors.muted },
   label: { fontSize: 13, fontWeight: '600', color: colors.muted, marginBottom: 6 },
-  link: { fontSize: 14, fontWeight: '600', color: colors.navy },
   option: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 54, paddingHorizontal: 16, paddingVertical: 12, borderRadius: radius.md, backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#fff' },
   optionOn: { borderColor: colors.navy, backgroundColor: '#F1F3FA' },
   optionText: { flex: 1, fontSize: 15, color: colors.navy },

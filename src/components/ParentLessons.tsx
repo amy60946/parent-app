@@ -16,6 +16,8 @@ import { track } from '../lib/track';
 // İçerik yoksa ya da sunucu güncellemesi yoksa "Yakında" kartı. Seri, puan ve "kaçırdın" yok.
 
 export const LESSON_NOTE = 'Bu dersler bilgi amaçlıdır; tanı ya da tedavi yerine geçmez.'; // hukuk/50 §13
+// Kütüphane listesinin altında bir kez (14 Kasım 2026, ortak hukuk_notlari M); her derste değil, uzman adı yok.
+const LIBRARY_NOTE = 'Genel bilgilendirmedir, mesleki değerlendirmenin yerini tutmaz.';
 const STONE_INFO = 'Bir derste "Bugün uyguladım" dediğin her gün 1 Güneş Taşı kazanırsın; haftada en çok 3. Aynı gün ikinci ders ek taş getirmez, dersi açmak da taş getirmez.\n\nTaşlarınla çocuğuna oyunda hediye gönderebilirsin (Aile › Ben › Güneş Taşım).';
 
 export function useLessons() {
@@ -198,6 +200,7 @@ export default function ParentLessons({ navigation }: { navigation: any }) {
               </Pressable>
             </View>
           ))}
+          <Text style={[styles.foot, { marginTop: 8 }]}>{LIBRARY_NOTE}</Text>
         </Card>
       ))}
 

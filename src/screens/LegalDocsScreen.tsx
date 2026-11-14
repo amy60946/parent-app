@@ -1,23 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
 import { IconButton } from '../components/ui';
-import Info from '../components/Info';
-import { HEALTH_CONSENT_TEXT } from '../data/intake';
 import { LegalDoc, legalDocs } from '../lib/legal';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../lib/auth';
 import { formatTR, toISO } from '../dates';
 
 // Aile › Hesap › Yasal ve gizlilik (hukuk/50 §3–4; kullanıcı isteği 28 Ekim 2026: bütün hukuki içerik tek başlık altında):
-// ParentApp ve Pofi Adası metinleri (legal_documents_for), onay tarihi; "Verdiğin izinler": sağlık yanıtları (geri al = sil),
-// uzman paylaşımı ve önceki uzman kayıtları (Uzmanım'da); KVKK başvurusu ve başvurularım.
+// ParentApp ve Pofi Adası metinleri (legal_documents_for), onay tarihi; "Verdiğin izinler": uzman paylaşımı ve önceki
+// uzman kayıtları (Uzmanım'da); KVKK başvurusu ve başvurularım. Sağlık yanıtları satırı kaldırıldı: tanışmada sağlık sorusu
+// yok (14 Kasım 2026, ortak hukuk_notlari M).
 export default function LegalDocsScreen({ navigation }: any) {
-  const { session } = useAuth();
   const [docs, setDocs] = useState<LegalDoc[] | null | undefined>();
-  const [health, setHealth] = useState<number | null>(null); // rızalı sağlık yanıtı sayısı; null = tablo yok
 
   const load = useCallback(async () => {
     try {
@@ -26,22 +21,8 @@ export default function LegalDocsScreen({ navigation }: any) {
       const seen = new Set<string>();
       setDocs([...p, ...(c ?? [])].filter((d) => (seen.has(d.key) ? false : (seen.add(d.key), true))));
     } catch { setDocs([]); }
-    if (session) {
-      const { count, error } = await supabase.from('intake_answers').select('id', { count: 'exact', head: true })
-        .eq('user_id', session.user.id).not('consent_version', 'is', null);
-      setHealth(error ? null : count ?? 0);
-    }
-  }, [session]);
+  }, []);
   useEffect(() => { load(); }, [load]);
-
-  const revokeHealth = () => Alert.alert('Sağlık yanıtların silinsin mi?', 'Tanı ve ilaç sorularına verdiğin yanıtlar silinir. Uygulamayı kullanmaya devam edersin.', [
-    { text: 'Vazgeç', style: 'cancel' },
-    { text: 'Sil', style: 'destructive', onPress: async () => {
-      const { error } = await supabase.from('intake_answers').delete()
-        .eq('user_id', session!.user.id).in('question_key', ['child_diagnosis', 'child_medication']);
-      if (error) Alert.alert('Silinemedi', error.message); else load();
-    } },
-  ]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -73,20 +54,7 @@ export default function LegalDocsScreen({ navigation }: any) {
         <Text style={[styles.h, { marginTop: 6 }]}>Verdiğin izinler</Text>
         <Text style={styles.cap}>Bu izinler isteğe bağlıdır. Geri aldığında uygulamayı kullanmaya devam edersin; ilgili paylaşım hemen durur.</Text>
         <View style={styles.list}>
-          {health !== null && (
-            <View style={styles.row}>
-              <View style={{ flex: 1, gap: 2 }}>
-                {/* Tam rıza metni burada (soru ekranındaki ⓘ kaldırıldı, 3 Kasım 2026) */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={styles.h}>Sağlık yanıtları</Text>
-                  <Info title="Sağlık yanıtları" text={HEALTH_CONSENT_TEXT} />
-                </View>
-                <Text style={styles.cap}>{health > 0 ? 'Verildi (tanı ve ilaç soruları)' : 'Verilmedi'}</Text>
-              </View>
-              {health > 0 && <Pressable onPress={revokeHealth} hitSlop={8}><Text style={styles.danger}>Geri al</Text></Pressable>}
-            </View>
-          )}
-          <Pressable onPress={() => navigation.navigate('Tabs', { screen: 'Uzmanım' })} style={[styles.row, health !== null && styles.sep]} accessibilityRole="button">
+          <Pressable onPress={() => navigation.navigate('Tabs', { screen: 'Uzmanım' })} style={styles.row} accessibilityRole="button">
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={styles.h}>Uzman paylaşımı ve önceki uzman kayıtları</Text>
               <Text style={styles.cap}>Uzmanım sekmesinde görür, durdurur ya da kapatırsın</Text>
@@ -113,6 +81,5 @@ const styles = StyleSheet.create({
   sep: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   h: { fontSize: 15, fontWeight: '600', color: colors.navy },
   cap: { fontSize: 12, lineHeight: 17, color: colors.muted },
-  danger: { fontSize: 14, fontWeight: '700', color: colors.danger },
   kvkk: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: radius.md, padding: 14 },
 });

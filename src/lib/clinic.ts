@@ -110,7 +110,7 @@ export function onSuggestionsChange(familyId: string, fn: () => void): () => voi
   return () => { clearTimeout(t); supabase.removeChannel(ch); };
 }
 
-// Kabul edilen önerinin hangi göreve dönüştüğü (uzman izler)
+// Kabul edilen önerinin hangi göreve dönüştüğü (uzman takip eder)
 export async function linkSuggestionTask(id: string, taskId: string) {
   const { error } = await supabase.from('clinic_task_suggestions').update({ task_id: taskId }).eq('id', id);
   fail(error);
