@@ -16,8 +16,8 @@ const questions = [
     options: [{ key: 'yes', label: 'Evet' }, { key: 'no', label: 'Hayır' }] })),
 ];
 process.stdout.write(JSON.stringify({
-  _doc: "ParentApp tanışma soruları (ilk kurulum). Kaynak: parent-app/src/data/intake.ts (tools/intake_json.sh ile üretilir); sözleşme sozlesme/durumlar.md P16, akislar.md 16. Sıra uygulamadaki adım sırasıdır. who: parent = aile/ebeveyn sorusu (child_id boş), child = çocuk başına (child_id dolu). {ad}: çocuğun adı. health: true = isteğe bağlı sağlık sorusu, 'prefer_not' dışındaki yanıt açık rıza ister (consent_version). exclusive: seçilince diğerleri kalkar. exclude: adı geçen sorunun yanıtları bu soruda seçenek olarak gösterilmez (ana hedef 'başka neler' sorusunda tekrar edilmez). Yanıtlar intake_answers.answer içinde seçenek anahtarları dizisidir.",
-  version: m.INTAKE_VERSION, consent_version: m.HEALTH_CONSENT, questions }, null, 2) + '\n');
+  _doc: "ParentApp tanışma soruları (ilk kurulum). Kaynak: parent-app/src/data/intake.ts (tools/intake_json.sh ile üretilir); sözleşme sozlesme/durumlar.md P16, akislar.md 16. Sıra uygulamadaki adım sırasıdır. who: parent = aile/ebeveyn sorusu (child_id boş), child = çocuk başına (child_id dolu). {ad}: çocuğun adı. health: hep false (v2, 14 Kasım 2026: sağlık sorusu ve sağlık rızası yok; alan yönetim paneli uyumu için kalır). exclusive: seçilince diğerleri kalkar. exclude: adı geçen sorunun yanıtları bu soruda seçenek olarak gösterilmez (ana hedef 'başka neler' sorusunda tekrar edilmez). Yanıtlar intake_answers.answer içinde seçenek anahtarları dizisidir.",
+  version: m.INTAKE_VERSION, questions }, null, 2) + '\n');
 JS
 node "$tmp/gen.js" > "$out"
 rm -rf "$tmp"

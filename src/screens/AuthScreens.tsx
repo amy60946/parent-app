@@ -289,7 +289,7 @@ export function SignUpScreen({ navigation, route }: any) {
   }
 
   return (
-    <Layout title="Kayıt ol" subtitle="Çocuklarına sorumluluk ver, gelişimlerini birlikte izleyin." onBack={() => navigation.goBack()}>
+    <Layout title="Kayıt ol" subtitle="Çocuklarına sorumluluk ver, gelişimlerini birlikte takip edin." onBack={() => navigation.goBack()}>
       {clinic?.status === 'open' && (
         <View style={styles.inviteBand} accessibilityRole="summary">
           <Ionicons name="briefcase-outline" size={20} color={colors.navy} />
