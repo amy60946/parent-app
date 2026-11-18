@@ -44,14 +44,17 @@ def variants():
 
 def build_files():
     n = 0
-    shutil.rmtree(os.path.join(HERE, 'svg'), ignore_errors=True)    # seçilmeyenlerden dosya kalmasın
+    for sub in ('logo', 'icon'):                                     # seçilmeyenlerden dosya kalmasın (svg/moyo/ hazır set, dokunulmaz)
+        shutil.rmtree(os.path.join(HERE, 'svg', sub), ignore_errors=True)
     for v in variants():
         for ink in kit.INKS:
-            for suffix in (None, 'mercek', 'oyun'):
+            for suffix in (('mercek', 'oyun') if getattr(kit, 'MOYO_SET', None) else (None, 'mercek', 'oyun')):   # Moyo'nun yazısı svg/moyo/'da
                 svg, _, _ = kit.wordmark(v, ink, suffix)
                 write(os.path.join(HERE, 'svg', 'logo', 'moyo%s-%s-%s.svg' % ('-' + suffix if suffix else '', v, ink)), svg); n += 1
         for fam in ([kit.SELECTED['icon']] if kit.SELECTED['icon'] else kit.FAMILIES):
             for p in kit.PRODUCTS:
+                if p == 'moyo' and getattr(kit, 'MOYO_SET', None):
+                    continue                      # Moyo simgesi svg/moyo/moyo-simge-1024.svg
                 write(os.path.join(HERE, 'svg', 'icon', '%s-%s%s.svg' % (p, fam, v)), kit.icon(p, fam, v)); n += 1
     css = ['/* Moyo marka değişkenleri (brand/build.py üretir; elle düzenlenmez). */', ':root{']
     css += ['  --moyo-%s:%s; /* %s */' % (var, val, use) for _, var, val, use in kit.PALETTE]
@@ -62,7 +65,8 @@ def build_files():
         'renkler': {var: {'ad': ad, 'deger': val, 'kullanim': use} for ad, var, val, use in kit.PALETTE},
         'yazi': {'aile': 'Outfit', 'lisans': 'SIL OFL 1.1', 'secilen': kit.SELECTED['yazi'], 'baslik': 800, 'ara': 600, 'govde': 400, 'ince': 300,
                  'olcek_px': {'h1': 58, 'h2': 50, 'h3': 32, 'giris': 24, 'govde': 18, 'kucuk': 14}},
-        'logo': {'harfler': 'Poppins ExtraBold (SIL OFL 1.1) dış çizgisi; "y" özgün', 'alternatifler': kit.VARIANTS, 'secilen': kit.SELECTED['logo']},
+        'moyo': {'yazi': 'seçenek 6 (svg/moyo/moyo-yazi-*.svg)', 'isaret': '1E (svg/moyo/moyo-isaret-*.svg; yalnız simge ve profil)', 'oran_yuzde': kit.MOYO_SET['oran'], 'karar': '18 Kasım 2026'},
+        'logo': {'harfler': 'Poppins ExtraBold (SIL OFL 1.1) dış çizgisi; "y" özgün', 'alternatifler': kit.VARIANTS, 'secilen': kit.SELECTED['logo'], 'kapsam': 'Moyo Mercek ve Moyo Oyun kilitleri'},
         'icon': {'aileler': kit.FAMILIES, 'urunler': {k: {x: p[x] for x in ('ad', 'bg', 'fg', 'accent')} for k, p in kit.PRODUCTS.items()}, 'secilen': kit.SELECTED['icon']},
     }, ensure_ascii=False, indent=2) + '\n')
     return n
