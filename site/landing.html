@@ -63,15 +63,15 @@ a { color: inherit; }
 .top .wrap { display: flex; align-items: center; gap: 20px; min-height: 66px; }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); flex: none; }
 /* Marka: yalnız "moyo" yazısı (kullanıcı kararı 18 Kasım 2026; açık zeminde lacivert). Simge yalnız bildirim ve mağaza satırında. */
-.brand img { height: 27px; width: auto; display: block; }
+.brand img { height: 27px; width: auto; display: block; transform: translateY(22%); }   /* harflerin gövdesi (x yüksekliği) satırın ortasına: y'nin kuyruğu aşağı taşar */
 .nav { display: flex; gap: 4px; margin-left: 12px; }
 .nav a { text-decoration: none; font-weight: 600; font-size: .95rem; color: var(--ink-2); padding: 8px 10px; border-radius: 8px; }
 .nav a:hover { color: var(--ink); background: var(--paper); }
 .top-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
 .top-actions .btn { min-height: 42px; padding: 0 18px; font-size: .95rem; }
 @media (max-width: 860px) { .nav { display: none; } }
-@media (max-width: 420px) { .top .wrap { gap: 8px; } .brand img { height: 24px; } .top-actions { gap: 2px; } .top-actions .btn-text { padding: 0 6px; font-size: .88rem; } .top-actions .btn { padding: 0 12px; font-size: .88rem; } }
-@media (max-width: 380px) { .brand img { height: 22px; } }
+@media (max-width: 420px) { .top .wrap { gap: 8px; } .brand img { height: 25px; } .top-actions { gap: 2px; } .top-actions .btn-text { padding: 0 6px; font-size: .88rem; } .top-actions .btn { padding: 0 12px; font-size: .88rem; } }
+@media (max-width: 380px) { .brand img { height: 24px; } }
 @media (max-width: 560px) { .stage .note { font-size: .75rem; padding: 8px 10px; gap: 8px; width: 39%; } .stage .note img { width: 22px; height: 22px; } .stage .note b { display: none; } }
 
 /* Uygulama ekranları (Moyo'nun sade kopyası) */
