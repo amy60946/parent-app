@@ -163,7 +163,7 @@ export default function MeScreen({ navigation }: any) {
                 <Ionicons name="close" size={20} color={colors.navy} />
               </Pressable>
             </View>
-            <Text style={styles.text}>Davet ettiğin aile 14 gün ücretsiz dener. Abone olurlarsa sen 1 ay ücretsiz kazanırsın.</Text>
+            <Text style={styles.text}>Davet ettiğin ailenin ücretsiz denemesi 7 gün uzar. Abone olurlarsa sen 1 ay ücretsiz kazanırsın.</Text>
             <Pressable onPress={() => navigation.navigate('GuestPass')} style={styles.guestBtn} accessibilityRole="button">
               <Text style={styles.guestBtnText}>Davet kodunu paylaş</Text>
             </Pressable>
