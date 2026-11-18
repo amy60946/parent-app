@@ -4,12 +4,13 @@ Kullanıcı isteği (11 Kasım 2026): küçük harf "moyo" sözcük logosu ("y" 
 "mercek"; renk ve yazı tipi için verilen referans temel alınır; üç uygulama iconu (Moyo, Moyo Mercek, Moyo Oyun) tek aile.
 Kitin tek sahibi bu depodur (Ebeveyn penceresi); Moyo Mercek ve Oyun pencereleri seçimden sonra buradan alır.
 
-**Durum:** logo **D "C Top, ayarlı"** (kullanıcı, 12 Kasım 2026, logo atölyesinde; aynı gün önce A seçilmişti), icon ailesi **3 İki satır** (kullanıcı, 13 Kasım 2026: Moyo koyu zemin + yeşil harf, Moyo Mercek açık zemin + lacivert harf; Moyo Oyun için karar yok). Yazı tipi seçim bekliyor. Seçimler `kit.py` `SELECTED`'da; seçilmeyenlerin dosyaları üretilmez, çizimleri kodda durur.
+**Durum (18 Kasım 2026):** Moyo'nun yazısı **seçenek 6** (yalnız "moyo"; m ve y köşeleri yuvarlak, y'de top yok) ve uygulama simgesindeki **işaret 1E** (yalnız simgede ve profil resminde; yazıyla yan yana kullanılmaz). Kullanıcı: "%60 ve 6 ile ilerle, seti üret, ürünlere (web app) ve app ikonlarına uygula." Set Marketing penceresinde üretildi (marketing deposu `marka/moyo-set-2026-11-18/`), kaynak SVG'ler `svg/moyo/`; uygulama görselleri `app_assets.py`. Renk: simge lacivert zemin + yeşil işaret; yazı koyu zeminde beyaz, açık zeminde lacivert; yazıda yeşil kullanılmaz. Oranlar: iOS ve site simgesi %60, Android ön plan %46, sekme simgesi %68, profil %56. Önceki "C Top, ayarlı" (D) ve iki satırlı "mo / yo" simge Moyo için kalktı; **Moyo Mercek ve Moyo Oyun kilit ve simgeleri hâlâ D / aile 3** (`kit.py` `SELECTED`, ayrı karar). Yazı tipi seçim bekliyor.
 
 | Yol | Ne |
 |---|---|
 | `build.py` | Hepsini üretir. `python3 brand/build.py` → `svg/`, `tokens.css`, `tokens.json`. `python3 brand/build.py <klasör>` → ayrıca önizleme sayfası. |
 | `kit.py`, `geom.py` | Çizim: sözcük logo, "y" kuyruğu, kilitler, iconlar, renk listesi. |
+| `svg/moyo/` | **Moyo'nun güncel seti (18 Kasım 2026):** `moyo-yazi-{lacivert,beyaz,yesil}.svg` (sıkı kutu), `moyo-isaret-{yesil,lacivert}.svg` (200 × 180), `moyo-simge-1024.svg`, `moyo-android-{on-plan,tek-renk}.svg`, `moyo-favicon.svg`, `moyo-profil.svg`. Hazır set, `build.py` dokunmaz. |
 | `svg/logo/` | `moyo-<a\|b\|c>-<renk>.svg`, `moyo-mercek-…`, `moyo-oyun-…`. Renk: `lacivert` (açık zemin), `yesil` (koyu zemin), `beyaz`. |
 | `svg/icon/` | `<moyo\|mercek\|oyun>-<aile><logo>.svg` (ör. `moyo-3a.svg`). 1024 × 1024, köşesiz, saydam alan yok. |
 | `tokens.css`, `tokens.json` | Renk ve yazı değişkenleri (`--moyo-…`). Üretilir, elle düzenlenmez. |
