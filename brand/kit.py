@@ -25,7 +25,11 @@ SUFFIX = {'d': {'case': str.capitalize, 'track': -0.03, 'gap': 0.5}}
 FAMILIES = {'1': 'Sözcük', '2': 'y işareti', '3': 'İki satır'}
 # Kullanıcı seçimleri (None = karar bekliyor). 12 Kasım 2026 önce A Kıvrım; sonra logo atölyesinde "C Top, ayarlı" (D).
 # 13 Kasım 2026 (kullanıcı, Moyo Mercek penceresinde): iki satırlı "mo / yo" icon; Moyo koyu zemin + yeşil harf, Moyo Mercek açık zemin + lacivert harf.
-SELECTED = {'logo': 'd', 'icon': '3', 'yazi': None}
+SELECTED = {'logo': 'd', 'icon': '3', 'yazi': None}   # yalnız Moyo Mercek ve Moyo Oyun kilit ve simgeleri için (onlar ayrı karar)
+# Moyo'nun kendisi (kullanıcı kararı 18 Kasım 2026: "%60 ve 6 ile ilerle, seti üret, ürünlere (web app) ve app ikonlarına uygula"):
+# yazı seçenek 6 (yalnız "moyo", köşeler yuvarlak, y'de top yok), işaret 1E (yalnız simgede ve profil resminde). Çizimler hazır
+# set olarak brand/svg/moyo/ (Marketing penceresi üretti); bu dosya onları çizmez. Uygulama görselleri: app_assets.py.
+MOYO_SET = {'yazi': '6', 'isaret': '1E', 'klasor': 'svg/moyo', 'oran': {'ios': 60, 'android': 46, 'favicon': 68, 'profil': 56}}
 
 # Renkler: kullanıcının verdiği referans temel alındı (lacivert zemin, tek yeşil vurgu, gri basamaklar).
 PALETTE = [
