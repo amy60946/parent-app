@@ -5,7 +5,7 @@ import { isMissingRpc } from './clinic';
 import { formatTR } from '../dates';
 
 // Aile davet et (ortak proposed/20261028120000_guest_pass.sql; akislar.md 19; kullanıcı kararı 3 Kasım 2026): aile, ParentApp'i
-// kullanmayan bir aileye davet kodu gönderir; o aile 7 + 7 = 14 gün dener. Davet edilen aile mağazadan abone olunca davet eden
+// kullanmayan bir aileye davet kodu gönderir; o ailenin denemesi varsayılan süre + 7 gün olur (18 Kasım 2026'dan beri 14 + 7 = 21; ortak akislar.md 19). Davet edilen aile mağazadan abone olunca davet eden
 // 1 ay kazanır (yılda en çok 12). Kod 8 karakter (A–Z, 2–9); "Kod gir" kutularından kullanılır.
 export const GUEST_CODE = /^[A-Z2-9]{8}$/;
 
@@ -32,7 +32,7 @@ const REASONS: Record<string, string> = {
   own: 'Kendi davet kodunu kullanamazsın; bir aileyle paylaş.',
   already: 'Ailen daha önce bir davet kodu kullandı.',
   premium: 'Zaten Premium üyesin; davet koduna gerek yok.',
-  not_new: 'Davet kodu yalnız Moyo\'ya yeni başlayan ailelerde (ilk 7 gün) kullanılabilir.',
+  not_new: 'Davet kodu yalnız Moyo\'ya yeni başlayan ailelerde (deneme süresi içinde) kullanılabilir.',
   too_many_attempts: 'Çok fazla hatalı deneme. 15 dakika sonra tekrar dene.',
 };
 
@@ -50,7 +50,7 @@ export async function redeemGuestPass(code: string): Promise<string> {
 
 // Kod kullanıldı bildirimi (Kod gir kutuları)
 export const guestRedeemedText = (trialEndsAt: string) =>
-  `Moyo ${formatTR(trialEndsAt.slice(0, 10))} tarihine kadar bütün özellikleriyle açık (7 yerine 14 gün). Kod artık başka bir aile tarafından kullanılamaz.`;
+  `Moyo ${formatTR(trialEndsAt.slice(0, 10))} tarihine kadar bütün özellikleriyle açık (deneme süresi 7 gün uzadı). Kod artık başka bir aile tarafından kullanılamaz.`;
 
 // Davet özeti (kimlik yok): katılan aile, abone olan, kazanılan ay, yıllık kalan hak, Apple hediye kodları
 export type Referrals = { joined: number; paid: number; months: number; yearLeft: number; pendingCodes: number; codes: { code: string; sentAt: string }[] };

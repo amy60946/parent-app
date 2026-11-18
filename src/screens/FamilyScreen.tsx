@@ -469,7 +469,7 @@ function CodeSheet({ visible, onClose }: { visible: boolean; onClose: () => void
       <View style={{ gap: 14 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Text style={{ flex: 1, fontSize: 13, color: colors.muted }}>Uzmanından, eşinden ya da bir aileden aldığın kod</Text>
-          <Info title="Hangi kod?" text={'Uygulama kodun kimden geldiğini kendisi anlar.\n\n• Uzman kodu (6 karakter): uzmanın davet ekranı açılır; onaylarsan çocuğunun rutinleri onunla paylaşılır.\n• Eşinin kodu (6 karakter): aynı aileye katılırsın. Eşin kodu Aile › + › Ebeveyn bölümünden üretir; kod 15 dakika geçerlidir.\n• Aile davet kodu (8 karakter): seni davet eden aileden; deneme 7 yerine 14 gün olur. Moyo\'ya yeni başlayan ailelerde (ilk 7 gün) geçerlidir.'} />
+          <Info title="Hangi kod?" text={'Uygulama kodun kimden geldiğini kendisi anlar.\n\n• Uzman kodu (6 karakter): uzmanın davet ekranı açılır; onaylarsan çocuğunun rutinleri onunla paylaşılır.\n• Eşinin kodu (6 karakter): aynı aileye katılırsın. Eşin kodu Aile › + › Ebeveyn bölümünden üretir; kod 15 dakika geçerlidir.\n• Aile davet kodu (8 karakter): seni davet eden aileden; deneme süresi 7 gün uzar. Moyo\'ya yeni başlayan ailelerde (deneme süresi içinde) geçerlidir.'} />
         </View>
         <CodeEntry onResult={done} />
       </View>
