@@ -22,6 +22,7 @@ import { formatTR, todayISO } from '../dates';
 import { genitive } from '../lib/tr';
 import { track } from '../lib/track';
 import { afterModal } from '../lib/modal';
+import { useTabBarScroll } from '../lib/tabBarScroll';
 import SessionsSection from '../components/SessionsSection';
 import { familySessions, syncSessionReminders } from '../lib/sessions';
 import { useTrainings } from '../lib/trainings';
@@ -67,6 +68,7 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
   // Ebeveyn eğitimi görevleri ve davranış olayı (ortak akislar.md 23–24: "Uzmanım › uzman › Günlük yapılacaklar"); sunucuda yoksa görünmez
   const trainings = useTrainings();
   const behaviors = useTargetBehaviors();
+  const bar = useTabBarScroll({ enabled: !!tab }); // sekmede yüzen çubuğa bağlı; ayrı sayfada (yığın) çubuk yok
   const planOn = useFlag(CARE_PLAN_FLAG); // Takip Planı kapalıyken Program bölümü ve plan bağlantıları yok (akislar.md 12.2)
 
   if (!care) return <SafeAreaView style={styles.safe}><ActivityIndicator color={colors.navy} style={{ marginTop: 60 }} /></SafeAreaView>;
@@ -194,7 +196,7 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
         </View>
       </SafeAreaView>
 
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 48, gap: 18 }}>
+      <ScrollView {...bar.scrollProps} contentContainerStyle={{ padding: 20, paddingBottom: tab ? bar.contentInsetBottom : 48, gap: 18 }}>
         {tab?.top}
         <VerifiedBadge verifiedAs={c.verifiedAs} />
 

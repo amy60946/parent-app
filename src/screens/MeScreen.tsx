@@ -21,6 +21,7 @@ import TrialBanner from '../components/TrialBanner';
 import { openTaskCount, trainingPct, useTrainings } from '../lib/trainings';
 import { reportable, useTargetBehaviors } from '../lib/incidents';
 import { todayISO } from '../dates';
+import { useTabBarScroll } from '../lib/tabBarScroll';
 
 // Ben (ana sayfa; kullanıcı isteği 28 Ekim 2026, Joon "Me" örneğinden): onay bekleyenler (İnceleme), aile davet et kartı (3 Kasım 2026),
 // seni bekleyenler (uzman davetleri, önerileri, uygulamalar, tanışma soruları; boşsa yok), programına devam et (program varsa),
@@ -39,6 +40,7 @@ export default function MeScreen({ navigation }: any) {
   const { care } = useCare(familyId);
   const today = todayISO();
   const wide = Math.min(useWindowDimensions().width, WIDE_COLUMN) >= 900;
+  const bar = useTabBarScroll(); // yüzen sekme çubuğu: kaydırınca küçülür; alt boşluk
   const [guestHidden, setGuestHidden] = useState<boolean | null>(null);
   const [intakeMissing, setIntakeMissing] = useState(false);
   const [guide, setGuide] = useState(false);
@@ -121,7 +123,7 @@ export default function MeScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 18, width: '100%', maxWidth: wide ? undefined : COLUMN, alignSelf: 'center' }}>
+      <ScrollView {...bar.scrollProps} contentContainerStyle={{ padding: 20, paddingBottom: bar.contentInsetBottom, gap: 18, width: '100%', maxWidth: wide ? undefined : COLUMN, alignSelf: 'center' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <View style={{ flex: 1 }}>
             <Text style={styles.hello} accessibilityRole="header">{hello}</Text>
