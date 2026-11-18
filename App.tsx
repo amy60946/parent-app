@@ -12,6 +12,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { columnLayout } from './src/components/Column';
+import LiquidTabBar from './src/components/LiquidTabBar';
 import { StoreProvider, useStore } from './src/store';
 import { AuthProvider, useAuth, takeJustSignedUp } from './src/lib/auth';
 import { colors } from './src/theme';
@@ -97,14 +98,16 @@ function Tabs() {
   const pending = Object.values(completions).filter((s) => s === 'pending').length;
   const unread = messages.filter((m) => m.sender === 'child' && !m.readAt).length;
   return (
+    // Yüzen "liquid" sekme çubuğu (kullanıcı isteği 18 Kasım 2026, Instagram örneği): ekranların üstünde durur, yer ayırmaz;
+    // sekme ekranları ana kaydırmalarını useTabBarScroll ile bağlar (kaydırınca küçülür, durunca büyür) ve alt boşluk bırakır.
     <Tab.Navigator
       screenLayout={columnLayout}
+      tabBar={(props) => <LiquidTabBar {...props} />}
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: colors.navy,
-        tabBarInactiveTintColor: colors.muted,
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
-        tabBarStyle: { borderTopColor: colors.line, borderTopWidth: 0.5, backgroundColor: '#fff' },
+        tabBarActiveTintColor: '#fff',
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.72)',
+        tabBarStyle: { position: 'absolute' }, // çubuk içeriğin üstünde yüzer
         tabBarIcon: ({ focused, color, size }) => (
           <Ionicons name={icons[route.name][focused ? 1 : 0]} size={size} color={color} />
         ),

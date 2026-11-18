@@ -9,11 +9,13 @@ import { useStore, taskOccursOn, completionKey } from '../store';
 import { DAY_SHORT, addDays, toISO, startOfWeek } from '../dates';
 import { genitive } from '../lib/tr';
 import ParentLessons from '../components/ParentLessons';
+import { useTabBarScroll } from '../lib/tabBarScroll';
 
 // Gelişim: çocuklar + aile üyesi "Ben" (ebeveyn eğitimi; ortak akislar.md 22, kullanıcı kararları 5 Kasım 2026)
 export default function ProgressScreen({ navigation, route }: any) {
   const { children, tasks, completions, parent } = useStore();
   const [childId, setChildId] = useState<string | undefined>(children[0]?.id ?? 'me');
+  const bar = useTabBarScroll(); // yüzen sekme çubuğu
   // Bildirimden (lesson_assigned) ya da Bugün'den gelince Ben seçili açılır
   useEffect(() => { if (route?.params?.who === 'me') { setChildId('me'); navigation.setParams({ who: undefined }); } }, [route?.params?.who, navigation]);
   const me = childId === 'me' || children.length === 0;
@@ -76,7 +78,7 @@ export default function ProgressScreen({ navigation, route }: any) {
       <View style={{ alignItems: 'flex-end', paddingHorizontal: 20, paddingTop: 4 }}>
         <NotificationBell />
       </View>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 12 }}>
+      <ScrollView {...bar.scrollProps} contentContainerStyle={{ padding: 20, paddingBottom: bar.contentInsetBottom, gap: 12 }}>
         {/* Davranış kayıtları arşivi (yeni kayıt: Görevler'de + düğmesine basılı tut) */}
         <Pressable style={styles.abcList} onPress={() => navigation.navigate('Abc')} accessibilityLabel="Davranış kayıtları">
           <Ionicons name="document-text-outline" size={18} color={colors.navy} />

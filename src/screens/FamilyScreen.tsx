@@ -30,6 +30,7 @@ import { useChildConsent } from '../legal';
 import { balances } from '../lib/rewards';
 import { startOfWeek } from '../dates';
 import { afterModal } from '../lib/modal';
+import { useTabBarScroll } from '../lib/tabBarScroll';
 
 type Tab = 'general' | 'mail' | 'account';
 const soon = () => Alert.alert('Yakında', 'Bu özellik sonraki sürümde.');
@@ -118,9 +119,11 @@ function MyProfile() {
   const mine = pt.ledger.filter((r) => r.userId === pt.me && r.createdAt.slice(0, 10) >= week);
   const earned = mine.filter((r) => r.amount > 0).reduce((s, r) => s + r.amount, 0);
   const spent = -mine.filter((r) => r.amount < 0).reduce((s, r) => s + r.amount, 0);
+  const bar = useTabBarScroll(); // yüzen sekme çubuğu (Genel, Mesajlar, Hesap: her biri kendi kaydırması)
   return (
     <ScrollView
-      contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 40 }}
+      {...bar.scrollProps}
+      contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: bar.contentInsetBottom }}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="interactive"
       automaticallyAdjustKeyboardInsets
@@ -179,6 +182,7 @@ function ChildInfo({ id }: { id: string }) {
   const [saving, setSaving] = useState(false);
   const { ensureChildConsent, consentUi } = useChildConsent();
   const navigation = useNavigation<any>();
+  const bar = useTabBarScroll();
   const [code, setCode] = useState<IssuedCode | undefined>();
   const [busy, setBusy] = useState(false);
   const [balance, setBalance] = useState<number | undefined>();
@@ -234,7 +238,7 @@ function ChildInfo({ id }: { id: string }) {
   };
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }}>
+    <ScrollView {...bar.scrollProps} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: bar.contentInsetBottom }}>
       <Card style={{ gap: 12 }}>
         {edit ? (
           <View style={{ gap: 14 }}>
@@ -346,6 +350,7 @@ const listTime = (iso: string) => {
 function Mail() {
   const { children, messages } = useStore();
   const navigation = useNavigation<any>();
+  const bar = useTabBarScroll();
   if (!children.length) {
     return (
       <Text style={{ color: colors.muted, textAlign: 'center', marginTop: 40, paddingHorizontal: 32 }}>
@@ -354,7 +359,7 @@ function Mail() {
     );
   }
   return (
-    <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+    <ScrollView {...bar.scrollProps} contentContainerStyle={{ padding: 20, paddingBottom: bar.contentInsetBottom }}>
       <Card style={{ padding: 0 }}>
         {children.map((c, i) => {
           const thread = messages.filter((m) => m.childId === c.id);
@@ -410,6 +415,7 @@ function Account({ onLogout }: { onLogout?: () => void }) {
   const [open, setOpen] = useState<AccountRow | null>(null);
   const navigation = useNavigation<any>();
   const { access } = useBilling();
+  const bar = useTabBarScroll();
   const pick = (id: AccountRow) => (id === 'notifications' ? navigation.navigate('Notifications')
     : id === 'membership' ? navigation.navigate('Paywall')
     : id === 'clinic' ? navigation.navigate('Uzmanım')
@@ -418,7 +424,7 @@ function Account({ onLogout }: { onLogout?: () => void }) {
     : access.state === 'clinic' ? 'Klinik' : access.state === 'trial' ? `Deneme · ${access.daysLeft ?? 0} gün`
     : access.state === 'expired' ? 'Ücretsiz' : '';
   return (
-    <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}>
+    <ScrollView {...bar.scrollProps} contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: bar.contentInsetBottom }}>
       <Card style={{ padding: 0 }}>
         {accountRows.map((r, i) => (
           <Pressable key={r.label} onPress={r.id ? () => pick(r.id!) : soon} style={[styles.accRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line }]}>

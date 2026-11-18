@@ -19,6 +19,7 @@ import { familyAge, usePlan } from '../lib/plan';
 import { useParentTasks, doneKey, ParentAssign, Member } from '../parentTasks';
 import { difficultyMeta } from '../theme';
 import { COLUMN } from '../components/Column';
+import { useTabBarScroll } from '../lib/tabBarScroll';
 
 const HINT_KEY = 'hint-plus-longpress-v2';
 const NEW_REWARD_KEY = 'hint-reward-new';
@@ -34,6 +35,8 @@ export default function TasksScreen({ navigation, route }: any) {
   // Hafta şeridi sayfa genişliği = ekran sütunu (iPad'de en çok COLUMN; Column.tsx). Döndürünce ölçülür, seçili hafta korunur.
   const win = useWindowDimensions().width;
   const [width, setWidth] = useState(Math.min(win, COLUMN));
+  // Yüzen sekme çubuğu: liste kaydırınca küçülür; + düğmesi ve menüsü çubuğun üstünde durur
+  const bar = useTabBarScroll();
   const { tasks, children, completions, reorderTasks, deleteTask, familyId, parent } = useStore();
   const pt = useParentTasks();
   // Ebeveyn kendini her zaman görür (görevi olmasa da): kendine görev atayabileceğini fark etsin (kullanıcı geri bildirimi 27 Ekim 2026)
@@ -127,6 +130,7 @@ export default function TasksScreen({ navigation, route }: any) {
     if (dy > 6) setFilters(true);
     else if (dy < -6) setFilters(false);
   }, [filtersH, setFilters]);
+  const onListScroll = React.useCallback((y: number) => { onScrollY(y); bar.onOffset(y); }, [onScrollY, bar.onOffset]);
   // Gün ya da süzgeç değişince süzgeçler görünür
   React.useEffect(() => { setFilters(false); }, [selected, childFilter, part, setFilters]);
 
@@ -259,8 +263,8 @@ export default function TasksScreen({ navigation, route }: any) {
         onDragEnd={({ data }) => reorderTasks(data.map((x) => x.task.id))}
         activationDistance={12}
         containerStyle={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: filtersH + 4, paddingBottom: 120 }}
-        onScrollOffsetChange={onScrollY}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: filtersH + 4, paddingBottom: bar.contentInsetBottom + 80 }}
+        onScrollOffsetChange={onListScroll}
         scrollEventThrottle={16}
         ListHeaderComponent={
           dayTasks.length > 0 ? (
@@ -307,7 +311,7 @@ export default function TasksScreen({ navigation, route }: any) {
 
       {dial && <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(245,246,248,0.7)' }]} onPress={() => setDial(null)} accessibilityLabel="Kapat" />}
       {dial === 'menu' && (
-        <View style={styles.dial}>
+        <View style={[styles.dial, { bottom: bar.barSpace + 88 }]}>
           {newReward && (
             <Pressable onPress={seenNewReward} style={styles.newTip} accessibilityLabel="İpucunu kapat">
               <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Yeni: Ödüller</Text>
@@ -327,12 +331,12 @@ export default function TasksScreen({ navigation, route }: any) {
         </View>
       )}
       {hint && !dial && (
-        <Pressable style={styles.hintBubble} onPress={seenHint} accessibilityLabel="İpucunu kapat">
+        <Pressable style={[styles.hintBubble, { bottom: bar.barSpace + 28 }]} onPress={seenHint} accessibilityLabel="İpucunu kapat">
           <Text style={{ fontSize: 12, color: '#fff' }}>Ödül ve davranış kaydı için + düğmesini basılı tut</Text>
         </Pressable>
       )}
       <Pressable
-        style={styles.fab}
+        style={[styles.fab, { bottom: bar.barSpace + 16 }]}
         accessibilityLabel="Rutin ekle. Ödül ve davranış kaydı için basılı tut."
         onPress={() => { if (dial) setDial(null); else if (allow('task')) navigation.navigate('CreateTask', { date: selected }); }}
         onLongPress={() => { setDial('menu'); seenHint(); }}
