@@ -12,7 +12,8 @@ import { TAB_BAR_GAP, TAB_BAR_HEIGHT, setTabBarCompact, subscribeTabBarCompact }
 // hafif, kullanım durunca büyüsün"; 19 Kasım 2026: "Liquid Glass gibi, referans videodaki gibi aynı tasarım/renk ile yap.
 // Şuanki gibi mavi olmasın"). Ölçüler kullanıcının verdiği Instagram iOS kaydından (60 fps, piksel örneklemesi; Moyo Mercek
 // penceresi ölçtü): koyu grafit hap (lacivert değil), ince açık kenar, gölge neredeyse yok; yalnız simge (etiketsiz, iki
-// durumda da beyaz; seçili dolu glif); seçili sekmenin arkasında 75 × 50 açık kapsül katı hap gibi kayar. Kaydırma bağlantısı
+// durumda da beyaz; seçili dolu glif; altında küçük beyaz ad, kullanıcı isteği 19 Kasım 2026: "menü isimlerini küçük puntoyla
+// geri ekle"); seçili sekmenin arkasında 75 × 50 açık kapsül katı hap gibi kayar. Kaydırma bağlantısı
 // src/lib/tabBarScroll.ts; hareketi azalt açıkken ölçek ve kayma yok (renkler aynı). Klavye açıkken gizli. Pencere açmaz.
 const WIDTH = '88%';
 const MAX_WIDTH = 420;
@@ -172,6 +173,9 @@ export default function LiquidTabBar({ state, descriptors, navigation, insets }:
                   </View>
                 )}
               </View>
+              <Text style={[styles.label, { fontWeight: shown ? '700' : '500' }]} numberOfLines={1} maxFontSizeMultiplier={1.2}>
+                {title}
+              </Text>
             </Pressable>
           );
         })}
@@ -196,7 +200,8 @@ const styles = StyleSheet.create({
     position: 'absolute', left: 0, top: INSET - BORDER, width: CAPSULE_W, height: CAPSULE_H,
     borderRadius: CAPSULE_H / 2, backgroundColor: '#FFFFFF',
   },
-  tab: { position: 'absolute', top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+  tab: { position: 'absolute', top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  label: { color: ICON, fontSize: 10, lineHeight: 12, letterSpacing: 0.1 }, // küçük punto (kullanıcı, 19 Kasım 2026)
   badge: {
     position: 'absolute', top: -5, left: 14, minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: 4,
     alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#16181B',
