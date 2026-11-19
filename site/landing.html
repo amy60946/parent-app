@@ -62,16 +62,16 @@ a { color: inherit; }
 .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--card) 90%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
 .top .wrap { display: flex; align-items: center; gap: 20px; min-height: 66px; }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); flex: none; }
-.brand img { width: 34px; height: 34px; border-radius: 9px; box-shadow: 0 0 0 1px var(--line); }
-.brand b { font-family: var(--font-display); font-size: 1.2rem; font-weight: 800; }
+/* Marka: yalnız "moyo" yazısı (kullanıcı kararı 18 Kasım 2026; açık zeminde lacivert). Simge yalnız bildirim ve mağaza satırında. */
+.brand img { height: 27px; width: auto; display: block; transform: translateY(22%); }   /* harflerin gövdesi (x yüksekliği) satırın ortasına: y'nin kuyruğu aşağı taşar */
 .nav { display: flex; gap: 4px; margin-left: 12px; }
 .nav a { text-decoration: none; font-weight: 600; font-size: .95rem; color: var(--ink-2); padding: 8px 10px; border-radius: 8px; }
 .nav a:hover { color: var(--ink); background: var(--paper); }
 .top-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
 .top-actions .btn { min-height: 42px; padding: 0 18px; font-size: .95rem; }
 @media (max-width: 860px) { .nav { display: none; } }
-@media (max-width: 420px) { .top .wrap { gap: 8px; } .brand b { font-size: 1.05rem; } .top-actions { gap: 2px; } .top-actions .btn-text { padding: 0 6px; font-size: .88rem; } .top-actions .btn { padding: 0 12px; font-size: .88rem; } }
-@media (max-width: 380px) { .brand b { display: none; } }
+@media (max-width: 420px) { .top .wrap { gap: 8px; } .brand img { height: 25px; } .top-actions { gap: 2px; } .top-actions .btn-text { padding: 0 6px; font-size: .88rem; } .top-actions .btn { padding: 0 12px; font-size: .88rem; } }
+@media (max-width: 380px) { .brand img { height: 24px; } }
 @media (max-width: 560px) { .stage .note { font-size: .75rem; padding: 8px 10px; gap: 8px; width: 39%; } .stage .note img { width: 22px; height: 22px; } .stage .note b { display: none; } }
 
 /* Uygulama ekranları (Moyo'nun sade kopyası) */
@@ -203,7 +203,7 @@ footer small { color: var(--ink-3); }
 
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="#" aria-label="Moyo ana sayfa"><img src="img/parentapp-simge.png" alt="" width="34" height="34"><b>Moyo</b></a>
+    <a class="brand" href="#" aria-label="Moyo ana sayfa"><img src="img/moyo-yazi-lacivert.svg" alt="Moyo" width="74" height="27"></a>
     <nav class="nav" aria-label="Sayfa bölümleri">
       <a href="#nasil">Nasıl çalışır</a>
       <a href="#guvenlik">Güvenlik</a>
@@ -376,7 +376,7 @@ footer small { color: var(--ink-3); }
 
 <footer>
   <div class="wrap">
-    <a class="brand" href="#"><img src="img/parentapp-simge.png" alt="" width="34" height="34"><b>Moyo</b></a>
+    <a class="brand" href="#" aria-label="Moyo ana sayfa"><img src="img/moyo-yazi-lacivert.svg" alt="Moyo" width="74" height="27"></a>
     <nav aria-label="Yasal ve destek">
       <a href="yasal/gizlilik">Gizlilik Politikası</a>
       <a href="yasal/kosullar-parentapp">Kullanım Koşulları</a>
