@@ -8,18 +8,24 @@ import { BottomTabBarHeightCallbackContext, type BottomTabBarProps } from '@reac
 import { colors } from '../theme';
 import { TAB_BAR_GAP, TAB_BAR_HEIGHT, setTabBarCompact, subscribeTabBarCompact } from '../lib/tabBarScroll';
 
-// Yüzen "liquid" sekme çubuğu (kullanıcı isteği 18 Kasım 2026: "instagram gibi liquid menü; ekran kullanımı yapılınca küçülsün
-// hafif, kullanım durunca büyüsün"). Ölçüler Instagram iOS ekran kaydından: kenardan kenara değil, ortada yuvarlak hap
-// (genişliğin %88'i, iPad'de en çok 420), alt güvenli alanın 22 nokta üstünde, koyu yarı saydam zemin. Seçili sekmenin
-// arkasında tek açık kapsül sekmeler arasında kayar. Kaydırma bağlantısı src/lib/tabBarScroll.ts; hareketi azalt açıkken
-// ölçek ve kayma yok. Klavye açıkken çubuk gizlenir. Pencere (Modal) açmaz.
+// Yüzen "liquid" sekme çubuğu (kullanıcı isteği 17 Kasım 2026: "instagram gibi liquid menü; ekran kullanımı yapılınca küçülsün
+// hafif, kullanım durunca büyüsün"; 19 Kasım 2026: "Liquid Glass gibi, referans videodaki gibi aynı tasarım/renk ile yap.
+// Şuanki gibi mavi olmasın"). Ölçüler kullanıcının verdiği Instagram iOS kaydından (60 fps, piksel örneklemesi; Moyo Mercek
+// penceresi ölçtü): koyu grafit hap (lacivert değil), ince açık kenar, gölge neredeyse yok; yalnız simge (etiketsiz, iki
+// durumda da beyaz; seçili dolu glif); seçili sekmenin arkasında 75 × 50 açık kapsül katı hap gibi kayar. Kaydırma bağlantısı
+// src/lib/tabBarScroll.ts; hareketi azalt açıkken ölçek ve kayma yok (renkler aynı). Klavye açıkken gizli. Pencere açmaz.
 const WIDTH = '88%';
 const MAX_WIDTH = 420;
-const INSET = 5; // kapsülün haptan uzaklığı
+const INSET = 5;            // kapsülün haptan uzaklığı
+const BORDER = 1;
+const CAPSULE_W = 75;       // 75 × 50, yarıçap 25
+const CAPSULE_H = TAB_BAR_HEIGHT - INSET * 2;
+const END_CENTER = 42.5;    // ilk ve son simgenin merkezi hapın uçlarından bu kadar içeride
 const COMPACT_SCALE = 0.84;
-const PRESS_SCALE = 1.045;
-const ACTIVE = '#fff';
-const INACTIVE = 'rgba(255,255,255,0.72)';
+const PRESS_SCALE = 1.047;
+const ICON = '#FFFFFF';
+const CAPSULE_REST = 0.17;
+const CAPSULE_MOVING = 0.24;
 
 function useReduceMotion() {
   const [on, setOn] = useState(false);
@@ -53,39 +59,50 @@ export default function LiquidTabBar({ state, descriptors, navigation, insets }:
   const setHeight = useContext(BottomTabBarHeightCallbackContext);
   useEffect(() => { setHeight?.(space); }, [setHeight, space]);
 
-  // Ölçek: basılıyken 1.045, kaydırırken 0.84, yoksa 1 (yerel sürücüde)
+  // Ölçek: basılıyken 1.047 (~150 ms), bırakınca 1.0 (~200 ms), aşağı kaydırırken 0.84 (~220 ms, taşma yok); yerel sürücüde
   const scale = useRef(new Animated.Value(1)).current;
   const compact = useRef(false);
   const pressed = useRef(false);
   const reduceRef = useRef(reduce);
   reduceRef.current = reduce;
-  const settle = useCallback(() => {
+  const settle = useCallback((from: 'press' | 'release' | 'scroll') => {
     if (reduceRef.current) { scale.stopAnimation(); scale.setValue(1); return; }
-    if (pressed.current) {
-      Animated.timing(scale, { toValue: PRESS_SCALE, duration: 180, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
-    } else {
-      Animated.spring(scale, { toValue: compact.current ? COMPACT_SCALE : 1, stiffness: 300, damping: 24, mass: 1, useNativeDriver: true }).start();
-    }
+    const to = pressed.current ? PRESS_SCALE : compact.current ? COMPACT_SCALE : 1;
+    const duration = from === 'press' ? 150 : from === 'release' ? 200 : 220;
+    Animated.timing(scale, { toValue: to, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, [scale]);
-  useEffect(() => subscribeTabBarCompact((c) => { compact.current = c; settle(); }), [settle]);
-  useEffect(() => { settle(); }, [reduce, settle]);
+  useEffect(() => subscribeTabBarCompact((c) => { compact.current = c; settle('scroll'); }), [settle]);
+  useEffect(() => { settle('scroll'); }, [reduce, settle]);
   // Sekme değişince tam boy
   useEffect(() => { setTabBarCompact(false); }, [state.index]);
-  const pressIn = useCallback(() => { pressed.current = true; settle(); }, [settle]);
-  const pressOut = useCallback(() => { pressed.current = false; settle(); }, [settle]);
 
-  // Kapsül: seçili sekmenin arkasında, sekme değişince ~230 ms kayar
+  // Basılan simge hemen seçili görünür (dolu glif); bırakınca gezinme gerçek seçimi verir
+  const [pressedIndex, setPressedIndex] = useState<number | null>(null);
+  const pressIn = (i: number) => { pressed.current = true; setPressedIndex(i); settle('press'); };
+  const pressOut = () => { pressed.current = false; setPressedIndex(null); settle('release'); };
+
+  // Yerleşim: ilk ve son simgenin merkezi uçlardan 42,5 içeride, arası eşit (koordinatlar kenarlığın içinden)
   const [width, setWidth] = useState(0);
   const onLayout = (e: LayoutChangeEvent) => { const w = e.nativeEvent.layout.width; if (Math.abs(w - width) > 0.5) setWidth(w); };
-  const slot = width > 0 ? (width - INSET * 2 - 2) / state.routes.length : 0; // -2: 1 nokta kenarlık iki yanda
+  const n = state.routes.length;
+  const step = width > 0 && n > 1 ? (width - END_CENTER * 2) / (n - 1) : 0;
+  const centerOf = (i: number) => END_CENTER + i * step - BORDER;
+  const hit = Math.max(44, step);
+
+  // Kapsül: katı hap gibi ~270 ms kayar; kayarken biraz açılır (0.24), varınca ~300 ms'de 0.17'ye döner
   const x = useRef(new Animated.Value(0)).current;
-  const placedSlot = useRef(0);
+  const glow = useRef(new Animated.Value(CAPSULE_REST)).current;
+  const placedStep = useRef(0);
   useEffect(() => {
-    if (!slot) return;
-    const to = state.index * slot;
-    if (placedSlot.current !== slot || reduce) { x.stopAnimation(); x.setValue(to); placedSlot.current = slot; return; } // ilk ölçüm, döndürme
-    Animated.timing(x, { toValue: to, duration: 230, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-  }, [state.index, slot, reduce, x]);
+    if (!step) return;
+    const to = centerOf(state.index) - CAPSULE_W / 2;
+    if (placedStep.current !== step || reduce) { // ilk ölçüm, döndürme ya da hareket azaltma: anında
+      x.stopAnimation(); x.setValue(to); glow.setValue(CAPSULE_REST); placedStep.current = step; return;
+    }
+    glow.setValue(CAPSULE_MOVING);
+    Animated.timing(x, { toValue: to, duration: 270, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    Animated.timing(glow, { toValue: CAPSULE_REST, duration: 300, delay: 270, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
+  }, [state.index, step, reduce, x, glow]);
 
   // Klavye: çubuk aşağı kayıp kaybolur
   const hide = useRef(new Animated.Value(0)).current;
@@ -105,13 +122,13 @@ export default function LiquidTabBar({ state, descriptors, navigation, insets }:
       }]}
     >
       <Animated.View role="tablist" onLayout={onLayout} style={[styles.pill, glass, { transform: [{ scale }] }]}>
-        {slot > 0 && (
-          <Animated.View pointerEvents="none" style={[styles.capsule, { width: slot, transform: [{ translateX: x }] }]} />
+        {step > 0 && (
+          <Animated.View pointerEvents="none" style={[styles.capsule, { opacity: glow, transform: [{ translateX: x }] }]} />
         )}
-        {state.routes.map((route, index) => {
+        {step > 0 && state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
           const focused = index === state.index;
-          const color = focused ? options.tabBarActiveTintColor ?? ACTIVE : options.tabBarInactiveTintColor ?? INACTIVE;
+          const shown = pressedIndex !== null ? index === pressedIndex : focused;
           const title = typeof options.tabBarLabel === 'string' ? options.tabBarLabel : options.title ?? route.name;
           const badge = options.tabBarBadge;
           const badgeStyle = StyleSheet.flatten(options.tabBarBadgeStyle) as TextStyle | undefined;
@@ -134,9 +151,9 @@ export default function LiquidTabBar({ state, descriptors, navigation, insets }:
               key={route.key}
               onPress={onPress}
               onLongPress={onLongPress}
-              onPressIn={pressIn}
+              onPressIn={() => pressIn(index)}
               onPressOut={pressOut}
-              style={styles.tab}
+              style={[styles.tab, { left: centerOf(index) - hit / 2, width: hit }]}
               testID={options.tabBarButtonTestID}
               accessibilityRole={Platform.OS === 'ios' ? 'button' : 'tab'}
               aria-selected={focused}
@@ -146,7 +163,7 @@ export default function LiquidTabBar({ state, descriptors, navigation, insets }:
               accessibilityShowsLargeContentViewer
             >
               <View>
-                {options.tabBarIcon?.({ focused, color, size: 22 })}
+                {options.tabBarIcon?.({ focused: shown, color: ICON, size: 22 })}
                 {badge !== undefined && (
                   <View style={[styles.badge, { backgroundColor: badgeStyle?.backgroundColor ?? colors.gold }]}>
                     <Text style={[styles.badgeText, { color: badgeStyle?.color ?? colors.navy }]} maxFontSizeMultiplier={1} numberOfLines={1}>
@@ -155,13 +172,6 @@ export default function LiquidTabBar({ state, descriptors, navigation, insets }:
                   </View>
                 )}
               </View>
-              {typeof options.tabBarLabel === 'function'
-                ? options.tabBarLabel({ focused, color, position: 'below-icon', children: title })
-                : (
-                  <Text style={[styles.label, { color, fontWeight: focused ? '700' : '600' }]} numberOfLines={1} maxFontSizeMultiplier={1.2}>
-                    {title}
-                  </Text>
-                )}
             </Pressable>
           );
         })}
@@ -170,27 +180,26 @@ export default function LiquidTabBar({ state, descriptors, navigation, insets }:
   );
 }
 
-// Yarı saydam koyu cam; web'de arkası bulanık (yalnız tarayıcıda; iOS'ta ek paket gerekmesin diye düz yarı saydam)
+// Koyu grafit cam; gölge neredeyse yok (renkli gölge yok). Web'de arkası hafif bulanık; iOS'ta ek paket gerekmesin diye
+// düz yarı saydam (%85 opak olduğu için fark çok az).
 const glass: ViewStyle = Platform.OS === 'web'
-  ? ({ backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', boxShadow: '0 8px 24px rgba(15,27,61,0.28)' } as unknown as ViewStyle)
-  : { shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 12 };
+  ? ({ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', boxShadow: '0 4px 20px rgba(0,0,0,0.10)' } as unknown as ViewStyle)
+  : { shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 20, shadowOffset: { width: 0, height: 4 }, elevation: 4 };
 
 const styles = StyleSheet.create({
   wrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   pill: {
     width: WIDTH, maxWidth: MAX_WIDTH, height: TAB_BAR_HEIGHT, borderRadius: TAB_BAR_HEIGHT / 2,
-    flexDirection: 'row', alignItems: 'stretch', paddingHorizontal: INSET, paddingVertical: INSET,
-    backgroundColor: 'rgba(15,27,61,0.86)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(22,24,27,0.85)', borderWidth: BORDER, borderColor: 'rgba(255,255,255,0.12)',
   },
   capsule: {
-    position: 'absolute', left: INSET, top: INSET - 1, bottom: INSET - 1,
-    borderRadius: (TAB_BAR_HEIGHT - INSET * 2) / 2, backgroundColor: 'rgba(255,255,255,0.16)',
+    position: 'absolute', left: 0, top: INSET - BORDER, width: CAPSULE_W, height: CAPSULE_H,
+    borderRadius: CAPSULE_H / 2, backgroundColor: '#FFFFFF',
   },
-  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2 },
-  label: { fontSize: 10, lineHeight: 13, letterSpacing: 0.1 },
+  tab: { position: 'absolute', top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   badge: {
     position: 'absolute', top: -5, left: 14, minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: 4,
-    alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: colors.navy,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#16181B',
   },
   badgeText: { fontSize: 10, lineHeight: 12, fontWeight: '800' },
 });
