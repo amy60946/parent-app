@@ -211,7 +211,7 @@ export function ExpertCodeScreen({ navigation }: any) {
   const [code, setCode] = useState('');
   const next = async () => {
     if (GUEST_CODE.test(code)) {
-      // Aile davet kodu: kayıttan sonra kurulumun başında kullanılır (SetupScreen), deneme 14 gün olur
+      // Aile davet kodu: kayıttan sonra kurulumun başında kullanılır (SetupScreen), deneme süresi 7 gün uzar
       await setPendingGuestCode(code);
       return navigation.navigate('SignUp');
     }
@@ -221,7 +221,7 @@ export function ExpertCodeScreen({ navigation }: any) {
     navigation.navigate('SignUp');
   };
   return (
-    <Layout title="Davet kodunu yaz" subtitle="Kodun türünü biz anlarız. Uzman kodunda bilgiler kayıttan sonra hazır gelir; aile kodunda deneme 14 gün olur." onBack={() => navigation.goBack()}>
+    <Layout title="Davet kodunu yaz" subtitle="Kodun türünü biz anlarız. Uzman kodunda bilgiler kayıttan sonra hazır gelir; aile kodunda deneme süresi 7 gün uzar." onBack={() => navigation.goBack()}>
       <TextInput value={code} onChangeText={(v) => setCode(v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8))} placeholder="KOD" placeholderTextColor={colors.faint}
         autoCapitalize="characters" autoCorrect={false} autoFocus onSubmitEditing={next} accessibilityLabel="Davet kodu" style={styles.bigCode} />
       <Cta label="Devam" onPress={next} />

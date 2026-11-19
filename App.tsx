@@ -106,7 +106,7 @@ function Tabs() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: '#fff',
-        tabBarInactiveTintColor: 'rgba(255,255,255,0.72)',
+        tabBarInactiveTintColor: '#fff', // simgeler iki durumda da beyaz; seçili olan dolu glif (LiquidTabBar)
         tabBarStyle: { position: 'absolute' }, // çubuk içeriğin üstünde yüzer
         tabBarIcon: ({ focused, color, size }) => (
           <Ionicons name={icons[route.name][focused ? 1 : 0]} size={size} color={color} />

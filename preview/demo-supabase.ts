@@ -89,7 +89,7 @@ function seed(): Db {
   db.users.push({ id: U, email: 'demo@parentapp.app', password: '12345678' });
   db.families.push({ id: F, name: 'Ailem', created_at: now(), trial_started_at: ago(2 * 1440) });
   // Abonelik anahtarı (sunucuda app_config.billing). Önizlemede tarayıcı konsolundan değiştirilebilir.
-  db.billing = { enforce: false, trial_days: 7, free_max_tasks: 3, free_max_children: 1 };
+  db.billing = { enforce: false, trial_days: 14, free_max_tasks: 3, free_max_children: 1 };
   db.profiles.push({ id: U, family_id: F, nickname: 'Anne', name: 'Ayşe', avatar: 'kadın', created_at: now(), setup_completed_at: now() });
   db.children.push(
     { id: 'c-nazli', family_id: F, name: 'Nazlı', avatar: 'flamingo', gender: 'kız', birthday: '2018-04-12', age_band: 'A', user_id: 'demo-child', coins_spent: 15, created_at: ago(9000) },
@@ -345,7 +345,7 @@ function cascade(table: string, removed: Row[]) {
 function premiumBlock(table: string, adding: number): { message: string; hint: string } | null {
   const me = db.profiles.find((p: Row) => p.id === db.sessions[APP]?.user.id);
   const fam = db.families.find((f: Row) => f.id === me?.family_id);
-  const cfg = { enforce: false, trial_days: 7, free_max_tasks: 3, free_max_children: 1, ...(db.billing ?? {}) };
+  const cfg = { enforce: false, trial_days: 14, free_max_tasks: 3, free_max_children: 1, ...(db.billing ?? {}) };
   if (!fam || !cfg.enforce) return null;
   const sub = db.family_subscriptions.find((x: Row) => x.family_id === fam.id);
   if (sub?.plan === 'premium' && (!sub.period_end || sub.period_end > now())) return null;
@@ -853,7 +853,7 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
   }
   // Abonelik (20261021140000_subscriptions.sql)
   const fam = db.families.find((f: Row) => f.id === me?.family_id);
-  const cfg = { enforce: false, trial_days: 7, free_max_tasks: 3, free_max_children: 1, ...(db.billing ?? {}) };
+  const cfg = { enforce: false, trial_days: 14, free_max_tasks: 3, free_max_children: 1, ...(db.billing ?? {}) };
   const access = () => {
     const sub = db.family_subscriptions.find((x: Row) => x.family_id === fam?.id);
     const premium = sub?.plan === 'premium' && (!sub.period_end || sub.period_end > now());
@@ -880,9 +880,9 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
   if (name === 'redeem_guest_pass') {
     const g = (db.guest_passes ?? []).find((x: Row) => x.code === String(args.p_code ?? '').trim().toUpperCase());
     const e = !g ? 'not_found' : g.redeemed_at ? 'used' : g.expires_at <= now() ? 'expired' : g.family_id === fam?.id ? 'own'
-      : fam?.trial_days ? 'already' : fam?.trial_started_at && fam.trial_started_at < ago(7 * 1440) ? 'not_new' : null;
+      : fam?.trial_days ? 'already' : fam?.trial_started_at && fam.trial_started_at < ago(cfg.trial_days * 1440) ? 'not_new' : null;
     if (e) return { data: { ok: false, error: e }, error: null };
-    fam.trial_days = 14;
+    fam.trial_days = cfg.trial_days + 7;
     fam.trial_started_at = fam.trial_started_at ?? now();
     Object.assign(g, { redeemed_family: fam.id, redeemed_at: now() });
     save();

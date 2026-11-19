@@ -12,7 +12,7 @@ import { formatTR } from '../dates';
 import { track } from '../lib/track';
 
 // Aile davet et (önce 30 günlük misafir kartı, 28 Ekim 2026; 3 Kasım 2026 kullanıcı kararı, akislar.md 19): davet edilen aile
-// 7 + 7 = 14 gün dener; abone olursa davet eden 1 ay kazanır (yılda en çok 12; benchmark: ödemeye bağlı çift taraflı davet,
+// varsayılan süre + 7 gün dener; abone olursa davet eden 1 ay kazanır (yılda en çok 12; benchmark: ödemeye bağlı çift taraflı davet,
 // YNAB / Babbel). Kod açılınca üretilir (kullanılmamış kod varsa aynısı gelir), paylaşım metniyle gönderilir. Altta davet özeti
 // (kimlik yok) ve App Store'dan ödeyen aileye gönderilen Apple hediye kodu.
 const pretty = (code: string) => `${code.slice(0, 4)} ${code.slice(4)}`;
@@ -28,7 +28,7 @@ export default function GuestPassScreen({ navigation }: any) {
   }, []);
 
   const message = pass
-    ? `Çocukların rutinleri ve sorumlulukları için Moyo'yu kullanıyorum. Bu davet koduyla 7 yerine 14 gün ücretsiz denersin: ${pretty(pass.code)}. Moyo'yu indir, açılışta "Davet kodun var mı?" sorusuna Evet de ve kodu yaz (sonra da Aile › Hesap › Kod gir). Kod ${formatTR(pass.expiresAt.slice(0, 10))} tarihine kadar geçerli.`
+    ? `Çocukların rutinleri ve sorumlulukları için Moyo'yu kullanıyorum. Bu davet koduyla ücretsiz deneme süren 7 gün uzar: ${pretty(pass.code)}. Moyo'yu indir, açılışta "Davet kodun var mı?" sorusuna Evet de ve kodu yaz (sonra da Aile › Hesap › Kod gir). Kod ${formatTR(pass.expiresAt.slice(0, 10))} tarihine kadar geçerli.`
     : '';
   const share = async () => {
     if (!pass) return;
@@ -63,7 +63,7 @@ export default function GuestPassScreen({ navigation }: any) {
             accessibilityRole="image" accessibilityLabel="Moyo" />
           <View style={{ flex: 1 }} />
           <Text style={styles.big}>+1 hafta</Text>
-          <Text style={styles.cardSub}>Davet edilen aileye · 14 gün ücretsiz</Text>
+          <Text style={styles.cardSub}>Davet edilen aileye · 7 gün daha ücretsiz</Text>
           <View style={styles.codeRow}>
             {pass === undefined ? <ActivityIndicator color="#fff" /> : pass ? (
               <>
@@ -79,13 +79,13 @@ export default function GuestPassScreen({ navigation }: any) {
 
         {/* İki taraf ne kazanır: kısa, iki satır */}
         <View style={styles.perks}>
-          <Perk icon="people-outline" title="Onlar" text="7 yerine 14 gün bütün özelliklerle dener" />
+          <Perk icon="people-outline" title="Onlar" text="Ücretsiz deneme süreleri 7 gün uzar" />
           <View style={styles.perkSep} />
           <Perk icon="gift-outline" title="Sen" text="Aile abone olursa 1 ay ücretsiz (yılda en çok 12 ay)" />
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Text style={[styles.cap, { flex: 1 }]}>Kod yeni başlayan bir ailede bir kez kullanılır{pass ? `; ${formatTR(pass.expiresAt.slice(0, 10))} tarihine kadar geçerli` : ''}.</Text>
-          <Info title="Aile davet et" text={'Kodu alan aile Moyo\'yu indirir, açılışta "Davet kodun var mı?" sorusunda (ya da sonra Aile › Hesap › Kod gir) kodu yazar; Moyo 7 yerine 14 gün bütün özellikleriyle açılır. Ödeme bilgisi istenmez.\n\nAile mağazadan abone olursa sen 1 ay ücretsiz kazanırsın: abone değilsen süren hemen uzar; App Store aboneliğin varsa sana 1 aylık Apple hediye kodu gönderilir. Yılda en çok 12 ay.\n\nKod, Moyo\'yu kullanmaya başlayalı 7 günü geçmemiş ve daha önce kod kullanmamış bir ailede geçerlidir. Kimin kullandığı ve kimin abone olduğu gösterilmez.'} />
+          <Info title="Aile davet et" text={'Kodu alan aile Moyo\'yu indirir, açılışta "Davet kodun var mı?" sorusunda (ya da sonra Aile › Hesap › Kod gir) kodu yazar; ücretsiz deneme süresi 7 gün uzar, Moyo bütün özellikleriyle açık kalır. Ödeme bilgisi istenmez.\n\nAile mağazadan abone olursa sen 1 ay ücretsiz kazanırsın: abone değilsen süren hemen uzar; App Store aboneliğin varsa sana 1 aylık Apple hediye kodu gönderilir. Yılda en çok 12 ay.\n\nKod, deneme süresi içindeki ve daha önce kod kullanmamış bir ailede geçerlidir. Kimin kullandığı ve kimin abone olduğu gösterilmez.'} />
         </View>
 
         {/* Davet özeti (sunucu güncellemesi uygulandıysa) */}
