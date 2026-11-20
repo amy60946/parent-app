@@ -1,4 +1,4 @@
-// Aile aboneliği planları. Fiyatlar YER TUTUCU: canlıda fiyat ve para birimi App Store'dan gelir (lib/purchases.ts →
+// Aile aboneliği planları (ortak ekonomi.md 9, kullanıcı kararı 20 Kasım 2026: 349,99 / 3.499,99 TL). Fiyatlar YEDEK: canlıda fiyat ve para birimi App Store'dan gelir (lib/purchases.ts →
 // PaywallScreen planView); bunlar yalnız mağaza fiyatı gelmezse (anahtar yok, ürünler onaylanmadı, web) görünür.
 // Ürün kimlikleri sunucuyla aynı (ortak/sozlesme/durumlar.md 12).
 export type PlanId = 'monthly' | 'yearly';
@@ -7,15 +7,15 @@ export const plans: Record<PlanId, { productId: string; title: string; price: st
   yearly: {
     productId: 'parentapp.premium.yearly',
     title: 'Yıllık',
-    price: '₺1.199,99',
+    price: '₺3.499,99',
     period: 'yıl',
-    note: 'Tek seferde peşin ödenir · ayda ₺99,99\'a gelir',
-    badge: '%33 avantajlı',
+    note: 'Tek seferde peşin ödenir · ayda ₺291,67\'ye gelir',
+    badge: '2 ay ücretsiz',
   },
   monthly: {
     productId: 'parentapp.premium.monthly',
     title: 'Aylık',
-    price: '₺149,99',
+    price: '₺349,99',
     period: 'ay',
     note: 'Her ay yenilenir · istediğin zaman iptal et',
   },

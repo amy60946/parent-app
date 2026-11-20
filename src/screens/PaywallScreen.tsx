@@ -15,18 +15,27 @@ const UNAVAILABLE = 'Üyelik seçenekleri şu an App Store\'dan yüklenemedi. Bi
 const PENDING = 'Ödemen onay bekliyor (ör. Aile Paylaşımı\'nda satın alma izni). Onaylanınca üyeliğin kendiliğinden açılır.';
 
 // Plan kartı: fiyat mağazadan (yerel para birimi), gelmezse plans.ts yer tutucusu.
-// Yıllıkta aylık karşılığı ve indirim yüzdesi gerçek fiyattan hesaplanır (aşağı yuvarlanır, abartılmaz).
+// Yıllıkta aylık karşılığı ve rozet gerçek fiyattan hesaplanır (abartılmaz): yıllık tam N aylık ederse
+// "12 − N ay ücretsiz" (bugün 10 ay → "2 ay ücretsiz", kullanıcı kararı 20 Kasım 2026, ortak hukuk_notlari P),
+// değilse indirim yüzdesi (aşağı yuvarlanır).
+function yearlyBadge(yearly: number, monthly: number): string | undefined {
+  const months = yearly / monthly;
+  const free = 12 - Math.round(months);
+  if (Math.abs(months - Math.round(months)) < 0.01 && free >= 1 && free <= 6) return `${free} ay ücretsiz`;
+  const off = Math.floor((1 - yearly / (monthly * 12)) * 100);
+  return off >= 5 ? `%${off} avantajlı` : undefined;
+}
+
 function planView(id: PlanId, prices: StorePrices | null) {
   const p = plans[id];
   const sp = prices?.[id];
   if (!sp) return { title: p.title, price: p.price, period: p.period, note: p.note, badge: p.badge };
   if (id === 'monthly') return { title: p.title, price: sp.priceString, period: p.period, note: p.note };
   const m = prices?.monthly;
-  const off = m && m.currency === sp.currency && m.price > 0 ? Math.floor((1 - sp.price / (m.price * 12)) * 100) : 0;
   return {
     title: p.title, price: sp.priceString, period: p.period,
     note: sp.perMonth ? `Tek seferde peşin ödenir · ayda yaklaşık ${sp.perMonth}` : 'Tek seferde peşin ödenir',
-    badge: off >= 5 ? `%${off} avantajlı` : undefined,
+    badge: m && m.currency === sp.currency && m.price > 0 ? yearlyBadge(sp.price, m.price) : undefined,
   };
 }
 
