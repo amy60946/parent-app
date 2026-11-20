@@ -178,12 +178,14 @@ export default function SetupScreen({ navigation, route }: any) {
 
 /* ---------- ortak parçalar ---------- */
 
-function Shell({ children, onBack, progress }: { children: React.ReactNode; onBack?: () => void; progress?: number }) {
+// onSkip: sağ üst köşede küçük "Geç" (tanışma soruları; kullanıcı kararı 20 Kasım 2026, ortak hukuk_notlari
+// "Kullanıcının hukuk kararları" 7: soruların hepsi atlanabilir, atlanan soru yanıtsız kalır).
+function Shell({ children, onBack, progress, onSkip }: { children: React.ReactNode; onBack?: () => void; progress?: number; onSkip?: () => void }) {
   return (
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.top}>
-          <View style={{ width: 36 }}>
+          <View style={{ width: 40 }}>
             {onBack && (
               <Pressable onPress={onBack} hitSlop={10} accessibilityRole="button" accessibilityLabel="Geri">
                 <Ionicons name="chevron-back" size={24} color={colors.navy} />
@@ -191,7 +193,13 @@ function Shell({ children, onBack, progress }: { children: React.ReactNode; onBa
             )}
           </View>
           {progress !== undefined && <Progress value={progress} />}
-          <View style={{ width: 36 }} />
+          <View style={{ width: 40, alignItems: 'flex-end' }}>
+            {onSkip && (
+              <Pressable onPress={onSkip} hitSlop={12} accessibilityRole="button" accessibilityLabel="Bu soruyu geç">
+                <Text style={styles.skip}>Geç</Text>
+              </Pressable>
+            )}
+          </View>
         </View>
         <View style={{ flex: 1, paddingHorizontal: 20, paddingBottom: 16 }}>{children}</View>
       </KeyboardAvoidingView>
@@ -310,6 +318,13 @@ export function Questionnaire({ steps, childId, onDone, onBackFirst }: {
     setTimeout(() => go(i + 1), step.multi ? 0 : 140); // tek seçimde seçilenin vurgusu bir an görünsün
   };
 
+  // Geç: yanıt kaydedilmez (daha önce verilmiş yanıt varsa olduğu gibi kalır), sonraki adıma geçilir
+  const skipQuestion = () => {
+    if (step?.kind !== 'question' || advancing.current) return;
+    track('intake.skip', { q: step.key });
+    go(i + 1);
+  };
+
   if (!step) return null;
   const back = i > 0 ? () => go(i - 1) : onBackFirst;
   const slide = { flex: 1, opacity: anim, transform: [{ translateX: anim.interpolate({ inputRange: [0, 1], outputRange: [dir.current * 28, 0] }) }] };
@@ -353,7 +368,7 @@ export function Questionnaire({ steps, childId, onDone, onBackFirst }: {
     );
   }
   return (
-    <Shell onBack={back} progress={qIndex / qCount}>
+    <Shell onBack={back} progress={qIndex / qCount} onSkip={step.kind === 'question' ? skipQuestion : undefined}>
       <Animated.View key={i} style={slide}>{body}</Animated.View>
     </Shell>
   );
@@ -538,8 +553,13 @@ function Relate({ onDone }: { onDone: () => void }) {
     setBusy(false);
     if (i + 1 < relateSteps.length) setI(i + 1); else onDone();
   };
+  const skip = () => {
+    if (busy) return;
+    track('intake.skip', { q: r.key });
+    if (i + 1 < relateSteps.length) setI(i + 1); else onDone();
+  };
   return (
-    <Shell onBack={i > 0 ? () => setI(i - 1) : undefined} progress={(i + 1) / relateSteps.length}>
+    <Shell onBack={i > 0 ? () => setI(i - 1) : undefined} progress={(i + 1) / relateSteps.length} onSkip={skip}>
       <View style={{ flex: 1, gap: 16, justifyContent: 'center' }}>
         <Text style={[styles.title, { textAlign: 'center' }]} accessibilityRole="header">Bu cümle sana tanıdık geliyor mu?</Text>
         <View style={[styles.scene, { backgroundColor: sc.bg }]}>
@@ -564,6 +584,7 @@ function Relate({ onDone }: { onDone: () => void }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   top: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 10, minHeight: 48 },
+  skip: { fontSize: 15, fontWeight: '600', color: colors.muted },
   track: { flex: 1, height: 8, borderRadius: 4, backgroundColor: '#DDE1EA', overflow: 'hidden' },
   fill: { height: 8, borderRadius: 4, backgroundColor: colors.navy },
   icon: { width: 84, height: 84, borderRadius: 42, backgroundColor: colors.today, alignItems: 'center', justifyContent: 'center' },

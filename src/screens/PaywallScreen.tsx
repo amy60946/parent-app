@@ -16,7 +16,7 @@ const PENDING = 'Ödemen onay bekliyor (ör. Aile Paylaşımı\'nda satın alma 
 
 // Plan kartı: fiyat mağazadan (yerel para birimi), gelmezse plans.ts yer tutucusu.
 // Yıllıkta aylık karşılığı ve rozet gerçek fiyattan hesaplanır (abartılmaz): yıllık tam N aylık ederse
-// "12 − N ay ücretsiz" (bugün 10 ay → "2 ay ücretsiz", kullanıcı kararı 20 Kasım 2026, ortak hukuk_notlari P),
+// "12 − N ay ücretsiz" (bugün 10 ay → "2 ay ücretsiz", kullanıcı kararı 20 Kasım 2026, ortak hukuk_notlari Q),
 // değilse indirim yüzdesi (aşağı yuvarlanır).
 function yearlyBadge(yearly: number, monthly: number): string | undefined {
   const months = yearly / monthly;
