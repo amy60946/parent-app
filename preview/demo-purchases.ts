@@ -22,8 +22,8 @@ export async function storeLogOut(): Promise<void> { bought = false; }
 
 export async function storePrices(): Promise<StorePrices | null> {
   return {
-    monthly: { price: 149.99, priceString: '₺149,99', perMonth: '₺149,99', currency: 'TRY' },
-    yearly: { price: 1199.99, priceString: '₺1.199,99', perMonth: '₺100,00', currency: 'TRY' },
+    monthly: { price: 349.99, priceString: '₺349,99', perMonth: '₺349,99', currency: 'TRY' },
+    yearly: { price: 3499.99, priceString: '₺3.499,99', perMonth: '₺291,67', currency: 'TRY' },
   };
 }
 
