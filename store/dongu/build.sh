@@ -13,7 +13,7 @@ if [ ! -f "$OUT/fonts/poppins-latin-ext-800-normal.woff2" ]; then
   for w in 600 700 800; do cp "$T"/package/files/poppins-latin{,-ext}-$w-normal.woff2 "$OUT/fonts/"; done
   rm -rf "$T"
 fi
-fc-list | grep -q "Inter" || { echo "Inter yazı tipi kurulu değil (metin ve uygulama ekranları Inter ile)"; exit 1; }
+fc-list : family | grep "Inter" >/dev/null || { echo "Inter yazı tipi kurulu değil (metin ve uygulama ekranları Inter ile)"; exit 1; }
 echo "› Gerçek ekranlar (deneme verisi, kurgusal adlar)"; node "$DIR/capture.js"
 echo "› Panorama";                                    node "$DIR/render.js"
 echo "› Kareler";                                     python3 "$DIR/slice.py"

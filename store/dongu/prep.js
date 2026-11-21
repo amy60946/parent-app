@@ -83,8 +83,8 @@ module.exports.prep = async (p, { clinic = false, state = 'pending' } = {}) => {
     // --- Ödüller ---
     db.rewards = db.rewards.filter((r) => !['Ekran süresi', 'Parkta 30 dakika'].includes(r.title));
     const rw = (id, title, cost, icon, child_ids = []) => db.rewards.push({ id, family_id: F, title, kind: 'item', cost, unit: null, unit_amount: null, child_ids, icon, active: true, created_at: ago(20000 - db.rewards.length) });
-    rw('st-park', 'Hafta sonu parka gitmek', 12, 'football');
-    rw('st-kahvalti', 'Pazar kahvaltısını o seçsin', 8, 'restaurant');
+    rw('st-park', 'Hafta sonu parka gitmek', 10, 'football'); // Deniz'in bugünkü taşıyla yetiyor
+    rw('st-kahvalti', 'Pazar kahvaltısını o seçsin', 12, 'restaurant');
     rw('st-oyun', 'Arkadaşıyla oyun günü', 15, 'people');
     db.reward_requests = [];
 

@@ -65,17 +65,17 @@ const DEV = {
     FW: 402, FH: 874, dpr: 3, pt: 390, ptH: 844, z: 1,
     pad: '46px 30px 0', gap: 10, h: 31, s: 15, sMax: 330,
     scrW: 270, bw: 6, rad: 32, scrTop: 16, scrLeft: 6, sb: (k, shot) => statusBar(k, shot),
-    landW: 330, landBw: 6, landRad: 22, landTop: 30,
-    zoom: [[190, 313, 205], [70, 22, 262], [152, 24, 240], [150, 418, 242], [150, 432, 242], [114, 124, 278], [150, 438, 242]],
+    landW: 330, landBw: 6, landRad: 22, landTop: 44,
+    zoom: [[190, 313, 205], [70, 30, 262], [152, 24, 240], [150, 342, 242], [150, 432, 242], [122, 104, 270], [150, 438, 242]],
   },
   ipad: {
     FW: 1032, FH: 1376, dpr: 2, pt: 1024, ptH: 1366, z: 1.85,
     pad: '92px 64px 0', gap: 18, h: 60, s: 27, sMax: 820,
-    scrW: 690, bw: 12, rad: 46, scrTop: 40, scrLeft: 12,
+    scrW: 740, bw: 12, rad: 46, scrTop: 40, scrLeft: 12,
     // iPad durum çubuğu daha alçak: aynı çizim, yükseklik 28 nokta, yanlarda 20 nokta boşluk
     sb: (k, shot) => statusBar(k * 0.62, shot).replace(/height:[\d.]+px/, `height:${28 * k}px`).replace(/padding:0 [\d.]+px 0 [\d.]+px/, `padding:0 ${20 * k}px 0 ${22 * k}px`),
-    landW: 640, landBw: 10, landRad: 36, landTop: 52,
-    zoom: [[470, 700, 470], [210, 40, 500], [470, 150, 450], [470, 860, 460], [470, 900, 460], [430, 900, 520], [470, 640, 460]],
+    landW: 660, landBw: 10, landRad: 36, landTop: 60,
+    zoom: [[500, 650, 470], [210, 56, 500], [500, 400, 450], [500, 860, 460], [500, 800, 460], [460, 830, 520], [500, 645, 460]],
   },
 };
 

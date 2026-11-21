@@ -28,7 +28,7 @@ const SHOTS = [
   { name: 'onay', state: 'pending', steps: ['~1 adım onayını bekliyor', '@Dişlerini fırçala, Deniz: incele', '?Şimdi değil'], wait: 'Adımı incele',
     expect: ['Adımı incele', 'Deniz', 'Dişlerini fırçala', 'Yaptım dedi: 08:10', 'Tekrar dene', 'Onayla'],
     boxes: { kart: 'Bugünün adımı', onayla: '@Onayla', baslik: 'Adımı incele' } },
-  { name: 'gelisim', state: 'all', steps: ['Gelişim'],
+  { name: 'gelisim', state: 'all', steps: ['Gelişim'], scroll: 76, // en alta: alışkanlıklar ve not sekme çubuğunun üstünde
     expect: ["Deniz'in gelişimi", 'Günlük tutarlılık', 'Haftalık tamamlama', 'Dişlerini fırçala'],
     boxes: { gunluk: 'Günlük tutarlılık', haftalik: 'Haftalık tamamlama', aliskanlik: '~Alışkanlıklar' } },
   { name: 'davranis', state: 'pending', steps: ['Gelişim', '@Davranış kayıtları'], wait: 'Geçmiş kayıtlar',
@@ -90,6 +90,7 @@ const visibleText = () => {
         } catch { if (!optional) { console.log('ADIM YOK', dev, s.name, q); bad++; } }
         await p.waitForTimeout(1200);
       }
+      if (s.scroll) { const v = opts.viewport; await p.mouse.move(v.width / 2, v.height / 2); await p.mouse.wheel(0, s.scroll); await p.waitForTimeout(900); }
       if (s.wait) { try { await p.getByText(s.wait, { exact: true }).last().waitFor({ timeout: 5000 }); } catch { console.log('GÖRÜNMEDİ', dev, s.name, s.wait); bad++; } }
       await p.evaluate(({ hide, collapse }) => {
         hide.forEach((q) => document.querySelectorAll(q).forEach((e) => { e.style.visibility = 'hidden'; }));
