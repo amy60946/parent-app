@@ -18,7 +18,7 @@ import { useCare } from '../lib/care';
 import { intakeStatus } from '../lib/intake';
 import { countSuggestions } from '../lib/clinic';
 import TrialBanner from '../components/TrialBanner';
-import { openTaskCount, trainingPct, useTrainings } from '../lib/trainings';
+import { KEPT_NOTE, openTaskCount, trainingPct, useTrainings } from '../lib/trainings';
 import { reportable, useTargetBehaviors } from '../lib/incidents';
 import { todayISO } from '../dates';
 import { useTabBarScroll } from '../lib/tabBarScroll';
@@ -50,7 +50,9 @@ export default function MeScreen({ navigation }: any) {
   const behaviors = useTargetBehaviors();
   const taskCount = openTaskCount(trainings ?? []);
   const canReport = reportable(behaviors).length > 0;
-  const lessons = [...(trainings ?? [])].sort((a, b) => (a.status === b.status ? 0 : a.status === 'active' ? -1 : 1));
+  const lessons = (trainings ?? []).filter((t) => !t.kept).sort((a, b) => (a.status === b.status ? 0 : a.status === 'active' ? -1 : 1));
+  const kept = (trainings ?? []).filter((t) => t.kept);
+  const [keptOpen, setKeptOpen] = useState(false);
   const openTasks = () => {
     const withTasks = (trainings ?? []).filter((t) => t.mine && t.status === 'active' && (t.tasks.length || t.todos.some((d) => !d.doneAt)));
     navigation.navigate('Training', withTasks.length === 1 ? { trainingId: withTasks[0].id } : { list: 'tasks' });
@@ -226,6 +228,31 @@ export default function MeScreen({ navigation }: any) {
           })}
         </Section>}
 
+        {/* Uzmanla paylaşım silinince ailede kalan eğitimler (kullanıcı kararı 20 Kasım 2026; ortak akislar.md 23,
+            family_kept_trainings): açılıp kapanan ayrı bölüm, uzman adı yok, salt okunur (benchmark: Google Classroom arşivi) */}
+        {kept.length > 0 && <View style={{ gap: 8 }}>
+          <Pressable onPress={() => setKeptOpen((v) => !v)} style={styles.keptHead} accessibilityRole="button"
+            accessibilityState={{ expanded: keptOpen }} accessibilityLabel={`Önceki eğitimlerin, ${kept.length}`}>
+            <Text style={[styles.section, { flex: 1 }]}>Önceki eğitimlerin</Text>
+            <Text style={styles.cap}>{kept.length}</Text>
+            <Ionicons name={keptOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.muted} />
+          </Pressable>
+          {keptOpen && <View style={styles.card}>
+            <Text style={[styles.cap, { paddingVertical: 12 }]}>{KEPT_NOTE}</Text>
+            {kept.map((t) => (
+              <Pressable key={t.id} onPress={() => navigation.navigate('Training', { trainingId: t.id })} style={[styles.row, styles.sep]}
+                accessibilityRole="button" accessibilityLabel={`${t.title}, yalnızca görüntülenebilir`}>
+                <View style={styles.rowIcon}><Ionicons name="archive-outline" size={18} color={colors.navy} /></View>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={styles.rowTitle} numberOfLines={2}>{t.title}</Text>
+                  <Text style={styles.cap}>{[t.childName, t.status === 'mastered' ? 'Tamamlandı' : `%${trainingPct(t)}`].filter(Boolean).join(' · ')}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.faint} />
+              </Pressable>
+            ))}
+          </View>}
+        </View>}
+
         {/* Uzmanın programı varsa (kullanıcı isteği 3 Kasım 2026: program yokken başlık görünmez; rehber satırı en altta) */}
         {!!care?.todos.length && <Section title="Programına devam et">
           {care.todos.map((t, i) => (
@@ -305,6 +332,7 @@ const styles = StyleSheet.create({
   cols: { flexDirection: 'row', alignItems: 'flex-start', gap: 20 },
   col: { flex: 1, gap: 18 },
   stack: { gap: 18 },
+  keptHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   hello: { fontSize: 26, fontWeight: '800', color: colors.navy },
   cap: { fontSize: 12, lineHeight: 16, color: colors.muted },
   text: { fontSize: 14, lineHeight: 20, color: '#4A5165' },

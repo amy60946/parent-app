@@ -539,6 +539,20 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
     try { cfg = JSON.parse(localStorage.getItem('demo-client-config') || 'null') ?? cfg; } catch {}
     return { data: cfg, error: null };
   }
+  // Bildirim ayarları (ortak akislar.md 25 "5a"): önizlemede bu sekmede localStorage'da
+  if (name === 'parent_notification_prefs' || name === 'parent_notification_prefs_set') {
+    const KEY = 'demo-notification-prefs';
+    let p: Row = { step_done: false, day_complete: true, tips: true };
+    try { p = { ...p, ...(JSON.parse(localStorage.getItem(KEY) || 'null') ?? {}) }; } catch {}
+    if (name === 'parent_notification_prefs_set') {
+      if (!['step_done', 'day_complete', 'tips'].includes(args.p_key)) return { data: null, error: { message: 'Geçersiz bildirim ayarı' } };
+      p[args.p_key] = !!args.p_on;
+      try { localStorage.setItem(KEY, JSON.stringify(p)); } catch {}
+    }
+    return { data: p, error: null };
+  }
+  // Uzmanla paylaşım silinince ailede kalan eğitimler: deneme verisinde yok (bölüm görünmez)
+  if (name === 'family_kept_trainings') return { data: [], error: null };
   if (name === 'create_invite_code') {
     if (!me?.family_id) return { data: null, error: { message: 'Önce giriş yapmalısın' } };
     if (args.p_kind === 'child') db.invite_codes.forEach((i: Row) => { if (i.child_id === args.p_child_id && !i.used_at && i.expires_at > now()) i.expires_at = now(); });

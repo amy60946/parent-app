@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet, Switch, Alert, Platform } from 'react-native';
+import React from 'react';
+import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
 import { IconButton } from '../components/ui';
 import { useNotifications } from '../notifications';
-import { AppNotification, pushEnabled, setPushEnabled } from '../lib/notifications';
+import { AppNotification } from '../lib/notifications';
 import { track } from '../lib/track';
 
 const icon: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -15,13 +15,15 @@ const icon: Record<string, keyof typeof Ionicons.glyphMap> = {
   reward_decided: 'gift-outline', stones_deducted: 'sunny-outline', guest_pass_used: 'gift-outline', referral_reward: 'gift-outline', care_plan_shared: 'clipboard-outline',
   lesson_assigned: 'school-outline', training_assigned: 'school-outline', training_mastered: 'ribbon-outline', training_reminder: 'alarm-outline',
   session_scheduled: 'calendar-outline', session_changed: 'calendar-outline', session_cancelled: 'calendar-outline', session_offer: 'calendar-outline',
+  day_complete: 'checkmark-done-outline', nudge: 'bulb-outline',
 };
 
 // Bildirime dokununca ilgili ekran. Gösterilecek bir ekran yoksa hiçbir şey olmaz (false döner):
 // yalnız bilgi veren bildirimler (eşin katılması, cihaz bağlanması, paylaşımın kapanması, görevin yapılamaması) ekran değiştirmez.
 export function notificationTarget(n: Pick<AppNotification, 'kind' | 'data'>): [string, object?] | null {
   const childId = n.data?.child_id;
-  if (n.kind === 'task_done') return ['Review'];
+  if (n.kind === 'task_done' || n.kind === 'day_complete') return ['Review']; // day_complete: günün özeti (akislar.md 25 "5a")
+  if (n.kind === 'nudge') return nudgeTarget(n.data?.nudge);
   if (n.kind === 'message' && childId) return ['Chat', { childId }];
   if (n.kind === 'reward_request') return ['Rewards', { childId }];
   // Uzmanın tek gönderimi (plan + öneriler) ya da öneri: uzmanın sayfası (akislar.md 12, 12.1; data.link_id ya da davetle ilk paylaşım)
@@ -41,6 +43,19 @@ export function notificationTarget(n: Pick<AppNotification, 'kind' | 'data'>): [
   if (n.kind === 'kvkk_answered') return ['Kvkk', { tab: 'list' }]; // KVKK başvurusu yanıtlandı (ortak P17)
   return null;
 }
+// Sunucu hatırlatma motoru (akislar.md 25 "Sunucu motoru"; bayrak nudges_server): metin sunucudan, yer data.nudge'a göre.
+// Bilinmeyen tür ana ekranı açar (liste yine okundu sayar).
+function nudgeTarget(kind: unknown): [string, object?] {
+  switch (kind) {
+    case 'child_none': return ['Tabs', { screen: 'Aile', params: { add: Date.now() } }];
+    case 'game_link': return ['DeviceSetup'];
+    case 'routine_none': return ['CreateTask'];
+    case 'done_none': return ['Tabs', { screen: 'Maceralar' }];
+    case 'review_waiting': return ['Review'];
+    case 'trial_ending': return ['Paywall'];
+    default: return ['Tabs', { screen: 'Ben' }]; // inactive ve bilinmeyenler
+  }
+}
 export function openNotification(navigation: any, n: Pick<AppNotification, 'kind' | 'data'>) {
   const t = notificationTarget(n);
   if (t) navigation.navigate(...t);
@@ -57,17 +72,6 @@ const ago = (iso: string) => {
 
 export default function NotificationsScreen({ navigation }: any) {
   const { items, unread, markRead, remove } = useNotifications();
-  const [push, setPush] = useState(true);
-  useEffect(() => { pushEnabled().then(setPush); }, []);
-
-  const togglePush = async (on: boolean) => {
-    setPush(on);
-    const r = await setPushEnabled(on);
-    if (on && r === 'denied') {
-      setPush(false);
-      Alert.alert('İzin gerekli', 'Telefonun Ayarlar > Moyo > Bildirimler bölümünden izin ver, sonra tekrar aç.');
-    }
-  };
 
   // Ekranı olan bildirim: bildirimler kapanır ve o ekran açılır. Olmayan: yalnız okundu sayılır, ekran değişmez.
   const open = (n: AppNotification) => {
@@ -86,18 +90,9 @@ export default function NotificationsScreen({ navigation }: any) {
         <Pressable onPress={() => markRead()} disabled={!unread} hitSlop={8}>
           <Text style={[styles.link, !unread && { color: colors.faint }]}>Tümü okundu</Text>
         </Pressable>
+        {/* Telefona gönderme anahtarı ve bildirim türleri ayar sayfasında (kullanıcı kararı 20 Kasım 2026) */}
+        <IconButton name="settings-outline" onPress={() => navigation.navigate('NotificationSettings')} label="Bildirim ayarları" />
       </View>
-
-      {Platform.OS !== 'web' && (
-        <View style={styles.setting}>
-          <Ionicons name="notifications-outline" size={20} color={colors.navy} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.h}>Telefona bildirim gönder</Text>
-            <Text style={styles.cap}>Kapalıyken bildirimler yalnız burada görünür.</Text>
-          </View>
-          <Switch value={push} onValueChange={togglePush} trackColor={{ true: colors.navy }} />
-        </View>
-      )}
 
       <FlatList
         data={items}
@@ -127,7 +122,6 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8 },
   title: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.navy },
   link: { fontSize: 13, fontWeight: '600', color: colors.navy },
-  setting: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, padding: 14, borderRadius: radius.md, backgroundColor: '#fff' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: radius.md, backgroundColor: '#fff' },
   unread: { backgroundColor: '#EEF1F9' },
   h: { fontSize: 14, fontWeight: '600', color: colors.navy },

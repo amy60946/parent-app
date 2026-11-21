@@ -23,7 +23,7 @@ export default function TrainingTaskScreen({ navigation, route }: any) {
   const close = () => navigation.goBack();
 
   if (!t || !task) return <Missing onClose={close} />;
-  const actor = t.mine && t.status === 'active';
+  const actor = t.mine && !t.kept && t.status === 'active';
   const m = task.measure;
   const ok = m === 'frequency' ? a !== '' : m === 'accuracy' ? a !== '' && b !== '' && Number(a) <= Number(b) : m === 'duration' ? a !== '' && Number(a) <= 1440 : true;
 
@@ -67,7 +67,7 @@ export default function TrainingTaskScreen({ navigation, route }: any) {
           <View style={p.yellow}><Text style={p.yellowTitle}>{task.title}</Text></View>
           {!!task.description && <Text style={p.p}>{task.description}</Text>}
           {!actor ? (
-            <Text style={p.tiny}>{t.status === 'mastered' ? 'Bu eğitim tamamlandı.' : `Bu görev ${t.parentName || 'öteki ebeveyn'} için; kaydı o girer.`}</Text>
+            <Text style={p.tiny}>{t.kept ? 'Uzmanla paylaşım sona erdi; yalnızca görüntülenebilir.' : t.status === 'mastered' ? 'Bu eğitim tamamlandı.' : `Bu görev ${t.parentName || 'öteki ebeveyn'} için; kaydı o girer.`}</Text>
           ) : (
             <>
               <Text style={p.tiny}>{formatTR(todayISO())} · bugünün kaydı</Text>
@@ -102,7 +102,7 @@ export function TrainingTodoScreen({ navigation, route }: any) {
   const close = () => navigation.goBack();
 
   if (!t || !todo) return <Missing onClose={close} />;
-  const actor = t.mine && t.status === 'active';
+  const actor = t.mine && !t.kept && t.status === 'active';
   const assigned = toISO(new Date(todo.createdAt)); // cihazın günü (UTC değil)
   const daysAgo = Math.round((new Date(`${todayISO()}T12:00:00`).getTime() - new Date(`${assigned}T12:00:00`).getTime()) / 864e5);
   const when = daysAgo <= 0 ? 'Bugün' : daysAgo === 1 ? 'Dün' : `${daysAgo} gün önce`;
@@ -146,7 +146,7 @@ export function TrainingTodoScreen({ navigation, route }: any) {
               )}
             </View>
           ) : !actor ? (
-            <Text style={p.tiny}>{t.status === 'mastered' ? 'Bu eğitim tamamlandı.' : `Bu görev ${t.parentName || 'öteki ebeveyn'} için; işareti o koyar.`}</Text>
+            <Text style={p.tiny}>{t.kept ? 'Uzmanla paylaşım sona erdi; yalnızca görüntülenebilir.' : t.status === 'mastered' ? 'Bu eğitim tamamlandı.' : `Bu görev ${t.parentName || 'öteki ebeveyn'} için; işareti o koyar.`}</Text>
           ) : step === 'view' ? (
             <Pressable onPress={() => setStep('rate')} style={styles.primary} accessibilityRole="button">
               <Text style={styles.primaryText}>✓ Tamamlandı olarak işaretle</Text>

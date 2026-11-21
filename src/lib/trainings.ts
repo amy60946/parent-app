@@ -35,11 +35,15 @@ export type Training = {
   id: string; linkId: string; childId: string; childName: string; title: string; status: 'active' | 'mastered';
   startedAt: string; activatedAt: string | null; masteredAt: string | null; parentName: string;
   mine: boolean; // bana ya da ailedeki ebeveynlere atanmış: yalnız o zaman işlem yapılır (öteki ebeveyn görür, değiştiremez)
+  // Uzmanla paylaşım silindi, eğitim ailede kaldı (ortak akislar.md 23, `family_kept_trainings`; kullanıcı kararı 20 Kasım 2026):
+  // salt okunur, uzman adı yok, Ben › "Önceki eğitimlerin" bölümünde; işlem düğmesi gösterilmez.
+  kept: boolean; detachedAt: string | null;
   modules: TModule[]; tasks: TTask[]; logs: TLog[]; todos: TTodo[];
 };
 
-const toTraining = (t: any): Training => ({
-  id: t.id, linkId: t.link_id, childId: t.child_id, childName: t.child_name ?? '', title: t.title, status: t.status,
+const toTraining = (t: any, kept = false): Training => ({
+  kept, detachedAt: t.detached_at ?? null,
+  id: t.id, linkId: t.link_id ?? '', childId: t.child_id, childName: t.child_name ?? '', title: t.title, status: t.status,
   startedAt: t.started_at, activatedAt: t.activated_at ?? null, masteredAt: t.mastered_at ?? null, parentName: t.parent_name ?? '', mine: !!t.mine,
   modules: (t.modules ?? []).map((m: any) => ({ id: m.id, itemKey: m.item_key, completedAt: m.completed_at ?? null, correct: m.correct ?? null, total: m.total ?? null, answers: m.answers ?? null })),
   tasks: (t.tasks ?? []).map((k: any) => ({ id: k.id, title: k.title, description: k.description ?? '', measure: k.measure ?? 'none' })),
@@ -49,14 +53,24 @@ const toTraining = (t: any): Training => ({
     reflection: d.reflection ?? '', createdAt: d.created_at })),
 });
 
+// Önceki eğitimlerin (bölüm açıklaması ve eğitim sayfasındaki not; kullanıcı seçimi 20 Kasım 2026)
+export const KEPT_NOTE = 'Uzmanla paylaşım sona erdi. Bu eğitimler, cevapların ve yapılacakların sende kalır; yalnızca görüntülenebilir.';
+
 // Sunucu hataları işlevlerde `raise exception '<anahtar>'` ile gelir (ileti = anahtar)
 class TrainingError extends Error {}
 const fail = (e: { message: string }) => new TrainingError(e.message);
 
 export async function familyTrainings(): Promise<Training[] | null> {
-  const { data, error } = await supabase.rpc('family_trainings');
-  if (error) { if (isMissingRpc(error)) return null; throw fail(error); }
-  return ((data ?? []) as any[]).map(toTraining);
+  const [cur, old] = await Promise.all([supabase.rpc('family_trainings'), keptTrainings()]);
+  if (cur.error) { if (isMissingRpc(cur.error)) return old.length ? old : null; throw fail(cur.error); }
+  return [...((cur.data ?? []) as any[]).map((t) => toTraining(t)), ...old];
+}
+
+// Ailede kalan eğitimler: işlev yoksa (öneri 20261120200000 uygulanmadı) ya da okunamazsa bölüm görünmez; asıl liste etkilenmez.
+async function keptTrainings(): Promise<Training[]> {
+  const { data, error } = await supabase.rpc('family_kept_trainings');
+  if (error) return [];
+  return ((data ?? []) as any[]).map((t) => toTraining(t, true));
 }
 
 export async function completeModule(moduleId: string, r: { answers?: Answer[]; correct?: number; total?: number } = {}) {
@@ -97,7 +111,7 @@ export function trainingPct(t: Training) {
 }
 // "Uzmanından n görev": uygulama görevleri + tamamlanmamış tek seferlik görevler (yalnız bana atanmış etkin eğitimler)
 export const openTaskCount = (list: Training[]) =>
-  list.filter((t) => t.mine && t.status === 'active').reduce((n, t) => n + t.tasks.length + t.todos.filter((d) => !d.doneAt).length, 0);
+  list.filter((t) => t.mine && t.status === 'active' && !t.kept).reduce((n, t) => n + t.tasks.length + t.todos.filter((d) => !d.doneAt).length, 0);
 
 // Bütün ekranlar aynı listeyi paylaşır (Ben, Uzmanım, eğitim sayfası, oynatıcı); ekran öne gelince yenilenir.
 // null = sunucuda yok (bölümler görünmez), undefined = yükleniyor. Hesap değişince liste sıfırlanır.
