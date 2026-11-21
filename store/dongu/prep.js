@@ -1,18 +1,20 @@
 // "A · Döngü" mağaza görselleri için deneme verisi (yalnız tarayıcı deposu; uygulama ve preview/ kodu değişmez).
 // Temel: store/capture/prep.js (koşullar onaylı, Premium etkin, uzman daveti yok, kurgusal uzman/kurum adları).
-// Tek hikâye: çocuk "Deniz", "Sabah rutini" (4 adım), öne çıkan adım "Dişlerini fırçala".
+// Tek hikâye: çocuk "Deniz", "Sabah rutini" (4 adım), öne çıkan adım "Dişlerini fırçala" (rutinin son adımı: listelerde en altta,
+//   büyütülmüş kart hemen altına oturur, başka satırı kapatmaz).
 //   state 'pending'  : bugün "Sabah yatağını topla" onaylı, "Dişlerini fırçala" 08:10'da yapıldı, onay bekliyor (1, 3, 5, 6. kare)
 //   state 'approved' : "Dişlerini fırçala" da onaylandı, +1 Güneş Taşı (7. kare)
 //   state 'all'      : sabah rutininin 4 adımı da onaylı (4. kare, haftalık görünüm)
 // Saat: capture.js tarayıcı saatini 19 Kasım 2026 Perşembe 09:41'e (Europe/Istanbul) sabitler; tarihler buna göre.
-module.exports.prep = async (p, { clinic = false, state = 'pending' } = {}) => {
+//   wide (iPad)      : Davranış kayıtlarında dördüncü kayıt (uzun ekranda liste boş kalmasın)
+module.exports.prep = async (p, { clinic = false, state = 'pending', wide = false } = {}) => {
   await p.goto('file://' + (process.env.PREVIEW_APP_HTML || require('path').resolve(__dirname, '../../preview/out/app.html')));
   await p.waitForTimeout(2500);
   const cb = p.getByRole('checkbox');
   for (let i = 0; i < 2; i++) { try { await cb.nth(i).click({ timeout: 2000, position: { x: 14, y: 14 } }); await p.waitForTimeout(300); } catch {} }
   try { await p.getByText('Devam et', { exact: true }).click({ timeout: 2000 }); } catch {}
   await p.waitForTimeout(1500);
-  await p.evaluate(({ clinic, state }) => {
+  await p.evaluate(({ clinic, state, wide }) => {
     const K = 'pofi-onizleme-v14';
     const db = JSON.parse(localStorage.getItem(K));
     const U = 'demo-user', F = 'demo-family', C = 'c-nazli';
@@ -36,18 +38,20 @@ module.exports.prep = async (p, { clinic = false, state = 'pending' } = {}) => {
     db.tasks = []; db.task_assignments = []; db.completions = [];
     const RT = { routine_id: 'rt-sabah', routine_title: 'Sabah rutini', routine_icon: 'sunny-outline' };
     const task = (id, title, emoji, skill, reminder, kids, routinePos) => {
+      const n = routinePos == null ? 9 : routinePos;
       db.tasks.push({ id, family_id: F, title, emoji, skill, description: '', start_date: iso(-60), recurring: true, end_date: null, reminder,
-        requires_review: true, created_at: ago(90000 - db.tasks.length), repeat_kind: 'daily', repeat_days: [], sort_order: db.tasks.length,
+        requires_review: true, created_at: ago(90000 - n), repeat_kind: 'daily', repeat_days: [], sort_order: n,
         ...(routinePos == null ? {} : { ...RT, routine_position: routinePos }) });
       kids.forEach((child_id) => db.task_assignments.push({ task_id: id, child_id, family_id: F, difficulty: 'easy', coins: 5 }));
     };
+    // [kimlik, başlık, simge, beceri, hatırlatma, rutindeki sıra]. Dizi sırası kayıt üretimini (sözde rastgele) sabit tutar; ekrandaki sıra son sütun.
     const STEPS = [
-      ['s-yatak', 'Sabah yatağını topla', '🛏️', 'Sorumluluk', '07:30'],
-      ['s-dis', 'Dişlerini fırçala', '🪥', 'Öz Bakım', '07:35'],
-      ['s-el', 'Ellerini yıka', '🧼', 'Öz Bakım', '07:40'],
-      ['s-canta', 'Okul çantanı kaldır', '🎒', 'Sorumluluk', '07:50'],
+      ['s-yatak', 'Sabah yatağını topla', '🛏️', 'Sorumluluk', '07:30', 0],
+      ['s-dis', 'Dişlerini fırçala', '🪥', 'Öz Bakım', '07:50', 3],
+      ['s-el', 'Ellerini yıka', '🧼', 'Öz Bakım', '07:35', 1],
+      ['s-canta', 'Okul çantanı kaldır', '🎒', 'Sorumluluk', '07:40', 2],
     ];
-    STEPS.forEach(([id, title, emoji, skill, rem], i) => task(id, title, emoji, skill, rem, [C], i));
+    [...STEPS].sort((a, b) => a[5] - b[5]).forEach(([id, title, emoji, skill, rem, pos]) => task(id, title, emoji, skill, rem, [C], pos));
     task('a-oyuncak', 'Oyuncaklarını topla', '🧸', 'Sorumluluk', '19:00', ['c-arven'], null);
 
     const done = (task_id, child_id, d, status, h, m) => db.completions.push({ id: `st-${task_id}-${child_id}-${d}`, family_id: F, task_id, child_id, date: iso(d),
@@ -80,12 +84,12 @@ module.exports.prep = async (p, { clinic = false, state = 'pending' } = {}) => {
     if (state !== 'pending') stone(C, 1, 'task', 1);
     [1, 1, 1, 2].forEach((n, i) => stone('c-arven', n, 'task', 3000 - i * 400));
 
-    // --- Ödüller ---
-    db.rewards = db.rewards.filter((r) => !['Ekran süresi', 'Parkta 30 dakika'].includes(r.title));
+    // --- Ödüller --- (uygulama fiyata göre sıralar; "Hafta sonu parka gitmek" en altta: büyütülmüş kart altındaki boşluğa oturur)
+    db.rewards = db.rewards.filter((r) => r.title === 'Film gecesi');
+    db.rewards.forEach((r) => { r.cost = 8; }); // hareketlerdeki "Film gecesi" (8 taş) ile aynı
     const rw = (id, title, cost, icon, child_ids = []) => db.rewards.push({ id, family_id: F, title, kind: 'item', cost, unit: null, unit_amount: null, child_ids, icon, active: true, created_at: ago(20000 - db.rewards.length) });
-    rw('st-park', 'Hafta sonu parka gitmek', 10, 'football'); // Deniz'in bugünkü taşıyla yetiyor
-    rw('st-kahvalti', 'Pazar kahvaltısını o seçsin', 12, 'restaurant');
-    rw('st-oyun', 'Arkadaşıyla oyun günü', 15, 'people');
+    rw('st-kahvalti', 'Pazar kahvaltısını o seçsin', 6, 'restaurant');
+    rw('st-park', 'Hafta sonu parka gitmek', 10, 'football'); // Deniz'in bugünkü taşıyla (10) tam yetiyor
     db.reward_requests = [];
 
     // --- Davranış kaydı: Deniz, dün akşam ---
@@ -95,6 +99,7 @@ module.exports.prep = async (p, { clinic = false, state = 'pending' } = {}) => {
     abc(-1, '20:40', 'evening', 'Ekran süresi bitti', 'Diş fırçalamak istemedi, banyoya gitmedi', 'Birlikte fırçaladık', 2);
     abc(-6, '07:45', 'morning', 'Kahvaltı uzadı', 'Çantasını hazırlamak istemedi', 'Birlikte listeye baktık', 2);
     abc(-12, '20:30', 'evening', 'Oyun yarıda kaldı', 'Söylendi ama oyunu bıraktı', 'Teşekkür ettik', 1);
+    if (wide) abc(-17, '07:50', 'morning', 'Uykusunu alamadı', 'Giyinmek istemedi', 'Kıyafetini birlikte seçtik', 1);
 
     // --- Uzman: yalnız Deniz için rızalı bağlantı, tek bekleyen öneri ---
     db.clinic_links = db.clinic_links.filter((l) => l.status === 'active');
@@ -120,7 +125,7 @@ module.exports.prep = async (p, { clinic = false, state = 'pending' } = {}) => {
     // Tek seferlik ipuçları görünmesin (AsyncStorage web'de localStorage)
     ['hint-plus-longpress-v2', 'hint-reward-new', 'onboarding-v1', 'intro-rewards-v2'].forEach((k) => localStorage.setItem(k, '1'));
     localStorage.setItem('push-ask', `2:${Date.now()}`);
-  }, { clinic, state });
+  }, { clinic, state, wide });
   await p.reload();
   await p.waitForTimeout(2500);
   const close = p.getByLabel('Kapat', { exact: true });
