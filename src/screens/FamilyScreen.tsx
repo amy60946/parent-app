@@ -394,13 +394,14 @@ function Mail() {
 
 /* ---------- Hesap ---------- */
 
-type AccountRow = 'manage' | 'join' | 'clinic' | 'notifications' | 'membership' | 'guide' | 'legal' | 'other';
+type AccountRow = 'manage' | 'join' | 'clinic' | 'notifications' | 'notifSettings' | 'membership' | 'guide' | 'legal' | 'other';
 
 const accountRows: { icon: keyof typeof Ionicons.glyphMap; label: string; id?: AccountRow }[] = [
   { icon: 'sunny-outline', label: 'Üyelik', id: 'membership' },
   { icon: 'person-outline', label: 'Hesabı yönet', id: 'manage' },
   { icon: 'keypad-outline', label: 'Kod gir', id: 'join' },
   { icon: 'notifications-outline', label: 'Bildirimler', id: 'notifications' },
+  { icon: 'options-outline', label: 'Bildirim ayarları', id: 'notifSettings' },
   { icon: 'briefcase-outline', label: 'Uzmanım', id: 'clinic' },
   { icon: 'compass-outline', label: 'Nasıl kullanılır?', id: 'guide' },
   { icon: 'shield-checkmark-outline', label: 'Yasal ve gizlilik', id: 'legal' },
@@ -417,6 +418,7 @@ function Account({ onLogout }: { onLogout?: () => void }) {
   const { access } = useBilling();
   const bar = useTabBarScroll();
   const pick = (id: AccountRow) => (id === 'notifications' ? navigation.navigate('Notifications')
+    : id === 'notifSettings' ? navigation.navigate('NotificationSettings')
     : id === 'membership' ? navigation.navigate('Paywall')
     : id === 'clinic' ? navigation.navigate('Uzmanım')
     : id === 'legal' ? navigation.navigate('LegalDocs') : setOpen(id));

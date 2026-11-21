@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
 import { IconButton } from '../components/ui';
 import { Bar, Check, TRAINING_NOTE } from '../components/TrainingParts';
-import { Training, TYPE_WORD, moduleItems, trainingPct, useTrainings } from '../lib/trainings';
+import { KEPT_NOTE, Training, TYPE_WORD, moduleItems, trainingPct, useTrainings } from '../lib/trainings';
 
 // Eğitim sayfası (ortak akislar.md 23 adım 4; rakibin aile uygulamasına sadık, ClinicApp training/ParentPreview.tsx ile aynı düzen):
 // başlık kartı · Öğrenme modülleri (tür + ad + işaret, %) · Uygulama görevleri · Tek seferlik görevler · altta "Başla".
@@ -25,7 +25,7 @@ export default function TrainingScreen({ navigation, route }: any) {
   );
 
   if (route.params?.list === 'tasks') {
-    const mine = (list ?? []).filter((x) => x.mine && x.status === 'active' && (x.tasks.length || x.todos.some((d) => !d.doneAt)));
+    const mine = (list ?? []).filter((x) => x.mine && !x.kept && x.status === 'active' && (x.tasks.length || x.todos.some((d) => !d.doneAt)));
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         {header}
@@ -68,7 +68,8 @@ export default function TrainingScreen({ navigation, route }: any) {
           {!!t.childName && <Text style={styles.cap}>{t.childName}</Text>}
           {t.status === 'mastered' && <View style={styles.chip}><Text style={styles.chipText}>Tamamlandı</Text></View>}
         </View>
-        {!t.mine && <Text style={styles.cap}>Bu eğitim {t.parentName || 'ailedeki öteki ebeveyn'} için. Görebilirsin; işaretleri o yapar.</Text>}
+        {t.kept ? <Text style={styles.cap}>{KEPT_NOTE}</Text>
+          : !t.mine && <Text style={styles.cap}>Bu eğitim {t.parentName || 'ailedeki öteki ebeveyn'} için. Görebilirsin; işaretleri o yapar.</Text>}
 
         {items.length > 0 && (
           <View style={{ gap: 8 }}>
@@ -96,7 +97,7 @@ export default function TrainingScreen({ navigation, route }: any) {
       {items.length > 0 && (
         <View style={[styles.sticky, { paddingBottom: 14 + insets.bottom }]}>
           <Pressable onPress={() => play(firstOpen)} style={styles.primary} accessibilityRole="button">
-            <Text style={styles.primaryText}>{pct === 100 || !t.mine || t.status !== 'active' ? 'Göz at' : pct > 0 ? 'Devam et' : 'Başla'}</Text>
+            <Text style={styles.primaryText}>{pct === 100 || !t.mine || t.kept || t.status !== 'active' ? 'Göz at' : pct > 0 ? 'Devam et' : 'Başla'}</Text>
           </Pressable>
         </View>
       )}

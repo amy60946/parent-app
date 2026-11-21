@@ -35,7 +35,7 @@ export default function TrainingPlayerScreen({ navigation, route }: any) {
     );
   }
 
-  const actor = t.mine && t.status === 'active';
+  const actor = t.mine && !t.kept && t.status === 'active';
   const { m, it } = items[index];
   const done = !!m.completedAt;
   const doneCount = items.filter((x) => x.m.completedAt).length;
@@ -172,7 +172,7 @@ export default function TrainingPlayerScreen({ navigation, route }: any) {
         <IconButton name="close" label="Eğitime dön" onPress={close} />
       </View>
       <Text style={[p.tiny, { paddingHorizontal: 20 }]}>{remaining ? `${remaining} öğe kaldı` : 'Hepsi bitti!'}</Text>
-      {!actor && <Text style={[p.tiny, { paddingHorizontal: 20, marginTop: 4 }]}>{t.status === 'mastered' ? 'Bu eğitim tamamlandı; göz atıyorsun.' : `Bu eğitim ${t.parentName || 'öteki ebeveyn'} için; göz atıyorsun, kaydedilmez.`}</Text>}
+      {!actor && <Text style={[p.tiny, { paddingHorizontal: 20, marginTop: 4 }]}>{t.kept ? 'Uzmanla paylaşım sona erdi; göz atıyorsun, kaydedilmez.' : t.status === 'mastered' ? 'Bu eğitim tamamlandı; göz atıyorsun.' : `Bu eğitim ${t.parentName || 'öteki ebeveyn'} için; göz atıyorsun, kaydedilmez.`}</Text>}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: 20, gap: 12, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
           <Text style={p.tiny}>{TYPE_WORD[it.type]}{done ? ' · tamamlandı' : ''}</Text>
