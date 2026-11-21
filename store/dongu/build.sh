@@ -2,6 +2,7 @@
 # App Store görselleri, "A · Döngü" tasarımı: gerçek ekranlar → panorama → 7 kare (iPhone 6.3" ve iPad 13").
 # Kullanım: bash store/dongu/build.sh   (önce: bash preview/build.sh)
 # Çıktı (depoya girmez): store/out/dongu/iphone/01–07.png (1206x2622), ipad/01–07.png (2064x2752), onizleme/*.jpg
+# render.js kart kurallarını denetler (kart metni ekranda var mı, kart hiçbir öğeyi yarım kapatmıyor mu, ekranlar aynı hizada mı); biri bozulursa derleme durur.
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
 OUT="$DIR/../out"

@@ -3,7 +3,7 @@
 // Tarayıcı saati 19 Kasım 2026 Perşembe 09:41 (Europe/Istanbul).
 // Çıktı: store/out/dongu/real/<iphone|ipad>/<ad>.png + meta.json:
 //   text  : ekranda görünen metin (denetim; kart metinleri de buradan doğrulanır)
-//   items : görünen her öğenin kutusu, nokta cinsinden [x, y, w, h]. k: 't' metin, 'g' görsel/simge, 'b' zeminli kutu (satır, kart, çip, çubuk)
+//   items : görünen her öğenin kutusu, nokta cinsinden [x, y, w, h]. k: 't' metin, 'g' görsel/simge, 'b' zeminli kutu (satır, kart, çip, çubuk; br: köşe yarıçapı)
 //           render.js kartları bu kutulara göre yerleştirir ve hiçbir öğeyi yarım kapatmadığını denetler.
 // Her çekimde görünen metin denetlenir: beklenen sözcükler var mı, yasak sözcük (fiyat, deneme, "macera", eski ad, İngilizce hata) yok mu.
 const { chromium } = require('playwright');
@@ -31,7 +31,9 @@ const SHOTS = [
     expect: ['Rutinler', 'Sabah', 'Deniz', 'Sabah yatağını topla', 'Dişlerini fırçala', 'Ellerini yıka', 'Okul çantanı kaldır', 'Onay bekliyor', 'Tamamlandı'] },
   { name: 'onay', state: 'pending', steps: ['~1 adım onayını bekliyor', '@Dişlerini fırçala, Deniz: incele', '?Şimdi değil'], wait: 'Adımı incele', dim: true,
     expect: ['Adımı incele', 'Deniz', 'Bugünün adımı', 'Dişlerini fırçala', 'Yaptım dedi: 08:10', 'Güneş Taşı', 'Reddet', 'Tekrar dene', 'Onayla'] },
-  { name: 'gelisim', state: 'all', steps: ['Gelişim'], scroll: 'end', // en alta: alışkanlıklar ve not sekme çubuğunun üstünde
+  // iPhone'da 76 nokta kaydırma: üstte "Davranış kayıtları" satırı tam çıkar, çocuk avatarları kesilmeden kalır; altta alışkanlıklar görünür.
+  // iPad'de sayfa ekrana sığar, kaydırma yok.
+  { name: 'gelisim', state: 'all', steps: ['Gelişim'], scroll: { iphone: 76 },
     expect: ["Deniz'in gelişimi", 'Günlük tutarlılık', 'Haftalık tamamlama', 'Alışkanlıklar · son 4 hafta', 'Sabah yatağını topla', 'Dişlerini fırçala', 'Ellerini yıka', 'Okul çantanı kaldır', 'dikkat puanı değildir.'] },
   { name: 'davranis', state: 'pending', steps: ['Gelişim', '@Davranış kayıtları'], wait: 'Geçmiş kayıtlar',
     expect: ['Davranış kayıtları', 'Geçmiş kayıtlar', '18 Kasım 2026 · Akşam', 'Öncesinde : Ekran süresi bitti', 'Ne oldu : Diş fırçalamak istemedi', 'Sonrasında : Birlikte fırçaladık'] },
@@ -104,7 +106,7 @@ const visibleItems = () => {
     const cs = getComputedStyle(el);
     const bg = alpha(cs.backgroundColor) > 0.05 || cs.backgroundImage !== 'none';
     const bd = ['Top', 'Right', 'Bottom', 'Left'].some((s) => parseFloat(cs[`border${s}Width`]) > 0 && alpha(cs[`border${s}Color`]) > 0.05 && cs[`border${s}Style`] !== 'none');
-    if (bg || bd) push('b', b, el, { c: cs.backgroundColor.replace(/\s+/g, ''), ...(el.getAttribute('aria-label') ? { l: el.getAttribute('aria-label') } : {}) });
+    if (bg || bd) push('b', b, el, { c: cs.backgroundColor.replace(/\s+/g, ''), br: Math.round(Math.min(parseFloat(cs.borderTopLeftRadius) || 0, b.width / 2, b.height / 2)), ...(el.getAttribute('aria-label') ? { l: el.getAttribute('aria-label') } : {}) });
   });
   return out;
 };
@@ -135,7 +137,7 @@ const visibleItems = () => {
         } catch { if (!optional) { console.log('ADIM YOK', dev, s.name, q); bad++; } }
         await p.waitForTimeout(1200);
       }
-      if (s.scroll) { const v = opts.viewport; await p.mouse.move(v.width / 2, v.height / 2); await p.mouse.wheel(0, s.scroll === 'end' ? 5000 : s.scroll); await p.waitForTimeout(900); }
+      if (s.scroll && s.scroll[dev]) { const v = opts.viewport; await p.mouse.move(v.width / 2, v.height / 2); await p.mouse.wheel(0, s.scroll[dev]); await p.waitForTimeout(900); }
       if (s.wait) { try { await p.getByText(s.wait, { exact: true }).last().waitFor({ timeout: 5000 }); } catch { console.log('GÖRÜNMEDİ', dev, s.name, s.wait); bad++; } }
       await p.evaluate(({ hide, collapse }) => {
         hide.forEach((q) => document.querySelectorAll(q).forEach((e) => { e.style.visibility = 'hidden'; }));

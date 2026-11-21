@@ -77,7 +77,7 @@ const FRAMES = [
     cls: 'compact',
     place: {
       iphone: (m) => { const d = m.t('Dişlerini fırçala'); return { l: 196, r: 394, u: 1, dot: ['left', d.y + d.h / 2], align: '.row.on', free: (i) => i.w > 300 && i.h < 110 }; },
-      ipad: (m, g) => { const row = m.box(m.t('Dişlerini fırçala'), 400); const fab = m.label('Rutin ekle'); return { l: g.X(36), r: 990, top: row.y2 + 8, bottom: fab.y - 14, u: 2.2, dot: ['top', 144] }; },
+      ipad: (m, g) => { const row = m.box(m.t('Dişlerini fırçala'), 400); const fab = m.label('Rutin ekle'); return { l: g.X(12), r: 990, top: row.y2 + 8, bottom: fab.y - 14, u: 2.2, dot: ['top', 440] }; },
     } },
   { game: true, h: 'Çocuğunuz oyunda işaretler', s: 'Adımı gerçek hayatta yapar, Moyo Oyun\'da "Yaptım" der.',
     card: () => `<p class="zt" style="color:#FFFFFF">${T('Dişlerini fırçala')}</p>
@@ -90,7 +90,7 @@ const FRAMES = [
     // Kart karartılmış arka plandaki listeyi tümüyle örter, pencerenin hemen üstünde durur; pencerenin kendisi eksiksiz görünür
     place: {
       iphone: (m) => { const top = m.t('Adımı incele').y - 28; return { l: 47, r: 394, top: 2, bottom: top - 1.5, u: 1.3, dot: ['bottom', 195] }; },
-      ipad: (m, g) => { const top = m.t('Adımı incele').y - 28; return { l: g.X(36), r: 990, top: m.t('Tümü').y - 24, bottom: top - 6, u: 2.7, dot: ['bottom', 384] }; },
+      ipad: (m, g) => { const top = m.t('Adımı incele').y - 28; return { l: g.X(12), r: 990, top: m.label('Geri').y2 + 4, bottom: top - 6, u: 2.7, dot: ['bottom', 384] }; },
     } },
   { shot: 'gelisim', h: 'Haftayı bir bakışta görün', s: 'Hangi adım ne kadar düzenli, tek ekranda.', alt: 'Gelişim ekranı',
     card: (m) => {
@@ -101,8 +101,8 @@ const FRAMES = [
     },
     // Kart son satırın ("Dişlerini fırçala") hemen altında: dipnotu ve sekme çubuğunu tümüyle örter, alışkanlık satırlarının dördü de görünür
     place: {
-      iphone: (m) => { const b = m.box(m.t('Alışkanlıklar · son 4 hafta'), 300); return { l: 47, r: 394, top: b.y2 + 3, out: 14, u: 1.3, dot: ['top', 82] }; },
-      ipad: (m, g) => { const b = m.box(m.t('Alışkanlıklar · son 4 hafta'), 400); return { l: g.X(36), r: 990, top: b.y2 + 3, out: 16, u: 2.7, dot: ['top', 105] }; },
+      iphone: (m) => { const b = m.box(m.t('Alışkanlıklar · son 4 hafta'), 300); return { l: 47, r: 394, top: b.y2 + 3, out: 26, u: 1.3, dot: ['top', 82] }; },
+      ipad: (m, g) => { const b = m.box(m.t('Alışkanlıklar · son 4 hafta'), 400); return { l: g.X(12), r: 990, top: b.y2 + 3, out: 16, u: 2.7, dot: ['top', 105] }; },
     } },
   { shot: 'davranis', h: 'Zorlandığı anı not edin', s: 'Ne oldu, öncesi, sonrası: kısa bir not yeter.', alt: 'Davranış kayıtları ekranı',
     card: (m) => {
@@ -115,7 +115,7 @@ const FRAMES = [
     // Kart en üstteki kaydın (alıntıladığı kayıt) hemen altında; altındaki kaydı (iPad'de iki kaydı) tümüyle örter
     place: {
       iphone: (m) => { const a = m.box(m.t('18 Kasım 2026'), 300), c = m.box(m.t('7 Kasım 2026'), 300); return { l: 47, r: 394, top: a.y2 + 5, bottom: c.y - 5, u: 1.3, dot: ['top', 300] }; },
-      ipad: (m, g) => { const a = m.box(m.t('18 Kasım 2026'), 400), c = m.box(m.t('2 Kasım 2026'), 400); return { l: g.X(32), r: 990, top: a.y2 + 5, bottom: c.y - 5, u: 2.7, dot: ['top', 560] }; },
+      ipad: (m, g) => { const a = m.box(m.t('18 Kasım 2026'), 400), c = m.box(m.t('2 Kasım 2026'), 400); return { l: g.X(12), r: 990, top: a.y2 + 5, bottom: c.y - 5, u: 2.7, dot: ['top', 560] }; },
     } },
   { shot: 'uzman', h: 'Uzmanınızla paylaşın', hb: 'Uzmanınızla<br>paylaşın', s: 'Yalnız izin verdiğinizde; izni her an geri alırsınız.', alt: 'Uzmanım ekranı',
     card: () => `<p class="ze">${T('Rutin ve adım önerileri')}</p>
@@ -125,7 +125,7 @@ const FRAMES = [
     // Kart önerinin hemen üstünde: "Randevular" ve "Bugün yapılacaklar" bölümlerini tümüyle örter; öneri ve paylaşım bölümü eksiksiz görünür
     place: {
       iphone: (m) => { const hd = m.box(m.t('Elif Örnek'), 300); return { l: 47, r: 394, top: hd.y2 + 8, bottom: m.t('Rutin ve adım önerileri').y - 8, u: 1.3, dot: ['bottom', 300] }; },
-      ipad: (m, g) => { const hd = m.box(m.t('Elif Örnek'), 400); return { l: g.X(36), r: 990, top: hd.y2 + 8, bottom: m.t('Rutin ve adım önerileri').y - 8, u: 2.7, dot: ['bottom', 520] }; },
+      ipad: (m, g) => { const hd = m.box(m.t('Elif Örnek'), 400); return { l: g.X(12), r: 990, top: hd.y2 + 8, bottom: m.t('Rutin ve adım önerileri').y - 8, u: 2.7, dot: ['bottom', 520] }; },
     } },
   { shot: 'oduller', h: 'Ödülleri siz belirlersiniz', s: 'Onayladığınız adımlar Güneş Taşı kazandırır.', alt: 'Ödüller ekranı', night: true,
     card: (m) => {
@@ -136,8 +136,8 @@ const FRAMES = [
     },
     // Kart listenin son satırının ("Hafta sonu parka gitmek") hemen altındaki boşlukta; hiçbir şeyi örtmez
     place: {
-      iphone: (m) => { const row = m.box(m.t('Hafta sonu parka gitmek'), 300); return { l: 47, r: 394, top: row.y2 + 8, u: 1.3, dot: ['top', 120] }; },
-      ipad: (m, g) => { const row = m.box(m.t('Hafta sonu parka gitmek'), 400); return { l: g.X(32), r: 990, top: row.y2 + 8, u: 2.7, dot: ['top', 190] }; },
+      iphone: (m) => { const row = m.box(m.t('Hafta sonu parka gitmek'), 300); return { l: 47, r: 394, top: row.y2 + 8, u: 1.3, dot: ['top', 226] }; },
+      ipad: (m, g) => { const row = m.box(m.t('Hafta sonu parka gitmek'), 400); return { l: g.X(12), r: 990, top: row.y2 + 8, u: 2.7, dot: ['top', 440] }; },
     } },
 ];
 
@@ -149,7 +149,7 @@ const DEV = {
     FW: 402, FH: 874, dpr: 3, pt: 390, ptH: 844, sbPt: 54, z: 1,
     pad: '46px 30px 0', gap: 10, h: 31, s: 15, sMax: 330,
     scrW: 270, bw: 6, rad: 32, scrX: 36, scrY: 188, sb: (k, shot) => statusBar(k, shot),
-    land: { w: 330, bw: 6, rad: 22, gap: 56, u: 1.25 },
+    land: { w: 330, bw: 6, rad: 22, gap: 92, u: 1.25 },
   },
   ipad: {
     FW: 1032, FH: 1376, dpr: 2, pt: 768, ptH: 1024, sbPt: 28, z: 1.85,
@@ -317,7 +317,7 @@ body{width:${PW}px;height:${d.FH}px;overflow:hidden;font-family:Inter,system-ui,
     });
     if (!lay.tr) bad.push('Poppins Türkçe harfler yüklenmedi');
     if (lay.over.length) bad.push(`kart metni taşıyor: ${JSON.stringify(lay.over)}`);
-    const k = g.k, e = 0.75;
+    const k = g.k;
     lay.frames.forEach((F, i) => {
       const f = FRAMES[i], name = `${dev} kare ${i + 1}`, ox = i * d.FW;
       if (F.card.x < F.fr.x + 2 || F.card.x2 > F.fr.x2 - 2 || F.card.y2 > F.fr.y2 - 2 || F.dev.y2 > F.fr.y2 - 2) bad.push(`${name}: kart ya da ekran karenin dışında`);
@@ -344,12 +344,20 @@ body{width:${PW}px;height:${d.FH}px;overflow:hidden;font-family:Inter,system-ui,
             if (!inCard && (nx - dc.x) ** 2 + (ny - dc.y) ** 2 < dc.r ** 2) bad.push(`${name}: nokta öğenin üstünde: ${lab}`);
           }
           if (it.k === 'b' && (it.h >= 240 || it.w >= d.pt * 0.97)) continue; // ekran zemini, büyük kap
-          const inter = !(it.x2 <= c.x + e || it.x >= c.x2 - e || it.y2 <= c.y + e || it.y >= c.y2 - e);
-          if (!inter) continue;
           const inside = it.x >= c.x - 0.5 && it.x2 <= c.x2 + 0.5 && it.y >= c.y - 0.5 && it.y2 <= c.y2 + 0.5;
-          if (inside) { covered++; continue; }
-          if (it.k === 'b' && pl.free && pl.free(it)) continue;
-          bad.push(`${name}: kart yarım kapatıyor: ${lab}`);
+          if (inside) {
+            // Kartın köşeleri yuvarlak: köşeye denk gelen öğe köşeden görünmesin. Öğenin kendi köşe yarıçapı hesaba katılır
+            // (br: zeminli kutu; kare simge ve avatarlar daire; yazıda satır boşluğu kadar pay).
+            const R = 20 * +F.fit / k, br = it.k === 'b' ? it.br || 0 : it.k === 'g' && Math.abs(it.w - it.h) < 2 ? it.w / 2 : 0, pad = it.k === 't' ? Math.min(2, it.h / 4) : 0;
+            const out = [[it.x + br + pad, it.y + br + pad], [it.x2 - br - pad, it.y + br + pad], [it.x + br + pad, it.y2 - br - pad], [it.x2 - br - pad, it.y2 - br - pad]].some(([ax, ay]) => {
+              const cx = ax < c.x + R ? c.x + R : ax > c.x2 - R ? c.x2 - R : null, cy = ay < c.y + R ? c.y + R : ay > c.y2 - R ? c.y2 - R : null;
+              return cx != null && cy != null && Math.hypot(ax - cx, ay - cy) + br > R + 0.5;
+            });
+            if (out) bad.push(`${name}: öğe kartın yuvarlak köşesinden görünüyor: ${lab}`);
+            covered++; continue;
+          }
+          // Tümüyle görünen öğe karta yapışık olmasın (en az 2 nokta boşluk); kartın büyüttüğü listenin satır zeminleri hariç
+          if (!(it.k === 'b' && pl.free && pl.free(it)) && !(it.x2 <= c.x - 2 || it.x >= c.x2 + 2 || it.y2 <= c.y - 2 || it.y >= c.y2 + 2)) { bad.push(`${name}: kart öğeye değiyor ya da yarım kapatıyor: ${lab}`); continue; }
         }
         info.push(`örtülen öğe ${covered}`, `kart nokta [${Math.round(c.x)}–${Math.round(c.x2)}, ${Math.round(c.y)}–${Math.round(c.y2)}]`);
       }

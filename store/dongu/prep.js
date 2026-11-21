@@ -6,7 +6,7 @@
 //   state 'approved' : "Dişlerini fırçala" da onaylandı, +1 Güneş Taşı (7. kare)
 //   state 'all'      : sabah rutininin 4 adımı da onaylı (4. kare, haftalık görünüm)
 // Saat: capture.js tarayıcı saatini 19 Kasım 2026 Perşembe 09:41'e (Europe/Istanbul) sabitler; tarihler buna göre.
-//   wide (iPad)      : Davranış kayıtlarında dördüncü kayıt (uzun ekranda liste boş kalmasın)
+//   wide (iPad)      : Davranış kayıtlarında dördüncü kayıt, Ödüller'de iki ödül daha (uzun ekranda liste boş kalmasın)
 module.exports.prep = async (p, { clinic = false, state = 'pending', wide = false } = {}) => {
   await p.goto('file://' + (process.env.PREVIEW_APP_HTML || require('path').resolve(__dirname, '../../preview/out/app.html')));
   await p.waitForTimeout(2500);
@@ -90,6 +90,7 @@ module.exports.prep = async (p, { clinic = false, state = 'pending', wide = fals
     const rw = (id, title, cost, icon, child_ids = []) => db.rewards.push({ id, family_id: F, title, kind: 'item', cost, unit: null, unit_amount: null, child_ids, icon, active: true, created_at: ago(20000 - db.rewards.length) });
     rw('st-kahvalti', 'Pazar kahvaltısını o seçsin', 6, 'restaurant');
     rw('st-park', 'Hafta sonu parka gitmek', 10, 'football'); // Deniz'in bugünkü taşıyla (10) tam yetiyor
+    if (wide) { rw('st-masal', 'Yatmadan önce fazladan masal', 3, 'book'); rw('st-oyun', 'Arkadaşıyla oyun günü', 5, 'people'); }
     db.reward_requests = [];
 
     // --- Davranış kaydı: Deniz, dün akşam ---
