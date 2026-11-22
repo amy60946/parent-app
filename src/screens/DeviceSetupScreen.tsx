@@ -11,6 +11,7 @@ import { track } from '../lib/track';
 import { useChildConsent } from '../legal';
 import { genitive, joinNames } from '../lib/tr';
 import { useModalOpen } from '../lib/modal';
+import { errorText } from '../lib/errors';
 
 // Kurulumdan sonra ilk iş: çocuğun cihazını kur (kullanıcı kararı 27 Ekim 2026; ortak/sozlesme/akislar.md 16 adım 13).
 // "Başka cihaz": indirme bağlantısını paylaş + giriş kodu (QR + yazılı). "Bu cihaz": App Store + kod. Çocuk bağlanınca ✓.
@@ -87,7 +88,7 @@ function DeviceSheet({ child, onClose }: { child: Child; onClose: () => void }) 
   const issue = async () => {
     setBusy(true);
     try { setCode(await createChildCode(child.id)); }
-    catch (e) { Alert.alert('Kod üretilemedi', (e as Error).message); }
+    catch (e) { Alert.alert('Kod üretilemedi', errorText(e)); }
     finally { setBusy(false); }
   };
   useEffect(() => { issue(); }, []); // eslint-disable-line react-hooks/exhaustive-deps

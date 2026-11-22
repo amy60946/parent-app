@@ -7,6 +7,7 @@ import { Suggestion, decideSuggestion, linkSuggestionTask } from '../lib/clinic'
 import { suggestionTask } from './SuggestionCard';
 import { WEEKDAYS } from '../data/routines';
 import { track } from '../lib/track';
+import { errorText } from '../lib/errors';
 
 // Günlük rutin paketi (kullanıcı kararı B, 28 Ekim 2026; ortak akislar.md 5.4 v2 adım 5–6): uzmanın aynı rutinle önerdiği
 // görevler tek kart. "Hepsini ekle" ya da "Düzenle" (görev çıkar, tekrarı değiştir) → seçilenler ayrı görev olur ve rutinine
@@ -54,7 +55,7 @@ export default function RoutinePackCard({ items, childName, goal, onDecided }: {
       onDecided(list.map((s) => s.id));
       Alert.alert('Rutin eklendi', `${r.title}: ${kept.length} adım ${childName} için Rutinler'de. Her adım ayrı onaylanır.`);
     } catch (e) {
-      Alert.alert('Kaydedilemedi', (e as Error).message);
+      Alert.alert('Kaydedilemedi', errorText(e));
     } finally {
       setBusy(false);
     }
@@ -67,7 +68,7 @@ export default function RoutinePackCard({ items, childName, goal, onDecided }: {
         await Promise.all(list.map((s) => decideSuggestion(s.id, false)));
         track('routine.pack_decline', { n: list.length });
         onDecided(list.map((s) => s.id));
-      } catch (e) { Alert.alert('Kaydedilemedi', (e as Error).message); } finally { setBusy(false); }
+      } catch (e) { Alert.alert('Kaydedilemedi', errorText(e)); } finally { setBusy(false); }
     } },
   ]);
 

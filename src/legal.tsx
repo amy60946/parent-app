@@ -8,6 +8,7 @@ import { LegalTextView } from './components/LegalText';
 import { track } from './lib/track';
 import { MODAL_GAP, useModalOpen } from './lib/modal';
 import { genitive } from './lib/tr';
+import { errorText } from './lib/errors';
 
 // Veli onayı (hukuk/50 §1.3): Pofi Adası'nı bağlamadan önce (giriş kodu ya da QR gösterilmeden) GameApp koşulları
 // veli tarafından çocuk adına kabul edilir; aydınlatma kutusuz satır. Sunucuda işlev yoksa ya da onay güncelse hemen geçer.
@@ -59,7 +60,7 @@ function ChildConsent({ visible, name, docs, onDone, onDismiss }: {
       track('legal.child_accept', { n: docs.length });
       onDone(true);
     } catch (e) {
-      Alert.alert('Kaydedilemedi', (e as Error).message);
+      Alert.alert('Kaydedilemedi', errorText(e));
     } finally { setBusy(false); }
   };
   useModalOpen(visible); // açıkken modal ekran açılamaz (lib/modal whenNoModal)

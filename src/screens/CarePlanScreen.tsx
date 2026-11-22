@@ -14,6 +14,7 @@ import { addDays, fromISO, toISO } from '../dates';
 import { useStore } from '../store';
 import { CARE_PLAN_FLAG } from '../lib/care';
 import { useFlag } from '../clientConfig';
+import { errorText } from '../lib/errors';
 
 // Uzmanım › çocuk › Takip planı (ortak/sozlesme/akislar.md 12): uzmanın aileyle paylaştığı hedefler ve aile programı.
 // Ebeveyn modülde günde bir kez "Bugün uyguladım" der; zorluk kendi bildirimidir, puan ya da ölçek değildir.
@@ -67,7 +68,7 @@ function CarePlanInner({ navigation, route }: any) {
       }
     } catch (e) {
       setPlan(null);
-      Alert.alert('Yüklenemedi', (e as Error).message);
+      Alert.alert('Yüklenemedi', errorText(e));
     }
   }, [linkId, today]);
   useEffect(() => { load(); }, [load]);
@@ -85,7 +86,7 @@ function CarePlanInner({ navigation, route }: any) {
       }
     } catch (e) {
       setLogs((p) => { const n = { ...p }; if (prev) n[log.moduleId] = prev; else delete n[log.moduleId]; return n; });
-      Alert.alert('Kaydedilemedi', (e as Error).message);
+      Alert.alert('Kaydedilemedi', errorText(e));
     }
   };
 

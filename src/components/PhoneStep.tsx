@@ -5,6 +5,7 @@ import Sheet from './Sheet';
 import { colors, radius } from '../theme';
 import { track } from '../lib/track';
 import { COUNTRIES, Country, sendPhoneCode, smsUnavailable, toE164, validLocal, verifyPhoneCode } from '../lib/phone';
+import { errorText } from '../lib/errors';
 
 // Uzman bağlandıktan sonra telefon numarası (iki yönlü doğrulama): numara → 6 haneli SMS kodu → hesaba yazılır.
 // "Şimdilik geç" her adımda. Bayrak `parent_sms_verify` kapalıyken çağıran bu adımı hiç göstermez (lib/phone.ts).
@@ -29,7 +30,7 @@ export default function PhoneStep({ onDone }: { onDone: (verified: boolean) => v
     } catch (e) {
       if (smsUnavailable(e)) {
         Alert.alert('Telefon doğrulaması şu an açık değil', 'Bu adımı şimdilik geçiyoruz; numaranı sonra ekleyebilirsin.', [{ text: 'Tamam', onPress: () => onDone(false) }]);
-      } else setError((e as Error).message);
+      } else setError(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -43,7 +44,7 @@ export default function PhoneStep({ onDone }: { onDone: (verified: boolean) => v
       track('phone.verified');
       onDone(true);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }

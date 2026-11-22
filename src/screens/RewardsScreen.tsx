@@ -14,7 +14,7 @@ import { rewardTips } from '../data/rewardTips';
 import { useStore, Child } from '../store';
 import { useBilling } from '../billing';
 import { supabase } from '../lib/supabase';
-import { hintOf } from '../lib/errors';
+import { hintOf, errorText } from '../lib/errors';
 import { requestPremium } from '../lib/billing';
 import {
   Reward, RewardInput, RewardRequest, StoneMove, listRewards, saveReward, deleteReward, balances, history, requests,
@@ -123,7 +123,7 @@ export default function RewardsScreen({ navigation }: any) {
     try { await op(); await load(); return true; }
     catch (e) {
       if (hintOf(e) === 'premium_required') requestPremium((e as Error).message);
-      else Alert.alert(title, (e as Error).message);
+      else Alert.alert(title, errorText(e));
       await load();
       return false;
     }

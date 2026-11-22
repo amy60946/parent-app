@@ -12,6 +12,7 @@ export const GUEST_CODE = /^[A-Z2-9]{8}$/;
 // Kayıttan önce "Davet kodun var mı?" ekranında yazılan aile davet kodu (3 Kasım 2026): kayıttan sonra kurulumun başında kullanılır
 const PENDING_KEY = 'pending-guest-code';
 export const setPendingGuestCode = (code: string) => AsyncStorage.setItem(PENDING_KEY, code).catch(() => {});
+export const clearPendingGuestCode = () => AsyncStorage.removeItem(PENDING_KEY).catch(() => {});
 export const takePendingGuestCode = async () => {
   try { const c = await AsyncStorage.getItem(PENDING_KEY); if (c) await AsyncStorage.removeItem(PENDING_KEY); return c; } catch { return null; }
 };

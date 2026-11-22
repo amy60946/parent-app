@@ -27,6 +27,7 @@ import SessionsSection from '../components/SessionsSection';
 import { familySessions, syncSessionReminders } from '../lib/sessions';
 import { useTrainings } from '../lib/trainings';
 import { reportable, useTargetBehaviors } from '../lib/incidents';
+import { errorText } from '../lib/errors';
 
 // Uzmanım › uzman (kullanıcı isteği 28 Ekim 2026, Joon "Care › therapist" örneğinden): bugün yapılacaklar (uzmanın aile
 // programındaki uygulamalar + davranış kaydı), çocuk başına program (takip planı), görev önerileri, paylaşılan çocuklar.
@@ -118,7 +119,7 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
       track('care.log', { practiced: true, from: 'clinician' });
     } catch (e) {
       reload();
-      Alert.alert('Kaydedilemedi', (e as Error).message);
+      Alert.alert('Kaydedilemedi', errorText(e));
     }
   };
   const openPlan = (l: ClinicLink) => navigation.navigate('CarePlan', { linkId: l.linkId, childName: childName(l.childId), clinician: c.name });
@@ -129,14 +130,14 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
     [
       { text: 'Vazgeç', style: 'cancel' },
       { text: 'Onaylıyorum, paylaş', onPress: async () => {
-        try { await addChildToClinic(c.clinicId, childId); reload(); } catch (e) { Alert.alert('Paylaşılamadı', (e as Error).message); }
+        try { await addChildToClinic(c.clinicId, childId); reload(); } catch (e) { Alert.alert('Paylaşılamadı', errorText(e)); }
       } },
     ],
   );
 
   // Önceki uzman kayıtlarının bu uzmana aktarımı: açarken açık rıza (uzman-gecis-v1), kapatınca erişim hemen biter
   const history = (l: ClinicLink, on: boolean) => {
-    const apply = async () => { try { await setHistoryShared(l.linkId, on); reload(); } catch (e) { Alert.alert('Kaydedilemedi', (e as Error).message); } };
+    const apply = async () => { try { await setHistoryShared(l.linkId, on); reload(); } catch (e) { Alert.alert('Kaydedilemedi', errorText(e)); } };
     if (!on) {
       return Alert.alert('Önceki kayıtların paylaşımı durdurulsun mu?', `${c.name}, ${childName(l.childId)} için önceki uzmanların kayıtlarını artık göremez.`,
         [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Durdur', style: 'destructive', onPress: apply }]);
@@ -155,7 +156,7 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
         track('clinic.unlink', { all: links.length === 1 });
         // Son çocuk da ayrıldı: sayfa kapanır (alttaki sayfa kapanınca; iOS'ta kapanırken geri gitmek dokunuşu kilitleyebilir)
         if (links.length === 1) { setManage(false); afterModal(leave); } else reload();
-      } catch (e) { Alert.alert('Ayrılamadı', (e as Error).message); } finally { setBusy(null); }
+      } catch (e) { Alert.alert('Ayrılamadı', errorText(e)); } finally { setBusy(null); }
     } },
   ]);
   const remove = () => Alert.alert(`${c.name} kaldırılsın mı?`, removeText(c.name), [
@@ -168,7 +169,7 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
         track('clinic.remove', { n: links.length });
         setManage(false);
         afterModal(leave);
-      } catch (e) { reload(); Alert.alert('Kaldırılamadı', (e as Error).message); } finally { setBusy(null); }
+      } catch (e) { reload(); Alert.alert('Kaldırılamadı', errorText(e)); } finally { setBusy(null); }
     } },
   ]);
 

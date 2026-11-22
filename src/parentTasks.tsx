@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase';
 import { useStore } from './store';
 import { Difficulty } from './theme';
 import { track } from './lib/track';
+import { errorText } from './lib/errors';
 
 // Ebeveyn görevleri ve ebeveynin Güneş Taşı (ortak/sozlesme/akislar.md 18, öneri 20261027140000_parent_tasks_gifts.sql).
 // Görev ebeveyne de atanır (kendine ya da eşine); ebeveyn "Yaptım" der, zorluğa göre taş kazanır, taşla çocuğa oyunda hediye yollar.
@@ -100,7 +101,7 @@ export function ParentTasksProvider({ children }: { children: React.ReactNode })
       : { error: d.error };
     if (u.error) {
       setAssigns((p) => ({ ...p, [taskId]: prev }));
-      Alert.alert('Ebeveyn ataması kaydedilemedi', u.error.message);
+      Alert.alert('Ebeveyn ataması kaydedilemedi', errorText(u.error));
       return false;
     }
     return true;
@@ -114,7 +115,7 @@ export function ParentTasksProvider({ children }: { children: React.ReactNode })
     const { error } = await supabase.rpc('parent_task_done', { p_task_id: taskId, p_date: date, p_done: on });
     if (error) {
       setDone((p) => { const n = { ...p }; if (on) delete n[k]; else n[k] = true; return n; });
-      Alert.alert('Kaydedilemedi', error.message);
+      Alert.alert('Kaydedilemedi', errorText(error));
     }
     if (familyId) load(familyId);
   }, [me, familyId, load]);

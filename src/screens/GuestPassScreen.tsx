@@ -10,6 +10,7 @@ import { createGuestPass, GuestPass, myReferrals, Referrals } from '../lib/guest
 import { storeRedeemCode } from '../lib/purchases';
 import { formatTR } from '../dates';
 import { track } from '../lib/track';
+import { errorText } from '../lib/errors';
 
 // Aile davet et (önce 30 günlük misafir kartı, 28 Ekim 2026; 3 Kasım 2026 kullanıcı kararı, akislar.md 19): davet edilen aile
 // varsayılan süre + 7 gün dener; abone olursa davet eden 1 ay kazanır (yılda en çok 12; benchmark: ödemeye bağlı çift taraflı davet,
@@ -23,7 +24,7 @@ export default function GuestPassScreen({ navigation }: any) {
   const [copied, setCopied] = useState<string | null>(null);
   const [ref, setRef] = useState<Referrals | null>(null);
   useEffect(() => {
-    createGuestPass().then(setPass).catch((e) => { setPass(null); setError((e as Error).message); });
+    createGuestPass().then(setPass).catch((e) => { setPass(null); setError(errorText(e)); });
     myReferrals().then(setRef).catch(() => {});
   }, []);
 

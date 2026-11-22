@@ -9,6 +9,7 @@ import { PlanId, plans, premiumFeatures, freeFeatures } from '../data/plans';
 import { purchase, restorePurchases } from '../lib/billing';
 import { storeManage, StorePrices } from '../lib/purchases';
 import { formatTR, toISO } from '../dates';
+import { errorText } from '../lib/errors';
 
 const NOT_CONNECTED = 'Ödeme henüz açık değil. Uygulama App Store\'da yayınlanınca üyelik buradan alınabilecek.';
 const UNAVAILABLE = 'Üyelik seçenekleri şu an App Store\'dan yüklenemedi. Biraz sonra tekrar dene.';
@@ -53,10 +54,10 @@ export default function PaywallScreen({ navigation, route }: any) {
     try {
       const r = await purchase(plan);
       if (r.ok) { refreshAfterPurchase(); navigation.goBack(); Alert.alert('Premium üyeliğin başladı'); }
-      else if (r.reason === 'not_connected') Alert.alert(r.message ? 'Uygulamadan başlat' : 'Yakında', r.message ?? NOT_CONNECTED); // web: purchases.web.ts
+      else if (r.reason === 'not_connected') Alert.alert(r.message ? 'Uygulamadan başlat' : 'Yakında', errorText(r.message, NOT_CONNECTED)); // web: purchases.web.ts
       else if (r.reason === 'unavailable') Alert.alert('Şu an alınamıyor', UNAVAILABLE);
       else if (r.reason === 'pending') Alert.alert('Onay bekleniyor', PENDING);
-      else if (r.reason === 'failed') Alert.alert('Satın alınamadı', r.message ?? 'Tekrar dene.');
+      else if (r.reason === 'failed') Alert.alert('Satın alınamadı', errorText(r.message, 'Satın alma tamamlanamadı. Tekrar dene.'));
     } finally {
       setBusy(false);
     }
@@ -67,8 +68,8 @@ export default function PaywallScreen({ navigation, route }: any) {
     try {
       const r = await restorePurchases();
       if (r.ok) { refreshAfterPurchase(); Alert.alert('Satın alımların geri yüklendi'); }
-      else Alert.alert('Geri yükleme', r.reason === 'not_connected' ? (r.message ?? NOT_CONNECTED)
-        : r.reason === 'failed' ? (r.message ?? 'Geri yüklenemedi. Tekrar dene.')
+      else Alert.alert('Geri yükleme', r.reason === 'not_connected' ? errorText(r.message, NOT_CONNECTED)
+        : r.reason === 'failed' ? errorText(r.message, 'Geri yüklenemedi. Tekrar dene.')
         : 'Bu Apple Kimliği ile etkin bir üyelik bulunamadı.');
     } finally {
       setBusy(false);

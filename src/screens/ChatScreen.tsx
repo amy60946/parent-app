@@ -16,6 +16,7 @@ import { stickers, stickerOf } from '../data/stickers';
 import { useBilling } from '../billing';
 import { useNotifications } from '../notifications';
 import { useModalOpen } from '../lib/modal';
+import { errorText } from '../lib/errors';
 
 export const mmss = (ms: number) => {
   const t = Math.max(0, Math.round(ms / 1000));
@@ -103,7 +104,7 @@ export default function ChatScreen({ navigation, route }: any) {
       recorder.record();
       setRecording(true);
     } catch (e) {
-      Alert.alert('Kayıt başlatılamadı', (e as Error).message);
+      Alert.alert('Kayıt başlatılamadı', errorText(e));
     }
   };
 

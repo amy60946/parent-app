@@ -31,6 +31,7 @@ import { balances } from '../lib/rewards';
 import { startOfWeek } from '../dates';
 import { afterModal } from '../lib/modal';
 import { useTabBarScroll } from '../lib/tabBarScroll';
+import { errorText } from '../lib/errors';
 
 type Tab = 'general' | 'mail' | 'account';
 const soon = () => Alert.alert('Yakında', 'Bu özellik sonraki sürümde.');
@@ -207,7 +208,7 @@ function ChildInfo({ id }: { id: string }) {
         text: 'Kaldır', style: 'destructive',
         onPress: async () => {
           try { await unlinkChildDevice(c.id); }
-          catch (e) { Alert.alert('Kaldırılamadı', (e as Error).message); }
+          catch (e) { Alert.alert('Kaldırılamadı', errorText(e)); }
         },
       },
     ],
@@ -221,7 +222,7 @@ function ChildInfo({ id }: { id: string }) {
     if (draft.photo && familyId) {
       setSaving(true);
       try { av = await uploadChildPhoto(familyId, draft.photo.uri, draft.photo.mime); }
-      catch (e) { setSaving(false); return Alert.alert('Fotoğraf yüklenemedi', (e as Error).message); }
+      catch (e) { setSaving(false); return Alert.alert('Fotoğraf yüklenemedi', errorText(e)); }
       setSaving(false);
     }
     if (nm !== c.name) renameChild(c.id, nm);
@@ -233,7 +234,7 @@ function ChildInfo({ id }: { id: string }) {
     if (!(await ensureChildConsent(c.name))) return; // veli onayı: kod/QR'dan önce (hukuk/50 §1.3)
     setBusy(true);
     try { setCode(await createChildCode(c.id)); }
-    catch (e) { Alert.alert('Kod üretilemedi', (e as Error).message); }
+    catch (e) { Alert.alert('Kod üretilemedi', errorText(e)); }
     finally { setBusy(false); }
   };
 
@@ -524,7 +525,7 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
   const invite = async () => {
     setBusy(true);
     try { setCode(await createInviteCode()); }
-    catch (e) { Alert.alert('Kod üretilemedi', (e as Error).message); }
+    catch (e) { Alert.alert('Kod üretilemedi', errorText(e)); }
     finally { setBusy(false); }
   };
 
@@ -561,7 +562,7 @@ function AddSheet({ visible, onClose }: { visible: boolean; onClose: () => void 
     if (photo && familyId) {
       setBusy(true);
       try { av = await uploadChildPhoto(familyId, photo.uri, photo.mime); }
-      catch (e) { setBusy(false); return Alert.alert('Fotoğraf yüklenemedi', (e as Error).message); }
+      catch (e) { setBusy(false); return Alert.alert('Fotoğraf yüklenemedi', errorText(e)); }
       setBusy(false);
     }
     addChild({ name: name.trim(), avatar: av, gender, birthday, ageBand: band ?? undefined });

@@ -11,6 +11,7 @@ import { useParentTasks } from '../parentTasks';
 import { supabase } from '../lib/supabase';
 import { giftItems, giftKinds, giftName, GiftKind } from '../data/giftItems';
 import { track } from '../lib/track';
+import { errorText } from '../lib/errors';
 
 // Hediye dükkânı (kullanıcı isteği 27 Ekim 2026; ortak akislar.md 18): ebeveyn görevlerinden kazanılan taşla çocuğa oyunda eşya.
 // Liste ve fiyat sunucudan (gift_items), ad ve simge uygulamada (data/giftItems). Gönderilen hediye oyunda posta kutusuna düşer.
@@ -46,7 +47,7 @@ export default function GiftShopScreen({ navigation }: any) {
     setBusy(true);
     const { data, error } = await supabase.rpc('send_gift', { p_child_id: child.id, p_item_id: chosen.id, p_note: note.trim() || null });
     setBusy(false);
-    if (error) return Alert.alert('Gönderilemedi', error.message);
+    if (error) return Alert.alert('Gönderilemedi', errorText(error));
     const r = data as { ok: boolean; error?: string };
     if (!r.ok) return Alert.alert(r.error === 'not_enough_stones' ? 'Güneş Taşı yetmiyor' : 'Gönderilemedi',
       r.error === 'not_enough_stones' ? 'Sana atanan adımlarda "Yaptım" diyerek Güneş Taşı kazanabilirsin.' : 'Bu eşya artık dükkânda yok.');

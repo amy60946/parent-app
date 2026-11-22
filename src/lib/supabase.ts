@@ -20,6 +20,9 @@ export const supabase = createClient(url ?? 'https://ayarlanmadi.supabase.co', k
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    // E-posta bağlantıları PKCE ile (güvenlik denetimi 22 Kasım 2026; Moyo Mercek ile aynı): bağlantıdaki kod yalnız
+    // isteği bu cihazda başlatırken saklanan doğrulayıcıyla oturuma çevrilir (lib/auth.tsx handleUrl).
+    flowType: 'pkce',
   },
 });
 

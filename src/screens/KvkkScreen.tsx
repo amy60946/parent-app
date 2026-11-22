@@ -9,6 +9,7 @@ import { useAuth } from '../lib/auth';
 import { KvkkKind, KvkkRequest, kvkkCreate, kvkkKinds, kvkkStatus, myKvkk } from '../lib/legal';
 import { formatTR, toISO } from '../dates';
 import { track } from '../lib/track';
+import { errorText } from '../lib/errors';
 
 // Aile › Hesap › KVKK başvurusu (hukuk/50 §4; ortak kvkk_request_create / my_kvkk_requests, türler durumlar.md P17).
 // "Kimin için": kendim ya da ailedeki çocuk (p_child). Yanıt e-postayla; durum "Başvurularım"da.
@@ -40,7 +41,7 @@ export default function KvkkScreen({ navigation, route }: any) {
       Alert.alert('Başvurun alındı', `Başvuru no: ${r.id.slice(0, 8).toUpperCase()}\nEn geç ${fmt(r.due_at)} tarihine kadar ${email} adresine yanıt vereceğiz. Durumunu "Başvurularım"dan takip edebilirsin.`);
       setKind(null); setDetail(''); setWho('me'); setTab('list'); load();
     } catch (e) {
-      Alert.alert('Gönderilemedi', (e as Error).message);
+      Alert.alert('Gönderilemedi', errorText(e));
     } finally { setBusy(false); }
   };
 
