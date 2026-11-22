@@ -21,7 +21,10 @@ export default function Sheet({ visible, title, onClose, children, header, foote
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1 }}>
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(15,27,61,0.35)' }} onPress={onClose} accessibilityLabel="Kapat" />
+        {/* Karartma bütün ekranı kaplar: iPad'de sayfa en çok 640 nokta olduğundan iki yanı karartılmadan kalıyordu
+            (21 Kasım 2026, mağaza görselleri denetiminde görüldü). Üstteki boşluk dokunuşu arkadaki karartmaya bırakır. */}
+        <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(15,27,61,0.35)' }]} onPress={onClose} accessibilityLabel="Kapat" />
+        <View style={{ flex: 1 }} pointerEvents="none" />
         <View style={[styles.sheet, { paddingBottom: kb ? kb + 12 : Math.max(insets.bottom, 20) + 14 }]}>
           <View style={styles.head}>
             <Text style={styles.title}>{title}</Text>
