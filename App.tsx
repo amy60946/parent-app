@@ -57,7 +57,7 @@ import InviteScreen from './src/screens/InviteScreen';
 import CarePlanScreen from './src/screens/CarePlanScreen';
 import * as Linking from 'expo-linking';
 import { INVITE_FINAL, inviteErrorTitle, openInvite } from './src/lib/clinic';
-import { hintOf } from './src/lib/errors';
+import { hintOf, errorText } from './src/lib/errors';
 import { clearPendingClinicInvite, getPendingClinicInvite, onClinicInvite, parseInviteUrl, setPendingClinicInvite } from './src/lib/clinicInvite';
 import { BillingProvider } from './src/billing';
 import Onboarding, { markOnboardingSeen, shouldShowOnboarding } from './src/components/Onboarding';
@@ -173,7 +173,7 @@ function Main() {
     return () => { live = false; sub.remove(); };
   }, [ready, setup]); // eslint-disable-line react-hooks/exhaustive-deps
   const finishSetup = React.useCallback(async (how: SetupEnd) => {
-    try { await completeSetup(); } catch (e) { Alert.alert('Kaydedilemedi', (e as Error).message); return; }
+    try { await completeSetup(); } catch (e) { Alert.alert('Kaydedilemedi', errorText(e)); return; }
     await takeJustSignedUp(); // kurulum bitti: "Kodun var mı?" artık gösterilmez
     resetPlan(); // tanışma yanıtları kişisel plana yeniden okunur
     markOnboardingSeen();
@@ -218,7 +218,7 @@ function Main() {
       } catch (e) {
         const hint = hintOf(e);
         if (hint && INVITE_FINAL.includes(hint)) await clearPendingClinicInvite();
-        Alert.alert(hint ? inviteErrorTitle(hint) : 'Davet açılamadı', (e as Error).message);
+        Alert.alert(hint ? inviteErrorTitle(hint) : 'Davet açılamadı', errorText(e));
       } finally {
         busy = false;
       }

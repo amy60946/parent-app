@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, TextInput, Pressable, Alert, StyleSheet, ActivityIndicator } from 'react-native';
 import { colors, radius } from '../theme';
 import { useStore } from '../store';
-import { AppError, hintOf } from '../lib/errors';
+import { AppError, hintOf, errorText } from '../lib/errors';
 import { PendingInvite, inviteErrorTitle, openInvite } from '../lib/clinic';
 import { track } from '../lib/track';
 import { GUEST_CODE, redeemGuestPass } from '../lib/guestPass';
@@ -62,7 +62,7 @@ export default function CodeEntry({ onResult, autoFocus }: { onResult: (r: CodeR
       onResult(r);
     } catch (e) {
       const hint = hintOf(e);
-      setError(hint === 'accepted' ? `${inviteErrorTitle(hint)}.` : (e as Error).message);
+      setError(hint === 'accepted' ? `${inviteErrorTitle(hint)}.` : errorText(e));
     } finally {
       setBusy(false);
     }

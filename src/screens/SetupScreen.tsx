@@ -19,7 +19,7 @@ import { myAnswers, saveAnswer } from '../lib/intake';
 import { PendingInvite, openInvite, pendingInvites } from '../lib/clinic';
 import { guestRedeemedText, redeemGuestPass, takePendingGuestCode } from '../lib/guestPass';
 import { clearPendingClinicInvite, getPendingClinicInvite } from '../lib/clinicInvite';
-import { hintOf } from '../lib/errors';
+import { hintOf, errorText } from '../lib/errors';
 import { useSetup } from '../setupContext';
 import { useKeyboardHeight } from '../lib/useKeyboardHeight';
 import ChildAvatarPicker, { LocalPhoto } from '../components/ChildAvatarPicker';
@@ -53,7 +53,7 @@ export default function SetupScreen({ navigation, route }: any) {
       const guest = await takePendingGuestCode();
       if (guest) {
         try { Alert.alert('Davet kodu kullanıldı', guestRedeemedText(await redeemGuestPass(guest))); }
-        catch (e) { Alert.alert('Davet kodu kullanılamadı', `${(e as Error).message}\n\nKodu sonra Aile › Hesap › Kod gir bölümüne yazabilirsin.`); }
+        catch (e) { Alert.alert('Davet kodu kullanılamadı', `${errorText(e)}\n\nKodu sonra Aile › Hesap › Kod gir bölümüne yazabilirsin.`); }
       }
       try {
         const key = await getPendingClinicInvite();
@@ -62,7 +62,7 @@ export default function SetupScreen({ navigation, route }: any) {
             const r = await openInvite(key);
             if (r.kind === 'pending') invite = r.invite;
           } catch (e) {
-            Alert.alert('Uzman daveti açılamadı', `${(e as Error).message}\n\nKurulumdan sonra Uzmanım sekmesinden kodla bağlanabilirsin.`);
+            Alert.alert('Uzman daveti açılamadı', `${errorText(e)}\n\nKurulumdan sonra Uzmanım sekmesinden kodla bağlanabilirsin.`);
           }
           await clearPendingClinicInvite();
         }
@@ -102,7 +102,7 @@ export default function SetupScreen({ navigation, route }: any) {
           if (r.kind === 'pending') return navigation.navigate('Invite', { invite: r.invite, fromSetup: true });
         } catch (e) {
           await clearPendingClinicInvite();
-          Alert.alert('Uzman daveti açılamadı', `${(e as Error).message}\n\nÇocuğunu kendin ekleyebilirsin; uzman kodunu sonra Aile › Hesap › Kod gir bölümüne yazabilirsin.`);
+          Alert.alert('Uzman daveti açılamadı', `${errorText(e)}\n\nÇocuğunu kendin ekleyebilirsin; uzman kodunu sonra Aile › Hesap › Kod gir bölümüne yazabilirsin.`);
         }
       }
       const inv = (await pendingInvites().catch(() => []))[0];
@@ -313,7 +313,7 @@ export function Questionnaire({ steps, childId, onDone, onBackFirst }: {
     advancing.current = true;
     answersRef.current = { ...answersRef.current, [step.key]: values };
     setAnswers(answersRef.current);
-    saveAnswer(childId, step.key, values).catch((e) => Alert.alert('Yanıt kaydedilemedi', (e as Error).message));
+    saveAnswer(childId, step.key, values).catch((e) => Alert.alert('Yanıt kaydedilemedi', errorText(e)));
     track('intake.answer', { q: step.key });
     setTimeout(() => go(i + 1), step.multi ? 0 : 140); // tek seçimde seçilenin vurgusu bir an görünsün
   };
@@ -400,7 +400,7 @@ function ChildForm({ first, onSaved, onBack }: { first: boolean; onSaved: (id: s
     let av = avatar;
     if (photo && familyId) {
       try { av = await uploadChildPhoto(familyId, photo.uri, photo.mime); }
-      catch (e) { setBusy(false); return Alert.alert('Fotoğraf yüklenemedi', (e as Error).message); }
+      catch (e) { setBusy(false); return Alert.alert('Fotoğraf yüklenemedi', errorText(e)); }
     }
     const id = await addChild({ name: nm, avatar: av, gender, birthday });
     setBusy(false);

@@ -10,6 +10,7 @@ import { useBilling } from '../billing';
 import { useParentTasks, memberName } from '../parentTasks';
 import { track } from '../lib/track';
 import { storeManage, storeSubscription } from '../lib/purchases';
+import { errorText } from '../lib/errors';
 
 // Hesabımı sil (hukuk/50 §5.1; ortak delete_account()). Etkin App Store aboneliği varsa önce uyarı (Apple 5.1.1(v):
 // ödeme Apple'da sürer, önce iptal; silme yine serbest). Abonelik sunucudan ve bu Apple Kimliği'nden (RevenueCat) okunur. Ailede tek ebeveynse
@@ -37,7 +38,7 @@ export default function DeleteAccountScreen({ navigation }: any) {
       await signOutLocal();
       Alert.alert('Hesabın silindi');
     } catch (e) {
-      Alert.alert('Hesap silinemedi', (e as Error).message);
+      Alert.alert('Hesap silinemedi', errorText(e));
       setBusy(false);
     }
   };

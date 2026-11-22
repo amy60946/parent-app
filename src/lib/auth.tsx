@@ -2,10 +2,14 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import { Alert, Platform } from 'react-native';
 import * as Linking from 'expo-linking';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { Session, EmailOtpType } from '@supabase/supabase-js';
+import type { Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './supabase';
 import { unregisterPush } from './notifications';
 import { storeLogOut } from './purchases';
+import { errorText } from './errors';
+import { clearPendingInvite } from './pendingInvite';
+import { clearPendingClinicInvite } from './clinicInvite';
+import { clearPendingGuestCode } from './guestPass';
 
 // E-postadaki bağlantılar uygulamayı bu adresle açar:
 // geliştirmede exp://…/--/auth (Expo Go), derlenmiş uygulamada parentapp://auth.
@@ -59,7 +63,14 @@ export function authErrorText(e: unknown): string {
     case 'validation_failed': return 'Geçerli bir e-posta adresi yaz.';
     case 'over_email_send_rate_limit':
     case 'over_request_rate_limit': return 'Çok fazla deneme yapıldı. Biraz sonra tekrar dene.';
-    case 'otp_expired': return 'Bağlantının süresi dolmuş. Yeniden iste.';
+    case 'otp_expired':
+    case 'flow_state_not_found':
+    case 'flow_state_expired':
+    case 'bad_code_verifier': return 'Bağlantının süresi dolmuş ya da daha önce kullanılmış. Uygulamadan yeniden iste.';
+    // PKCE: bağlantı, isteğin başlatıldığı cihazda açılmalı (doğrulayıcı orada saklı)
+    case 'pkce_code_verifier_not_found': return 'Bu bağlantıyı, isteği yaptığın cihazda aç. Başka bir cihazdaysan bağlantıyı buradan yeniden iste.';
+    case 'link_invalid':
+    case 'access_denied': return 'Bağlantı açılamadı. Uygulamadan yeniden iste.';
     case 'anonymous_provider_disabled': return 'Çocuk girişi henüz açık değil. Ebeveyninden Supabase ayarlarında "Anonymous Sign-Ins" seçeneğini açmasını iste.';
   }
   if (err?.code === 'unexpected_failure' || err?.message?.includes('Database error')) {
@@ -68,7 +79,7 @@ export function authErrorText(e: unknown): string {
   if (err?.message?.includes('Invalid API key')) return 'Uygulamanın sunucu anahtarı geçersiz. Yeni bir TestFlight derlemesi gerekiyor.';
   if (err?.status === 429) return 'Çok fazla deneme yapıldı. Biraz sonra tekrar dene.';
   if (err?.message?.toLowerCase().includes('network')) return 'İnternet bağlantını kontrol et.';
-  return err?.message || 'Bir şeyler ters gitti. Tekrar dene.';
+  return errorText(err); // bilinmeyen hata: ham sunucu metni gösterilmez (güvenlik denetimi 22 Kasım 2026)
 }
 
 // URL'nin hem ?sorgu hem #parça kısmındaki parametreleri oku
@@ -86,16 +97,6 @@ function urlParams(url: string): Record<string, string> {
   return out;
 }
 
-// Bağlantıdaki erişim anahtarının e-postası (yalnız göstermek için; doğrulamayı sunucu yapar)
-function tokenEmail(token: string): string | undefined {
-  try {
-    const part = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(globalThis.atob(part.padEnd(part.length + ((4 - (part.length % 4)) % 4), '='))).email;
-  } catch {
-    return undefined;
-  }
-}
-
 const ask = (title: string, message: string) => new Promise<boolean>((resolve) =>
   Alert.alert(title, message, [
     { text: 'Vazgeç', style: 'cancel', onPress: () => resolve(false) },
@@ -108,42 +109,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [recovery, setRecovery] = useState(false);
   const [childLinking, setChildLinking] = useState(false);
 
-  // E-posta bağlantısından gelen oturumu kur
+  // E-posta bağlantısından gelen oturumu kur. Güvenlik (denetim 22 Kasım 2026): yalnız PKCE kodu (?code=) kabul edilir;
+  // kod, isteği bu cihazda başlatırken saklanan doğrulayıcı olmadan oturuma çevrilemez. Başkasının hazırladığı bağlantı
+  // (hazır access_token / refresh_token ya da token_hash) oturum açmaz. Bağlantıdaki hata açıklaması gösterilmez.
   const handleUrl = useCallback(async (url: string | null) => {
     if (!url) return;
     const p = urlParams(url);
-    const isAuthLink = p.access_token || p.code || p.token_hash || p.error || p.error_description;
+    const isAuthLink = p.access_token || p.refresh_token || p.code || p.token_hash || p.error || p.error_code || p.error_description;
     if (!isAuthLink) return;
     // Web: bağlantıdaki anahtarlar adres çubuğunda ve geçmişte kalmasın
     if (Platform.OS === 'web' && typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname);
 
-    if (p.error || p.error_description) {
-      Alert.alert('Bağlantı açılamadı', p.error_code === 'otp_expired'
-        ? 'Bağlantının süresi dolmuş ya da daha önce kullanılmış. Yeniden iste.'
-        : p.error_description || 'Bağlantı geçersiz.');
+    if (p.error || p.error_code || p.error_description) {
+      Alert.alert('Bağlantı açılamadı', authErrorText({ code: p.error_code || 'link_invalid' }));
       return;
     }
-    // Güvenlik: başkasının gönderdiği bir bağlantı oturumu sessizce başka hesaba geçirmesin
+    if (!p.code) {
+      Alert.alert('Bağlantı açılamadı', 'Bu bağlantı artık geçerli değil. Uygulamadan yeniden iste.');
+      return;
+    }
+    // Açık bir hesap varken gelen bağlantı oturumu sessizce başka hesaba geçirmesin
     const before = (await supabase.auth.getSession()).data.session?.user;
-    const target = p.access_token ? tokenEmail(p.access_token) : undefined;
-    if (before && !before.is_anonymous && (!target || target.toLowerCase() !== (before.email ?? '').toLowerCase())) {
+    if (before && !before.is_anonymous) {
       const ok = await ask('Hesap değişsin mi?',
-        `Şu an ${before.email} ile girişlisin. Bu bağlantı ${target ?? 'başka bir hesapla'} oturum açar. Bağlantıyı sen istemediysen Vazgeç'e dokun.`);
+        `Şu an ${before.email} ile girişlisin. Bu bağlantı başka bir hesapla oturum açabilir. Bağlantıyı sen istemediysen Vazgeç'e dokun.`);
       if (!ok) return;
     }
     let redirect: string | null = null;
     try {
-      if (p.access_token && p.refresh_token) {
-        const { error } = await supabase.auth.setSession({ access_token: p.access_token, refresh_token: p.refresh_token });
-        if (error) throw error;
-      } else if (p.token_hash && p.type) {
-        const { error } = await supabase.auth.verifyOtp({ token_hash: p.token_hash, type: p.type as EmailOtpType });
-        if (error) throw error;
-      } else if (p.code) {
-        const { data, error } = await supabase.auth.exchangeCodeForSession(p.code);
-        if (error) throw error;
-        if ((data as { redirectType?: string | null }).redirectType === 'recovery') redirect = 'recovery'; // PKCE akışında tür bağlantıda yazmaz
-      }
+      const { data, error } = await supabase.auth.exchangeCodeForSession(p.code);
+      if (error) throw error;
+      if ((data as { redirectType?: string | null }).redirectType === 'recovery') redirect = 'recovery'; // PKCE akışında tür bağlantıda yazmaz
       const isRecovery = p.type === 'recovery' || redirect === 'recovery';
       if (isRecovery) setRecovery(true);
       // Önceden oturum yoksa kimin hesabına girildiğini göster; tanımıyorsa hemen çıkabilsin. Şifre yenilemede pencere
@@ -172,7 +168,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(s);
       if (event === 'PASSWORD_RECOVERY') setRecovery(true);
       // Çıkışta mağaza (RevenueCat) kimliği de bırakılır; girişte BillingProvider logIn yapar
-      if (event === 'SIGNED_OUT') { setRecovery(false); storeLogOut(); }
+      // Bekleyen davet kodları da silinir: aynı cihazda sonra giren hesap öncekinin kodunu kullanmasın (güvenlik denetimi 22 Kasım 2026)
+      if (event === 'SIGNED_OUT') { setRecovery(false); storeLogOut(); clearPendingInvite().catch(() => {}); clearPendingClinicInvite(); clearPendingGuestCode(); }
     });
     Linking.getInitialURL().then(handleUrl);
     const sub = Linking.addEventListener('url', ({ url }) => handleUrl(url));

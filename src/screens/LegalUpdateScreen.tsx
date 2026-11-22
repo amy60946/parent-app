@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
 import { LegalDoc, isNotice, legalAccept } from '../lib/legal';
 import { track } from '../lib/track';
+import { errorText } from '../lib/errors';
 
 // Yeniden onay (hukuk/50 §2): açılışta legal_pending boş değilse. Kullanıcı isteği 28 Ekim 2026: büyük sayfa yerine küçük
 // kart; metin adları tek satırda bağlantı, ayrıntı metinde. Koşullar için tek kutu (önceden işaretli değil); veli olarak
@@ -32,7 +33,7 @@ export default function LegalUpdateScreen({ navigation, route }: any) {
       track('legal.accept', { n: parent.length + child.length });
       navigation.goBack();
     } catch (e) {
-      Alert.alert('Kaydedilemedi', (e as Error).message);
+      Alert.alert('Kaydedilemedi', errorText(e));
     } finally { setBusy(false); }
   };
 

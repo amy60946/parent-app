@@ -20,6 +20,7 @@ import { useBilling } from '../billing';
 import { useCare } from '../lib/care';
 import { CareGoal } from '../lib/clinic';
 import { track } from '../lib/track';
+import { errorText } from '../lib/errors';
 
 // Uzmanın bu çocuk için aileye gönderdiği hedefler (çocuk → hedefler); davranış kaydı isteğe bağlı olarak birine bağlanır
 // (kullanıcı kararı 3 Kasım 2026; ortak proposed/20261103120000_abc_goal.sql)
@@ -57,7 +58,7 @@ export default function AbcScreen({ navigation, route }: any) {
       setLinks(ln);
     } catch (e) {
       setEvents([]);
-      Alert.alert('Yüklenemedi', (e as Error).message);
+      Alert.alert('Yüklenemedi', errorText(e));
     }
   }, [familyId]);
   useEffect(() => { load(); }, [load]);
@@ -70,7 +71,7 @@ export default function AbcScreen({ navigation, route }: any) {
   const remove = (e: AbcEvent) => Alert.alert('Kayıt silinsin mi?', 'Uzman da artık göremez.', [
     { text: 'Vazgeç', style: 'cancel' },
     { text: 'Sil', style: 'destructive', onPress: async () => {
-      try { await deleteAbc(e); load(); } catch (err) { Alert.alert('Silinemedi', (err as Error).message); }
+      try { await deleteAbc(e); load(); } catch (err) { Alert.alert('Silinemedi', errorText(err)); }
     } },
   ]);
 
@@ -201,7 +202,7 @@ function AbcForm({ onDone, defaultChild, links, goals }: { onDone: () => void; d
       recorder.record();
       setRecording(true);
     } catch (e) {
-      Alert.alert('Kayıt başlatılamadı', (e as Error).message);
+      Alert.alert('Kayıt başlatılamadı', errorText(e));
     }
   };
   const stopRec = async () => {
@@ -239,7 +240,7 @@ function AbcForm({ onDone, defaultChild, links, goals }: { onDone: () => void; d
       }
       onDone();
     } catch (e) {
-      Alert.alert('Kaydedilemedi', (e as Error).message);
+      Alert.alert('Kaydedilemedi', errorText(e));
     } finally {
       setBusy(false);
     }

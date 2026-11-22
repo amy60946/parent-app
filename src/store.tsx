@@ -10,7 +10,7 @@ import { readFileBytes } from './lib/files';
 import { TaskDayPart } from './data/dayParts';
 import { AgeBand, toAgeBand } from './data/ageBands';
 import { childAvatarId } from './data/avatars';
-import { toAppError } from './lib/errors';
+import { toAppError, errorText } from './lib/errors';
 import { requestPremium } from './lib/billing';
 
 export type Child = {
@@ -415,7 +415,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
       if (error) {
         // Ücretsiz plan sınırı: üyelik ekranı (ortak/sozlesme/durumlar.md 12)
         if (error.hint === 'premium_required') requestPremium(error.message);
-        else Alert.alert('Kaydedilemedi', error.message);
+        else Alert.alert('Kaydedilemedi', errorText(error));
         refresh();
       }
     },
@@ -605,7 +605,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     setCompletions((p) => { const n = { ...p }; if (prev) n[key] = prev; else delete n[key]; return n; });
     const old = decision === 'retry' && (error.code === 'PGRST202' || /Geçersiz durum|completions_status_check/.test(error.message));
     Alert.alert(old ? 'Sunucu güncellemesi bekleniyor' : 'Kaydedilemedi',
-      old ? '"Tekrar dene", ortak SQL dosyası Supabase\'de çalıştırılınca açılır. Şimdilik onaylayabilir ya da reddedebilirsin.' : error.message);
+      old ? '"Tekrar dene", ortak SQL dosyası Supabase\'de çalıştırılınca açılır. Şimdilik onaylayabilir ya da reddedebilirsin.' : errorText(error));
     return false;
   }, []);
 
@@ -703,7 +703,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
     } catch (e) {
       setMessages((p) => p.filter((x) => x.id !== id));
       if ((e as { hint?: string }).hint === 'premium_required') requestPremium((e as Error).message);
-      else Alert.alert('Gönderilemedi', (e as Error).message ?? 'Tekrar dene.');
+      else Alert.alert('Gönderilemedi', errorText(e));
     } finally {
       sendingIds.current.delete(id);
     }

@@ -4,6 +4,7 @@ import { colors, radius, difficultyMeta } from '../theme';
 import { useStore, Task } from '../store';
 import { formatTR, todayISO } from '../dates';
 import { Suggestion, decideSuggestion, linkSuggestionTask } from '../lib/clinic';
+import { errorText } from '../lib/errors';
 
 // Kabul edilen öneri → görev: alanlar birebir taşınır, başlangıç yoksa ya da geçmişse bugün (akislar.md 5.4, 3a).
 // Rutin paketindeyse görev rutinine bağlanır (5.4 v2 adım 6); override: paket düzenlemesinde seçilen tekrar.
@@ -33,7 +34,7 @@ export default function SuggestionCard({ s, childName, goal, onDecided }: { s: S
       onDecided(s.id);
       if (accept) Alert.alert('Adım eklendi', `"${s.title}" ${start === todayISO() ? 'bugünden' : formatTR(start) + ' tarihinden'} itibaren ${childName} için Rutinler'de.`);
     } catch (e) {
-      Alert.alert('Kaydedilemedi', (e as Error).message);
+      Alert.alert('Kaydedilemedi', errorText(e));
     } finally {
       setBusy(false);
     }

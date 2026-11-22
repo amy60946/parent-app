@@ -8,6 +8,7 @@ import { taskDayPartOf } from '../data/dayParts';
 import { formatTR, todayISO } from '../dates';
 import { WEEKDAYS } from '../data/routines';
 import { track } from '../lib/track';
+import { errorText } from '../lib/errors';
 
 // Uzmanın değişiklik önerisi (kullanıcı kararları 30 Ekim ve 2 Kasım 2026; ortak akislar.md 12.1 adım 6–8): uzman ailede ekli
 // göreve doğrudan dokunmaz; yeni saat / gün / tekrar ya da "görevi çıkar" önerir. Aynı rutinin değişiklikleri tek kart.
@@ -63,7 +64,7 @@ export default function ChangeSuggestionCard({ items, childName, onDecided }: { 
       track('clinic.change_apply', { n: list.length });
       onDecided(list.map((s) => s.id));
     } catch (e) {
-      Alert.alert('Uygulanamadı', (e as Error).message);
+      Alert.alert('Uygulanamadı', errorText(e));
     } finally {
       setBusy(false);
     }
@@ -75,7 +76,7 @@ export default function ChangeSuggestionCard({ items, childName, onDecided }: { 
       track('clinic.change_decline', { n: list.length });
       onDecided(list.map((s) => s.id));
     } catch (e) {
-      Alert.alert('Kaydedilemedi', (e as Error).message);
+      Alert.alert('Kaydedilemedi', errorText(e));
     } finally {
       setBusy(false);
     }

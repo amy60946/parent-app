@@ -17,7 +17,7 @@ import { useAuth } from '../lib/auth';
 import { useFlag } from '../clientConfig';
 import { childAvatars, defaultChildAvatar } from '../data/avatars';
 import { ageBands, AgeBand } from '../data/ageBands';
-import { hintOf } from '../lib/errors';
+import { hintOf, errorText } from '../lib/errors';
 import { requestPremium } from '../lib/billing';
 import { track } from '../lib/track';
 import { joinNames } from '../lib/tr';
@@ -87,7 +87,7 @@ export default function InviteScreen({ navigation, route }: any) {
       setGroup(r.invite.childAgeGroup);
     } catch (e) {
       const hint = hintOf(e);
-      setCodeError(hint === 'accepted' ? `${inviteErrorTitle(hint)}.` : (e as Error).message);
+      setCodeError(hint === 'accepted' ? `${inviteErrorTitle(hint)}.` : errorText(e));
     } finally {
       setChecking(false);
     }
@@ -121,8 +121,8 @@ export default function InviteScreen({ navigation, route }: any) {
       const hint = hintOf(e);
       if (hint === 'premium_required') requestPremium((e as Error).message);
       else if (hint && INVITE_FINAL.includes(hint)) {
-        Alert.alert(inviteErrorTitle(hint), (e as Error).message, [{ text: 'Tamam', onPress: close }]);
-      } else Alert.alert('Bağlanamadı', (e as Error).message);
+        Alert.alert(inviteErrorTitle(hint), errorText(e), [{ text: 'Tamam', onPress: close }]);
+      } else Alert.alert('Bağlanamadı', errorText(e));
     } finally {
       setBusy(false);
     }
@@ -137,7 +137,7 @@ export default function InviteScreen({ navigation, route }: any) {
         text: 'Daveti kapat', style: 'destructive',
         onPress: async () => {
           try { await declineInvite(invite.code); track('invite.decline'); close(); }
-          catch (e) { Alert.alert('Kapatılamadı', (e as Error).message); }
+          catch (e) { Alert.alert('Kapatılamadı', errorText(e)); }
         },
       },
     ],
@@ -354,7 +354,7 @@ function Done({ invite, who, done, fromSetup, onClose, createChildCode }: {
     if (!(await ensureChildConsent(target.name))) return; // veli onayı: kod/QR'dan önce (hukuk/50 §1.3)
     setBusy(true);
     try { setCode(await createChildCode(target.id)); }
-    catch (e) { Alert.alert('Kod üretilemedi', (e as Error).message); }
+    catch (e) { Alert.alert('Kod üretilemedi', errorText(e)); }
     finally { setBusy(false); }
   };
   const names = joinNames(shared.map((c) => c.name)) || 'çocuğun';
