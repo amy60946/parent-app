@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import NotificationBell from '../components/NotificationBell';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,6 +9,9 @@ import { useStore, taskOccursOn, completionKey } from '../store';
 import { DAY_SHORT, addDays, toISO, startOfWeek } from '../dates';
 import { genitive } from '../lib/tr';
 import ParentLessons from '../components/ParentLessons';
+import { useFocusEffect } from '@react-navigation/native';
+import { ReportRow, familyReports } from '../lib/reports';
+import { reportDate, reportPeriod } from './ReportScreen';
 import { useFlag } from '../clientConfig';
 import { PARENT_TRAINING_FLAG } from '../lib/trainings';
 import { useTabBarScroll } from '../lib/tabBarScroll';
@@ -23,6 +26,15 @@ export default function ProgressScreen({ navigation, route }: any) {
   useEffect(() => { if (route?.params?.who === 'me') { if (lessonsOn) setChildId('me'); navigation.setParams({ who: undefined }); } }, [route?.params?.who, navigation, lessonsOn]);
   const me = lessonsOn && (childId === 'me' || children.length === 0);
   const child = me ? undefined : children.find((c) => c.id === childId) ?? children[0];
+  // Uzmandan gelen raporlar, yalnız bu çocuğun (arşiv Gelişim'de; kullanıcı kararı 23 Kasım 2026). İşlev yoksa bölüm görünmez.
+  const [reports, setReports] = useState<ReportRow[] | null>(null);
+  const childKey = child?.id;
+  useFocusEffect(useCallback(() => {
+    if (!childKey) { setReports(null); return; }
+    let live = true;
+    familyReports(childKey).then((r) => { if (live) setReports(r); }).catch(() => { if (live) setReports(null); });
+    return () => { live = false; };
+  }, [childKey]));
   const today = new Date();
 
   const stat = (iso: string) => {
@@ -178,6 +190,25 @@ export default function ProgressScreen({ navigation, route }: any) {
             );
           })}
         </Card>
+        {!!reports?.length && (
+          <Card style={{ padding: 0 }}>
+            <Text style={[styles.h, { padding: 16, paddingBottom: 4 }]}>Uzmanından gelen raporlar</Text>
+            {reports.map((r, i) => (
+              <Pressable key={r.id} onPress={() => navigation.navigate('Report', { reportId: r.id })} accessibilityRole="button"
+                accessibilityLabel={`${r.title}${r.seenAt ? '' : ', yeni'}`}
+                style={[styles.reportRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line }]}>
+                <Ionicons name="document-text-outline" size={20} color={colors.navy} />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={[styles.reportTitle, !r.seenAt && { fontWeight: '700' }]} numberOfLines={2}>{r.title}</Text>
+                  {!!r.clinicianName && <Text style={styles.cap}>{r.clinicianName}</Text>}
+                  <Text style={styles.cap}>{reportPeriod(r.periodStart, r.periodEnd) || reportDate(r.createdAt)}</Text>
+                </View>
+                {!r.seenAt && <View style={styles.newDot} accessibilityElementsHidden importantForAccessibility="no" />}
+                <Ionicons name="chevron-forward" size={16} color={colors.faint} />
+              </Pressable>
+            ))}
+          </Card>
+        )}
         {/* hukuk/50 §13 */}
         <Text style={{ fontSize: 11, lineHeight: 16, color: colors.muted, textAlign: 'center' }}>Bu sayılar çocuğunun uygulamadaki rutinlerini özetler; tanı, zekâ ya da dikkat puanı değildir.</Text>
         </>
@@ -195,4 +226,7 @@ const styles = StyleSheet.create({
   big: { fontSize: 18, fontWeight: '700', color: colors.navy },
   cap: { fontSize: 11, color: colors.muted, marginTop: 2 },
   h: { fontSize: 13, fontWeight: '600', color: colors.navy },
+  reportRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, minHeight: 56 },
+  reportTitle: { fontSize: 15, fontWeight: '600', color: colors.navy },
+  newDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.gold },
 });

@@ -47,11 +47,13 @@ export default function IncidentScreen({ navigation, route }: any) {
   const at = (() => { const d = fromISO(date); const [h, m] = time.split(':').map(Number); d.setHours(h || 0, m || 0, 0, 0); return d; })();
   const dateErr = at.getTime() > Date.now() + 5 * 60e3 ? 'Olay zamanı ileri olamaz.'
     : at.getTime() < Date.now() - 30 * 864e5 ? 'En çok 30 gün öncesinin olayı bildirilebilir.' : '';
-  // Sunucudaki kurallar (family_incident_report): sıklıkta sayı ≥ 1, ABC'de önce + sonra, sürede dakika, diğer olayda davranışın adı
+  // Sunucudaki kurallar (family_incident_report): seçili HER tür için alan zorunlu: sıklıkta sayı ≥ 1, ABC'de önce + sonra,
+  // sürede dakika; diğer olayda davranışın adı. Uzman birden çok tür seçebilir (23 Kasım 2026).
+  const has = (t: 'frequency' | 'abc' | 'duration') => !!b?.logTypes.includes(t);
   const detailsOk = !dateErr && (other ? !!f.name.trim()
-    : b?.logType === 'frequency' ? Number(f.count) >= 1
-    : b?.logType === 'abc' ? !!f.before.trim() && !!f.after.trim()
-    : b?.logType === 'duration' ? f.minutes !== '' && Number(f.minutes) <= 1440 : false);
+    : !!b && (!has('frequency') || Number(f.count) >= 1)
+      && (!has('abc') || (!!f.before.trim() && !!f.after.trim()))
+      && (!has('duration') || (f.minutes !== '' && Number(f.minutes) <= 1440)));
   const strategyOk = (other || strategy !== null) && response !== null;
 
   const send = async () => {
@@ -64,11 +66,11 @@ export default function IncidentScreen({ navigation, route }: any) {
         antecedent: f.before.trim(), consequence: f.after.trim(), strategy: f.tried.trim(), response: response ?? undefined,
       } : {
         linkId: link.linkId, behaviorId: b!.id, occurredAt: at.toISOString(),
-        count: b!.logType === 'frequency' ? num(f.count) : undefined, durationMin: b!.logType === 'duration' ? num(f.minutes) : undefined,
-        antecedent: b!.logType === 'abc' ? f.before.trim() : '', consequence: b!.logType === 'abc' ? f.after.trim() : '',
+        count: has('frequency') ? num(f.count) : undefined, durationMin: has('duration') ? num(f.minutes) : undefined,
+        antecedent: has('abc') ? f.before.trim() : '', consequence: has('abc') ? f.after.trim() : '',
         strategy: strategy && strategy !== NONE ? strategy : '', response: response ?? undefined,
       });
-      track('incident.report', { type: other ? 'other' : b!.logType, strategy: other ? !!f.tried.trim() : strategy !== NONE });
+      track('incident.report', { type: other ? 'other' : b!.logTypes.join('+'), strategy: other ? !!f.tried.trim() : strategy !== NONE });
       setStep('thanks');
     } catch (e) { Alert.alert('Gönderilemedi', incidentError(e)); } finally { setBusy(false); }
   };
@@ -157,9 +159,7 @@ export default function IncidentScreen({ navigation, route }: any) {
             <Field label="Ne oldu?" value={f.name} onChange={set('name')} placeholder="Davranışın adı" max={120} />
             {when}{before}{after}{minutes}{count}
           </>
-        ) : b?.logType === 'frequency' ? <>{when}{count}</>
-          : b?.logType === 'abc' ? <>{when}{before}{after}</>
-          : <>{when}{minutes}</>}
+        ) : <>{when}{has('frequency') && count}{has('abc') && <>{before}{after}</>}{has('duration') && minutes}</>}
       </>
     );
     footer = <Footer back="Geri" onBack={() => setStep('pick')} next="İleri" disabled={!detailsOk} onNext={() => setStep('strategy')} />;

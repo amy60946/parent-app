@@ -17,7 +17,7 @@ const icon: Record<string, keyof typeof Ionicons.glyphMap> = {
   reward_decided: 'gift-outline', stones_deducted: 'sunny-outline', guest_pass_used: 'gift-outline', referral_reward: 'gift-outline', care_plan_shared: 'clipboard-outline',
   lesson_assigned: 'school-outline', training_assigned: 'school-outline', training_mastered: 'ribbon-outline', training_reminder: 'alarm-outline',
   session_scheduled: 'calendar-outline', session_changed: 'calendar-outline', session_cancelled: 'calendar-outline', session_offer: 'calendar-outline',
-  day_complete: 'checkmark-done-outline', nudge: 'bulb-outline',
+  day_complete: 'checkmark-done-outline', nudge: 'bulb-outline', report_shared: 'document-text-outline',
 };
 
 // Bildirime dokununca ilgili ekran. Gösterilecek bir ekran yoksa hiçbir şey olmaz (false döner):
@@ -45,6 +45,8 @@ export function notificationTarget(n: Pick<AppNotification, 'kind' | 'data'>): [
   if ((n.kind === 'training_assigned' || n.kind === 'training_mastered' || n.kind === 'training_reminder') && n.data?.training_id) {
     return ['Training', { trainingId: n.data.training_id }];
   }
+  // Uzmandan gelen rapor (23 Kasım 2026): raporun kendisi
+  if (n.kind === 'report_shared' && n.data?.report_id) return ['Report', { reportId: n.data.report_id }];
   if (n.kind === 'kvkk_answered') return ['Kvkk', { tab: 'list' }]; // KVKK başvurusu yanıtlandı (ortak P17)
   return null;
 }
