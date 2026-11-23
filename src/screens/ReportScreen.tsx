@@ -87,7 +87,7 @@ function Section({ s, wide }: { s: ReportSection; wide: boolean }) {
           <Text style={styles.value}>{r[0] ?? ''}</Text>
           {r.slice(1).map((cell, j) => (
             <View key={j} style={styles.cellLine}>
-              <Text style={styles.label}>{s.columns[j + 1] ?? ''}</Text>
+              <Text style={styles.cellLabel}>{s.columns[j + 1] ?? ''}</Text>
               <Text style={[styles.bodySmall, { flexShrink: 1, textAlign: 'right' }]}>{cell}</Text>
             </View>
           ))}
@@ -127,7 +127,8 @@ const styles = StyleSheet.create({
   kv: { gap: 2, paddingTop: 10 },
   sep: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   rowCard: { backgroundColor: colors.bg, borderRadius: radius.md, padding: 12, gap: 6 },
-  cellLine: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+  cellLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 },
+  cellLabel: { fontSize: 15, color: '#5A6178' }, // satır kartında sütun adı: açık zeminde okunur gri
   table: { borderWidth: StyleSheet.hairlineWidth, borderColor: colors.line, borderRadius: radius.md, overflow: 'hidden' },
   tr: { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 10, gap: 10 },
   thRow: { backgroundColor: colors.bg },

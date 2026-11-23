@@ -192,7 +192,7 @@ export default function ProgressScreen({ navigation, route }: any) {
         </Card>
         {!!reports?.length && (
           <Card style={{ padding: 0 }}>
-            <Text style={[styles.h, { padding: 14, paddingBottom: 4 }]}>Uzmanından gelen raporlar</Text>
+            <Text style={[styles.h, { padding: 16, paddingBottom: 4 }]}>Uzmanından gelen raporlar</Text>
             {reports.map((r, i) => (
               <Pressable key={r.id} onPress={() => navigation.navigate('Report', { reportId: r.id })} accessibilityRole="button"
                 accessibilityLabel={`${r.title}${r.seenAt ? '' : ', yeni'}`}
@@ -200,7 +200,8 @@ export default function ProgressScreen({ navigation, route }: any) {
                 <Ionicons name="document-text-outline" size={20} color={colors.navy} />
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={[styles.reportTitle, !r.seenAt && { fontWeight: '700' }]} numberOfLines={2}>{r.title}</Text>
-                  <Text style={styles.cap}>{[r.clinicianName, reportPeriod(r.periodStart, r.periodEnd) || reportDate(r.createdAt)].filter(Boolean).join(' · ')}</Text>
+                  {!!r.clinicianName && <Text style={styles.cap}>{r.clinicianName}</Text>}
+                  <Text style={styles.cap}>{reportPeriod(r.periodStart, r.periodEnd) || reportDate(r.createdAt)}</Text>
                 </View>
                 {!r.seenAt && <View style={styles.newDot} accessibilityElementsHidden importantForAccessibility="no" />}
                 <Ionicons name="chevron-forward" size={16} color={colors.faint} />
@@ -225,7 +226,7 @@ const styles = StyleSheet.create({
   big: { fontSize: 18, fontWeight: '700', color: colors.navy },
   cap: { fontSize: 11, color: colors.muted, marginTop: 2 },
   h: { fontSize: 13, fontWeight: '600', color: colors.navy },
-  reportRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12, minHeight: 56 },
+  reportRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, minHeight: 56 },
   reportTitle: { fontSize: 15, fontWeight: '600', color: colors.navy },
   newDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.gold },
 });
