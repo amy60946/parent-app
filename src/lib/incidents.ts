@@ -9,7 +9,14 @@ import { isMissingRpc } from './clinic';
 // ebeveyn olayı bildirir, uzmana behavior_incident bildirimi gider. Sunucuda işlev yoksa null: giriş satırları görünmez.
 
 export type LogType = 'frequency' | 'abc' | 'duration';
-export type TargetBehavior = { id: string; title: string; description: string; strategies: string[]; logType: LogType };
+// logTypes: uzmanın seçtiği kayıt türleri, sabit sırada (23 Kasım 2026, ortak öneri 20261123100000; eski sunucuda yalnız log_type)
+export type TargetBehavior = { id: string; title: string; description: string; strategies: string[]; logType: LogType; logTypes: LogType[] };
+const ORDER: LogType[] = ['frequency', 'abc', 'duration'];
+const typesOf = (b: any): LogType[] => {
+  const list = Array.isArray(b.log_types) ? b.log_types : [b.log_type];
+  const set = ORDER.filter((t) => list.includes(t));
+  return set.length ? set : ['frequency'];
+};
 export type BehaviorLink = { linkId: string; childId: string; childName: string; clinicId: string; behaviors: TargetBehavior[] };
 // Çocuğun tepkisi: ebeveynin gözlemi, puan değil (durumlar.md P22)
 export const RESPONSES = [
@@ -22,7 +29,8 @@ export async function familyTargetBehaviors(): Promise<BehaviorLink[] | null> {
   return ((data ?? []) as any[]).map((l) => ({
     linkId: l.link_id, childId: l.child_id, childName: l.child_name ?? '', clinicId: l.clinic_id,
     behaviors: (l.behaviors ?? []).map((b: any) => ({ id: b.id, title: b.title, description: b.description ?? '',
-      strategies: Array.isArray(b.strategies) ? b.strategies.filter((x: unknown) => typeof x === 'string' && x.trim()) : [], logType: b.log_type })),
+      strategies: Array.isArray(b.strategies) ? b.strategies.filter((x: unknown) => typeof x === 'string' && x.trim()) : [],
+      logType: typesOf(b)[0], logTypes: typesOf(b) })),
   }));
 }
 

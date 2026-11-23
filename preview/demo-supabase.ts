@@ -551,6 +551,27 @@ async function rpc(name: string, args: Row = {}): Promise<{ data: any; error: Er
     }
     return { data: p, error: null };
   }
+  // Uzmandan gelen rapor (ortak öneri 20261123100000): önizlemede kurgusal tek örnek, ilk açılışta "görüldü"
+  if (name === 'family_reports' || name === 'family_report') {
+    const KEY = 'demo-report-seen';
+    let seen: string | null = null;
+    try { seen = localStorage.getItem(KEY); } catch {}
+    const kid = db.children.find((c: Row) => c.id === 'c-nazli');
+    const d = (n: number) => { const x = new Date(Date.now() - n * 864e5); return x.toISOString().slice(0, 10); };
+    const row = { id: 'demo-report-1', child_id: kid?.id ?? null, child_name: kid?.name ?? '', title: 'Aylık ilerleme özeti',
+      clinician_name: 'Elif Örnek, Aile danışmanı', period_start: d(30), period_end: d(1), created_at: new Date(Date.now() - 2 * 3600e3).toISOString(), seen_at: seen };
+    if (name === 'family_reports') return { data: !args.p_child || args.p_child === row.child_id ? [row] : [], error: null };
+    if (args.p_id !== row.id) return { data: null, error: { message: 'Rapor bulunamadı', hint: 'report_not_found' } };
+    if (!seen) { seen = now(); try { localStorage.setItem(KEY, seen); } catch {} }
+    return { data: { ...row, seen_at: seen, content: { v: 1, child: { name: row.child_name }, period: { start: row.period_start, end: row.period_end },
+      sections: [
+        { type: 'text', title: 'Genel', body: 'Bu ay sabah rutini daha düzenli ilerledi. Hatırlatma sayısı azaldı.\n\nÖnümüzdeki dönemde akşam rutinine odaklanacağız.' },
+        { type: 'kv', title: 'Özet', rows: [['Tamamlanan adım', '64'], ['Düzenli gün', '22 / 30'], ['En düzenli rutin', 'Sabah rutini']] },
+        { type: 'table', title: 'Rutinler', columns: ['Rutin', 'Hafta 1', 'Hafta 2', 'Hafta 3', 'Hafta 4'], rows: [['Sabah', '%60', '%70', '%80', '%85'], ['Akşam', '%40', '%45', '%55', '%60']] },
+        { type: 'list', title: 'Evde deneyebileceğiniz', items: ['Akşam adımlarını aynı sırayla yapın.', 'Tamamlanan adımı hemen fark edin.'] },
+      ],
+      footer: 'Örnek rapordur; adlar kurgusaldır.' } }, error: null };
+  }
   // Uzmanla paylaşım silinince ailede kalan eğitimler: deneme verisinde yok (bölüm görünmez)
   if (name === 'family_kept_trainings') return { data: [], error: null };
   if (name === 'create_invite_code') {

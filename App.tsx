@@ -43,6 +43,7 @@ import { acceptSignupConsent, legalPending } from './src/lib/legal';
 import ChatScreen from './src/screens/ChatScreen';
 import NotificationsScreen, { openNotification } from './src/screens/NotificationsScreen';
 import NotificationSettingsScreen from './src/screens/NotificationSettingsScreen';
+import ReportScreen from './src/screens/ReportScreen';
 import AbcScreen from './src/screens/AbcScreen';
 import LessonScreen from './src/screens/LessonScreen';
 import TrainingScreen from './src/screens/TrainingScreen';
@@ -301,6 +302,7 @@ function Main() {
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
+      <Stack.Screen name="Report" component={ReportScreen} />
       <Stack.Screen name="Abc" component={AbcScreen} />
       <Stack.Screen name="Lesson" component={LessonScreen} options={{ presentation: 'modal' }} />
       {/* Ebeveyn eğitimi ve davranış olayı (ortak akislar.md 23–24; 9 Kasım 2026) */}
