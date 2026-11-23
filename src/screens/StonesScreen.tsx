@@ -10,6 +10,8 @@ import { useParentTasks } from '../parentTasks';
 import { history, balances } from '../lib/rewards';
 import { giftName } from '../data/giftItems';
 import { startOfWeek, toISO } from '../dates';
+import { useFlag } from '../clientConfig';
+import { PARENT_TRAINING_FLAG } from '../lib/trainings';
 
 // Güneş Taşı hesabı (kullanıcı isteği 27 Ekim 2026): Aile › seçili kişi › Genel'den. Ebeveynin kendi taşı (parent_stone_ledger)
 // ya da çocuğun taşı (sun_stone_ledger). Dönem: bu hafta / bu ay / tümü; her satırda tarih, açıklama, miktar, kalan.
@@ -24,6 +26,7 @@ export default function StonesScreen({ navigation, route }: any) {
   const childId: string | undefined = route.params?.childId;
   const { tasks, children, familyId } = useStore();
   const pt = useParentTasks();
+  const lessonsOn = useFlag(PARENT_TRAINING_FLAG); // dersler kapalıyken (23 Kasım 2026) eski ders satırları nötr adla
   const child = children.find((c) => c.id === childId);
   const [period, setPeriod] = useState<Period>('week');
   const [childMoves, setChildMoves] = useState<Move[] | null>(null);
@@ -41,10 +44,10 @@ export default function StonesScreen({ navigation, route }: any) {
     const task = tasks.find((t) => t.id === r.ref.split('|')[0])?.title ?? 'Adım';
     const kid = children.find((c) => c.id === r.childId)?.name;
     // Ders uygulaması (akislar.md 22, ekonomi.md 5C): haftalık hesap satırı
-    const text = r.reason === 'lesson' ? 'Ders uygulaması' : r.reason === 'lesson_undo' ? 'Ders uygulaması geri alındı'
+    const text = r.reason === 'lesson' ? (lessonsOn ? 'Ders uygulaması' : 'Güneş Taşı') : r.reason === 'lesson_undo' ? (lessonsOn ? 'Ders uygulaması geri alındı' : 'Güneş Taşı geri alındı')
       : r.reason === 'task' ? task : r.reason === 'task_undo' ? `Geri alındı · ${task}` : `Hediye: ${giftName(r.itemId)}${kid ? ` → ${kid}` : ''}`;
     return { id: String(r.id), at: r.createdAt, amount: r.amount, text };
-  })), [childId, pt.ledger, pt.me, tasks, children]);
+  })), [childId, pt.ledger, pt.me, tasks, children, lessonsOn]);
 
   const moves = childId ? childMoves : myMoves;
   const total = childId ? childBal : pt.me ? pt.balance(pt.me) : 0;

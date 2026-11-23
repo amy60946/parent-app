@@ -252,7 +252,7 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
         </Section>
 
         {planOn && (
-          <Section title="Program" info="Uzmanının her çocuk için paylaştığı davranış hedefleri ve aile programı (eğitimler). İlerlemeyi buradan takip edersin; uzmanın da görür. Bu bilgiler tanı ya da puan değildir.">
+          <Section title="Program" info="Uzmanının her çocuk için paylaştığı davranış hedefleri ve aile programı. İlerlemeyi buradan takip edersin; uzmanın da görür. Bu bilgiler tanı ya da puan değildir.">
             {links.map((l, i) => {
               const p = care.plans[l.linkId];
               const active = p?.modules.filter((m) => m.status === 'active') ?? [];

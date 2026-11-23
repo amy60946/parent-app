@@ -15,6 +15,7 @@ export type Session = {
   room: string | null; location: string | null; status: SessionStatus;
   familyResponse: 'ok' | 'unavailable' | null; familyNote: string | null; bookedBy: 'clinic' | 'family' | null;
   offerExpiresAt: string | null; series: boolean; reminders: number[];
+  fee: number | null; // uzmanın yazdığı seans ücreti, TL (ortak akislar.md 27.1; eski sunucuda alan yok → null)
 };
 export type Slot = { startsAt: string; durationMin: number };
 
@@ -24,6 +25,7 @@ const toSession = (r: any): Session => ({
   mode: r.mode ?? 'in_person', room: r.room ?? null, location: r.location ?? null, status: r.status,
   familyResponse: r.family_response ?? null, familyNote: r.family_note ?? null, bookedBy: r.booked_by ?? null,
   offerExpiresAt: r.offer_expires_at ?? null, series: !!r.series, reminders: Array.isArray(r.reminders) ? r.reminders : [1440, 120],
+  fee: r.fee == null || r.fee === '' || !Number.isFinite(Number(r.fee)) ? null : Number(r.fee),
 });
 
 export async function familySessions(): Promise<Session[] | null> {
@@ -81,6 +83,16 @@ export function dayLabel(iso: string, now = new Date()) {
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${DAYS[d.getDay()]}`;
 }
 export const whenLabel = (iso: string) => `${dayLabel(iso)} · ${hhmm(iso)}`;
+// Seans ücreti (akislar.md 27.1 adım 3): "450 TL", kuruş varsa "450,50 TL", binlik ayırıcı nokta. İptal edilen randevuda yok.
+export function feeLabel(s: Pick<Session, 'fee' | 'status'>): string | null {
+  if (s.fee == null || s.fee < 0 || s.status === 'cancelled') return null;
+  const kurus = Math.round(s.fee * 100);
+  const lira = String(Math.floor(kurus / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const rest = kurus % 100;
+  return `Seans ücreti: ${lira}${rest ? `,${String(rest).padStart(2, '0')}` : ''} TL`;
+}
+export const FEE_NOTE = 'Ücretleri uzmanınız belirler; ödeme Moyo üzerinden alınmaz.';
+
 export const placeLabel = (s: Pick<Session, 'mode' | 'room' | 'location'>) =>
   s.mode === 'online' ? 'Online' : s.mode === 'home' ? 'Ev ziyareti' : [s.room, s.location].filter(Boolean).join(' · ') || 'Yüz yüze';
 
