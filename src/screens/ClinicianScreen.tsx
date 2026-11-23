@@ -25,7 +25,7 @@ import { afterModal } from '../lib/modal';
 import { useTabBarScroll } from '../lib/tabBarScroll';
 import SessionsSection from '../components/SessionsSection';
 import { familySessions, syncSessionReminders } from '../lib/sessions';
-import { useTrainings } from '../lib/trainings';
+import { PARENT_TRAINING_FLAG, useTrainings } from '../lib/trainings';
 import { reportable, useTargetBehaviors } from '../lib/incidents';
 import { errorText } from '../lib/errors';
 
@@ -71,6 +71,7 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
   const behaviors = useTargetBehaviors();
   const bar = useTabBarScroll({ enabled: !!tab }); // sekmede yüzen çubuğa bağlı; ayrı sayfada (yığın) çubuk yok
   const planOn = useFlag(CARE_PLAN_FLAG); // Takip Planı kapalıyken Program bölümü ve plan bağlantıları yok (akislar.md 12.2)
+  const trainingOn = useFlag(PARENT_TRAINING_FLAG); // ebeveyn eğitimi kapalıyken (23 Kasım 2026) eğitim görevleri ve metni yok
 
   if (!care) return <SafeAreaView style={styles.safe}><ActivityIndicator color={colors.navy} style={{ marginTop: 60 }} /></SafeAreaView>;
   if (!c) {
@@ -209,7 +210,8 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
 
         <Section title="Bugün yapılacaklar" info={planOn
           ? 'Uzmanının seninle paylaştığı evde uygulamalar. Uyguladığın gün kutuyu işaretle; nasıl geçtiğini takip planında yazabilirsin. Zor bir an olduysa davranış kaydı ekle; uzmanın görür.'
-          : 'Uzmanının verdiği eğitim görevleri burada görünür. Zor bir an olduysa davranış kaydı ekle; uzmanın görür.'}>
+          : trainingOn ? 'Uzmanının verdiği eğitim görevleri burada görünür. Zor bir an olduysa davranış kaydı ekle; uzmanın görür.'
+          : 'Zor bir an olduysa davranış kaydı ekle; uzmanın görür.'}>
           {todos.map((t, i) => (
             <View key={t.module.id} style={[styles.row, i > 0 && styles.sep]}>
               <Pressable style={{ flex: 1, gap: 2 }} onPress={() => openPlan(links.find((l) => l.linkId === t.linkId)!)} accessibilityRole="button">

@@ -9,16 +9,19 @@ import { useStore, taskOccursOn, completionKey } from '../store';
 import { DAY_SHORT, addDays, toISO, startOfWeek } from '../dates';
 import { genitive } from '../lib/tr';
 import ParentLessons from '../components/ParentLessons';
+import { useFlag } from '../clientConfig';
+import { PARENT_TRAINING_FLAG } from '../lib/trainings';
 import { useTabBarScroll } from '../lib/tabBarScroll';
 
 // Gelişim: çocuklar + aile üyesi "Ben" (ebeveyn eğitimi; ortak akislar.md 22, kullanıcı kararları 5 Kasım 2026)
 export default function ProgressScreen({ navigation, route }: any) {
   const { children, tasks, completions, parent } = useStore();
-  const [childId, setChildId] = useState<string | undefined>(children[0]?.id ?? 'me');
+  const lessonsOn = useFlag(PARENT_TRAINING_FLAG); // kapalıyken "Ben" seçeneği ve dersler görünmez (23 Kasım 2026)
+  const [childId, setChildId] = useState<string | undefined>(children[0]?.id ?? (lessonsOn ? 'me' : undefined));
   const bar = useTabBarScroll(); // yüzen sekme çubuğu
   // Bildirimden (lesson_assigned) ya da Bugün'den gelince Ben seçili açılır
-  useEffect(() => { if (route?.params?.who === 'me') { setChildId('me'); navigation.setParams({ who: undefined }); } }, [route?.params?.who, navigation]);
-  const me = childId === 'me' || children.length === 0;
+  useEffect(() => { if (route?.params?.who === 'me') { if (lessonsOn) setChildId('me'); navigation.setParams({ who: undefined }); } }, [route?.params?.who, navigation, lessonsOn]);
+  const me = lessonsOn && (childId === 'me' || children.length === 0);
   const child = me ? undefined : children.find((c) => c.id === childId) ?? children[0];
   const today = new Date();
 
@@ -94,18 +97,20 @@ export default function ProgressScreen({ navigation, route }: any) {
               <Text style={{ fontSize: 11, color: colors.navy, fontWeight: '600' }}>{c.name}</Text>
             </Pressable>
           ))}
-          <Pressable onPress={() => setChildId('me')} style={{ alignItems: 'center', gap: 4, opacity: me ? 1 : 0.5 }}
+          {lessonsOn && <Pressable onPress={() => setChildId('me')} style={{ alignItems: 'center', gap: 4, opacity: me ? 1 : 0.5 }}
             accessibilityRole="button" accessibilityLabel="Ben: senin gelişimin">
             <Avatar id={parent.avatar} size={48} ring={me} />
             <Text style={{ fontSize: 11, color: colors.navy, fontWeight: '600' }}>Ben</Text>
-          </Pressable>
+          </Pressable>}
         </View>
 
-        {me || !child ? (
+        {me ? (
           <>
             <Text style={styles.title}>Senin gelişimin</Text>
             <ParentLessons navigation={navigation} />
           </>
+        ) : !child ? (
+          <Text style={[styles.title, { fontSize: 15, fontWeight: '500' }]}>Çocuğunu eklediğinde gelişimini burada görürsün.</Text>
         ) : (
         <>
         <Text style={styles.title}>{genitive(child.name)} gelişimi</Text>

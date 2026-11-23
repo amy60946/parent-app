@@ -4,6 +4,7 @@ import { supabase } from './supabase';
 import { isMissingRpc } from './clinic';
 import { useAuth } from './auth';
 import LIB from '../data/trainingLibrary.json';
+import { useFlag } from '../clientConfig';
 
 // Ebeveyn eğitimi (kullanıcı isteği 9 Kasım 2026: rakibin aile uygulamasındaki ekranlara sadık; ortak akislar.md 23,
 // veritabani.md 32, durumlar.md P21, öneri 20261110100000_parent_trainings.sql). 5 Kasım ders düzeniyle (lessons.ts,
@@ -125,15 +126,22 @@ export async function reloadTrainings() {
 }
 export function patchTrainings(fn: (list: Training[]) => Training[]) { if (cache) publish(fn(cache)); }
 
+// Ebeveyn eğitimi bayrak arkasında (kullanıcı kararı 23 Kasım 2026: "görünmez yap, belki sonra yavaş yavaş açacağız";
+// Moyo Mercek ile aynı bayrak, yönetim panelinden açılır). Kapalıyken uzmandan gelen eğitimler, Gelişim › Ben dersleri,
+// Uzmanım'daki eğitim görevleri, "Önceki eğitimlerin" ve eğitim bildirimlerinin yönlendirmesi görünmez; veri okunmaz.
+export const PARENT_TRAINING_FLAG = 'parent_training';
+
 export function useTrainings() {
+  const on = useFlag(PARENT_TRAINING_FLAG);
   const uid = useAuth().session?.user.id;
   if (uid !== cacheUser) { cacheUser = uid; cache = undefined; }
   const [list, setList] = useState<Training[] | null | undefined>(cache);
   useFocusEffect(useCallback(() => {
+    if (!on) return;
     subs.add(setList);
     setList(cache);
     reloadTrainings();
     return () => { subs.delete(setList); };
-  }, [uid]));
-  return list;
+  }, [uid, on]));
+  return on ? list : null;
 }

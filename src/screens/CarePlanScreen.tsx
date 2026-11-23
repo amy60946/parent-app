@@ -34,7 +34,7 @@ export default function CarePlanScreen(props: any) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
         <View style={{ padding: 12 }}><IconButton name="chevron-back" label="Geri" onPress={() => props.navigation.goBack()} /></View>
-        <Text style={{ padding: 24, textAlign: 'center', fontSize: 15, lineHeight: 22, color: colors.navy }}>Takip planı şu an kapalı. Uzmanının verdiği eğitim ve görevler Ben ve Uzmanım sayfalarında.</Text>
+        <Text style={{ padding: 24, textAlign: 'center', fontSize: 15, lineHeight: 22, color: colors.navy }}>Takip planı şu an kapalı. Uzmanının önerileri ve randevuların Uzmanım sayfasında.</Text>
       </SafeAreaView>
     );
   }

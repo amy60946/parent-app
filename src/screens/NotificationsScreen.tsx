@@ -6,6 +6,8 @@ import { colors, radius } from '../theme';
 import { IconButton } from '../components/ui';
 import { useNotifications } from '../notifications';
 import { AppNotification } from '../lib/notifications';
+import { flagOn } from '../clientConfig';
+import { PARENT_TRAINING_FLAG } from '../lib/trainings';
 import { track } from '../lib/track';
 
 const icon: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -34,9 +36,12 @@ export function notificationTarget(n: Pick<AppNotification, 'kind' | 'data'>): [
   if (n.kind === 'guest_pass_used' || n.kind === 'referral_reward') return ['GuestPass'];
   // Seans (akislar.md 20): uzmanın sayfasında Randevular, o seans vurgulu; cihazdaki hatırlatma da aynı yere
   if ((n.kind.startsWith('session_')) && n.data?.session_id) return ['Clinician', { sessionId: n.data.session_id }];
+  // Ebeveyn eğitimi bayrağı kapalıyken (23 Kasım 2026) ders ve eğitim bildirimleri ekran açmaz
+  const training = flagOn(PARENT_TRAINING_FLAG);
   // Uzmanın ders önerisi (akislar.md 22) → Gelişim › Ben
-  if (n.kind === 'lesson_assigned') return ['Tabs', { screen: 'Gelişim', params: { who: 'me' } }];
+  if (n.kind === 'lesson_assigned') return training ? ['Tabs', { screen: 'Gelişim', params: { who: 'me' } }] : null;
   // Ebeveyn eğitimi (akislar.md 23; durumlar.md P21): o eğitimin sayfası
+  if (!training && n.kind.startsWith('training_')) return null;
   if ((n.kind === 'training_assigned' || n.kind === 'training_mastered' || n.kind === 'training_reminder') && n.data?.training_id) {
     return ['Training', { trainingId: n.data.training_id }];
   }

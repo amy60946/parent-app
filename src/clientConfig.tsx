@@ -42,11 +42,14 @@ async function fetchConfig(): Promise<Config> {
 const Ctx = createContext<Config>(empty);
 // Özellik bayrağı: sunucuda tanımlı değilse kapalı
 export const useFlag = (key: string) => useContext(Ctx).flags[key] === true;
+// Kanca dışında (ör. telefon bildirimine dokununca yönlendirme): son okunan ayar
+let current: Config = empty;
+export const flagOn = (key: string) => current.flags[key] === true;
 
 export function ClientConfigProvider({ children }: { children: React.ReactNode }) {
   const [cfg, setCfg] = useState<Config>(empty);
   const [dismissed, setDismissed] = useState<string | null>(null);
-  const load = useCallback(() => { fetchConfig().then(setCfg).catch(() => {}); }, []);
+  const load = useCallback(() => { fetchConfig().then((c) => { current = c; setCfg(c); }).catch(() => {}); }, []);
   useEffect(() => {
     load();
     AsyncStorage.getItem(DISMISS_KEY).then(setDismissed).catch(() => {});
