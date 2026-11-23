@@ -9,7 +9,7 @@ import Sheet from './Sheet';
 import { ClinicLink } from '../lib/clinic';
 import {
   Session, Slot, familySessions, respondSession, respondOffer, bookingSlots, bookSlot, sessionError, syncSessionReminders,
-  whenLabel, dayLabel, hhmm, placeLabel, STATUS_LABEL, sessionIcs,
+  whenLabel, dayLabel, hhmm, placeLabel, STATUS_LABEL, sessionIcs, feeLabel, FEE_NOTE,
 } from '../lib/sessions';
 import { shareCalendarFile } from '../lib/calendarFile';
 import { track } from '../lib/track';
@@ -64,6 +64,7 @@ export default function SessionsSection({ links, childName, highlight }: {
   const past = mine.filter((s) => s.status !== 'offered' && new Date(s.startsAt).getTime() + s.durationMin * 60e3 <= now).reverse();
   const bookable = links.filter((l) => (slots[l.linkId]?.length ?? 0) > 0);
   const many = links.length > 1;
+  const anyFee = [...offers, ...upcoming, ...(showPast ? past : [])].some((s) => !!feeLabel(s));
 
   if (!list || (mine.length === 0 && bookable.length === 0)) return null;
 
@@ -98,6 +99,7 @@ export default function SessionsSection({ links, childName, highlight }: {
           <Text style={styles.kicker}>Boşalan saat · {many ? childName(s.childId) : s.clinician}</Text>
           <Text style={styles.when}>{whenLabel(s.startsAt)}</Text>
           <Text style={styles.cap}>{[`${s.durationMin} dk`, s.kindLabel, placeLabel(s)].join(' · ')}</Text>
+          {!!feeLabel(s) && <Text style={styles.cap}>{feeLabel(s)}</Text>}
           {!!s.offerExpiresAt && <Text style={styles.cap}>Yanıt için son: {whenLabel(s.offerExpiresAt)}</Text>}
           <View style={styles.btnRow}>
             <Pressable onPress={() => offer(s, true)} disabled={!!busy} style={[styles.small, styles.smallOn]} accessibilityRole="button">
@@ -122,6 +124,7 @@ export default function SessionsSection({ links, childName, highlight }: {
                     {many && <Text style={styles.kicker}>{childName(s.childId)}</Text>}
                     <Text style={styles.when}>{whenLabel(s.startsAt)}</Text>
                     <Text style={styles.cap}>{[`${s.durationMin} dk`, s.kindLabel, placeLabel(s)].join(' · ')}</Text>
+                    {!!feeLabel(s) && <Text style={styles.cap}>{feeLabel(s)}</Text>}
                   </View>
                   {s.status !== 'planned' && <StatusChip s={s} />}
                 </View>
@@ -174,13 +177,15 @@ export default function SessionsSection({ links, childName, highlight }: {
             <View key={s.id} style={[styles.row, styles.sep]}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.pastWhen}>{dayLabel(s.startsAt)} · {hhmm(s.startsAt)}{many ? ` · ${childName(s.childId)}` : ''}</Text>
-                <Text style={styles.cap}>{s.kindLabel}</Text>
+                <Text style={styles.cap}>{[s.kindLabel, feeLabel(s)].filter(Boolean).join(' · ')}</Text>
               </View>
               <StatusChip s={s} />
             </View>
           ))}
         </View>
       )}
+
+      {anyFee && <Text style={[styles.cap, { paddingHorizontal: 4 }]}>{FEE_NOTE}</Text>}
 
       <Sheet visible={!!noteFor} title="Bu saat uygun değil" onClose={() => setNoteFor(null)}
         footer={(

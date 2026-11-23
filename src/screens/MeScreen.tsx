@@ -187,7 +187,8 @@ export default function MeScreen({ navigation }: any) {
           ))}
         </Section>}
 
-        {(taskCount > 0 || canReport) && <Section title="Görevlerin">
+        {/* Ebeveyn eğitimi kapalıyken (23 Kasım 2026) yalnız olay bildirme satırı kalır: başlık ona göre */}
+        {(taskCount > 0 || canReport) && <Section title={taskCount > 0 ? 'Görevlerin' : 'Uzmanına bildir'}>
           {taskCount > 0 && (
             <Pressable onPress={openTasks} style={styles.row} accessibilityRole="button">
               <View style={styles.rowIcon}><Ionicons name="clipboard-outline" size={18} color={colors.navy} /></View>
