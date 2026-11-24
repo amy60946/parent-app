@@ -242,7 +242,7 @@ function seed(): Db {
     db.clinic_task_suggestions.push({
       id: uuid(), link_id: L, clinic_id: K, family_id: F, child_id: 'c-nazli', title, emoji, skill: 'Öz bakım', difficulty: 'easy', recurring: true, note: '',
       status: 'pending', created_by: D, created_at: ago(200), decided_at: null, description: '', coins: 5, repeat_kind: 'weekly', repeat_days: [1, 2, 3, 4, 5],
-      reminder: time, requires_review: true, routine_group: RG, routine_title: 'Güne hazır sabah', routine_icon: 'sunny-outline', routine_position: i,
+      reminder: time, requires_review: true, routine_group: RG, routine_title: 'Sabah rutini', routine_icon: 'sunny-outline', routine_position: i,
       routine_key: 'morning', goal_id: db.clinic_goals[0]?.id ?? null,
     });
   });

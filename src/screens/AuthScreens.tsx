@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, TextInput, Pressable, ScrollView, Alert, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
+  View, Text, TextInput, Pressable, Image, ScrollView, Alert, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
   TextInputProps,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +20,9 @@ const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
 
 /* ---------- Ortak parçalar ---------- */
 
+// Tanıtım sitesindeki tanım (moyoapp.com.tr/ebeveyn, 24 Kasım 2026), uygulamanın "sen" diliyle
+const MOYO_DEFINITION = 'Çocuğunun günlük rutinini planla, zorlandığı anları not et, ilerlemeyi gör.';
+
 function Layout({ title, subtitle, onBack, children }: {
   title: string; subtitle?: string; onBack?: () => void; children: React.ReactNode;
 }) {
@@ -27,7 +30,7 @@ function Layout({ title, subtitle, onBack, children }: {
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[styles.scroll, styles.narrow]} keyboardShouldPersistTaps="handled">
           <View style={{ height: 36, justifyContent: 'center' }}>
             {onBack && <IconButton name="chevron-back" label="Geri" onPress={onBack} />}
           </View>
@@ -178,12 +181,14 @@ export function WelcomeScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
-      <View style={{ flex: 1, padding: 24, justifyContent: 'center', alignItems: 'center', gap: 10 }}>
-        <View style={styles.hero}><Ionicons name="sunny-outline" size={48} color={colors.navy} /></View>
-        <Text style={[styles.title, { fontSize: 30, textAlign: 'center' }]}>Moyo</Text>
-        <Text style={[styles.subtitle, { fontSize: 15, textAlign: 'center', marginTop: 0 }]}>Rutinler kolaylaşsın, evde huzur artsın.</Text>
+      {/* Kullanıcı isteği 24 Kasım 2026: marka yazısı + Moyo'nun tanımı (tanıtım sitesindeki tanım, uygulamanın "sen" diliyle);
+          eski slogan kalktı. Geniş ekranda (web, iPad) içerik ve düğmeler ortada, en çok 420 nokta. */}
+      <View style={[styles.narrow, { flex: 1, padding: 24, justifyContent: 'center', alignItems: 'center', gap: 16 }]}>
+        <Image source={require('../../assets/brand-wordmark.png')} style={{ width: 180, height: 66 }} resizeMode="contain"
+          accessibilityRole="image" accessibilityLabel="Moyo" accessibilityIgnoresInvertColors />
+        <Text style={[styles.subtitle, { fontSize: 16, lineHeight: 23, textAlign: 'center', marginTop: 0 }]}>{MOYO_DEFINITION}</Text>
       </View>
-      <View style={{ padding: 24, gap: 12 }}>
+      <View style={[styles.narrow, { padding: 24, gap: 12 }]}>
         <Cta label="Başla" onPress={start} />
         <Pressable onPress={() => navigation.navigate('Login')} style={styles.ghost} accessibilityRole="button">
           <Text style={styles.ghostText}>Hesabım var, giriş yap</Text>
@@ -368,8 +373,9 @@ export function ForgotPasswordScreen({ navigation, route }: any) {
 /* ---------- Yeni şifre (e-postadaki bağlantıdan gelinir) ---------- */
 
 export function NewPasswordScreen() {
-  const { updatePassword, signOut, session } = useAuth();
+  const { updatePassword, signOut, session, recovery, cancelPasswordChange } = useAuth();
   const email = session?.user.email;
+  const voluntary = !recovery; // girişte zayıf şifre uyarısından geldi: Geri oturumu kapatmaz
   const [password, setPassword] = useState('');
   const [again, setAgain] = useState('');
   const [busy, setBusy] = useState(false);
@@ -389,7 +395,7 @@ export function NewPasswordScreen() {
   };
 
   return (
-    <Layout title="Yeni şifre belirle" subtitle={email ? `${email} hesabın için yeni bir şifre seç. Bu hesap senin değilse geri dön.` : 'Hesabın için yeni bir şifre seç.'} onBack={signOut}>
+    <Layout title="Yeni şifre belirle" subtitle={voluntary ? 'Güvenliğin için yeni bir şifre seç.' : email ? `${email} hesabın için yeni bir şifre seç. Bu hesap senin değilse geri dön.` : 'Hesabın için yeni bir şifre seç.'} onBack={voluntary ? cancelPasswordChange : signOut}>
       <Input value={password} onChangeText={setPassword} placeholder={`Yeni şifre (en az ${MIN_PASSWORD} karakter)`} secure
         autoComplete="new-password" textContentType="newPassword" />
       <Input value={again} onChangeText={setAgain} placeholder="Yeni şifre (tekrar)" secure
@@ -432,6 +438,7 @@ const styles = StyleSheet.create({
   inviteBand: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: radius.md, padding: 14, borderWidth: 1, borderColor: colors.gold },
   safe: { flex: 1, backgroundColor: colors.bg },
   scroll: { padding: 24, paddingTop: 8, flexGrow: 1 },
+  narrow: { width: '100%', maxWidth: 420, alignSelf: 'center' }, // geniş ekranda form ve düğmeler ortada (24 Kasım 2026)
   brand: { fontSize: 13, fontWeight: '700', color: colors.muted, letterSpacing: 1, marginTop: 28 },
   title: { fontSize: 24, fontWeight: '700', color: colors.navy, marginTop: 6 },
   subtitle: { fontSize: 13, color: colors.muted, marginTop: 6, lineHeight: 19 },

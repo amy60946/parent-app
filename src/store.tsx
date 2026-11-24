@@ -782,7 +782,7 @@ export function StoreProvider({ userId, children: kids }: { userId: string | nul
       await removeFolder('abc', f);
     }
     const { error } = await supabase.rpc('delete_account');
-    if (error) throw new Error(error.message);
+    if (error) throw toAppError(error); // ipucu (ör. recent_login_required) ekranda kullanılır
   }, [isOnlyParent]);
 
   const savedIds = useMemo(() => savedRows.filter((r) => r.saved).map((r) => r.template_key as string), [savedRows]);

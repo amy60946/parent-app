@@ -21,7 +21,6 @@ export default function Splash() {
       <StatusBar style="light" />
       <Image source={require('../../assets/splash-icon.png')} style={{ width: SIZE, height: SIZE }} resizeMode="contain" accessibilityIgnoresInvertColors />
       <Animated.View style={[styles.foot, { opacity: fade }]}>
-        <Text style={styles.tagline}>Rutinler kolaylaşsın, evde huzur artsın.</Text>
         <View style={styles.track}>
           <Animated.View style={[styles.bar, { transform: [{ translateX: line.interpolate({ inputRange: [0, 1], outputRange: [-48, 120] }) }] }]} />
         </View>
@@ -33,7 +32,6 @@ export default function Splash() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: BRAND_BG, alignItems: 'center', justifyContent: 'center' },
   foot: { position: 'absolute', bottom: 72, alignItems: 'center', gap: 18 },
-  tagline: { fontSize: 14, color: 'rgba(255,255,255,0.7)', letterSpacing: 0.2 },
   track: { width: 120, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.12)', overflow: 'hidden' },
   bar: { width: 48, height: 3, borderRadius: 2, backgroundColor: colors.gold },
 });

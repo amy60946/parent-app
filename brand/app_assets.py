@@ -16,6 +16,7 @@ Yazdığı dosyalar (depo kökünden):
   assets/android-icon-monochrome.png  1024 × 1024 saydam, beyaz işaret %46
   assets/splash-icon.png              1024 × 1024 saydam; beyaz "moyo" tuvalin %64'ü (zemin app.json'da #16113A)
   assets/brand-mark.png               360 × 132 saydam, beyaz "moyo" (Aile davet et kartı)
+  assets/brand-wordmark.png           360 × 132 saydam, lacivert "moyo" (açık zeminli karşılama ve giriş ekranı, 24 Kasım 2026)
   site/public/img/parentapp-simge.png 256 × 256 (tanıtım sitesi; sitenin geri kalanı Moyo Mercek penceresinde)
 Depodaki PNG'ler Marketing setinin piksel denetiminden geçmiş dosyalarıdır (birebir kopya); bu betik aynı SVG'lerden üretir,
 fark yalnız kenar yumuşatmasındadır (%0,4'ten az piksel).
@@ -75,6 +76,7 @@ def main():
         save(png(svg('moyo-android-tek-renk.svg'), 1024), 'assets/android-icon-monochrome.png'),
         save(wordmark_on_canvas(1024, 64), 'assets/splash-icon.png'),
         save(png(svg('moyo-yazi-beyaz.svg'), 360, 132), 'assets/brand-mark.png'),
+        save(png(svg('moyo-yazi-lacivert.svg'), 360, 132), 'assets/brand-wordmark.png'),
         save(flat(png(svg('moyo-simge-1024.svg'), 256)), 'site/public/img/parentapp-simge.png'),
     ]
     print('\n'.join(out))

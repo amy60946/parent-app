@@ -92,7 +92,7 @@ export default function AbcScreen({ navigation, route }: any) {
             <Text style={styles.ctaText}>Davranış kaydı ekle</Text>
           </Pressable>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={[styles.cap, { flex: 1 }]}>Uzmanla paylaştığın çocuklarda uzmanın da görür.</Text>
+            <View style={{ flex: 1 }} />
             <Info title="Davranış kaydı" text="Ne oldu, öncesinde ne vardı, sonrasında ne oldu: kısaca yaz. Uzmanla paylaştığın çocuklar için uzmanın da görür; paylaşmadıkların yalnız ailede kalır. Davranış kaydı tanı ya da puan değildir." />
           </View>
 
@@ -360,8 +360,7 @@ function AbcForm({ onDone, defaultChild, links, goals }: { onDone: () => void; d
       <Pressable style={[styles.cta, busy && { opacity: 0.6 }]} disabled={busy} onPress={save}>
         {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Kaydet</Text>}
       </Pressable>
-      {/* Acil durum notu (hukuk/50 §9) */}
-      <Text style={[styles.cap, { textAlign: 'center' }]}>Moyo bir acil yardım hizmeti değildir. Çocuğunun ya da başka birinin güvenliği tehlikedeyse hemen 112'yi ara. Davranış kaydın uzmanına anında ulaşmayabilir.</Text>
+      {/* Acil durum notu kullanıcı isteğiyle kalktı (24 Kasım 2026, hukuk/50 §9); kayıt onay satırı değişmedi */}
     </ScrollView>
   );
 }

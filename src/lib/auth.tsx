@@ -32,6 +32,8 @@ type Auth = {
   session: Session | null;
   loading: boolean;
   recovery: boolean; // şifre yenileme bağlantısıyla gelindi: yeni şifre ekranı gösterilir
+  passwordChange: boolean; // girişte şifre zayıf çıktı, kişi "Yenile" dedi: yeni şifre ekranı, Geri oturumu kapatmaz
+  cancelPasswordChange: () => void;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string, clinicInvite?: string) => Promise<{ needsConfirmation: boolean }>;
   resendConfirmation: (email: string) => Promise<void>;
@@ -57,7 +59,10 @@ export function authErrorText(e: unknown): string {
     case 'email_not_confirmed': return 'E-posta adresin henüz doğrulanmadı. Gelen kutunu kontrol et.';
     case 'user_already_exists':
     case 'email_exists': return 'Bu e-postayla zaten bir hesap var.';
-    case 'weak_password': return 'Şifre çok zayıf. En az 8 karakter, harf ve rakam kullan.';
+    // Sızdırılmış şifre koruması (ortak akislar.md 28, 24 Kasım 2026): nedeni pwned ise ayrı metin
+    case 'weak_password': return ((e as { reasons?: string[] }).reasons ?? []).includes('pwned')
+      ? 'Bu şifre başka sitelerdeki sızıntı listelerinde var. Güvenliğin için başka bir şifre seç.'
+      : 'Şifre en az 8 karakter olmalı, harf ve rakam içermeli.';
     case 'same_password': return 'Yeni şifre eskisinden farklı olmalı.';
     case 'email_address_invalid':
     case 'validation_failed': return 'Geçerli bir e-posta adresi yaz.';
@@ -107,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [recovery, setRecovery] = useState(false);
+  const [passwordChange, setPasswordChange] = useState(false);
   const [childLinking, setChildLinking] = useState(false);
 
   // E-posta bağlantısından gelen oturumu kur. Güvenlik (denetim 22 Kasım 2026): yalnız PKCE kodu (?code=) kabul edilir;
@@ -180,8 +186,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [handleUrl]);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (error) throw error;
+    // Şifre bugünkü kurala uymuyorsa (sızıntı listesi, kısa) girişten sonra bir kez yenileme önerisi (akislar.md 28)
+    if ((data as { weakPassword?: unknown } | null)?.weakPassword) {
+      setTimeout(() => Alert.alert('Şifren güvenli değil', 'Şifren güvenli değil; yenilemek ister misin?', [
+        { text: 'Şimdi değil', style: 'cancel' },
+        { text: 'Yenile', onPress: () => setPasswordChange(true) },
+      ]), 600);
+    }
   }, []);
 
   // clinicInvite: uzman davet bağlantısı anahtarı ya da kodu; sunucu kayıtta daveti aileye bağlar (akislar.md 10 adım 5)
@@ -214,10 +227,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.auth.updateUser({ password });
     if (error) throw error;
     setRecovery(false);
+    setPasswordChange(false);
   }, []);
 
   const signOut = useCallback(async () => {
     setRecovery(false);
+    setPasswordChange(false);
     await unregisterPush().catch(() => {}); // bu telefona artık bu hesabın bildirimi gitmesin
     const { error } = await supabase.auth.signOut();
     // Ağ yoksa bile yerel oturumu kapat
@@ -251,7 +266,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <Ctx.Provider value={{ session, loading, recovery, signIn, signUp, resendConfirmation, sendPasswordReset, updatePassword, signOut, signOutLocal, childSignIn, childLinking }}>
+    <Ctx.Provider value={{ session, loading, recovery, passwordChange, cancelPasswordChange: () => setPasswordChange(false), signIn, signUp, resendConfirmation, sendPasswordReset, updatePassword, signOut, signOutLocal, childSignIn, childLinking }}>
       {children}
     </Ctx.Provider>
   );
