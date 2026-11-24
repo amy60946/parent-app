@@ -181,10 +181,8 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
         {tab && (
           <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingTop: 6 }}>
             <IconButton name="settings-outline" label="Uzmanı yönet" onPress={() => setManage(true)} color="#fff" style={styles.heroBtn} />
-            <Pressable onPress={tab.onConnect} hitSlop={6} style={styles.connect} accessibilityRole="button" accessibilityLabel="Yeni uzman bağla">
-              <Ionicons name="add" size={18} color={colors.navy} />
-              <Text style={styles.connectText}>Uzman bağla</Text>
-            </Pressable>
+            {/* Uzman bağlıyken yalnız "+" (kullanıcı isteği 24 Kasım 2026); başka çocuk için başka uzman bağlanabilir */}
+            <IconButton name="add" label="Yeni uzman bağla" onPress={tab.onConnect} color={colors.navy} style={styles.connect} />
           </View>
         )}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: tab ? 16 : 12, paddingTop: tab ? 4 : 6, paddingBottom: 18 }}>
@@ -209,9 +207,9 @@ export function ClinicianView({ navigation, clinicId, care, reload, setCare, tab
         <SessionsSection links={links} childName={childName} highlight={sessionId} />
 
         <Section title="Bugün yapılacaklar" info={planOn
-          ? 'Uzmanının seninle paylaştığı evde uygulamalar. Uyguladığın gün kutuyu işaretle; nasıl geçtiğini takip planında yazabilirsin. Zor bir an olduysa davranış kaydı ekle; uzmanın görür.'
-          : trainingOn ? 'Uzmanının verdiği eğitim görevleri burada görünür. Zor bir an olduysa davranış kaydı ekle; uzmanın görür.'
-          : 'Zor bir an olduysa davranış kaydı ekle; uzmanın görür.'}>
+          ? 'Uzmanının seninle paylaştığı evde uygulamalar. Uyguladığın gün kutuyu işaretle; nasıl geçtiğini takip planında yazabilirsin. Davranış kaydı ekle, uzmanın görsün.'
+          : trainingOn ? 'Uzmanının verdiği eğitim görevleri burada görünür. Davranış kaydı ekle, uzmanın görsün.'
+          : 'Davranış kaydı ekle, uzmanın görsün.'}>
           {todos.map((t, i) => (
             <View key={t.module.id} style={[styles.row, i > 0 && styles.sep]}>
               <Pressable style={{ flex: 1, gap: 2 }} onPress={() => openPlan(links.find((l) => l.linkId === t.linkId)!)} accessibilityRole="button">
@@ -372,8 +370,7 @@ const styles = StyleSheet.create({
   heroWide: { marginHorizontal: 20, marginTop: 12, borderRadius: 24 },
   heroName: { fontSize: 20, fontWeight: '800', color: '#fff' },
   heroCap: { fontSize: 13, color: 'rgba(255,255,255,0.75)' },
-  connect: { flexDirection: 'row', alignItems: 'center', gap: 2, height: 36, paddingLeft: 8, paddingRight: 12, borderRadius: 18, backgroundColor: '#fff' },
-  connectText: { fontSize: 13, fontWeight: '700', color: colors.navy },
+  connect: { backgroundColor: '#fff' },
   section: { fontSize: 16, fontWeight: '800', color: colors.navy },
   text: { fontSize: 14, lineHeight: 20, color: '#4A5165' },
   cap: { fontSize: 12, lineHeight: 16, color: colors.muted },

@@ -10,14 +10,20 @@ import { useBilling } from '../billing';
 import { useParentTasks, memberName } from '../parentTasks';
 import { track } from '../lib/track';
 import { storeManage, storeSubscription } from '../lib/purchases';
-import { errorText } from '../lib/errors';
+import { errorText, hintOf } from '../lib/errors';
+import { supabase } from '../lib/supabase';
+import Sheet from '../components/Sheet';
 
 // Hesabımı sil (hukuk/50 §5.1; ortak delete_account()). Etkin App Store aboneliği varsa önce uyarı (Apple 5.1.1(v):
 // ödeme Apple'da sürer, önce iptal; silme yine serbest). Abonelik sunucudan ve bu Apple Kimliği'nden (RevenueCat) okunur. Ailede tek ebeveynse
 // ailenin bütün verisi silinir; başka ebeveyn varsa yalnız bu hesap. Onay: "SİL" yazılır.
 export default function DeleteAccountScreen({ navigation }: any) {
   const { isOnlyParent, deleteAccount } = useStore();
-  const { signOutLocal } = useAuth();
+  const { signOutLocal, session } = useAuth();
+  // Son adım: şifre (kullanıcı isteği 24 Kasım 2026; ortak akislar.md 28): yanlışsa silme yok
+  const [askPw, setAskPw] = useState(false);
+  const [pw, setPw] = useState('');
+  const [pwErr, setPwErr] = useState('');
   const { access } = useBilling();
   const pt = useParentTasks();
   const [only, setOnly] = useState<boolean | null>(null);
@@ -30,16 +36,29 @@ export default function DeleteAccountScreen({ navigation }: any) {
   const subscribed = (store?.active && store.willRenew) || (!store && access?.state === 'premium' && access.autoRenew !== false);
   const ok = typed.trim().toLocaleUpperCase('tr') === 'SİL' && !busy;
 
+  const openPw = () => { setPw(''); setPwErr(''); setAskPw(true); };
   const del = async () => {
+    const email = session?.user.email;
+    if (!email || !pw) return;
     setBusy(true);
+    setPwErr('');
+    // Şifreyi doğrula: yeni oturum aynı hesapla açılır, sunucu "son girişi" görür (delete_recent_login)
+    const { error: signErr } = await supabase.auth.signInWithPassword({ email, password: pw });
+    if (signErr) {
+      setBusy(false);
+      setPwErr((signErr as { code?: string }).code === 'invalid_credentials' || /invalid login/i.test(signErr.message) ? 'Şifre yanlış.' : errorText(signErr));
+      return;
+    }
+    setAskPw(false);
     try {
       track('account.delete', { only: !!only });
       await deleteAccount();
       await signOutLocal();
       Alert.alert('Hesabın silindi');
     } catch (e) {
-      Alert.alert('Hesap silinemedi', errorText(e));
       setBusy(false);
+      if (hintOf(e) === 'recent_login_required') { openPw(); setPwErr('Güvenliğin için şifreni yeniden gir.'); return; }
+      Alert.alert('Hesap silinemedi', errorText(e));
     }
   };
 
@@ -89,12 +108,23 @@ export default function DeleteAccountScreen({ navigation }: any) {
         <Text style={styles.h}>Bu işlem geri alınamaz. Onaylamak için SİL yaz:</Text>
         <TextInput value={typed} onChangeText={setTyped} autoCapitalize="characters" placeholder="SİL" placeholderTextColor={colors.faint}
           style={styles.input} accessibilityLabel="Onay için SİL yaz" />
-        <Pressable onPress={del} disabled={!ok} style={[styles.cta, !ok && { opacity: 0.4 }]} accessibilityRole="button">
+        <Pressable onPress={openPw} disabled={!ok} style={[styles.cta, !ok && { opacity: 0.4 }]} accessibilityRole="button">
           {busy ? <ActivityIndicator color="#fff" /> : (
             <><Ionicons name="trash-outline" size={18} color="#fff" /><Text style={styles.ctaText}>Hesabımı kalıcı olarak sil</Text></>
           )}
         </Pressable>
       </ScrollView>
+      <Sheet visible={askPw} title="Hesabını silmek için şifreni gir" onClose={() => { if (!busy) setAskPw(false); }}
+        footer={(
+          <Pressable onPress={del} disabled={!pw || busy} style={[styles.cta, { marginTop: 12 }, (!pw || busy) && { opacity: 0.4 }]} accessibilityRole="button">
+            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Hesabımı sil</Text>}
+          </Pressable>
+        )}>
+        <TextInput value={pw} onChangeText={(v) => { setPw(v); setPwErr(''); }} secureTextEntry autoFocus autoCapitalize="none" autoComplete="password"
+          textContentType="password" placeholder="Şifren" placeholderTextColor={colors.faint} style={styles.input} accessibilityLabel="Şifren"
+          onSubmitEditing={del} returnKeyType="done" />
+        {!!pwErr && <Text style={[styles.text, { color: colors.danger }]}>{pwErr}</Text>}
+      </Sheet>
     </SafeAreaView>
   );
 }

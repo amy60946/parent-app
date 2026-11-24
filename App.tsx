@@ -353,11 +353,11 @@ function Tracking({ userId }: { userId: string }) {
 }
 
 function Root() {
-  const { session, loading, recovery, childLinking } = useAuth();
+  const { session, loading, recovery, passwordChange, childLinking } = useAuth();
   if (loading) return <Loading />;
   // Eski sürümden kalan çocuk (anonim) oturumu ebeveyn paneline giremez; bilgi ekranı + ebeveyn girişine geçiş
   if (session?.user.is_anonymous) return childLinking ? <Loading /> : <ChildHomeScreen />;
-  if (recovery && session) return <NewPasswordScreen />;
+  if ((recovery || passwordChange) && session) return <NewPasswordScreen />;
   if (!session) return <AuthFlow />;
   return (
     <ClientConfigProvider>

@@ -8,6 +8,8 @@ import { track } from '../lib/track';
 import { Avatar as Face } from './ui';
 import { useParentTasks } from '../parentTasks';
 import { useModalOpen } from '../lib/modal';
+import { useStore } from '../store';
+import { dative } from '../lib/tr';
 
 // İlk kullanım rehberi (kullanıcı onayı 26 Ekim 2026, tasarım G1 "numaralı dokunuş yolu"):
 // gerçek ekranın sade kopyası karartılır, dokunulacak yerler altın halka + 1 → 2 → 3 sırasıyla gösterilir.
@@ -238,6 +240,12 @@ function Chips({ top, on }: { top: number; on: 'all' | 'me' }) {
   );
 }
 
+// Turdaki [Ad]: ilk çocuğun adı; çocuk yoksa "çocuğun" (kullanıcı isteği 24 Kasım 2026, yeni tur metinleri)
+function useKid() {
+  const name = useStore().children[0]?.name?.trim();
+  return { Ad: name || 'Çocuğun', ad: name || 'çocuğun', adA: name ? dative(name) : 'çocuğuna' };
+}
+
 function StepTask(p: StepProps) {
   return (
     <>
@@ -273,7 +281,7 @@ function StepTask(p: StepProps) {
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <View style={[st.tile, { backgroundColor: '#FDEBD3' }]}>
             <Ionicons name="sunny-outline" size={16} color={colors.navy} />
-            <Text style={st.tileText}>Güne hazır sabah</Text>
+            <Text style={st.tileText}>Sabah rutini</Text>
           </View>
           <View style={[st.tile, { backgroundColor: '#DCE9FB' }]}>
             <Ionicons name="school-outline" size={16} color={colors.navy} />
@@ -282,7 +290,7 @@ function StepTask(p: StepProps) {
         </View>
         <Text style={{ fontSize: 11, color: '#5B6274' }}>ya da listeden tek tek seç</Text>
       </View>
-      <Coach {...p} title="Rutin ekle" text="Rutinler'de + ile rutin ya da tek adım ekle. Hazır rutinle birkaç adımı tek seferde eklersin." style={{ left: 20, right: 20, top: 250 }} />
+      <Coach {...p} title="Rutin ekle" text="Rutinler menüsünden + tuşuna basarak sorumluluk ekle. Hazır rutinler sayesinde birkaç sorumluluğu tek seferde ekleyebilirsin." style={{ left: 20, right: 20, top: 250 }} />
     </>
   );
 }
@@ -290,6 +298,7 @@ function StepTask(p: StepProps) {
 /* ---------- İncele ve onayla: Ben → Onay bekleyen → ✓ (ya da satıra dokun) ---------- */
 
 function StepReview(p: StepProps) {
+  const k = useKid();
   return (
     <>
       <View style={{ position: 'absolute', left: 20, top: 54, gap: 2 }}>
@@ -324,7 +333,7 @@ function StepReview(p: StepProps) {
         </View>
       </View>
       <TabRing index={0} />
-      <Coach {...p} title="Yaptı mı? Onayla" text="Verdiğin sorumluluklar Pofi Adası'nda macera olarak görünür; çocuğun bitirince 'Yaptım'a basar, sana bildirim gelir. Ana sayfada 'Onay bekleyen'e dokun, ✓ ile onayla. Onaylayınca çocuğun coin ve Güneş Taşı kazanır; satıra dokunursan not eklersin." style={{ left: 20, right: 20, top: 372 }} />
+      <Coach {...p} title="Yaptı mı? Onayla" text={`Sorumluluklar Moyo Oyun'da 'Macera' olarak görünür. ${k.Ad} 'Yaptım'a basınca sana bildirim gelir, onaylarsın. ${k.Ad} oyunda İnci ve Güneş Taşı kazanır.`} style={{ left: 20, right: 20, top: 372 }} />
     </>
   );
 }
@@ -332,6 +341,7 @@ function StepReview(p: StepProps) {
 /* ---------- Sen de katıl: kendine görev ver, Güneş Taşı kazan, hediye gönder ---------- */
 
 function StepParent(p: StepProps) {
+  const k = useKid();
   return (
     <>
       <View pointerEvents="none" style={{ position: 'absolute', left: 20, top: 56, alignItems: 'center', gap: 4 }}>
@@ -359,7 +369,7 @@ function StepParent(p: StepProps) {
         <Text style={{ fontSize: 13, fontWeight: '800', color: colors.navy }}>Hediye dükkânı</Text>
       </Ring>
       <TabRing index={4} />
-      <Coach {...p} title="Sen de katıl" text="Bir adımı kendine de ata, 'Yaptım' de, Güneş Taşı kazan. Güneş Taşlarıyla çocuğuna oyunda hediye gönder." style={{ left: 20, right: 32, top: 440 }} />
+      <Coach {...p} title="Sen de katıl" text={`Örneğin 'Ailece bir hafta' rutinine kendini de ekle, 'Yaptım'a tıkla. Sen de Güneş Taşı kazan, bunlarla ${k.adA} oyunda hediye gönder.`} style={{ left: 20, right: 32, top: 440 }} />
     </>
   );
 }
@@ -389,10 +399,10 @@ function StepClinic({ onNext, onBack, step, total }: StepProps) {
       <View style={[st.card, { left: 20, right: 20, top: 360 }]}>
         <Text style={[st.counter, { alignSelf: 'flex-start' }]}>{step + 1} / {total} · isteğe bağlı</Text>
         <Text style={st.title} accessibilityRole="header">Uzmanını ekle</Text>
-        <Text style={st.text}>Kodla bağlan; uzmanın programı ve önerileri burada görünür</Text>
+        <Text style={st.text}>Uzmanının kodunu kullanarak bağlan. Uzmanın rutinleri takip edebilir, davranış kayıtlarını görebilir, sürece dahil olur.</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Ionicons name="shield-checkmark-outline" size={14} color="#2F7D4A" />
-          <Text style={{ fontSize: 12, fontWeight: '600', color: '#2F7D4A' }}>Yalnız senin izninle, istediğinde kapatırsın</Text>
+          <Text style={{ fontSize: 12, fontWeight: '600', color: '#2F7D4A' }}>İstediğin zaman sonlandırabilirsin.</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-end' }}>
           {onBack && <BackBtn onPress={onBack} />}
@@ -408,6 +418,7 @@ function StepClinic({ onNext, onBack, step, total }: StepProps) {
 /* ---------- Ödüller: Ana sayfa › Ödül (çocuk Güneş Taşı yetince oyundan ister, sen onaylarsın) ---------- */
 
 function StepRewards(p: StepProps) {
+  const k = useKid();
   return (
     <>
       <View style={{ position: 'absolute', left: 20, top: 54, gap: 2 }}>
@@ -439,7 +450,7 @@ function StepRewards(p: StepProps) {
           </View>
         ))}
       </View>
-      <Coach {...p} title="Ödülleri sen belirle" text="Ana sayfanın altındaki 'Ödül': film gecesi, park gibi ödüller koy. Güneş Taşı yetince çocuğun oyundan ister, sen onaylarsın." style={{ left: 20, right: 20, top: 150 }} />
+      <Coach {...p} title="Ödülleri sen belirle" text={`Bugün menüsünden 'Ödül' seçebilirsin. Ödül için yeterli Güneş Taşı varsa ${k.ad} oyunun içinden talep eder, sen onaylarsın.`} style={{ left: 20, right: 20, top: 150 }} />
     </>
   );
 }
@@ -467,7 +478,7 @@ function StepChat(p: StepProps) {
         <Text style={{ fontSize: 15, fontWeight: '800', color: colors.navy }}>Mesajlar</Text>
       </Ring>
       <TabRing index={4} />
-      <Coach {...p} title="Mesajlaş" text="Aile › Mesajlar: yazı, fotoğraf, sesli mesaj ya da çıkartma gönder. Çocuğun oyunda okur, sana yazıyla ya da çıkartmayla döner." style={{ left: 20, right: 32, top: 400 }} />
+      <Coach {...p} title="Mesaj gönder" text="Aile › Mesajlar: yazı, fotoğraf, sesli mesaj ya da emoji gönder. Çocuğun oyunda okur, sana yazıyla ya da emojiyle döner." style={{ left: 20, right: 32, top: 400 }} />
     </>
   );
 }
@@ -493,7 +504,7 @@ function StepProgress(p: StepProps) {
         </View>
       </Ring>
       <TabRing index={3} />
-      <Coach {...p} title="Gelişimi takip et" text="Gelişim sekmesinde günlük tutarlılık, seri ve haftalık tamamlama. Hangi alışkanlığın oturduğunu görürsün." style={{ left: 20, right: 20, top: 400 }} />
+      <Coach {...p} title="Gelişimi takip et" text="Gelişim menüsünde hangi sorumluluğun ne kadar tutarlı sürdürüldüğünü düzenli olarak takip et." style={{ left: 20, right: 20, top: 400 }} />
     </>
   );
 }
